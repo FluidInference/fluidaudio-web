@@ -52,26 +52,26 @@ pinyin→IPA), the browser analog of FluidAudio's separate `g2pW` CoreML model.
 Options: port g2pW to ONNX and run it via ORT, or use a JS pinyin lib + a
 polyphone table. Until then `zh` relies on kokoro-js's own handling.
 
-### ✅/🚧 `asr-parakeet` (v3) — wired via parakeet.js (browser)
-Implemented on top of `parakeet.js` (`fromHub('parakeet-tdt-0.6b-v3')`,
-`backend: webgpu-hybrid` = encoder on WebGPU, decoder+joint on WASM — the exact
-split our ort policy recommends). Runs under `npm run dev` in a real browser;
-compile-verified (`tsc` + `vite build`).
+### ✅ `asr-parakeet` (v3) — internalized (no ASR library)
+Fully in-repo: `mel.js` (vendored NeMo-parity log-mel DSP, MIT), `tokenizer.js`
+(vocab.txt + SentencePiece decode), `tdt.js` (encoder run + TDT greedy decode).
+The exact same core runs in the browser engine (`index.ts`, onnxruntime-web) and
+the headless verifier (`scripts/smoke-parakeet-internal.mjs`, onnxruntime-node) —
+no `parakeet.js` dependency. Repo: `ysdede/parakeet-tdt-0.6b-v3-onnx`.
 
-Verification notes (Node, `scripts/smoke-parakeet*.mjs`): the full pipeline
-*executes* headlessly — model downloads (repo `ysdede/parakeet-tdt-0.6b-v3-onnx`,
-int8 encoder 652 MB + decoder 18 MB + `vocab.txt`), JS mel + CMVN run, the int8
-encoder runs (RTF ~18× on CPU), decoder runs — but `parakeet.js` is a browser
-library (Blob-URL/IndexedDB hub, `fetch`, WebGPU), so a Node run must bypass its
-hub via `fromUrls` with local paths + a `data:` tokenizer URL, and in that
-CPU-int8-wasm bypass the decode currently emits empty. Input audio is verified
-byte-correct, so this is a bypass/backend nuance, not a data bug. **Browser
-(webgpu-hybrid) is the supported/tested path.**
+**Verified transcribing headlessly** (fp32 encoder, ort-node):
+`node scripts/smoke-parakeet-internal.mjs /tmp/pk_intro.wav /tmp/pkv3 fp32`
+→ "Four Classes That Constitute a Menace from Anti-Suffrage Ten Good Reasons by
+Grace Duffield Goodwin" (41 tokens, 0.24 s).
 
-`parakeet.js` is a 69★ single-author dep. Plan to internalize: port
-`AudioMelSpectrogram` + `TdtDecoderV3.swift` (both pure math) to TS using
-`parakeet.js`'s `src/mel.js` + `src/parakeet.js` as the reference recipe, then
-drop the dependency.
+**int8 encoder needs WebGPU.** The int8 encoder is numerically degenerate on the
+CPU/WASM EP — its output collapses to ~0 (measured std **0.017** vs ~O(1)
+healthy), so every frame decodes to blank → empty transcript. It's fine on
+WebGPU (fp16 compute), which is why the browser works. Therefore: the browser
+engine loads the **int8 encoder on WebGPU** (throws if WebGPU is absent) and the
+decoder on WASM; the Node verifier uses the **fp32** encoder (`encoder-model.onnx`
++ `.data`, 2.4 GB) since it runs on CPU. The mel is confirmed correct
+independently (per-feature CMVN output: mean 0, std 1).
 
 ### 🚧 `asr-nemotron` (en + multilingual) — scaffold
 ONNX published: `onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4`

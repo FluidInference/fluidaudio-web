@@ -45,14 +45,17 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "nvidia-open-model",
     note: "40 langs. Cache-aware streaming; chunk tiers 80/160/320/560/1120ms. Confirm exact file names.",
   },
-  // ✅ CONFIRMED — the repo parakeet.js resolves for 'parakeet-tdt-0.6b-v3'.
-  // The engine loads via parakeet.js (fromHub), which manages the exact file
-  // set; listed here for reference/quant selection.
+  // ✅ CONFIRMED — loaded directly by the internalized engine (no ASR library).
+  // int8 encoder runs on WebGPU only (CPU/WASM collapses it to all-blank).
   "asr-parakeet-v3": {
-    files: [{ repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "(managed by parakeet.js)" }],
-    approxMB: 600,
+    files: [
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "encoder-model.int8.onnx" },
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "decoder_joint-model.int8.onnx" },
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "vocab.txt" },
+    ],
+    approxMB: 670,
     license: "cc-by-4.0",
-    note: "Loaded via parakeet.js fromHub('parakeet-tdt-0.6b-v3'), int8 encoder+decoder.",
+    note: "Encoder int8 requires WebGPU; decode + mel are internalized (mel.js/tokenizer.js/tdt.js).",
   },
   // ✅ CONFIRMED — sherpa-onnx pretrained diarization set.
   "diarization-pyannote": {
