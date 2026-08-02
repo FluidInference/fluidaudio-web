@@ -14,6 +14,7 @@ import { webgpuAvailable } from "../../core/ort";
 import { fetchCached } from "../../core/modelCache";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
 import { EnglishLexicon } from "./lexicon.js";
+import { chineseToIpa } from "./chinese-g2p.js";
 
 export interface KokoroOptions {
   /** "en" (v1.0) or "zh" (v1.1-zh). */
@@ -65,8 +66,21 @@ export class KokoroTtsEngine implements TtsEngine {
 
   async synthesize(text: string, opts?: { voice?: string; speed?: number }): Promise<AudioData> {
     if (!this.tts) throw new Error("KokoroTtsEngine.load() not called");
-    const voice = opts?.voice ?? (this.opts.lang === "zh" ? "zf_001" : "af_heart");
     const speed = opts?.speed ?? 1;
+
+    // Chinese: g2pW-family frontend (pinyin-pro → misaki-exact IPA table) →
+    // phoneme injection. NOTE: uses an English voice for now — kokoro-js loads
+    // only the English voice pack for the zh model; native zf_/zm_ voice loading
+    // is a follow-up (docs/KOKORO_ZH.md). Polyphones use pinyin-pro (g2pW later).
+    if (this.opts.lang === "zh") {
+      const { phonemes, coverage } = chineseToIpa(text);
+      if (coverage > 0 && phonemes) {
+        const audio = await this.synthFromPhonemes(phonemes, opts?.voice ?? "af_heart", speed);
+        if (audio) return audio;
+      }
+    }
+
+    const voice = opts?.voice ?? "af_heart";
 
     // Lexicon-first English: phonemize via the Misaki lexicon and inject through
     // generate_from_ids (skips espeak). Fall back to kokoro-js generate() when

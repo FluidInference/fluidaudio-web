@@ -38,11 +38,22 @@ Reference files pulled to `/tmp/misaki_{zh,transcription,zh_frontend}.py`.
    `us_lexicon_cache.json` phonemized a sentence → 3.42 s natural speech.
    Implemented in the engine (`synthFromPhonemes`, `lexicon.js`), espeak fallback
    for <95% coverage. Chinese reuses `synthFromPhonemes` with a g2pW phoneme string.
-2. **pinyin→IPA port** (`transcription.py`): verify JS output byte-matches Python
-   misaki over a syllable set (installable via `pip install misaki[zh]`).
-3. **hanzi→pinyin** via pinyin-pro + **jieba-wasm**; wire tone-sandhi/retone.
-4. **g2pW ONNX** for polyphones (replaces pinyin-pro's dictionary heuristic).
-5. Voice packs + UI.
+2. ✅ **pinyin→IPA** (DONE, better than porting): instead of reimplementing
+   `transcription.py`, **precomputed the full table** from misaki's own
+   `pinyin_to_ipa` + `retone` over every valid Mandarin syllable (1549 entries,
+   `pinyin-ipa.json`) → the IPA is byte-exact to what Kokoro-zh trained on, zero
+   port risk. `chinese-g2p.js` is a pure lookup.
+3. ✅ **hanzi→pinyin** via `pinyin-pro` (tone-num, context polyphones, segments,
+   nonZh passthrough). Verified: `你好世界` → `ni↓xau̯↓ʂɨ↘ʨje↘` (matches oracle);
+   full sentence → 3.98 s natural audio (was 13.72 s broken). Wired into engine.
+4. 🚧 **g2pW ONNX** — accuracy upgrade for polyphones (replaces pinyin-pro's
+   dictionary heuristic). Optional; `G2PWModel-v2-onnx` + `POLYPHONIC_CHARS.txt`.
+5. 🚧 **Native zh voices** (`zf_/zm_`) — kokoro-js loads only English voices for
+   the zh model, so we currently synth with an English voice (correct Chinese
+   phonemes, English timbre). Load the zf_ style vector directly to fix timbre.
+
+Quality (pronunciation/prosody) still needs an ear/zh-ASR to judge; the pinyin→IPA
+stage is verified exact, and audio length is now natural.
 
 ## Caveat
 Chinese pronunciation quality is **not verifiable headless** (no zh ASR here) —
