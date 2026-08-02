@@ -11,13 +11,14 @@
 import { createSession, ort, webgpuAvailable } from "../../core/ort";
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
-import { JsPreprocessor } from "./mel.js";
+import { OnnxMelPreprocessor } from "./onnxMel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import { transcribeTdt } from "./tdt.js";
 
 const REPO = "ysdede/parakeet-tdt-0.6b-v3-onnx";
 const ENCODER = "encoder-model.int8.onnx";
 const DECODER = "decoder_joint-model.int8.onnx";
+const MEL = "nemo128.onnx";
 const VOCAB = "vocab.txt";
 
 export class ParakeetV3Engine implements AsrEngine {
@@ -26,7 +27,7 @@ export class ParakeetV3Engine implements AsrEngine {
   private encoder: any = null;
   private decoder: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
-  private preprocessor = new JsPreprocessor({ nMels: 128 });
+  private preprocessor: OnnxMelPreprocessor | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     if (!webgpuAvailable()) {
@@ -36,17 +37,20 @@ export class ParakeetV3Engine implements AsrEngine {
     }
     const encBytes = await fetchCached(hfUrl(REPO, ENCODER), onProgress, ENCODER);
     const decBytes = await fetchCached(hfUrl(REPO, DECODER), onProgress, DECODER);
+    const melBytes = await fetchCached(hfUrl(REPO, MEL), onProgress, MEL);
     const vocabText = new TextDecoder().decode(await fetchCached(hfUrl(REPO, VOCAB), onProgress, VOCAB));
 
-    // Encoder on WebGPU (required); decoder+joint on WASM.
+    // Everything on ORT: mel + decoder on WASM, encoder on WebGPU (required).
     this.encoder = await createSession(encBytes, "webgpu");
     this.decoder = await createSession(decBytes, "wasm");
+    const melSession = await createSession(melBytes, "wasm");
+    this.preprocessor = new OnnxMelPreprocessor(ort, melSession, 128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocabText);
     onProgress?.({ file: REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
-    if (!this.encoder || !this.decoder || !this.tokenizer) {
+    if (!this.encoder || !this.decoder || !this.tokenizer || !this.preprocessor) {
       throw new Error("ParakeetV3Engine.load() not called");
     }
     const { text } = await transcribeTdt({
@@ -63,6 +67,7 @@ export class ParakeetV3Engine implements AsrEngine {
   async dispose(): Promise<void> {
     await this.encoder?.release?.();
     await this.decoder?.release?.();
-    this.encoder = this.decoder = this.tokenizer = null;
+    await this.preprocessor?.session?.release?.();
+    this.encoder = this.decoder = this.tokenizer = this.preprocessor = null;
   }
 }

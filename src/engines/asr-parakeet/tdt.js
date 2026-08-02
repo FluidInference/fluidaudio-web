@@ -20,7 +20,7 @@ const MAX_TOKENS_PER_STEP = 10;
  */
 export async function transcribeTdt({ ort, encoder, decoder, preprocessor, tokenizer, audio }) {
   const melBins = preprocessor.nMels;
-  const { features, length } = preprocessor.process(audio);
+  const { features, length } = await preprocessor.process(audio);
   const T = features.length / melBins;
 
   const encOut = await encoder.run({

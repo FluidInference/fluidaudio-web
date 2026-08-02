@@ -52,9 +52,17 @@ pinyin→IPA), the browser analog of FluidAudio's separate `g2pW` CoreML model.
 Options: port g2pW to ONNX and run it via ORT, or use a JS pinyin lib + a
 polyphone table. Until then `zh` relies on kokoro-js's own handling.
 
-### ✅ `asr-parakeet` (v3) — internalized (no ASR library)
-Fully in-repo: `mel.js` (vendored NeMo-parity log-mel DSP, MIT), `tokenizer.js`
-(vocab.txt + SentencePiece decode), `tdt.js` (encoder run + TDT greedy decode).
+### ✅ `asr-parakeet` (v3) — internalized (no ASR library), all-ORT compute
+Fully in-repo, and **all feature extraction + inference runs on onnxruntime-web
+(WebGPU/WASM)** — no heavy JS DSP:
+- mel: `nemo128.onnx` (the NeMo log-mel preprocessor) run on ORT **WASM**
+  (`onnxMel.js`) — replaces the earlier JS FFT.
+- encoder: `encoder-model.int8.onnx` on **WebGPU** (required).
+- decoder+joint: `decoder_joint-model.int8.onnx` on **WASM**.
+- `tokenizer.js` (vocab.txt + SentencePiece decode) and the TDT greedy loop in
+  `tdt.js` are JS **orchestration** (argmax over logits, loop control, string
+  decode) — scalar glue, not tensor compute.
+
 The exact same core runs in the browser engine (`index.ts`, onnxruntime-web) and
 the headless verifier (`scripts/smoke-parakeet-internal.mjs`, onnxruntime-node) —
 no `parakeet.js` dependency. Repo: `ysdede/parakeet-tdt-0.6b-v3-onnx`.

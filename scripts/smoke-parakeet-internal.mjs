@@ -10,7 +10,7 @@
 import ort from "onnxruntime-node";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { JsPreprocessor } from "../src/engines/asr-parakeet/mel.js";
+import { OnnxMelPreprocessor } from "../src/engines/asr-parakeet/onnxMel.js";
 import { ParakeetTokenizer } from "../src/engines/asr-parakeet/tokenizer.js";
 import { transcribeTdt } from "../src/engines/asr-parakeet/tdt.js";
 
@@ -37,8 +37,9 @@ const encFile = quant === "int8" ? "encoder-model.int8.onnx" : "encoder-model.on
 
 const encoder = await ort.InferenceSession.create(resolve(dir, encFile));
 const decoder = await ort.InferenceSession.create(resolve(dir, "decoder_joint-model.int8.onnx"));
+const melSession = await ort.InferenceSession.create(resolve(dir, "nemo128.onnx"));
 const tokenizer = ParakeetTokenizer.fromVocabText(readFileSync(resolve(dir, "vocab.txt"), "utf8"));
-const preprocessor = new JsPreprocessor({ nMels: 128 });
+const preprocessor = new OnnxMelPreprocessor(ort, melSession, 128);
 
 const { samples } = readWav(wav);
 const t0 = Date.now();

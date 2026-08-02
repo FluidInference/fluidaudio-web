@@ -51,11 +51,12 @@ export const REGISTRY: Record<string, ModelSpec> = {
     files: [
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "encoder-model.int8.onnx" },
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "decoder_joint-model.int8.onnx" },
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "nemo128.onnx" },
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "vocab.txt" },
     ],
     approxMB: 670,
     license: "cc-by-4.0",
-    note: "Encoder int8 requires WebGPU; decode + mel are internalized (mel.js/tokenizer.js/tdt.js).",
+    note: "All ORT: mel (nemo128) + decoder on WASM, encoder int8 on WebGPU (required). TDT decode + tokenizer in JS glue.",
   },
   // ✅ CONFIRMED — sherpa-onnx pretrained diarization set.
   "diarization-pyannote": {
