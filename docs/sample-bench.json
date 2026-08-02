@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-08-02T22:50:43.412Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/150.0.0.0 Safari/537.36",
+  "webgpu": true,
+  "sample": {
+    "seconds": 12,
+    "sampleRate": 16000
+  },
+  "engines": [
+    {
+      "id": "diarization-sortformer",
+      "label": "Sortformer diarization",
+      "kind": "audio",
+      "loadMs": 9097,
+      "runMs": 173,
+      "inputSec": 12,
+      "rtfx": 69.4,
+      "output": "1 speakers, 5 segments",
+      "ok": true
+    },
+    {
+      "id": "tts-kokoro-en",
+      "label": "Kokoro TTS (English)",
+      "kind": "text",
+      "loadMs": 6346,
+      "runMs": 760,
+      "outputSec": 3.38,
+      "rtfx": 4.44,
+      "output": "3.38s audio",
+      "ok": true
+    }
+  ]
+}

@@ -1,5 +1,22 @@
 # Benchmarks
 
+## Browser verification (bench.html, in-Chrome)
+
+Verified via the auto-benchmark in real Chrome on the 12s bundled sample
+(`docs/sample-bench.json`). WebGPU-capable context:
+
+| Engine | ok | run | RTFx | output |
+|---|---|--:|--:|---|
+| Sortformer diarization | ✅ | 173 ms | 69.4× | 1 speaker, 5 segments (correct) |
+| Kokoro TTS (en) | ✅ | 760 ms | 4.44× | 3.38 s audio |
+
+RTFx varies with WebGPU-vs-WASM fallback (Sortformer ranged 15×–69× across runs).
+**Parakeet/Nemotron (int8/int4) return empty even when `navigator.gpu` is present
+in the automation context** — their quantized encoders need a *fully functional*
+WebGPU adapter; verify on a real machine. VAD errors (`vad-web` CJS + Vite).
+
+
+
 Reproduce:
 ```bash
 node scripts/bench-parakeet.mjs fp32 /tmp/pkv3           # ASR (needs local ONNX + wavs)
