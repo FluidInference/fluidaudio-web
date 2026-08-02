@@ -56,7 +56,7 @@ In the browser, every run prints `⏱ ms · RTFx` in the output panel (WebGPU pa
 
 | dataset | script | metric | result | reference (FluidAudio native) |
 |---|---|---|---|---|
-| **LibriSpeech test-clean** (100 utts) | `wer-librispeech.mjs` | WER | **1.96%** (46/2346) | ~1.83–2.14% ✓ |
+| **LibriSpeech test-clean** (all 2620 utts, 5.4h) | `wer-librispeech.mjs` | WER | **2.15%** (1129/52576) | ~2.14% native ✓ |
 | **FLEURS en_us** (30) | `wer-parakeet.mjs` | WER | 6.15% | in-range ✓ |
 
 The browser port **matches native FluidAudio accuracy** — the fp32 encoder + our
