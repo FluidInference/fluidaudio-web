@@ -33,8 +33,8 @@ const ENTRIES: Record<string, Entry> = {
     make: async () => new (await import("./engines/vad-silero")).SileroVadEngine(),
   },
   "asr-nemotron": {
-    label: "Nemotron streaming 🚧", kind: "audio",
-    make: async () => new (await import("./engines/asr-nemotron")).NemotronStreamingEngine(),
+    label: "Nemotron 3.5 (WebGPU) 🔬", kind: "audio",
+    make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
   },
   "diarization-sortformer": {
     label: "Diarization (Sortformer) ✅", kind: "audio",
