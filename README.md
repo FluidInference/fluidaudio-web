@@ -15,17 +15,17 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 
 | Engine | Model | Runtime | Backend | Status |
 |---|---|---|---|---|
-| `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ✅ wired |
-| `tts-kokoro` | Kokoro 82M (en + **zh**) | `kokoro-js` | **WebGPU** / WASM | ✅ wired (zh needs G2P — see below) |
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | fp32 enc WebGPU + WASM dec | ✅ 2.15% WER (test-clean) |
-| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ wired |
-| `asr-nemotron` | Nemotron 3.5 streaming (en + multilingual) | `onnxruntime-web` | WebGPU / WASM | 🚧 scaffold |
-| `diarization-pyannote` | pyannote seg + embedding + clustering | `sherpa-onnx` WASM | WASM | 🚧 scaffold |
-| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ greenfield (no ONNX export yet) |
+| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | fp32 enc WebGPU + WASM dec | ✅ **2.15% WER** (full test-clean) |
+| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ verified |
+| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ verified (9.99× / 5.26× RTFx) |
+| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ verified short-audio (123× RTFx); long-audio needs streaming loop |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | 🔬 built; int4 empty on WebGPU (needs fp export) |
+| `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ⛔ `vad-web` CJS/Vite issue |
+| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ no public ONNX export |
 
-"Wired" = calls a mature upstream library. "Scaffold" = interface + runtime +
-model registry in place, decode loop is the remaining work. "Greenfield" = no
-public ONNX export exists; needs export first.
+"Verified" = correctness checked (WER/RTFx/output) on real data. "Built" = full
+pipeline implemented + shape-verified; accuracy pending. See
+[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for numbers.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for per-engine integration
 notes and the WebGPU-vs-WASM tradeoffs.
@@ -45,6 +45,15 @@ a results JSON (load/run ms, RTFx, per-stage timings, output, per-engine errors)
 This is where you get the real WebGPU numbers. First run downloads model weights
 (cached after). Params: `?full=1` (add Kokoro-zh + Nemotron), `?engines=a,b`
 (pick), `?noauto=1` (don't auto-download).
+
+## Deploy
+
+Static site — `npm run build` outputs `dist/`. The host **must** send
+`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy:
+require-corp` (threaded WASM needs SharedArrayBuffer). `public/_headers` covers
+**Netlify / Cloudflare Pages** automatically; for Vercel add them via
+`vercel.json`, for nginx via `add_header`. Model weights stream from Hugging Face
+and cache client-side — no backend.
 
 Requires a browser with WebGPU (Chrome/Edge 121+, Safari 26+) — engines fall
 back to WASM automatically where WebGPU op coverage is incomplete.

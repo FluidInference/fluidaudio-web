@@ -4,6 +4,12 @@
   "private": true,
   "description": "In-browser inference for FluidAudio's core models via WebGPU + WASM",
   "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/FluidInference/fluidaudio-web#readme",
+  "repository": { "type": "git", "url": "https://github.com/FluidInference/fluidaudio-web.git" },
+  "bugs": { "url": "https://github.com/FluidInference/fluidaudio-web/issues" },
+  "keywords": ["asr", "tts", "diarization", "vad", "webgpu", "wasm", "onnxruntime-web", "speech", "parakeet", "kokoro", "whisper", "sortformer", "in-browser"],
+  "engines": { "node": ">=20" },
   "scripts": {
     "dev": "vite",
     "bench": "vite --open /bench.html?full=1",

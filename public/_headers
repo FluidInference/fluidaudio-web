@@ -1,0 +1,6 @@
+# Cross-origin isolation — required for onnxruntime-web threaded WASM
+# (SharedArrayBuffer). Netlify & Cloudflare Pages read this file from the
+# publish dir; for Vercel use vercel.json headers, for nginx add the same two.
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
