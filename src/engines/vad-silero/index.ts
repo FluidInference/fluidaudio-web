@@ -1,0 +1,34 @@
+// Silero VAD via @ricky0123/vad-web (onnxruntime-web + WASM). Mature, drop-in.
+// Uses the non-real-time path for whole-clip segmentation.
+
+import { NonRealTimeVAD } from "@ricky0123/vad-web";
+import type { AudioData, ProgressCb, SpeechRange, VadEngine } from "../../core/types";
+
+export class SileroVadEngine implements VadEngine {
+  readonly id = "vad-silero";
+  readonly label = "Silero VAD";
+  private vad: NonRealTimeVAD | null = null;
+
+  async load(onProgress?: ProgressCb): Promise<void> {
+    onProgress?.({ file: "silero-vad", loaded: 0, total: 1, fraction: 0.1 });
+    // vad-web bundles the ONNX weights + wasm; it fetches them on first use.
+    this.vad = await NonRealTimeVAD.new({
+      // positiveSpeechThreshold / minSpeechFrames left at library defaults.
+    });
+    onProgress?.({ file: "silero-vad", loaded: 1, total: 1, fraction: 1 });
+  }
+
+  async detect(audio: AudioData): Promise<SpeechRange[]> {
+    if (!this.vad) throw new Error("SileroVadEngine.load() not called");
+    const ranges: SpeechRange[] = [];
+    for await (const { start, end } of this.vad.run(audio.samples, audio.sampleRate)) {
+      // vad-web yields start/end in milliseconds.
+      ranges.push({ start: start / 1000, end: end / 1000 });
+    }
+    return ranges;
+  }
+
+  async dispose(): Promise<void> {
+    this.vad = null;
+  }
+}

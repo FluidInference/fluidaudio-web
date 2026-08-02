@@ -1,0 +1,22 @@
+{
+  "name": "@fluidinference/fluidaudio-web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "In-browser inference for FluidAudio's core models via WebGPU + WASM",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ricky0123/vad-web": "^0.0.30",
+    "kokoro-js": "^1.2.1",
+    "onnxruntime-web": "^1.20.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
