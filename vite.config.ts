@@ -17,10 +17,13 @@ const crossOriginIsolation = {
 
 export default defineConfig({
   plugins: [crossOriginIsolation],
-  // Let Vite pre-bundle CJS deps so named ESM imports interop correctly
-  // (excluding them served raw CJS and broke `import { NonRealTimeVAD }`).
   optimizeDeps: {
-    include: ["@ricky0123/vad-web", "onnxruntime-web"],
+    // vad-web is CJS → pre-bundle so its named ESM imports interop.
+    include: ["@ricky0123/vad-web"],
+    // onnxruntime-web must NOT be pre-bundled: Vite rewrites its dynamic import
+    // of `ort-wasm-*.jsep.mjs` into `.vite/deps/…` which 404s. Excluded, ORT
+    // loads its own co-located .mjs/.wasm (matching version) correctly.
+    exclude: ["onnxruntime-web"],
   },
   worker: { format: "es" },
   build: {

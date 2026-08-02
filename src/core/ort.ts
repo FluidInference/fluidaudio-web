@@ -12,11 +12,9 @@ export function configureOrt(): void {
   const threads = (self.crossOriginIsolated && navigator.hardwareConcurrency) || 1;
   ort.env.wasm.numThreads = Math.min(threads, 8);
   ort.env.wasm.simd = true;
-  // Where ORT loads its .wasm/.mjs from. Pinned to the CDN matching the
-  // installed version for zero-config; for offline/self-hosted, copy
-  // `node_modules/onnxruntime-web/dist/*.{wasm,mjs}` into `public/ort/` and set
-  // this to "/ort/".
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
+  // Do NOT set wasmPaths: with onnxruntime-web excluded from optimizeDeps, ORT
+  // self-resolves its .mjs/.wasm from its own dist (version-matched). A hardcoded
+  // CDN path risks a wasm/JS version mismatch (→ "e.getValue is not a function").
   configured = true;
 }
 

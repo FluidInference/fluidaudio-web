@@ -16,12 +16,11 @@ export class SileroVadEngine implements VadEngine {
   async load(onProgress?: ProgressCb): Promise<void> {
     onProgress?.({ file: "silero-vad", loaded: 0, total: 1, fraction: 0.1 });
     // vad-web bundles the ONNX weights + wasm; it fetches them on first use.
-    // Point vad-web at the CDN for its silero ONNX + ort wasm so it resolves
-    // under any bundler/host (default paths 404 under Vite).
-    const base = "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/";
+    // Point vad-web at the CDN for its silero ONNX + worklet so they resolve
+    // under Vite. ORT wasm is left to self-resolve (see core/ort.ts) — don't
+    // pin onnxWASMBasePath to a mismatched version.
     this.vad = await NonRealTimeVAD.new({
-      baseAssetPath: base,
-      onnxWASMBasePath: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/",
+      baseAssetPath: "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/",
     } as any);
     onProgress?.({ file: "silero-vad", loaded: 1, total: 1, fraction: 1 });
   }
