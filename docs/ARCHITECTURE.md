@@ -52,11 +52,26 @@ pinyin→IPA), the browser analog of FluidAudio's separate `g2pW` CoreML model.
 Options: port g2pW to ONNX and run it via ORT, or use a JS pinyin lib + a
 polyphone table. Until then `zh` relies on kokoro-js's own handling.
 
-### 🚧 `asr-parakeet` (v3) — scaffold
-Sessions + registry wired. Remaining: mel frontend + TDT greedy decode. Both are
-pure math in FluidAudio (`AudioMelSpectrogram`, `TdtDecoderV3.swift`) — port to
-TS. Encoder on WebGPU, decoder+joint on WASM. `parakeet.js` is a working
-reference (69★ — read it, don't depend on it).
+### ✅/🚧 `asr-parakeet` (v3) — wired via parakeet.js (browser)
+Implemented on top of `parakeet.js` (`fromHub('parakeet-tdt-0.6b-v3')`,
+`backend: webgpu-hybrid` = encoder on WebGPU, decoder+joint on WASM — the exact
+split our ort policy recommends). Runs under `npm run dev` in a real browser;
+compile-verified (`tsc` + `vite build`).
+
+Verification notes (Node, `scripts/smoke-parakeet*.mjs`): the full pipeline
+*executes* headlessly — model downloads (repo `ysdede/parakeet-tdt-0.6b-v3-onnx`,
+int8 encoder 652 MB + decoder 18 MB + `vocab.txt`), JS mel + CMVN run, the int8
+encoder runs (RTF ~18× on CPU), decoder runs — but `parakeet.js` is a browser
+library (Blob-URL/IndexedDB hub, `fetch`, WebGPU), so a Node run must bypass its
+hub via `fromUrls` with local paths + a `data:` tokenizer URL, and in that
+CPU-int8-wasm bypass the decode currently emits empty. Input audio is verified
+byte-correct, so this is a bypass/backend nuance, not a data bug. **Browser
+(webgpu-hybrid) is the supported/tested path.**
+
+`parakeet.js` is a 69★ single-author dep. Plan to internalize: port
+`AudioMelSpectrogram` + `TdtDecoderV3.swift` (both pure math) to TS using
+`parakeet.js`'s `src/mel.js` + `src/parakeet.js` as the reference recipe, then
+drop the dependency.
 
 ### 🚧 `asr-nemotron` (en + multilingual) — scaffold
 ONNX published: `onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4`

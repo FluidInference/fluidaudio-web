@@ -45,15 +45,14 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "nvidia-open-model",
     note: "40 langs. Cache-aware streaming; chunk tiers 80/160/320/560/1120ms. Confirm exact file names.",
   },
-  // TODO confirm — parakeet.js loads 'parakeet-tdt-0.6b-v3'; verify the HF repo/paths.
+  // ✅ CONFIRMED — the repo parakeet.js resolves for 'parakeet-tdt-0.6b-v3'.
+  // The engine loads via parakeet.js (fromHub), which manages the exact file
+  // set; listed here for reference/quant selection.
   "asr-parakeet-v3": {
-    files: [
-      { repo: "onnx-community/parakeet-tdt-0.6b-v3-ONNX", path: "onnx/encoder_model.onnx" },
-      { repo: "onnx-community/parakeet-tdt-0.6b-v3-ONNX", path: "onnx/decoder_joint_model.onnx" },
-    ],
+    files: [{ repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "(managed by parakeet.js)" }],
     approxMB: 600,
     license: "cc-by-4.0",
-    note: "TODO: confirm repo + filenames against parakeet.js / onnx-community.",
+    note: "Loaded via parakeet.js fromHub('parakeet-tdt-0.6b-v3'), int8 encoder+decoder.",
   },
   // ✅ CONFIRMED — sherpa-onnx pretrained diarization set.
   "diarization-pyannote": {

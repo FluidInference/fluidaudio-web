@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [crossOriginIsolation],
   // ORT + kokoro-js ship prebuilt .wasm; don't let Vite try to bundle them.
   optimizeDeps: {
-    exclude: ["onnxruntime-web", "kokoro-js", "@ricky0123/vad-web"],
+    exclude: ["onnxruntime-web", "kokoro-js", "@ricky0123/vad-web", "parakeet.js"],
   },
   worker: { format: "es" },
   build: { target: "es2022" },
