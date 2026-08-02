@@ -8,7 +8,7 @@
 // run on WebGPU. The tiny decoder+joint runs on WASM. Without WebGPU this engine
 // throws rather than emit silent garbage.
 
-import { createSession, ort, webgpuAvailable } from "../../core/ort";
+import { configureOrt, createSession, ort, webgpuAvailable } from "../../core/ort";
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { OnnxMelPreprocessor } from "./onnxMel.js";
@@ -16,7 +16,11 @@ import { ParakeetTokenizer } from "./tokenizer.js";
 import { transcribeTdt } from "./tdt.js";
 
 const REPO = "ysdede/parakeet-tdt-0.6b-v3-onnx";
-const ENCODER = "encoder-model.int8.onnx";
+// fp32 encoder (with external .data) — the WebGPU EP has no int8 kernels, so the
+// int8 encoder silently falls back to WASM where it decodes to all-blank. fp32
+// runs correctly on WebGPU. (~2.4 GB; fp16 would halve it if a fp16 export exists.)
+const ENCODER = "encoder-model.onnx";
+const ENCODER_DATA = "encoder-model.onnx.data";
 const DECODER = "decoder_joint-model.int8.onnx";
 const MEL = "nemo128.onnx";
 const VOCAB = "vocab.txt";
@@ -31,17 +35,21 @@ export class ParakeetV3Engine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     if (!webgpuAvailable()) {
-      throw new Error(
-        "Parakeet v3 needs WebGPU: the int8 encoder collapses to all-blank on the CPU/WASM backend."
-      );
+      throw new Error("Parakeet v3 needs WebGPU (the fp32 encoder runs there; int8 collapses on WASM).");
     }
     const encBytes = await fetchCached(hfUrl(REPO, ENCODER), onProgress, ENCODER);
+    const encData = await fetchCached(hfUrl(REPO, ENCODER_DATA), onProgress, ENCODER_DATA);
     const decBytes = await fetchCached(hfUrl(REPO, DECODER), onProgress, DECODER);
     const melBytes = await fetchCached(hfUrl(REPO, MEL), onProgress, MEL);
     const vocabText = new TextDecoder().decode(await fetchCached(hfUrl(REPO, VOCAB), onProgress, VOCAB));
 
-    // Everything on ORT: mel + decoder on WASM, encoder on WebGPU (required).
-    this.encoder = await createSession(encBytes, "webgpu");
+    // fp32 encoder on WebGPU (external data); mel + decoder on WASM.
+    configureOrt();
+    this.encoder = await ort.InferenceSession.create(encBytes, {
+      executionProviders: ["webgpu", "wasm"],
+      graphOptimizationLevel: "all",
+      externalData: [{ path: ENCODER_DATA, data: encData }],
+    } as any);
     this.decoder = await createSession(decBytes, "wasm");
     const melSession = await createSession(melBytes, "wasm");
     this.preprocessor = new OnnxMelPreprocessor(ort, melSession, 128);

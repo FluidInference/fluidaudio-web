@@ -1,19 +1,23 @@
 # Benchmarks
 
-## Browser verification (bench.html, in-Chrome)
+## Browser results (bench.html, real machine, WebGPU: true)
 
-Verified via the auto-benchmark in real Chrome on the 12s bundled sample
-(`docs/sample-bench.json`). WebGPU-capable context:
+12s sample, `?full=1`, macOS/Chrome (from a user run):
 
 | Engine | ok | run | RTFx | output |
 |---|---|--:|--:|---|
-| Sortformer diarization | ✅ | 173 ms | 69.4× | 1 speaker, 5 segments (correct) |
-| Kokoro TTS (en) | ✅ | 760 ms | 4.44× | 3.38 s audio |
+| **Sortformer diarization** | ✅ | 97 ms | **123.7×** | 1 speaker, 5 segments |
+| **Kokoro TTS (en)** | ✅ | 338 ms | **9.99×** | 3.38 s audio |
+| **Kokoro TTS (zh)** | ✅ | 755 ms | **5.26×** | 3.98 s audio |
+| Parakeet TDT v3 (int8) | ❌ | 1197 ms | 10× | empty ← int8 fell back to WASM |
+| Nemotron 3.5 (int4) | ❌ | 1330 ms | 9× | empty |
+| Silero VAD | ❌ | — | — | `vad-web` CJS require error |
 
-RTFx varies with WebGPU-vs-WASM fallback (Sortformer ranged 15×–69× across runs).
-**Parakeet/Nemotron (int8/int4) return empty even when `navigator.gpu` is present
-in the automation context** — their quantized encoders need a *fully functional*
-WebGPU adapter; verify on a real machine. VAD errors (`vad-web` CJS + Vite).
+**Finding:** the WebGPU EP has **no int8/int4 kernels**, so quantized encoders
+silently fall back to WASM → all-blank. Fix = run the **fp32** encoder on WebGPU
+(Parakeet switched to `encoder-model.onnx`, fp32-CPU-verified transcript correct).
+Nemotron ships int4 only → blocked until an fp16/fp32 export exists. Kokoro (9.99×)
+matches upstream's ~10× WebGPU claim.
 
 
 

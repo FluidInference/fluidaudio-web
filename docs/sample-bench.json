@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-02T22:50:43.412Z",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/150.0.0.0 Safari/537.36",
+  "generatedAt": "2026-08-02T22:57:59.769Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
   "webgpu": true,
   "sample": {
     "seconds": 12,
@@ -8,13 +8,37 @@
   },
   "engines": [
     {
+      "id": "vad-silero",
+      "label": "Silero VAD",
+      "kind": "audio",
+      "ok": false,
+      "error": "Error: Dynamic require of \"onnxruntime-web/wasm\" is not supported"
+    },
+    {
+      "id": "asr-parakeet",
+      "label": "Parakeet TDT v3",
+      "kind": "audio",
+      "loadMs": 1868,
+      "runMs": 1197,
+      "inputSec": 12,
+      "rtfx": 10,
+      "stages": {
+        "melMs": 10.9,
+        "encodeMs": 1128,
+        "decodeMs": 58.2,
+        "totalMs": 1197.1
+      },
+      "output": "",
+      "ok": true
+    },
+    {
       "id": "diarization-sortformer",
       "label": "Sortformer diarization",
       "kind": "audio",
-      "loadMs": 9097,
-      "runMs": 173,
+      "loadMs": 1443,
+      "runMs": 97,
       "inputSec": 12,
-      "rtfx": 69.4,
+      "rtfx": 123.7,
       "output": "1 speakers, 5 segments",
       "ok": true
     },
@@ -22,11 +46,33 @@
       "id": "tts-kokoro-en",
       "label": "Kokoro TTS (English)",
       "kind": "text",
-      "loadMs": 6346,
-      "runMs": 760,
+      "loadMs": 869,
+      "runMs": 338,
       "outputSec": 3.38,
-      "rtfx": 4.44,
+      "rtfx": 9.99,
       "output": "3.38s audio",
+      "ok": true
+    },
+    {
+      "id": "tts-kokoro-zh",
+      "label": "Kokoro TTS (Chinese)",
+      "kind": "text",
+      "loadMs": 13964,
+      "runMs": 755,
+      "outputSec": 3.98,
+      "rtfx": 5.26,
+      "output": "3.98s audio",
+      "ok": true
+    },
+    {
+      "id": "asr-nemotron",
+      "label": "Nemotron 3.5",
+      "kind": "audio",
+      "loadMs": 20370,
+      "runMs": 1330,
+      "inputSec": 12,
+      "rtfx": 9,
+      "output": "(empty — needs WebGPU)",
       "ok": true
     }
   ]
