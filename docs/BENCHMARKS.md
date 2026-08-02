@@ -61,8 +61,21 @@ In the browser, every run prints `⏱ ms · RTFx` in the output panel (WebGPU pa
 
 The browser port **matches native FluidAudio accuracy** — the fp32 encoder + our
 ONNX mel + tokenizer + TDT decode are correct at dataset scale. Datasets:
-LibriSpeech test-clean / FLEURS / MUSAN are local; AMI (diarization DER) via
-`fluidaudiocli download --dataset ami-sdm --dataset ami-annotations`.
+LibriSpeech test-clean / FLEURS / MUSAN are local; AMI audio from
+`groups.inf.ed.ac.uk/ami/AMICorpusMirror`, RTTM ground truth from
+`pyannote/AMI-diarization-setup`.
+
+### Sortformer diarization on AMI — blocked on the streaming loop
+
+Downloaded AMI ES2004a (17.5 min, 4 speakers) + RTTM. **Single-chunk Sortformer
+collapses on long meetings**: over the first 120 s (RTTM = 3 active speakers,
+FEE013 87 s / FEE016 9 s / MEO015 6 s) it reports spk0 34 %, spk1 max 0.517,
+**spk2/spk3 = 0.000**. Sortformer is a *streaming* model that needs its
+`spkcache`/`fifo` state to track speakers over time; feeding one big chunk with
+empty state defaults to the dominant speaker. So a valid DER requires porting the
+NeMo streaming state-update loop (chunked `spkcache`/`fifo`) — the offline
+single-chunk path is only adequate for short/simple audio (verified: 40 s
+Earnings → 2 speakers). Follow-up.
 
 ### WebGPU numbers — not measurable in this env
 
