@@ -1,13 +1,17 @@
 // Silero VAD via @ricky0123/vad-web (onnxruntime-web + WASM). Mature, drop-in.
 // Uses the non-real-time path for whole-clip segmentation.
 
-import { NonRealTimeVAD } from "@ricky0123/vad-web";
+import * as vadWeb from "@ricky0123/vad-web";
 import type { AudioData, ProgressCb, SpeechRange, VadEngine } from "../../core/types";
+
+// vad-web is CJS; grab NonRealTimeVAD via namespace so the named-import interop
+// can't break at module load.
+const NonRealTimeVAD: any = (vadWeb as any).NonRealTimeVAD ?? (vadWeb as any).default?.NonRealTimeVAD;
 
 export class SileroVadEngine implements VadEngine {
   readonly id = "vad-silero";
   readonly label = "Silero VAD";
-  private vad: NonRealTimeVAD | null = null;
+  private vad: any = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     onProgress?.({ file: "silero-vad", loaded: 0, total: 1, fraction: 0.1 });

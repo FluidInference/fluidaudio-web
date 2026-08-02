@@ -5,28 +5,45 @@
 import { decodeToMono16k, pcmToWav } from "./core/audio";
 import { webgpuAvailable } from "./core/ort";
 import type { Engine, LoadProgress } from "./core/types";
-import { SileroVadEngine } from "./engines/vad-silero";
-import { KokoroTtsEngine } from "./engines/tts-kokoro";
-import { ParakeetV3Engine } from "./engines/asr-parakeet";
-import { NemotronStreamingEngine } from "./engines/asr-nemotron";
-import { PyannoteDiarizationEngine } from "./engines/diarization-pyannote";
-import { ParakeetEouEngine } from "./engines/eou-parakeet";
 
 type Kind = "audio" | "text";
 interface Entry {
   label: string;
   kind: Kind;
-  make: () => Engine;
+  // Lazy: each engine's module (and its deps) loads only when selected, so a
+  // broken engine can't take down the whole app at page load.
+  make: () => Promise<Engine>;
 }
 
 const ENTRIES: Record<string, Entry> = {
-  "vad-silero": { label: "Silero VAD ✅", kind: "audio", make: () => new SileroVadEngine() },
-  "tts-kokoro-en": { label: "Kokoro TTS — English ✅", kind: "text", make: () => new KokoroTtsEngine({ lang: "en" }) },
-  "tts-kokoro-zh": { label: "Kokoro TTS — Chinese ✅*", kind: "text", make: () => new KokoroTtsEngine({ lang: "zh" }) },
-  "asr-parakeet": { label: "Parakeet TDT v3 ✅", kind: "audio", make: () => new ParakeetV3Engine() },
-  "asr-nemotron": { label: "Nemotron streaming 🚧", kind: "audio", make: () => new NemotronStreamingEngine() },
-  "diarization-pyannote": { label: "Diarization (pyannote) 🚧", kind: "audio", make: () => new PyannoteDiarizationEngine() },
-  "eou-parakeet": { label: "Parakeet EOU ⛔", kind: "audio", make: () => new ParakeetEouEngine() },
+  "asr-parakeet": {
+    label: "Parakeet TDT v3 ✅", kind: "audio",
+    make: async () => new (await import("./engines/asr-parakeet")).ParakeetV3Engine(),
+  },
+  "tts-kokoro-en": {
+    label: "Kokoro TTS — English ✅", kind: "text",
+    make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "en" }),
+  },
+  "tts-kokoro-zh": {
+    label: "Kokoro TTS — Chinese ✅*", kind: "text",
+    make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "zh" }),
+  },
+  "vad-silero": {
+    label: "Silero VAD ✅", kind: "audio",
+    make: async () => new (await import("./engines/vad-silero")).SileroVadEngine(),
+  },
+  "asr-nemotron": {
+    label: "Nemotron streaming 🚧", kind: "audio",
+    make: async () => new (await import("./engines/asr-nemotron")).NemotronStreamingEngine(),
+  },
+  "diarization-pyannote": {
+    label: "Diarization (pyannote) 🚧", kind: "audio",
+    make: async () => new (await import("./engines/diarization-pyannote")).PyannoteDiarizationEngine(),
+  },
+  "eou-parakeet": {
+    label: "Parakeet EOU ⛔", kind: "audio",
+    make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
+  },
 };
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -63,7 +80,7 @@ $("load").addEventListener("click", async () => {
   progress.hidden = false;
   runBtn.disabled = true;
   try {
-    engine = entry.make();
+    engine = await entry.make();
     status.textContent = `Loading ${entry.label}…`;
     await engine.load((p: LoadProgress) => {
       progress.value = p.fraction || 0;

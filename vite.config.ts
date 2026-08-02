@@ -16,9 +16,10 @@ const crossOriginIsolation = {
 
 export default defineConfig({
   plugins: [crossOriginIsolation],
-  // ORT + kokoro-js ship prebuilt .wasm; don't let Vite try to bundle them.
+  // Let Vite pre-bundle CJS deps so named ESM imports interop correctly
+  // (excluding them served raw CJS and broke `import { NonRealTimeVAD }`).
   optimizeDeps: {
-    exclude: ["onnxruntime-web", "kokoro-js", "@ricky0123/vad-web"],
+    include: ["@ricky0123/vad-web", "onnxruntime-web"],
   },
   worker: { format: "es" },
   build: { target: "es2022" },
