@@ -36,9 +36,9 @@ const ENTRIES: Record<string, Entry> = {
     label: "Nemotron streaming 🚧", kind: "audio",
     make: async () => new (await import("./engines/asr-nemotron")).NemotronStreamingEngine(),
   },
-  "diarization-pyannote": {
-    label: "Diarization (pyannote) 🚧", kind: "audio",
-    make: async () => new (await import("./engines/diarization-pyannote")).PyannoteDiarizationEngine(),
+  "diarization-sortformer": {
+    label: "Diarization (Sortformer) ✅", kind: "audio",
+    make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
   },
   "eou-parakeet": {
     label: "Parakeet EOU ⛔", kind: "audio",
