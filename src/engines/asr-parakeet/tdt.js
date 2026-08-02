@@ -19,9 +19,12 @@ const MAX_TOKENS_PER_STEP = 10;
  * @returns {Promise<{text:string, tokenIds:number[], frames:number}>}
  */
 export async function transcribeTdt({ ort, encoder, decoder, preprocessor, tokenizer, audio }) {
+  const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+  const t0 = now();
   const melBins = preprocessor.nMels;
   const { features, length } = await preprocessor.process(audio);
   const T = features.length / melBins;
+  const tMel = now();
 
   const encOut = await encoder.run({
     audio_signal: new ort.Tensor("float32", features, [1, melBins, T]),
@@ -29,6 +32,7 @@ export async function transcribeTdt({ ort, encoder, decoder, preprocessor, token
   });
   const enc = encOut["outputs"] ?? Object.values(encOut)[0];
   const [, D, Tenc] = enc.dims;
+  const tEnc = now();
 
   // [1, D, Tenc] -> [Tenc, D]
   const frames = new Float32Array(Tenc * D);
@@ -87,5 +91,16 @@ export async function transcribeTdt({ ort, encoder, decoder, preprocessor, token
     }
   }
 
-  return { text: tokenizer.decode(ids), tokenIds: ids, frames: Tenc };
+  const tDec = now();
+  return {
+    text: tokenizer.decode(ids),
+    tokenIds: ids,
+    frames: Tenc,
+    metrics: {
+      melMs: +(tMel - t0).toFixed(1),
+      encodeMs: +(tEnc - tMel).toFixed(1),
+      decodeMs: +(tDec - tEnc).toFixed(1),
+      totalMs: +(tDec - t0).toFixed(1),
+    },
+  };
 }

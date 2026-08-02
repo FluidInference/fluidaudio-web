@@ -87,17 +87,26 @@ runBtn.addEventListener("click", async () => {
   try {
     if (entry.kind === "text") {
       const text = $<HTMLTextAreaElement>("text").value;
+      const t0 = performance.now();
       const audio = await (engine as any).synthesize(text);
+      const ms = performance.now() - t0;
+      const dur = audio.samples.length / audio.sampleRate;
       const blob = pcmToWav(audio.samples, audio.sampleRate);
       player.src = URL.createObjectURL(blob);
       player.hidden = false;
-      output.textContent = `Synthesized ${audio.samples.length / audio.sampleRate | 0}s @ ${audio.sampleRate}Hz`;
+      output.textContent =
+        `Synthesized ${dur.toFixed(2)}s @ ${audio.sampleRate}Hz\n` +
+        `⏱ ${ms.toFixed(0)}ms · RTFx ${(dur / (ms / 1000)).toFixed(1)}× · ${(text.length / (ms / 1000)).toFixed(0)} chars/s`;
     } else {
       const file = $<HTMLInputElement>("file").files?.[0];
       if (!file) { output.textContent = "Choose an audio file first."; return; }
       const audio = await decodeToMono16k(await file.arrayBuffer());
+      const dur = audio.samples.length / audio.sampleRate;
+      const t0 = performance.now();
       const result = await runAudioEngine(engine, audio);
-      output.textContent = result;
+      const ms = performance.now() - t0;
+      output.textContent =
+        `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
     }
   } catch (err) {
     output.textContent = String(err);

@@ -13,4 +13,9 @@ export function transcribeTdt(o: {
   preprocessor: Preprocessor;
   tokenizer: ParakeetTokenizer;
   audio: Float32Array;
-}): Promise<{ text: string; tokenIds: number[]; frames: number }>;
+}): Promise<{
+  text: string;
+  tokenIds: number[];
+  frames: number;
+  metrics: { melMs: number; encodeMs: number; decodeMs: number; totalMs: number };
+}>;

@@ -1,0 +1,48 @@
+# Benchmarks
+
+Reproduce:
+```bash
+node scripts/bench-parakeet.mjs fp32 /tmp/pkv3           # ASR (needs local ONNX + wavs)
+node scripts/bench-kokoro.mjs                            # TTS
+```
+In the browser, every run prints `⏱ ms · RTFx` in the output panel (WebGPU path).
+
+> **These are `onnxruntime-node` CPU baselines**, not the browser WebGPU numbers.
+> They exist to (a) prove correctness headlessly and (b) profile the stages. The
+> shipped browser path runs the Parakeet encoder and Kokoro on **WebGPU**, which
+> is materially faster for those stages. Measure the real numbers via `npm run
+> dev` in Chrome.
+
+## Parakeet TDT v3 — ASR (ort-node CPU, fp32 encoder, M-series, 15 threads)
+
+| audio | mel (WASM) | encode | decode | total | RTFx | tokens |
+|--:|--:|--:|--:|--:|--:|--:|
+| 12 s | 7.6 ms | 157 ms | 9.7 ms | 175 ms | 68.6× | 41 |
+| 30 s | 21 ms | 385 ms | 24 ms | 431 ms | 69.7× | 60 |
+| 60 s | 38 ms | 895 ms | 162 ms | 1094 ms | 54.8× | 207 |
+| 120 s | 77 ms | 2086 ms | 529 ms | 2691 ms | 44.6× | 434 |
+
+- The **encoder dominates** and RTFx falls with length: the offline encoder uses
+  full attention over the whole clip (~quadratic), no chunking. For long files a
+  chunked/streaming encoder (or windowed batching, as FluidAudio's Swift path
+  does) would flatten this. The encoder is the stage WebGPU accelerates in-browser.
+- mel (`nemo128.onnx`) and the decoder run on WASM in both CPU and browser, so
+  those columns transfer directly.
+- int8 encoder is CPU-degenerate (empty output) — benchmarked in fp32; the browser
+  runs int8 on WebGPU.
+
+## Kokoro TTS (kokoro-js, ort-node CPU, q8)
+
+| chars | gen | audio | RTFx | chars/s |
+|--:|--:|--:|--:|--:|
+| 12 | 630 ms | 1.65 s | 2.6× | 19 |
+| 70 | 1894 ms | 4.75 s | 2.5× | 37 |
+| 242 | 6242 ms | 16.9 s | 2.7× | 39 |
+
+- Sustained ~2.5–2.7× RTF, ~39 chars/s on CPU. Upstream reports Kokoro **WebGPU**
+  at ~10 s audio per ~1 s (≈10× RTF) — expect a similar jump in-browser.
+
+## Not yet measured
+- **Silero VAD** — browser-only (`@ricky0123/vad-web`, AudioWorklet); measure via
+  the dev server.
+- **Nemotron / diarization / EOU** — scaffolds.
