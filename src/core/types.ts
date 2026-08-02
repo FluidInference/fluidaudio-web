@@ -38,9 +38,18 @@ export interface AsrSegment {
   end: number;
 }
 
+export interface AsrStageMetrics {
+  melMs: number;
+  encodeMs: number;
+  decodeMs: number;
+  totalMs: number;
+}
+
 export interface AsrResult {
   text: string;
   segments?: AsrSegment[];
+  /** Per-stage timings, when the engine exposes them. */
+  metrics?: AsrStageMetrics;
 }
 
 export interface AsrEngine extends Engine {

@@ -53,7 +53,7 @@ export class ParakeetV3Engine implements AsrEngine {
     if (!this.encoder || !this.decoder || !this.tokenizer || !this.preprocessor) {
       throw new Error("ParakeetV3Engine.load() not called");
     }
-    const { text } = await transcribeTdt({
+    const { text, metrics } = await transcribeTdt({
       ort,
       encoder: this.encoder,
       decoder: this.decoder,
@@ -61,7 +61,7 @@ export class ParakeetV3Engine implements AsrEngine {
       tokenizer: this.tokenizer,
       audio: audio.samples,
     });
-    return { text };
+    return { text, metrics };
   }
 
   async dispose(): Promise<void> {

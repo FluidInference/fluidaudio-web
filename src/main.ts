@@ -121,7 +121,12 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
       ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
   }
   if (typeof any.transcribe === "function") {
-    return (await any.transcribe(audio)).text;
+    const r = await any.transcribe(audio);
+    if (r.metrics) {
+      const m = r.metrics;
+      return `stages: mel ${m.melMs}ms · encode(WebGPU) ${m.encodeMs}ms · decode ${m.decodeMs}ms\n\n${r.text}`;
+    }
+    return r.text;
   }
   if (typeof any.diarize === "function") {
     const segs = await any.diarize(audio);
