@@ -11,7 +11,9 @@
 
 import { KokoroTTS } from "kokoro-js";
 import { webgpuAvailable } from "../../core/ort";
+import { fetchCached } from "../../core/modelCache";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
+import { EnglishLexicon } from "./lexicon.js";
 
 export interface KokoroOptions {
   /** "en" (v1.0) or "zh" (v1.1-zh). */
@@ -23,6 +25,7 @@ export class KokoroTtsEngine implements TtsEngine {
   readonly label: string;
   private tts: KokoroTTS | null = null;
   private readonly modelId: string;
+  private lexicon: EnglishLexicon | null = null;
 
   constructor(private opts: KokoroOptions = {}) {
     const zh = opts.lang === "zh";
@@ -50,14 +53,42 @@ export class KokoroTtsEngine implements TtsEngine {
         }
       },
     });
+    // English: prefer the Misaki lexicon (FluidAudio frontend) over espeak.
+    if (this.opts.lang !== "zh") {
+      try {
+        this.lexicon = await EnglishLexicon.load(fetchCached as any);
+      } catch {
+        this.lexicon = null; // lexicon optional; espeak fallback still works
+      }
+    }
   }
 
   async synthesize(text: string, opts?: { voice?: string; speed?: number }): Promise<AudioData> {
     if (!this.tts) throw new Error("KokoroTtsEngine.load() not called");
     const voice = opts?.voice ?? (this.opts.lang === "zh" ? "zf_001" : "af_heart");
-    // voice is a wide string here; kokoro-js types it as a per-model literal union.
-    const audio = await this.tts.generate(text, { voice: voice as any, speed: opts?.speed ?? 1 });
-    // kokoro-js RawAudio: { audio: Float32Array, sampling_rate: number }
+    const speed = opts?.speed ?? 1;
+
+    // Lexicon-first English: phonemize via the Misaki lexicon and inject through
+    // generate_from_ids (skips espeak). Fall back to kokoro-js generate() when
+    // coverage is low (OOV words) — that path uses espeak. Chinese will reuse
+    // this same injection with a g2pW-derived phoneme string (see docs/KOKORO_ZH.md).
+    if (this.lexicon) {
+      const { phonemes, coverage } = this.lexicon.phonemize(text);
+      if (coverage >= 0.95 && phonemes) {
+        const audio = await this.synthFromPhonemes(phonemes, voice, speed);
+        if (audio) return audio;
+      }
+    }
+    const audio = await this.tts.generate(text, { voice: voice as any, speed });
+    return { samples: audio.audio as Float32Array, sampleRate: audio.sampling_rate };
+  }
+
+  /** Inject a phoneme string straight into Kokoro (tokenizer → generate_from_ids). */
+  async synthFromPhonemes(phonemes: string, voice: string, speed = 1): Promise<AudioData | null> {
+    const tts = this.tts as any;
+    if (!tts) return null;
+    const { input_ids } = tts.tokenizer(phonemes, { truncation: true });
+    const audio = await tts.generate_from_ids(input_ids, { voice, speed });
     return { samples: audio.audio as Float32Array, sampleRate: audio.sampling_rate };
   }
 
@@ -68,5 +99,6 @@ export class KokoroTtsEngine implements TtsEngine {
 
   async dispose(): Promise<void> {
     this.tts = null;
+    this.lexicon = null;
   }
 }
