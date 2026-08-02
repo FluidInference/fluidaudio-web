@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { resolve } from "node:path";
 
 // onnxruntime-web's multi-threaded WASM backend needs SharedArrayBuffer, which
 // browsers only expose under cross-origin isolation. These headers turn it on
@@ -22,5 +23,14 @@ export default defineConfig({
     include: ["@ricky0123/vad-web", "onnxruntime-web"],
   },
   worker: { format: "es" },
-  build: { target: "es2022" },
+  build: {
+    target: "es2022",
+    // Multi-page: the interactive app + the auto-benchmark.
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        bench: resolve(__dirname, "bench.html"),
+      },
+    },
+  },
 });

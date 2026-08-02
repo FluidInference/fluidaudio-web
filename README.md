@@ -37,6 +37,14 @@ npm run dev      # http://localhost:5173  (cross-origin isolated for threaded WA
 npm run build
 ```
 
+### Auto-benchmark
+
+Open **`/bench.html`** — it runs each engine on a bundled 12s sample and downloads
+a results JSON (load/run ms, RTFx, per-stage timings, output, per-engine errors).
+This is where you get the real WebGPU numbers. First run downloads model weights
+(cached after). Params: `?full=1` (add Kokoro-zh + Nemotron), `?engines=a,b`
+(pick), `?noauto=1` (don't auto-download).
+
 Requires a browser with WebGPU (Chrome/Edge 121+, Safari 26+) — engines fall
 back to WASM automatically where WebGPU op coverage is incomplete.
 
