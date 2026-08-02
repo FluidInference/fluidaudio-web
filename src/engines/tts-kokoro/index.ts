@@ -55,7 +55,8 @@ export class KokoroTtsEngine implements TtsEngine {
   async synthesize(text: string, opts?: { voice?: string; speed?: number }): Promise<AudioData> {
     if (!this.tts) throw new Error("KokoroTtsEngine.load() not called");
     const voice = opts?.voice ?? (this.opts.lang === "zh" ? "zf_001" : "af_heart");
-    const audio = await this.tts.generate(text, { voice, speed: opts?.speed ?? 1 });
+    // voice is a wide string here; kokoro-js types it as a per-model literal union.
+    const audio = await this.tts.generate(text, { voice: voice as any, speed: opts?.speed ?? 1 });
     // kokoro-js RawAudio: { audio: Float32Array, sampling_rate: number }
     return { samples: audio.audio as Float32Array, sampleRate: audio.sampling_rate };
   }

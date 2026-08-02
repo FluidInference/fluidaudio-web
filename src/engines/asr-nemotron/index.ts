@@ -46,7 +46,8 @@ export class NemotronStreamingEngine implements StreamingAsrEngine {
     //   3. this.caches = newCaches
     //   4. RNNT greedy over encOut using decoderJoint; append emitted tokens.
     throw new Error(
-      "NemotronStreamingEngine.push: cache plumbing + RNNT loop not yet ported"
+      `NemotronStreamingEngine.push: cache plumbing + RNNT loop not yet ported ` +
+        `(carrying ${Object.keys(this.caches).length} cache tensors)`
     );
   }
 

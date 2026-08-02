@@ -72,7 +72,7 @@ export async function clearModelCache(): Promise<void> {
   await caches.delete(CACHE_NAME);
 }
 
-function concat(chunks: Uint8Array[], total: number): Uint8Array {
+function concat(chunks: Uint8Array[], total: number): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(total);
   let off = 0;
   for (const c of chunks) {

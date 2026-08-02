@@ -22,7 +22,7 @@ export async function decodeToMono16k(input: ArrayBuffer): Promise<AudioData> {
   const frames = Math.ceil((mono.length * TARGET_SR) / decoded.sampleRate);
   const off = new OfflineAudioContext(1, frames, TARGET_SR);
   const buf = off.createBuffer(1, mono.length, decoded.sampleRate);
-  buf.copyToChannel(mono, 0);
+  buf.getChannelData(0).set(mono);
   const src = off.createBufferSource();
   src.buffer = buf;
   src.connect(off.destination);

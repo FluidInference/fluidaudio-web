@@ -12,12 +12,11 @@ export function configureOrt(): void {
   const threads = (self.crossOriginIsolated && navigator.hardwareConcurrency) || 1;
   ort.env.wasm.numThreads = Math.min(threads, 8);
   ort.env.wasm.simd = true;
-  // Vite serves onnxruntime-web's .wasm from node_modules; point ORT at the
-  // bundled dist so it doesn't try a CDN. Adjust if you self-host the assets.
-  ort.env.wasm.wasmPaths = new URL(
-    "onnxruntime-web/dist/",
-    import.meta.url
-  ).href;
+  // Where ORT loads its .wasm/.mjs from. Pinned to the CDN matching the
+  // installed version for zero-config; for offline/self-hosted, copy
+  // `node_modules/onnxruntime-web/dist/*.{wasm,mjs}` into `public/ort/` and set
+  // this to "/ort/".
+  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
   configured = true;
 }
 
