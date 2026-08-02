@@ -4,15 +4,15 @@ import { resolve } from "node:path";
 // onnxruntime-web's multi-threaded WASM backend needs SharedArrayBuffer, which
 // browsers only expose under cross-origin isolation. These headers turn it on
 // for the dev server and preview; production hosts must send them too.
+const coopCoep = (_req: any, res: any, next: any) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+};
 const crossOriginIsolation = {
   name: "cross-origin-isolation",
-  configureServer(server: any) {
-    server.middlewares.use((_req: any, res: any, next: any) => {
-      res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-      res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-      next();
-    });
-  },
+  configureServer: (s: any) => s.middlewares.use(coopCoep),
+  configurePreviewServer: (s: any) => s.middlewares.use(coopCoep),
 };
 
 export default defineConfig({
