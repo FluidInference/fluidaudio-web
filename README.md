@@ -17,7 +17,8 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 |---|---|---|---|---|
 | `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ✅ wired |
 | `tts-kokoro` | Kokoro 82M (en + **zh**) | `kokoro-js` | **WebGPU** / WASM | ✅ wired (zh needs G2P — see below) |
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | WebGPU enc + WASM dec | 🚧 scaffold |
+| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | fp32 enc WebGPU + WASM dec | ✅ 2.15% WER (test-clean) |
+| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ wired |
 | `asr-nemotron` | Nemotron 3.5 streaming (en + multilingual) | `onnxruntime-web` | WebGPU / WASM | 🚧 scaffold |
 | `diarization-pyannote` | pyannote seg + embedding + clustering | `sherpa-onnx` WASM | WASM | 🚧 scaffold |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ greenfield (no ONNX export yet) |

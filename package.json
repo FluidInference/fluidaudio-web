@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@ricky0123/vad-web": "^0.0.30",
     "kokoro-js": "^1.2.1",
     "onnxruntime-web": "^1.20.1",

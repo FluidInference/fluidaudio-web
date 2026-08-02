@@ -38,6 +38,12 @@ const CASES: Case[] = [
     summarize: (o) => o.text,
   },
   {
+    id: "asr-whisper", label: "Whisper (99 langs)", kind: "audio",
+    make: async () => new (await import("./engines/asr-whisper")).WhisperEngine(),
+    run: (e, a) => e.transcribe(a),
+    summarize: (o) => o.text,
+  },
+  {
     id: "diarization-sortformer", label: "Sortformer diarization", kind: "audio",
     make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
     run: (e, a) => e.diarize(a),

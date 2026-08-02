@@ -20,6 +20,10 @@ const ENTRIES: Record<string, Entry> = {
     label: "Parakeet TDT v3 ✅", kind: "audio",
     make: async () => new (await import("./engines/asr-parakeet")).ParakeetV3Engine(),
   },
+  "asr-whisper": {
+    label: "Whisper (99 langs) ✅", kind: "audio",
+    make: async () => new (await import("./engines/asr-whisper")).WhisperEngine(),
+  },
   "tts-kokoro-en": {
     label: "Kokoro TTS — English ✅", kind: "text",
     make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "en" }),
