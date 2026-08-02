@@ -38,7 +38,7 @@ async function runDecoder(ort, decoder, tok, h, c) {
  * @returns {Promise<{text:string, tokenIds:number[], chunks:number}>}
  */
 export async function nemotronTranscribe({ ort, encoder, decoder, joint, preprocessor, tokenizer, audio, langId = 0 }) {
-  const { features } = preprocessor.process(audio); // mel-major [128*T], NA
+  const { features } = await preprocessor.process(audio); // mel-major [128*T]
   const T = Math.floor(features.length / MEL);
   const melAt = (t, m) => (t >= 0 && t < T ? features[m * T + t] : 0);
 
@@ -94,6 +94,26 @@ export async function nemotronTranscribe({ ort, encoder, decoder, joint, preproc
     enc.dispose?.();
   }
   return { text: tokenizer.decode(ids), tokenIds: ids, chunks: nChunks };
+}
+
+/**
+ * Language → lang_id map. The 40 `<xx-XX>` tokens in the vocab define the order;
+ * lang_id is that ordinal (NOT the vocab id). e.g. en-US = 24. Also maps the
+ * 2-letter code to the first matching locale.
+ * @param {string} vocabText @returns {Record<string,number>}
+ */
+export function makeNemotronLangMap(vocabText) {
+  const map = {};
+  let ord = 0;
+  for (const t of vocabText.split(/\r?\n/)) {
+    const m = /^<([a-z]{2})-[A-Z]{2}>$/.exec(t);
+    if (!m) continue;
+    map[t.slice(1, -1)] = ord; // "en-US"
+    if (!(m[1] in map)) map[m[1]] = ord; // "en" → first locale
+    ord++;
+  }
+  if (map["en-US"] !== undefined) map["en"] = map["en-US"]; // prefer en-US for "en"
+  return map;
 }
 
 /** vocab.txt = one token per line, id = line index. */

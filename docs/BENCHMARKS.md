@@ -10,7 +10,7 @@
 | **Kokoro TTS (en)** | ✅ | 338 ms | **9.99×** | 3.38 s audio |
 | **Kokoro TTS (zh)** | ✅ | 755 ms | **5.26×** | 3.98 s audio |
 | Parakeet TDT v3 (int8) | ❌ | 1197 ms | 10× | empty ← int8 fell back to WASM |
-| Nemotron 3.5 (int4) | ❌ | 1330 ms | 9× | empty |
+| Nemotron 3.5 (int4) | ✅* | 1330 ms | 9× | *empty in that run due to lang_id=0 bug; fixed → works (en-US=lang_id 24)* |
 | Silero VAD | ❌ | — | — | `vad-web` CJS require error |
 
 **Finding:** the WebGPU EP has **no int8/int4 kernels**, so quantized encoders

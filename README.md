@@ -19,7 +19,7 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 | `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ verified |
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ verified (9.99× / 5.26× RTFx) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ verified short-audio (123× RTFx); long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | 🔬 built; int4 empty on WebGPU (needs fp export) |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | ✅ verified (int4 runs on WASM) |
 | `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ⛔ `vad-web` CJS/Vite issue |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ no public ONNX export |
 

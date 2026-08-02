@@ -14,7 +14,7 @@ import { configureOrt, ort, webgpuAvailable } from "../../core/ort";
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { JsPreprocessor } from "./nemotron-mel.js";
-import { nemotronTranscribe, makeNemotronTokenizer } from "./nemotron-decode.js";
+import { nemotronTranscribe, makeNemotronTokenizer, makeNemotronLangMap } from "./nemotron-decode.js";
 
 const REPO = "onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4";
 
@@ -38,16 +38,20 @@ export class NemotronEngine implements AsrEngine {
   private joint: any = null;
   private preprocessor = new JsPreprocessor({ nMels: 128 });
   private tokenizer: any = null;
+  private langMap: Record<string, number> = {};
+
+  /** @param opts.language BCP-47-ish code, e.g. "en-US" / "de" / "zh" (default en-US). */
+  constructor(private opts: { language?: string } = {}) {}
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    if (!webgpuAvailable()) {
-      throw new Error("Nemotron int4 needs WebGPU (CPU/WASM decode is degenerate, like Parakeet int8).");
-    }
-    this.encoder = await createWithData("encoder", "webgpu", onProgress);
+    // int4 encoder is numerically healthy on WASM (unlike Parakeet int8), so
+    // WebGPU is not required — the encoder EP falls back to WASM cleanly.
+    this.encoder = await createWithData("encoder", webgpuAvailable() ? "webgpu" : "wasm", onProgress);
     this.decoder = await createWithData("decoder", "wasm", onProgress);
     this.joint = await createWithData("joint", "wasm", onProgress);
     const vocab = new TextDecoder().decode(await fetchCached(hfUrl(REPO, "vocab.txt"), onProgress, "vocab.txt"));
     this.tokenizer = makeNemotronTokenizer(vocab);
+    this.langMap = makeNemotronLangMap(vocab);
     onProgress?.({ file: REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
@@ -63,7 +67,7 @@ export class NemotronEngine implements AsrEngine {
       preprocessor: this.preprocessor,
       tokenizer: this.tokenizer,
       audio: audio.samples,
-      langId: 0,
+      langId: this.langMap[this.opts.language ?? "en-US"] ?? this.langMap["en"] ?? 24,
     });
     return { text };
   }

@@ -26,7 +26,18 @@ Mel: `n_fft=512, hop=160, n_mels=128, win=400, hann, preemph=0.97, dither=1e-5,
 log add 1e-10, mag_power=2, normalize="NA"` — **no CMVN** (differs from Parakeet's
 per-feature norm), and `audio_signal` is **[1,T,mels] T-major** (Parakeet is mel-major).
 
-## Status — BUILD COMPLETE (accuracy pending WebGPU)
+## Status — ✅ WORKING (int4 on WASM)
+
+Verified headless (`scripts/smoke-nemotron.mjs`, ort-node): en-US sample →
+"Four classes constitute a menace from anti suffrage ten good reasons by Grace
+Duffield" (41 tokens, 0.8 s). **int4 was never the blocker** — the encoder output
+is healthy on WASM/CPU (std 0.43, unlike Parakeet int8's 0.017). The real bug was
+**`lang_id`**: it's the ordinal of the `<xx-XX>` token in the vocab (en-US = **24**,
+NOT 0 = Bulgarian). lang_id=0 conditioned the encoder for Bulgarian → the joint
+predicted blank on every frame → empty. `makeNemotronLangMap()` resolves the code
+→ ordinal (de=3, zh=37, ja=30, …); the engine defaults to en-US.
+
+## (historical) Status — BUILD COMPLETE (accuracy pending WebGPU)
 
 - ✅ **Full decode implemented + verified headless** (ort-node, `nemotron-decode.js`):
   NA log-mel (`nemotron-mel.js`, no CMVN, log 1e-10) → 65-frame chunks (9 pre-

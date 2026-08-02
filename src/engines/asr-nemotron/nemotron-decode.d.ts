@@ -13,3 +13,5 @@ export function makeNemotronTokenizer(vocabText: string): {
   id2token: string[];
   decode(ids: number[]): string;
 };
+
+export function makeNemotronLangMap(vocabText: string): Record<string, number>;
