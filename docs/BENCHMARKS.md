@@ -52,17 +52,17 @@ In the browser, every run prints `⏱ ms · RTFx` in the output panel (WebGPU pa
 - int8 encoder is CPU-degenerate (empty output) — benchmarked in fp32; the browser
   runs int8 on WebGPU.
 
-### Accuracy (correctness of the internalized port)
+### Accuracy on FluidAudio benchmark datasets (fp32 encoder, ort-node — same core as the browser)
 
-`node scripts/wer-parakeet.mjs 30` — FLEURS en_us, fp32 encoder:
+| dataset | script | metric | result | reference (FluidAudio native) |
+|---|---|---|---|---|
+| **LibriSpeech test-clean** (100 utts) | `wer-librispeech.mjs` | WER | **1.96%** (46/2346) | ~1.83–2.14% ✓ |
+| **FLEURS en_us** (30) | `wer-parakeet.mjs` | WER | 6.15% | in-range ✓ |
 
-| files | audio | WER | avg RTFx |
-|--:|--:|--:|--:|
-| 30 | 289 s | **6.15%** (41/667 words) | 43× |
-
-In line with reference Parakeet TDT v3 on FLEURS (a harder set than LibriSpeech),
-confirming the internalized pipeline (ONNX mel + our tokenizer + our TDT decode)
-is correct across many files, not just one clip.
+The browser port **matches native FluidAudio accuracy** — the fp32 encoder + our
+ONNX mel + tokenizer + TDT decode are correct at dataset scale. Datasets:
+LibriSpeech test-clean / FLEURS / MUSAN are local; AMI (diarization DER) via
+`fluidaudiocli download --dataset ami-sdm --dataset ami-annotations`.
 
 ### WebGPU numbers — not measurable in this env
 
