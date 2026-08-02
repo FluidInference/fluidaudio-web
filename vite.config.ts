@@ -11,8 +11,15 @@ const coopCoep = (_req: any, res: any, next: any) => {
 };
 const crossOriginIsolation = {
   name: "cross-origin-isolation",
-  configureServer: (s: any) => s.middlewares.use(coopCoep),
-  configurePreviewServer: (s: any) => s.middlewares.use(coopCoep),
+  // Block bodies (return void). An arrow returning `middlewares.use(...)` hands
+  // Vite the connect app as a post-hook → "Cannot read properties of undefined
+  // (reading 'url')".
+  configureServer(s: any) {
+    s.middlewares.use(coopCoep);
+  },
+  configurePreviewServer(s: any) {
+    s.middlewares.use(coopCoep);
+  },
 };
 
 export default defineConfig({
