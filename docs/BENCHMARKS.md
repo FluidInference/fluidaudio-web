@@ -31,6 +31,25 @@ In the browser, every run prints `⏱ ms · RTFx` in the output panel (WebGPU pa
 - int8 encoder is CPU-degenerate (empty output) — benchmarked in fp32; the browser
   runs int8 on WebGPU.
 
+### Accuracy (correctness of the internalized port)
+
+`node scripts/wer-parakeet.mjs 30` — FLEURS en_us, fp32 encoder:
+
+| files | audio | WER | avg RTFx |
+|--:|--:|--:|--:|
+| 30 | 289 s | **6.15%** (41/667 words) | 43× |
+
+In line with reference Parakeet TDT v3 on FLEURS (a harder set than LibriSpeech),
+confirming the internalized pipeline (ONNX mel + our tokenizer + our TDT decode)
+is correct across many files, not just one clip.
+
+### WebGPU numbers — not measurable in this env
+
+Chrome here reports `no navigator.gpu` (headed and headless — the automation
+context has no GPU), so real browser WebGPU RTFx must be captured on a normal
+machine via `npm run dev` (the UI prints `⏱ ms · RTFx` per run). The CPU numbers
+above are the fp32 baseline; in-browser the encoder runs int8 on WebGPU.
+
 ## Kokoro TTS (kokoro-js, ort-node CPU, q8)
 
 | chars | gen | audio | RTFx | chars/s |
