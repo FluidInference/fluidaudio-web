@@ -23,8 +23,9 @@ browser, [dawn](https://github.com/kmamal/gpu) in Node). Tensors are GPU-residen
 | `convTranspose1d(x, w, {…})` | one thread / (Cout, Lout), gather form | iSTFTNet upsampler + iSTFT overlap-add; groups |
 | `lstm(x, w, r, b, hid)` | 1 workgroup/direction, hidden units as threads | **bidirectional**, ONNX `iofc` gates, timesteps in-kernel (H ≤ 256) |
 | `layernorm(x, γ, β)` | 1 workgroup/row, 64-lane reduce | row-wise |
+| `adain(x, scale, shift)` | 1 workgroup/channel, 64-lane reduce | instance-norm over time + style affine (StyleTTS2 decoder) |
 | `softmax(x)` | row-wise, numerically stable | for attention |
-| `add` / `mul` | elementwise, row-broadcast | residuals, gating |
+| `add` / `mul` / `leakyRelu` | elementwise | residuals, gating, iSTFTNet activation |
 | `transpose` / `sliceCols` / `setCols` | index kernels | multi-head attention plumbing |
 
 Every kernel is parity-checked against a CPU reference **on the real GPU**:
@@ -122,16 +123,16 @@ verifiable through the same harness before wiring:
 2. ✅ **conv1d** (+ dilation, groups) — prosody predictor & decoder.
 3. ✅ **bidirectional LSTM** — duration/prosody predictors + text encoder (`gpu:lstm`).
 4. ✅ **ConvTranspose1d** — iSTFTNet upsampler + iSTFT overlap-add (`gpu:convt`).
-5. **AdaIN** — instance-norm over time + style-predicted scale/shift (needs an
-   instance-norm kernel; style modulation is elementwise).
-6. **LeakyReLU** activation (add to the act enum; iSTFTNet uses it throughout).
+5. ✅ **AdaIN** — instance-norm over time + style affine (`adain`).
+6. ✅ **LeakyReLU** — iSTFTNet activation (`leakyRelu`).
 7. **length regulator** — expand text features by predicted durations (a gather).
-8. **harmonic+noise source** for the generator (sine gen + the STFT already covered
-   by matmul/conv).
+8. **harmonic+noise source** for the generator (sine gen + the STFT is matmul/conv).
 9. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
 
-The compute-heavy primitives are done and parity-clean. What's left (AdaIN,
-LeakyReLU, length regulator, source gen) is composition + two small kernels.
+Every compute-heavy primitive is done and parity-clean; the full op set already
+runs (`gpu:kokoro-forward`, 271/274 ops). What's left to hand-wire an end-to-end
+audio path is the length regulator (a gather) + source gen — plus the fused-conv /
+fp16 optimization pass that would turn the ~10× tie into a win.
 
 ## Ship/no-ship: where the Kokoro time actually goes
 
@@ -155,19 +156,47 @@ conv at that dominant shape on the M5 Pro:
 | direct (`conv1d`) | 252 GFLOP/s | **~4.9×** — loses to kokoro-js |
 | **im2col + tiled GEMM** (`conv1dGemm`) | 876 GFLOP/s | **~17×** — beats kokoro-js (~10×) |
 
-**Verdict: raw WebGPU can win on Kokoro, but only through im2col+GEMM, not the
-direct conv** — and the naive tiled GEMM is still only ~10% of the M5 Pro's fp32
-peak, so a register-blocked / fp16 GEMM (`shader-f16` is available) is the lever to
-win decisively. The direct `conv1d`/`convTranspose1d` kernels are kept for
-correctness/parity and small/grouped convs; the hot vocoder convs route through
-`conv1dGemm`.
+The direct `conv1d`/`convTranspose1d` kernels are kept for correctness/parity and
+small/grouped convs; the hot vocoder convs route through `conv1dGemm`.
 
-Caveat: this is the *conv-compute* projection (the 90% that dominates) measured on
-the real GPU, vs kokoro-js's published ~10× — not yet a fully hand-wired end-to-end
-pipeline. Wiring the remaining ~10% (AdaIN, source gen, alignment) + a faster GEMM,
-then an end-to-end A/B against `kokoro-js`, is the remaining work — but the load-
-bearing number (can raw-WebGPU conv beat ORT?) is now answered: **yes, via
-im2col+GEMM.**
+### Register-blocked GEMM (the perf lever)
+
+The GEMM is now register-blocked (64×64 block, 4×4 micro-tile per thread): **927 →
+2131 GFLOP/s**, and the dominant conv via `conv1dGemm` **876 → 1759 GFLOP/s** (that
+one conv, in isolation, projects to ~34× RTFx).
+
+### Full-forward measurement (the honest end-to-end number)
+
+`npm run gpu:kokoro-forward` replays **all 274 real compute ops** (Conv /
+ConvTranspose / MatMul / Gemm / LSTM, actual shapes from an ORT profile) back-to-
+back in a **single submit**, timing submit→GPU-finish (excludes CPU alloc/record):
+
+| | RTFx |
+|---|--:|
+| raw-WebGPU, all compute ops (M5 Pro, dawn) | **~10×** |
+| ORT CPU, same ops | ~9× |
+| kokoro-js (ORT WebGPU, browser) | ~10× |
+
+**Verdict: with correct, register-blocked kernels raw WebGPU *matches* kokoro-js
+(~10×) — it does not yet clearly beat it.** The 34× single-conv microbench doesn't
+carry to the whole pipeline: `im2col` trades compute for memory (it materializes a
+big patch matrix), and at Kokoro's near-audio-rate lengths (`L ≈ 9841`) the many
+convs are memory-bound in aggregate. Beating ORT decisively needs a **fused direct
+conv** (no im2col materialization) and/or **fp16** (`shader-f16` is available) — a
+real optimization pass, not just correct kernels.
+
+Two hard-won measurement lessons:
+- **Denormals cost ~2×.** Replaying with uninitialized (garbage) buffers ran at
+  389 ms; zero-initialized, the *same* ops ran at 202 ms. Flush-to-zero / clean
+  inputs matter enormously on Metal.
+- **Microbench ≠ pipeline.** One hot conv at 34× told a rosier story than the full
+  op set at ~10×. Always measure the aggregate.
+
+So the load-bearing question — *is raw-WebGPU Kokoro worth building over
+kokoro-js?* — answers: **not for raw speed alone today** (it's a tie); it's worth
+it for a smaller/ORT-free bundle, or as the vehicle for the models where ORT is
+*blocked* (Nemotron int4, Parakeet int8-collapse). A fused-conv + fp16 pass is what
+would turn the tie into a win.
 
 Approach: extract each layer's weights + a reference intermediate from the Kokoro
 ONNX (via `onnxruntime-node`), port the layer to WGSL, gate on parity, then chain

@@ -38,6 +38,10 @@ export class GpuContext {
   ewise(a: GpuTensor, b: GpuTensor, op: "add" | "mul"): GpuTensor;
   add(a: GpuTensor, b: GpuTensor): GpuTensor;
   mul(a: GpuTensor, b: GpuTensor): GpuTensor;
+  /** AdaIN: instance-norm x[C,L] over time + per-channel affine. scale/shift:[C]. */
+  adain(x: GpuTensor, scale: GpuTensor, shift: GpuTensor, eps?: number): GpuTensor;
+  /** LeakyReLU (elementwise), default slope 0.2. */
+  leakyRelu(x: GpuTensor, slope?: number): GpuTensor;
   /** [rows,cols] -> [cols,rows]. */
   transpose(x: GpuTensor): GpuTensor;
   /** Extract columns [col0, col0+width). */

@@ -182,6 +182,29 @@ for (const cfg of [
   report("lstm (bidir, iofc)", maxErr(out, ref), 1e-3);
 }
 
+// ---- AdaIN (instance-norm over time + per-channel affine) ----
+{
+  const C = 40, L = 300, eps = 1e-5;
+  const X = rand(C * L), sc = rand(C), sh = rand(C);
+  const ref = new Float32Array(C * L);
+  for (let ch = 0; ch < C; ch++) {
+    let mean = 0; for (let j = 0; j < L; j++) mean += X[ch * L + j]; mean /= L;
+    let v = 0; for (let j = 0; j < L; j++) v += (X[ch * L + j] - mean) ** 2; v /= L;
+    const inv = 1 / Math.sqrt(v + eps);
+    for (let j = 0; j < L; j++) ref[ch * L + j] = (X[ch * L + j] - mean) * inv * sc[ch] + sh[ch];
+  }
+  const out = await ctx.download(ctx.adain(ctx.upload(X, C, L), ctx.upload(sc, 1, C), ctx.upload(sh, 1, C), eps));
+  report("adain", maxErr(out, ref), 1e-3);
+}
+
+// ---- leaky relu ----
+{
+  const X = rand(4096), slope = 0.2;
+  const ref = X.map((v) => (v > 0 ? v : slope * v));
+  const out = await ctx.download(ctx.leakyRelu(ctx.upload(X, 1, 4096), slope));
+  report("leakyRelu", maxErr(out, ref), 1e-6);
+}
+
 // ---- transpose / sliceCols / setCols (attention plumbing) ----
 {
   const R = 24, C = 768, W = 64, off = 128;
