@@ -209,13 +209,20 @@ portable WGSL on this GPU**:
 The f32 plateau is a **hardware-feature-access** limit, not a tuning one: reaching
 60–70% of peak needs Apple's `simdgroup` matrix units (what MLX/MPS use), which
 portable WGSL can't reach yet (the cooperative-matrix / subgroup-matrix extension
-isn't exposed here). **f16 storage** is reachable and gives **2× on large square
-GEMMs** (1694 → 3410 GFLOP/s @ 2048³) — but it needs a *large M* to pay off, which
-Kokoro's small-Cout convs don't have, so it's **0× on the Kokoro forward** (measured
-end-to-end). Lever ordering: register-blocking (done) → f16 storage (2× on large
-GEMMs, 0× on Kokoro) → `simdgroup` (blocked on a WGSL extension). raw-WebGPU *ties*
-ORT-WebGPU on Kokoro because both hit the same wall on small-M ops; f16's 2× is why
-this stack is worth pointing at the **large-GEMM ORT-blocked models** instead.
+isn't exposed here). **f16 storage** gives **2× on large square GEMMs** (≥2048³) but
+**0× on every real speech-model matmul** (thin GEMMs, hidden 1024, seq a few hundred
+— measured on Kokoro *and* Parakeet). So f16 is a dead end for these workloads.
+
+Lever ordering, now fully measured: register-blocking (done, 2.2 TFLOP/s) → f16
+storage (2× only on ≥2048³ square, **0× on Kokoro/Parakeet/Nemotron shapes**) →
+`simdgroup` (blocked on a WGSL extension). raw-WebGPU *ties* ORT-WebGPU on these
+models because both hit the same occupancy/latency wall on thin GEMMs and neither
+can reach the matrix units. **The one genuine raw-WebGPU differentiator left is a
+custom int4/int8 *dequant* kernel** — ORT's WebGPU EP has no int kernels at all, so
+Nemotron (int4-only) can't run on ORT-WebGPU *at all*, whereas a hand-written
+int4→f16 dequant + GEMM would run it on the GPU. That's about *running where ORT
+can't*, not out-GEMMing ORT — and it's the only remaining reason to build this stack
+for a specific model.
 
 ### Full-forward measurement (the honest end-to-end number)
 
@@ -251,9 +258,17 @@ back in a **single submit**, timing submit→GPU-finish (excludes CPU alloc/reco
   occupancy/latency-bound there, and f16's bandwidth + 2× ALU can't be cashed in
   (`conv f32 1760 vs f16 1749 GFLOP/s` at Cout=128). f16 only helps when M is large.
   So the **~14× projection was wrong** — it assumed the microbench gain carries; it
-  doesn't (microbench ≠ pipeline, again). The f16 kernels stay because they *do* pay
-  off on **large-GEMM models** — exactly the ORT-blocked encoders (Nemotron 600M,
-  Parakeet), not small-conv Kokoro.
+  doesn't (microbench ≠ pipeline, again).
+- **…and f16 doesn't help the "large-GEMM" models either.** I then tested the
+  Parakeet-v3 encoder (the supposed large-GEMM win): also **0×** (replay 99.7 ms f32
+  vs 101 ms f16). The crossover is sharper than "large M" — measured f16-vs-f32 at
+  real shapes: `188·1024·1024`, `188·1024·4096`, `1504·1024·1024`, `512·1024·4096`
+  all **1.0×**; only `2048·2048·2048` hits **1.5×**. **f16 helps only big *square*
+  GEMMs (≥~2048³).** Every real speech-model matmul is "thin" — hidden 1024, sequence
+  a few hundred — and stays occupancy/latency-bound, where halving memory + 2× ALU
+  buys nothing. So f16 is **not** a lever for Kokoro, Parakeet, *or* Nemotron. The
+  kernels are kept (correct + occasionally useful) but the honest verdict is: f16
+  storage is a dead end for these workloads on this WGSL kernel.
 
 Two hard-won measurement lessons:
 - **Denormals cost ~2×.** Replaying with uninitialized (garbage) buffers ran at
