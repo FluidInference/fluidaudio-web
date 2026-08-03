@@ -131,9 +131,43 @@ verifiable through the same harness before wiring:
 9. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
 
 The compute-heavy primitives are done and parity-clean. What's left (AdaIN,
-LeakyReLU, length regulator, source gen) is composition + two small kernels. Then
-wire prosody predictor → decoder end-to-end and benchmark against `kokoro-js` —
-that number decides ship/no-ship.
+LeakyReLU, length regulator, source gen) is composition + two small kernels.
+
+## Ship/no-ship: where the Kokoro time actually goes
+
+Before hand-wiring the whole StyleTTS2 graph (a large multi-block build), profile
+where the compute is (`kokoro-profile.py`, ORT CPU, 2.05 s audio):
+
+| module | share | | op | share |
+|---|--:|---|---|--:|
+| **decoder (iSTFTNet)** | **89.7%** | | **Conv** | **64%** |
+| bert (ALBERT) | 5.4% | | Sin (source) | 9.7% |
+| predictor | 1.4% | | STFT | 5.7% |
+| text_encoder | 0.7% | | ConvTranspose | 5.0% |
+
+So the ALBERT encoder we ported perfectly is **~5%** of the work — the whole
+question is the **vocoder convs** (~106 GFLOP of conv for 2 s audio, dominated by
+resblock convs at `[128, 9841]` K11). `npm run gpu:kokoro-cost` measures raw-WebGPU
+conv at that dominant shape on the M5 Pro:
+
+| conv path | throughput | projected conv-only RTFx |
+|---|--:|--:|
+| direct (`conv1d`) | 252 GFLOP/s | **~4.9×** — loses to kokoro-js |
+| **im2col + tiled GEMM** (`conv1dGemm`) | 876 GFLOP/s | **~17×** — beats kokoro-js (~10×) |
+
+**Verdict: raw WebGPU can win on Kokoro, but only through im2col+GEMM, not the
+direct conv** — and the naive tiled GEMM is still only ~10% of the M5 Pro's fp32
+peak, so a register-blocked / fp16 GEMM (`shader-f16` is available) is the lever to
+win decisively. The direct `conv1d`/`convTranspose1d` kernels are kept for
+correctness/parity and small/grouped convs; the hot vocoder convs route through
+`conv1dGemm`.
+
+Caveat: this is the *conv-compute* projection (the 90% that dominates) measured on
+the real GPU, vs kokoro-js's published ~10× — not yet a fully hand-wired end-to-end
+pipeline. Wiring the remaining ~10% (AdaIN, source gen, alignment) + a faster GEMM,
+then an end-to-end A/B against `kokoro-js`, is the remaining work — but the load-
+bearing number (can raw-WebGPU conv beat ORT?) is now answered: **yes, via
+im2col+GEMM.**
 
 Approach: extract each layer's weights + a reference intermediate from the Kokoro
 ONNX (via `onnxruntime-node`), port the layer to WGSL, gate on parity, then chain

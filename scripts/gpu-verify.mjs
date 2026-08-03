@@ -102,6 +102,18 @@ for (const cfg of [
   report("mul (broadcast)", maxErr(await ctx.download(ctx.mul(ta, tb)), refMul), 1e-5);
 }
 
+// ---- conv1d via im2col + GEMM (matches the direct conv) ----
+{
+  const Cin = 32, L = 500, Cout = 48, K = 5, pad = 2;
+  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
+  // conv1dGemm has no bias fold; add bias per-row on CPU for the check.
+  const g = await ctx.download(ctx.conv1dGemm(ctx.upload(X, Cin, L), ctx.upload(W, Cout, Cin * K), Cout, K, { pad }));
+  const Lout = L; // stride1 pad2 K5
+  for (let co = 0; co < Cout; co++) for (let lo = 0; lo < Lout; lo++) g[co * Lout + lo] += bias[co];
+  report("conv1dGemm (im2col)", maxErr(g, ref), 1e-2);
+}
+
 // ---- convTranspose1d (regular + depthwise) ----
 function convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups, outPad) {
   const Lout = (L - 1) * stride - 2 * pad + dil * (K - 1) + outPad + 1;

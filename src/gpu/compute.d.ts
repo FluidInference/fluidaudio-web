@@ -29,6 +29,10 @@ export class GpuContext {
   }): GpuTensor;
   /** Bidirectional LSTM (ONNX iofc, batch 1). w/r/b flat: W[2,4H,inp] R[2,4H,H] B[2,8H]. -> [seq, 2*hid]. H<=256. */
   lstm(x: GpuTensor, w: GpuTensor, r: GpuTensor, b: GpuTensor, hid: number): GpuTensor;
+  /** im2col: x[Cin,L] -> [Cin*K, Lout]. */
+  im2col(x: GpuTensor, k: number, opts?: { stride?: number; pad?: number; dilation?: number }): GpuTensor;
+  /** conv1d via im2col + tiled GEMM (groups=1). wRows = weight as [Cout, Cin*K]. -> [Cout, Lout]. */
+  conv1dGemm(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
   layernorm(x: GpuTensor, gamma: GpuTensor, beta: GpuTensor, eps?: number): GpuTensor;
   softmax(x: GpuTensor): GpuTensor;
   ewise(a: GpuTensor, b: GpuTensor, op: "add" | "mul"): GpuTensor;

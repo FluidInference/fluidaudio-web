@@ -127,8 +127,8 @@ fn gelu(x: f32) -> f32 {
   return 0.5 * x * (1.0 + tanh(t));
 }
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let idx = gid.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
   if (idx >= m.Cout * m.Lout) { return; }
   let co = idx / m.Lout;
   let lo = idx % m.Lout;
@@ -167,8 +167,8 @@ struct Meta { Cout:u32, Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, di
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let idx = gid.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
   if (idx >= m.Cout * m.Lout) { return; }
   let co = idx / m.Lout;
   let lo = idx % m.Lout;
@@ -198,6 +198,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// im2col for conv1d: X[Cin,L] -> Cols[Cin*K, Lout], so a conv becomes a single
+// GEMM  W[Cout, Cin*K] @ Cols  — hitting tiled-GEMM throughput instead of the
+// direct kernel's memory-bound rate. Row (ci*K+k), col lo.
+const IM2COL_WGSL = `
+struct Meta { Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, dil:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Cols: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x;
+  let rows = m.Cin * m.K;
+  if (i >= rows * m.Lout) { return; }
+  let row = i / m.Lout; let lo = i % m.Lout;
+  let ci = row / m.K; let k = row % m.K;
+  let li = i32(lo * m.stride + k * m.dil) - i32(m.pad);
+  Cols[i] = select(0.0, X[ci * m.L + u32(li)], li >= 0 && li < i32(m.L));
+}`;
+
 // Elementwise C = A (op) B, with B broadcast over rows when B is [1,cols].
 // op: 0 add / 1 mul.
 const EWISE_WGSL = `
@@ -207,8 +226,8 @@ struct Meta { n:u32, cols:u32, op:u32, bRows:u32 };
 @group(0) @binding(2) var<storage, read_write> C: array<f32>;
 @group(0) @binding(3) var<uniform> m: Meta;
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) g: vec3<u32>) {
-  let i = g.x;
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x;
   if (i >= m.n) { return; }
   let bIdx = select(i, i % m.cols, m.bRows == 1u);
   let a = A[i]; let b = B[bIdx];
@@ -223,8 +242,8 @@ struct Meta { rows:u32, cols:u32, _a:u32, _b:u32 };
 @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(2) var<uniform> m: Meta;
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) g: vec3<u32>) {
-  let i = g.x; if (i >= m.rows * m.cols) { return; }
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x; if (i >= m.rows * m.cols) { return; }
   let r = i / m.cols; let c = i % m.cols;
   Y[c * m.rows + r] = X[i];
 }`;
@@ -235,8 +254,8 @@ struct Meta { rows:u32, C:u32, col0:u32, W:u32 };
 @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(2) var<uniform> m: Meta;
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) g: vec3<u32>) {
-  let i = g.x; if (i >= m.rows * m.W) { return; }
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x; if (i >= m.rows * m.W) { return; }
   let r = i / m.W; let j = i % m.W;
   Y[i] = X[r * m.C + m.col0 + j];
 }`;
@@ -247,8 +266,8 @@ struct Meta { rows:u32, C:u32, col0:u32, W:u32 };
 @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
 @group(0) @binding(2) var<uniform> m: Meta;
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) g: vec3<u32>) {
-  let i = g.x; if (i >= m.rows * m.W) { return; }
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x; if (i >= m.rows * m.W) { return; }
   let r = i / m.W; let j = i % m.W;
   dst[r * m.C + m.col0 + j] = src[i];
 }`;
@@ -359,6 +378,13 @@ export class GpuContext {
   }
 
   _run(pipeline, buffers, uniform, groupsX, groupsY = 1) {
+    // WebGPU caps each grid dimension at 65535. For flat 1-D kernels (groupsY===1)
+    // that exceed it, fold the excess into Y; those kernels linearize the group id
+    // via num_workgroups. 2-D callers (GEMM) already pass groupsY and stay in range.
+    if (groupsY === 1 && groupsX > 65535) {
+      groupsY = Math.ceil(groupsX / 65535);
+      groupsX = Math.ceil(groupsX / groupsY);
+    }
     const entries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b } }));
     entries.push({ binding: buffers.length, resource: { buffer: uniform } });
     const bg = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries });
@@ -432,6 +458,27 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
     return y;
+  }
+
+  /** im2col: x[Cin,L] -> [Cin*K, Lout]. */
+  im2col(x, k, { stride = 1, pad = 0, dilation = 1 } = {}) {
+    const Cin = x.rows, L = x.cols;
+    const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
+    const cols = this.alloc(Cin * k, Lout);
+    const pipeline = this._pipeline("im2col", IM2COL_WGSL);
+    const u = this._uniform(new Uint32Array([Cin, L, Lout, k, stride, pad, dilation, 0]));
+    this._run(pipeline, [x.buf, cols.buf], u, Math.ceil((Cin * k * Lout) / 64));
+    return cols;
+  }
+
+  /**
+   * conv1d via im2col + tiled GEMM (groups=1). x:[Cin,L], wRows = weight viewed as
+   * [Cout, Cin*K]. Returns [Cout, Lout]. Much faster than the direct kernel for the
+   * big vocoder convs. (bias handled by the caller / row-add.)
+   */
+  conv1dGemm(x, wRows, cout, k, { stride = 1, pad = 0, dilation = 1, act = "none" } = {}) {
+    const cols = this.im2col(x, k, { stride, pad, dilation }); // [Cin*K, Lout]
+    return this.matmul(wRows, cols, { act }); // [Cout, Cin*K] @ [Cin*K, Lout]
   }
 
   /** Elementwise. b broadcast over rows if b.rows===1. */

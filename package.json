@@ -41,7 +41,8 @@
     "gpu:bench": "node scripts/gpu-bench.mjs",
     "gpu:albert": "node scripts/gpu-albert.mjs",
     "gpu:lstm": "node scripts/gpu-lstm.mjs",
-    "gpu:convt": "node scripts/gpu-convt.mjs"
+    "gpu:convt": "node scripts/gpu-convt.mjs",
+    "gpu:kokoro-cost": "node scripts/gpu-kokoro-cost.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
