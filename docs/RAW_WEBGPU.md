@@ -19,7 +19,9 @@ browser, [dawn](https://github.com/kmamal/gpu) in Node). Tensors are GPU-residen
 | Kernel | WGSL | Notes |
 |---|---|---|
 | `matmul(a, b, {bias, act})` | tiled 16×16, shared-memory | **fused** bias + activation (none/gelu/tanh/relu) in one dispatch |
-| `conv1d(x, w, {…})` | one thread / (Cout, Lout) | stride / pad / dilation / groups; covers regular + depthwise (prosody predictor + vocoder) |
+| `conv1d(x, w, {…})` | one thread / (Cout, Lout) | stride / pad / dilation / groups; regular + depthwise |
+| `convTranspose1d(x, w, {…})` | one thread / (Cout, Lout), gather form | iSTFTNet upsampler + iSTFT overlap-add; groups |
+| `lstm(x, w, r, b, hid)` | 1 workgroup/direction, hidden units as threads | **bidirectional**, ONNX `iofc` gates, timesteps in-kernel (H ≤ 256) |
 | `layernorm(x, γ, β)` | 1 workgroup/row, 64-lane reduce | row-wise |
 | `softmax(x)` | row-wise, numerically stable | for attention |
 | `add` / `mul` | elementwise, row-broadcast | residuals, gating |
@@ -73,6 +75,29 @@ Gotcha: loading the weight `.bin`s in Node — `readFileSync().buffer` is a view
 a shared pool, so slicing it grabs neighbouring garbage → NaN. Copy the exact byte
 range (`Uint8Array.from(buf)`).
 
+## Milestone: LSTM + ConvTranspose1d — parity vs Kokoro ONNX
+
+The two hard primitives for the prosody/duration predictors and the iSTFTNet
+decoder, both verified against the **real Kokoro weights** on the M5 Pro:
+
+| op | target node | shape | result |
+|---|---|---|---|
+| bidirectional LSTM | `predictor/lstm` | inp 640, hid 256, bidir | **rel 4.6e-7** (`gpu:lstm`) |
+| ConvTranspose1d | `generator/ups.0` | 512→256, L 94→940, K 20, stride 10 | **rel 4.7e-7** (`gpu:convt`) |
+
+- **LSTM** matches the ONNX op exactly: gate order `iofc`, no peephole, one workgroup
+  per direction, hidden units as threads, timesteps looped in-kernel with `h`/`c` in
+  workgroup memory. All six Kokoro LSTMs are bidirectional/hidden-256, so this one
+  kernel covers them.
+- **ConvTranspose1d** is the iSTFTNet upsampler *and* the iSTFT overlap-add. Kokoro's
+  iSTFT is a Cos/Sin **DFT matmul + ConvTranspose** — both now verified — so the
+  vocoder's spectral tail composes from existing kernels; no separate FFT needed
+  (n_fft is small here).
+
+Reproduce: `kokoro-ref-lstm.py` / `kokoro-ref-convt.py` (extract weights + expose
+the node's input/output as graph outputs for an ORT reference) → `npm run gpu:lstm`
+/ `npm run gpu:convt`.
+
 ## Gotchas already hit
 
 - **Metal `tanh` overflows.** It computes `exp(x)` directly, so a large argument →
@@ -95,14 +120,20 @@ verifiable through the same harness before wiring:
 
 1. ✅ **ALBERT text encoder** — parity vs ONNX (`gpu:albert`).
 2. ✅ **conv1d** (+ dilation, groups) — prosody predictor & decoder.
-3. **LSTM cell** — duration/prosody predictors.
-4. **iSTFT** (+ upsampling) — the vocoder tail; FFT kernel.
-5. **AdaIN / style modulation** — cheap elementwise once style is resident.
-6. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
+3. ✅ **bidirectional LSTM** — duration/prosody predictors + text encoder (`gpu:lstm`).
+4. ✅ **ConvTranspose1d** — iSTFTNet upsampler + iSTFT overlap-add (`gpu:convt`).
+5. **AdaIN** — instance-norm over time + style-predicted scale/shift (needs an
+   instance-norm kernel; style modulation is elementwise).
+6. **LeakyReLU** activation (add to the act enum; iSTFTNet uses it throughout).
+7. **length regulator** — expand text features by predicted durations (a gather).
+8. **harmonic+noise source** for the generator (sine gen + the STFT already covered
+   by matmul/conv).
+9. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
 
-Next up is the prosody/duration predictor (LSTM + the conv1d now in place), then
-the iSTFTNet decoder (the FLOP-heavy tail). Only once the whole graph is resident +
-parity-clean do we benchmark against `kokoro-js` — that number decides ship/no-ship.
+The compute-heavy primitives are done and parity-clean. What's left (AdaIN,
+LeakyReLU, length regulator, source gen) is composition + two small kernels. Then
+wire prosody predictor → decoder end-to-end and benchmark against `kokoro-js` —
+that number decides ship/no-ship.
 
 Approach: extract each layer's weights + a reference intermediate from the Kokoro
 ONNX (via `onnxruntime-node`), port the layer to WGSL, gate on parity, then chain

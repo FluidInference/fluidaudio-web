@@ -154,6 +154,50 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// 1-D transposed convolution (batch 1) — the iSTFTNet upsampler and iSTFT
+// overlap-add. X:[Cin,L], W:[Cin, Cout/groups, K], bias?:[Cout] -> Y:[Cout,Lout],
+// Lout = (L-1)*stride - 2*pad + dilation*(K-1) + output_padding + 1. Gather form:
+// one thread per (Cout, Lout), pulling the input positions that map onto it.
+const CONVT1D_WGSL = `
+struct Meta { Cout:u32, Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, dil:u32,
+              groups:u32, hasBias:u32, act:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> W: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= m.Cout * m.Lout) { return; }
+  let co = idx / m.Lout;
+  let lo = idx % m.Lout;
+  let cinPerG = m.Cin / m.groups;
+  let coutPerG = m.Cout / m.groups;
+  let g = co / coutPerG;
+  let coInG = co - g * coutPerG;
+  var acc = 0.0;
+  for (var ci = 0u; ci < cinPerG; ci++) {
+    let realCi = g * cinPerG + ci;
+    let wBase = realCi * (coutPerG * m.K) + coInG * m.K;
+    let xBase = realCi * m.L;
+    for (var k = 0u; k < m.K; k++) {
+      let num = i32(lo + m.pad) - i32(k * m.dil);
+      if (num >= 0 && (num % i32(m.stride)) == 0) {
+        let li = num / i32(m.stride);
+        if (li >= 0 && li < i32(m.L)) {
+          acc += X[xBase + u32(li)] * W[wBase + k];
+        }
+      }
+    }
+  }
+  if (m.hasBias == 1u) { acc += bias[co]; }
+  if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
+  else if (m.act == 2u) { acc = tanh(acc); }
+  else if (m.act == 3u) { acc = max(acc, 0.0); }
+  Y[co * m.Lout + lo] = acc;
+}`;
+
 // Elementwise C = A (op) B, with B broadcast over rows when B is [1,cols].
 // op: 0 add / 1 mul.
 const EWISE_WGSL = `
@@ -207,6 +251,67 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>) {
   let i = g.x; if (i >= m.rows * m.W) { return; }
   let r = i / m.W; let j = i % m.W;
   dst[r * m.C + m.col0 + j] = src[i];
+}`;
+
+// Bidirectional LSTM matching the ONNX LSTM op (batch 1). One workgroup per
+// direction, one thread per hidden unit, timesteps looped in-kernel (h/c kept in
+// workgroup memory). ONNX gate order is **iofc**; no peephole. Weights:
+//   W:[2, 4H, I]  R:[2, 4H, H]  B:[2, 8H] (Wb[4H] then Rb[4H]).
+// Output Y:[seq, 2H] = [fwd(H) | bwd(H)] per timestep (ONNX [seq,2,1,H] flattened).
+// Requires H <= 256.
+const LSTM_WGSL = `
+struct Meta { seq:u32, inp:u32, hid:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> W: array<f32>;
+@group(0) @binding(2) var<storage, read> R: array<f32>;
+@group(0) @binding(3) var<storage, read> Bnd: array<f32>;
+@group(0) @binding(4) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+var<workgroup> hsh: array<f32, 256>;
+var<workgroup> csh: array<f32, 256>;
+var<workgroup> htmp: array<f32, 256>;
+fn sig(x: f32) -> f32 { return 1.0 / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let dir = wg.x;
+  let H = m.hid; let I = m.inp;
+  let wBase = dir * 4u * H * I;
+  let rBase = dir * 4u * H * H;
+  let bBase = dir * 8u * H;
+  for (var u = tid; u < H; u += 256u) { hsh[u] = 0.0; csh[u] = 0.0; }
+  workgroupBarrier();
+  for (var s = 0u; s < m.seq; s++) {
+    let t = select(s, m.seq - 1u - s, dir == 1u);
+    let xBase = t * I;
+    for (var u = tid; u < H; u += 256u) {
+      var gi = Bnd[bBase + 0u*H + u] + Bnd[bBase + 4u*H + 0u*H + u];
+      var go = Bnd[bBase + 1u*H + u] + Bnd[bBase + 4u*H + 1u*H + u];
+      var gf = Bnd[bBase + 2u*H + u] + Bnd[bBase + 4u*H + 2u*H + u];
+      var gc = Bnd[bBase + 3u*H + u] + Bnd[bBase + 4u*H + 3u*H + u];
+      for (var k = 0u; k < I; k++) {
+        let xv = X[xBase + k];
+        gi += W[wBase + (0u*H + u)*I + k] * xv;
+        go += W[wBase + (1u*H + u)*I + k] * xv;
+        gf += W[wBase + (2u*H + u)*I + k] * xv;
+        gc += W[wBase + (3u*H + u)*I + k] * xv;
+      }
+      for (var k = 0u; k < H; k++) {
+        let hv = hsh[k];
+        gi += R[rBase + (0u*H + u)*H + k] * hv;
+        go += R[rBase + (1u*H + u)*H + k] * hv;
+        gf += R[rBase + (2u*H + u)*H + k] * hv;
+        gc += R[rBase + (3u*H + u)*H + k] * hv;
+      }
+      let cnew = sig(gf) * csh[u] + sig(gi) * tanh(gc);
+      csh[u] = cnew;
+      let ht = sig(go) * tanh(cnew);
+      htmp[u] = ht;
+      Y[(t * 2u + dir) * H + u] = ht;
+    }
+    workgroupBarrier();
+    for (var u = tid; u < H; u += 256u) { hsh[u] = htmp[u]; }
+    workgroupBarrier();
+  }
 }`;
 
 const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3 };
@@ -314,6 +419,21 @@ export class GpuContext {
     return y;
   }
 
+  /**
+   * 1-D transposed conv. x:[Cin,L], w = Cin*(Cout/groups)*K f32, bias?:[1,Cout].
+   * Returns [Cout, Lout]. w/bias passed as GpuTensors (only .buf used).
+   */
+  convTranspose1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, outputPadding = 0, act = "none" } = {}) {
+    const Cin = x.rows, L = x.cols;
+    const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
+    const y = this.alloc(cout, Lout);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("convt1d", CONVT1D_WGSL);
+    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
+    this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
+    return y;
+  }
+
   /** Elementwise. b broadcast over rows if b.rows===1. */
   ewise(a, b, op) {
     const n = a.rows * a.cols;
@@ -325,6 +445,20 @@ export class GpuContext {
   }
   add(a, b) { return this.ewise(a, b, "add"); }
   mul(a, b) { return this.ewise(a, b, "mul"); }
+
+  /**
+   * Bidirectional LSTM (ONNX semantics, iofc gates, batch 1). x:[seq,inp];
+   * w/r/b are GPU tensors holding W[2,4H,inp], R[2,4H,H], B[2,8H] flat.
+   * Returns Y:[seq, 2*hid] = [fwd | bwd]. H must be <= 256.
+   */
+  lstm(x, w, r, b, hid) {
+    const seq = x.rows, inp = x.cols;
+    const y = this.alloc(seq, 2 * hid);
+    const pipeline = this._pipeline("lstm", LSTM_WGSL);
+    const u = this._uniform(new Uint32Array([seq, inp, hid, 0]));
+    this._run(pipeline, [x.buf, w.buf, r.buf, b.buf, y.buf], u, 2); // 2 workgroups (fwd/bwd)
+    return y;
+  }
 
   /** 2-D transpose: [rows,cols] -> [cols,rows]. */
   transpose(x) {

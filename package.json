@@ -39,7 +39,9 @@
     "typecheck": "tsc --noEmit",
     "gpu:verify": "node scripts/gpu-verify.mjs",
     "gpu:bench": "node scripts/gpu-bench.mjs",
-    "gpu:albert": "node scripts/gpu-albert.mjs"
+    "gpu:albert": "node scripts/gpu-albert.mjs",
+    "gpu:lstm": "node scripts/gpu-lstm.mjs",
+    "gpu:convt": "node scripts/gpu-convt.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",

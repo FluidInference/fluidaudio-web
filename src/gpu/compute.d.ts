@@ -22,6 +22,13 @@ export class GpuContext {
     cout: number; k: number; bias?: GpuTensor | null;
     stride?: number; pad?: number; dilation?: number; groups?: number; act?: Activation;
   }): GpuTensor;
+  /** 1-D transposed conv. x:[Cin,L], w = Cin*(Cout/groups)*K f32 -> [Cout,Lout]. */
+  convTranspose1d(x: GpuTensor, w: GpuTensor, opts: {
+    cout: number; k: number; bias?: GpuTensor | null; stride?: number; pad?: number;
+    dilation?: number; groups?: number; outputPadding?: number; act?: Activation;
+  }): GpuTensor;
+  /** Bidirectional LSTM (ONNX iofc, batch 1). w/r/b flat: W[2,4H,inp] R[2,4H,H] B[2,8H]. -> [seq, 2*hid]. H<=256. */
+  lstm(x: GpuTensor, w: GpuTensor, r: GpuTensor, b: GpuTensor, hid: number): GpuTensor;
   layernorm(x: GpuTensor, gamma: GpuTensor, beta: GpuTensor, eps?: number): GpuTensor;
   softmax(x: GpuTensor): GpuTensor;
   ewise(a: GpuTensor, b: GpuTensor, op: "add" | "mul"): GpuTensor;

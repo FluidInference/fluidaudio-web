@@ -102,6 +102,74 @@ for (const cfg of [
   report("mul (broadcast)", maxErr(await ctx.download(ctx.mul(ta, tb)), refMul), 1e-5);
 }
 
+// ---- convTranspose1d (regular + depthwise) ----
+function convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups, outPad) {
+  const Lout = (L - 1) * stride - 2 * pad + dil * (K - 1) + outPad + 1;
+  const Y = new Float32Array(Cout * Lout);
+  const cinG = Cin / groups, coutG = Cout / groups;
+  for (let co = 0; co < Cout; co++) {
+    const g = Math.floor(co / coutG), coInG = co - g * coutG;
+    for (let lo = 0; lo < Lout; lo++) {
+      let acc = bias ? bias[co] : 0;
+      for (let ci = 0; ci < cinG; ci++) {
+        const realCi = g * cinG + ci;
+        for (let k = 0; k < K; k++) {
+          const num = lo + pad - k * dil;
+          if (num >= 0 && num % stride === 0) {
+            const li = num / stride;
+            if (li >= 0 && li < L) acc += X[realCi * L + li] * W[realCi * (coutG * K) + coInG * K + k];
+          }
+        }
+      }
+      Y[co * Lout + lo] = acc;
+    }
+  }
+  return Y;
+}
+for (const cfg of [
+  { name: "convT stride10 (ups)", Cin: 16, L: 20, Cout: 8, K: 20, stride: 10, pad: 5, groups: 1, outPad: 0 },
+  { name: "convT depthwise s2", Cin: 32, L: 40, Cout: 32, K: 3, stride: 2, pad: 1, groups: 32, outPad: 1 },
+]) {
+  const { Cin, L, Cout, K, stride, pad, groups, outPad } = cfg;
+  const X = rand(Cin * L), W = rand(Cin * (Cout / groups) * K), bias = rand(Cout);
+  const ref = convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, 1, groups, outPad);
+  const out = await ctx.download(ctx.convTranspose1d(ctx.upload(X, Cin, L), ctx.upload(W, 1, W.length),
+    { cout: Cout, k: K, bias: ctx.upload(bias, 1, Cout), stride, pad, groups, outputPadding: outPad }));
+  report(cfg.name, maxErr(out, ref), 1e-2);
+}
+
+// ---- bidirectional LSTM (ONNX iofc semantics) ----
+{
+  const seq = 12, inp = 20, hid = 16;
+  const sig = (x) => 1 / (1 + Math.exp(-x));
+  const X = rand(seq * inp), W = rand(2 * 4 * hid * inp), R = rand(2 * 4 * hid * hid), B = rand(2 * 8 * hid);
+  // CPU reference, gate order iofc, output [seq, 2*hid] = [fwd|bwd].
+  const ref = new Float32Array(seq * 2 * hid);
+  for (let dir = 0; dir < 2; dir++) {
+    const wB = dir * 4 * hid * inp, rB = dir * 4 * hid * hid, bB = dir * 8 * hid;
+    const h = new Float32Array(hid), c = new Float32Array(hid);
+    for (let s = 0; s < seq; s++) {
+      const t = dir === 1 ? seq - 1 - s : s;
+      const hn = new Float32Array(hid);
+      for (let u = 0; u < hid; u++) {
+        const gate = (gi) => {
+          let acc = B[bB + gi * hid + u] + B[bB + 4 * hid + gi * hid + u];
+          for (let k = 0; k < inp; k++) acc += W[wB + (gi * hid + u) * inp + k] * X[t * inp + k];
+          for (let k = 0; k < hid; k++) acc += R[rB + (gi * hid + u) * hid + k] * h[k];
+          return acc;
+        };
+        const it = sig(gate(0)), ot = sig(gate(1)), ft = sig(gate(2)), ct = Math.tanh(gate(3));
+        const cn = ft * c[u] + it * ct;
+        c[u] = cn; hn[u] = ot * Math.tanh(cn);
+        ref[(t * 2 + dir) * hid + u] = hn[u];
+      }
+      h.set(hn);
+    }
+  }
+  const out = await ctx.download(ctx.lstm(ctx.upload(X, seq, inp), ctx.upload(W, 1, W.length), ctx.upload(R, 1, R.length), ctx.upload(B, 1, B.length), hid));
+  report("lstm (bidir, iofc)", maxErr(out, ref), 1e-3);
+}
+
 // ---- transpose / sliceCols / setCols (attention plumbing) ----
 {
   const R = 24, C = 768, W = 64, off = 128;
