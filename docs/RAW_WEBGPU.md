@@ -220,9 +220,27 @@ models because both hit the same occupancy/latency wall on thin GEMMs and neithe
 can reach the matrix units. **The one genuine raw-WebGPU differentiator left is a
 custom int4/int8 *dequant* kernel** — ORT's WebGPU EP has no int kernels at all, so
 Nemotron (int4-only) can't run on ORT-WebGPU *at all*, whereas a hand-written
-int4→f16 dequant + GEMM would run it on the GPU. That's about *running where ORT
-can't*, not out-GEMMing ORT — and it's the only remaining reason to build this stack
-for a specific model.
+int4→f32 dequant + GEMM runs it on the GPU. That's about *running where ORT can't*,
+not out-GEMMing ORT — and it's **built and verified** (below).
+
+### `matmulNBits` — int4 block-quant matmul (the capability ORT-WebGPU lacks) ✅
+
+ONNX `MatMulNBits` (bits=4, block_size=32) is how Nemotron's 219 encoder matmuls are
+stored: packed int4 weights `[N, nblk, 16]` + per-block f32 scales + packed int4
+zero-points. ORT's WebGPU EP has **no int kernel**, so it falls back to WASM (or
+can't run). `matmulNBits` reads the packed int4 + scales + zero-points directly and
+**dequantizes in-shader** (`Y = A @ dequant(B)ᵀ`, `dequant(n,k) = (q−zp)·scale`).
+
+Verified against a real Nemotron layer (K=4352, N=1024) and a CPU dequant reference:
+**parity rel 5.3e-7** (exact — the int4 unpack + block dequant matches ORT's scheme),
+and it **runs on WebGPU at 3.3 ms/call** — a matmul ORT-WebGPU cannot execute at all.
+`scripts/nemotron-extract-int4.py` pulls a `MatMulNBits` (weights/scales/zero-points)
+out of the ONNX; `gpu:verify` has a self-contained synthetic check (rel 1.2e-7).
+
+This is the honest endpoint of the raw-WebGPU investigation: on *speed* it ties ORT
+everywhere (thin GEMMs, no matrix-unit access), but on *capability* it does one thing
+ORT-WebGPU can't — run int4 on the GPU. That's the reason to finish a raw-WebGPU
+Nemotron: not "faster," but "runs in-browser on the GPU at all."
 
 ### Full-forward measurement (the honest end-to-end number)
 

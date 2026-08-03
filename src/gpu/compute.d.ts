@@ -37,6 +37,11 @@ export class GpuContext {
   conv1dFast(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { bias?: GpuTensor | null; stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
   /** Length regulator: expand x[C,T] to [C, idxMap.length] by column gather. */
   gatherCols(x: GpuTensor, idxMap: Uint32Array): GpuTensor;
+  /** Upload raw packed bytes (int4 weights / zero-points) to a storage buffer. */
+  uploadBytes(typed: Uint8Array | Uint32Array): { buf: GPUBuffer };
+  /** int4 block-quant matmul (ONNX MatMulNBits, bits=4, block_size=32). a:[M,K] f32,
+   * bq/zp packed (uploadBytes), scales:[N*nblk] f32 -> [M,N]. Runs where ORT can't. */
+  matmulNBits(a: GpuTensor, bq: { buf: GPUBuffer }, scales: GpuTensor, zp: { buf: GPUBuffer }, N: number, blockSize?: number): GpuTensor;
   layernorm(x: GpuTensor, gamma: GpuTensor, beta: GpuTensor, eps?: number): GpuTensor;
   softmax(x: GpuTensor): GpuTensor;
   ewise(a: GpuTensor, b: GpuTensor, op: "add" | "mul"): GpuTensor;

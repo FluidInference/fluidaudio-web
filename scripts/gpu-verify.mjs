@@ -122,6 +122,27 @@ for (const cfg of [
   report("conv1dFastF16 (rel)", rel, 1e-2);
 }
 
+// ---- int4 block-quant matmul (MatMulNBits) vs CPU dequant ----
+{
+  const M = 8, N = 64, blk = 32, nblk = 4, K = nblk * blk, zpb = Math.ceil(nblk / 2);
+  const Bq = new Uint8Array(N * nblk * 16);
+  for (let i = 0; i < Bq.length; i++) Bq[i] = Math.floor(Math.random() * 256);
+  const scales = rand(N * nblk).map((v) => Math.abs(v) * 0.1 + 0.02);
+  const zpU8 = new Uint8Array(N * zpb);
+  for (let i = 0; i < zpU8.length; i++) zpU8[i] = Math.floor(Math.random() * 256);
+  const A = rand(M * K).map((v) => v * 0.1);
+  const q = (n, b, jj) => (Bq[(n * nblk + b) * 16 + (jj >> 1)] >> (4 * (jj & 1))) & 0xf;
+  const zpAt = (n, b) => (zpU8[n * zpb + (b >> 1)] >> (4 * (b & 1))) & 0xf;
+  const ref = new Float32Array(M * N);
+  for (let mi = 0; mi < M; mi++) for (let n = 0; n < N; n++) {
+    let acc = 0;
+    for (let b = 0; b < nblk; b++) { const s = scales[n * nblk + b], z = zpAt(n, b); for (let jj = 0; jj < 32; jj++) { const k = b * 32 + jj; acc += A[mi * K + k] * ((q(n, b, jj) - z) * s); } }
+    ref[mi * N + n] = acc;
+  }
+  const out = await ctx.download(ctx.matmulNBits(ctx.upload(A, M, K), ctx.uploadBytes(Bq), ctx.upload(scales, 1, scales.length), ctx.uploadBytes(zpU8), N));
+  report("matmulNBits (int4)", maxErr(out, ref), 1e-3);
+}
+
 // ---- conv1d via im2col + GEMM (matches the direct conv) ----
 {
   const Cin = 32, L = 500, Cout = 48, K = 5, pad = 2;

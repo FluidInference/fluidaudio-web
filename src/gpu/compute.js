@@ -577,6 +577,39 @@ fn main(@builtin(workgroup_id) wg:vec3<u32>, @builtin(local_invocation_index) ti
   for(var i=0u;i<TM;i++){for(var j=0u;j<TN;j++){ let r=br+tr+i; let c=bc+tc+j;
     if(r<m.Cout&&c<m.Lout){ var v=acc[i*TN+j]; if(m.hasBias==1u){v+=f32(bias[r]);} Y[r*m.Lout+c]=f16(actf(v,m.act)); }}}}`;
 
+// int4 block-quantized matmul (ONNX MatMulNBits: bits=4, block_size=32). This is
+// the one thing ORT's WebGPU EP CAN'T do — it has no int kernels, so int4 models
+// (Nemotron) fall back to WASM. Here we read the packed int4 weights + per-block
+// scales + int4 zero-points directly and dequantize in-shader: a *capability*
+// unlock (runs on the GPU where ORT can't), not a speed play. Y = A @ dequant(B)ᵀ,
+// dequant(n,k) = (q(n,k) - zp(n,block)) * scale(n,block), block = k/32.
+// Bq: packed uint8 [N, nblk, 16] (2 int4/byte) as u32; zp: packed int4 [N, zpb] as u32.
+const MATMUL_NBITS_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, nblk:u32, zpb:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage,read> A: array<f32>;
+@group(0) @binding(1) var<storage,read> Bq: array<u32>;
+@group(0) @binding(2) var<storage,read> scales: array<f32>;
+@group(0) @binding(3) var<storage,read> zp: array<u32>;
+@group(0) @binding(4) var<storage,read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) nwg:vec3<u32>){
+  let idx = gid.y*(nwg.x*64u)+gid.x; if(idx>=m.M*m.N){return;}
+  let mrow=idx/m.N; let n=idx%m.N;
+  var acc=0.0;
+  for(var b=0u;b<m.nblk;b++){
+    let zi=n*m.zpb+(b>>1u); let wz=zp[zi>>2u]; let bz=(wz>>(8u*(zi&3u)))&0xFFu;
+    let zpv=f32((bz>>(4u*(b&1u)))&0xFu);
+    let s=scales[n*m.nblk+b];
+    for(var jj=0u;jj<32u;jj++){
+      let k=b*32u+jj; let bi=(n*m.nblk+b)*16u+(jj>>1u);
+      let wq=Bq[bi>>2u]; let bq=(wq>>(8u*(bi&3u)))&0xFFu; let q=f32((bq>>(4u*(jj&1u)))&0xFu);
+      acc+=A[mrow*m.K+k]*((q-zpv)*s);
+    }
+  }
+  Y[mrow*m.N+n]=acc;
+}`;
+
 const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3 };
 
 export class GpuContext {
@@ -654,6 +687,41 @@ export class GpuContext {
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
     return c;
   }
+  /** Upload raw bytes (packed int4 weights / zero-points) to a storage buffer. */
+  uploadBytes(typed) {
+    const u32 = typed instanceof Uint32Array ? typed : new Uint32Array(typed.buffer, typed.byteOffset, Math.ceil(typed.byteLength / 4));
+    const buf = this.device.createBuffer({ size: Math.max(4, u32.byteLength), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(buf, 0, u32);
+    return { buf };
+  }
+
+  /**
+   * int4 block-quantized matmul (ONNX MatMulNBits, bits=4, block_size=32) —
+   * dequantizes in-shader. a: f32 [M,K]. bq: packed int4 weights [N,nblk,16] (u32
+   * buffer). scales: f32 [N*nblk]. zp: packed int4 zero-points [N,zpb] (u32 buffer).
+   * Returns f32 [M,N]. Runs on WebGPU where ORT's EP has no int kernel.
+   */
+  matmulNBits(a, bq, scales, zp, N, blockSize = 32) {
+    const M = a.rows, K = a.cols;
+    const nblk = Math.ceil(K / blockSize);
+    const zpb = Math.ceil(nblk / 2);
+    const y = this.alloc(M, N);
+    const pipeline = this._pipeline("matmulNBits", MATMUL_NBITS_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, nblk, zpb, 0, 0, 0]));
+    const bg = this.device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [a.buf, bq.buf, scales.buf, zp.buf, y.buf, u].map((b, i) => ({ binding: i, resource: { buffer: b } })),
+    });
+    const enc = this.device.createCommandEncoder();
+    const pass = this._pass || enc.beginComputePass();
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bg);
+    const tot = Math.ceil((M * N) / 64);
+    pass.dispatchWorkgroups(Math.min(tot, 65535), Math.ceil(tot / 65535));
+    if (!this._pass) { pass.end(); this.device.queue.submit([enc.finish()]); }
+    return y;
+  }
+
   /** f16 fused conv1d (implicit GEMM, groups=1). x/wRows/bias/out all f16. */
   conv1dFastF16(x, wRows, cout, k, { bias = null, stride = 1, pad = 0, dilation = 1, act = "none" } = {}) {
     const Cin = x.rows, L = x.cols, CinK = Cin * k;
