@@ -12,21 +12,23 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 
 **Every engine is verified on real data** — no scaffolds. Parakeet v3 = **2.15% WER**
 on full LibriSpeech test-clean (matches native FluidAudio ~2.14%). Measured
-in-browser on WebGPU (Chrome/macOS, cold single-run): VAD **139×**, EOU **45×**,
-Sortformer **16×**, Whisper **9.3×**, Kokoro-zh **4.4×**, Kokoro-en **2.0×** (short
-clip + first-run shader compile). See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+in-browser on WebGPU (Chrome/macOS, warm/steady-state): VAD **132×**, EOU **86×**,
+Sortformer **82×**, Whisper **24×**, Parakeet v3 **14×**, Kokoro-en **10×** / zh
+**10×** — 7/8 engines correct (Nemotron empty on WebGPU, open bug). First (cold) run
+is several× slower — WebGPU compiles shaders. See
+[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
 
 | Engine | Model | Runtime | Backend | Status |
 |---|---|---|---|---|
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**; fp16 encoder (1.24 GB; fp32 exceeded the 2 GB buffer cap) |
-| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ 9.3× (browser) |
-| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ 2.0× en / 4.4× zh (cold single-run) |
-| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ 15.8× short-audio; long-audio needs streaming loop |
+| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**, **14×**; fp16 encoder 1.24 GB (fp32 exceeded the 2 GB buffer cap) |
+| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
+| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
+| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |
 | `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | ⚠️ runs but empty output on WebGPU (works on WASM/headless) — open bug |
-| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ 139× (direct ORT, no `vad-web`) |
-| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ 45× (transcript + `<EOU>`/`<EOB>`) |
+| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ **132×** (direct ORT, no `vad-web`) |
+| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ **86×** (transcript + `<EOU>`/`<EOB>`) |
 
 ✅ = correctness checked (WER / RTFx / output) on real data. Numbers in
 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).

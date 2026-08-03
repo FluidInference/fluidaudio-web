@@ -2,38 +2,35 @@
 
 ## Browser results (bench.html, real machine, WebGPU: true)
 
-12 s sample, `?full=1`, Chrome 150 / macOS, `webgpu: true` (measured 2026-08-03):
+12 s sample, `?full=1`, Chrome 150 / macOS, `webgpu: true`. **Warm (cached)** run —
+the steady state after first load; `run` is inference only (measured 2026-08-03):
 
-| Engine | ok | load | run | RTFx | output |
-|---|---|--:|--:|--:|---|
-| **Silero VAD** | ✅ | 1673 ms | 86 ms | **139.5×** | 6 speech segments |
-| **Parakeet EOU 120M** | ✅ | 114 s* | 265 ms | **45.3×** | correct + `<EOU>@12s` |
-| **Diarization (Sortformer)** | ✅ | 9.5 s | 761 ms | **15.8×** | 1 spk, 5 seg (short audio) |
-| **Whisper (99 langs)** | ✅ | 14.6 s | 1297 ms | **9.3×** | correct transcript |
-| **Nemotron 3.5** | ⚠️ | 21.7 s | 1376 ms | 8.7× | ran but **empty output** — bug to chase |
-| **Kokoro TTS (zh)** | ✅ | 16.7 s | 703 ms | **4.4×** | 3.10 s audio |
-| **Kokoro TTS (en)** | ✅ | 5.9 s | 1686 ms | **2.0×** | 3.38 s audio (first-run incl. shader compile) |
-| Parakeet TDT v3 | ❌→fixed | — | — | — | `Array buffer allocation failed` (fp32 2.44 GB > cap) → **now fp16 1.24 GB** |
+| Engine | ok | run | RTFx | output |
+|---|---|--:|--:|---|
+| **Silero VAD** | ✅ | 91 ms | **131.9×** | 6 speech segments |
+| **Parakeet EOU 120M** | ✅ | 139 ms | **86.3×** | correct + `<EOU>@12s` |
+| **Diarization (Sortformer)** | ✅ | 146 ms | **82.2×** | 1 spk, 5 seg (short audio) |
+| **Whisper (99 langs)** | ✅ | 500 ms | **24×** | correct transcript |
+| **Parakeet TDT v3** | ✅ | 835 ms | **14.4×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 |
+| **Nemotron 3.5** | ⚠️ | 1141 ms | 10.5× | ran but **empty output** — open bug |
+| **Kokoro TTS (en)** | ✅ | 333 ms | **10.1×** | 3.38 s audio |
+| **Kokoro TTS (zh)** | ✅ | 316 ms | **9.8×** | 3.10 s audio |
 
-`*` EOU load = 459 MB fp32 encoder over the network on a cold cache.
+**7 of 8 engines correct in-browser on WebGPU** (only Nemotron empty). Findings:
+- **fp16 Parakeet is the fix + is accurate.** The fp32 encoder (2.44 GB external
+  data) crashed with `Array buffer allocation failed` (> Chrome's ~2 GB ArrayBuffer
+  cap); the self-contained **fp16 encoder (1.24 GB)** loads, runs on WebGPU, and its
+  transcript matches fp32 — accuracy preserved at half the size.
+- **Cold vs warm matters a lot.** A first (cold) run pays WebGPU shader compilation:
+  Kokoro-en was **2.0× cold → 10.1× warm**, Whisper 9.3 → 24×, Sortformer 16 → 82×.
+  The table above is warm/steady-state (what a user sees after first load); expect
+  the first run to be several× slower.
+- **Nemotron returns empty on the WebGPU EP** (works on WASM/ort-node headless with
+  the lang_id fix) — the int4 path misbehaves through WebGPU. Open bug.
 
-**Findings from the real run:**
-- **Parakeet hard-failed**: the fp32 encoder's 2.44 GB external data exceeds Chrome's
-  ~2 GB max ArrayBuffer → `Array buffer allocation failed`. Fixed by switching to the
-  **self-contained fp16 encoder (1.24 GB)** — fits the cap, halves the download, runs
-  on the WebGPU EP. (Re-run the bench to get its number.)
-- **Kokoro-en is 2.0×, not the ~10× previously guessed** — TTS RTFx is small here
-  because the run is short (3.4 s audio) and the *first* generate pays WebGPU shader
-  compilation; a warmed second run is faster. Numbers above are cold single-run.
-- **Nemotron ran but returned empty** on WebGPU — the int4 encoder likely mis-behaves
-  through the WebGPU EP path (it worked on WASM/ort-node headless). Open bug.
-- Every non-Parakeet engine works in-browser on WebGPU; VAD/EOU/Whisper/Sortformer/
-  Kokoro all correct.
-
-### Historical (earlier partial run — superseded)
-An earlier user run reported Sortformer 123.7×, Kokoro-en 9.99× / zh 5.26× — those
-predated the VAD/EOU rewrites and don't match this full measured run; treat the table
-above as current.
+### Superseded
+Earlier partial runs (Sortformer 123×, Kokoro 9.99×/5.26×, and the cold table) are
+replaced by the warm measured run above.
 
 
 
