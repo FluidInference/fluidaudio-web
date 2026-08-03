@@ -55,12 +55,25 @@ Parakeet EOU), `?engines=a,b` (pick), `?noauto=1` (don't auto-download).
 
 ## Deploy
 
-Static site — `npm run build` outputs `dist/`. The host **must** send
-`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy:
-require-corp` (threaded WASM needs SharedArrayBuffer). `public/_headers` covers
-**Netlify / Cloudflare Pages** automatically; for Vercel add them via
-`vercel.json`, for nginx via `add_header`. Model weights stream from Hugging Face
-and cache client-side — no backend.
+**Live demo:** https://fluidinference.github.io/fluidaudio-web/ (and
+`/bench.html?full=1` for the auto-benchmark). Auto-deploys from `main` via
+`.github/workflows/deploy.yml` (one-time: repo **Settings → Pages → Source: GitHub
+Actions**).
+
+Static site — `npm run build` outputs `dist/`. **Threading:** onnxruntime-web's
+multi-threaded WASM needs `Cross-Origin-Opener-Policy: same-origin` +
+`Cross-Origin-Embedder-Policy: require-corp` (SharedArrayBuffer). GitHub Pages can't
+send headers, so the live demo runs **WebGPU (which doesn't need them) at full speed
+and WASM single-threaded** — and it deliberately avoids `require-corp`, which would
+block the cross-origin Hugging Face model fetches. For threaded WASM, deploy to a
+host that sets those two headers: `public/_headers` covers **Netlify / Cloudflare
+Pages** automatically (verify HF sends `Cross-Origin-Resource-Policy` under COEP);
+Vercel via `vercel.json`, nginx via `add_header`. Model weights stream from Hugging
+Face and cache client-side — no backend.
+
+> **First-load weight:** the default `asr-parakeet` uses a ~2.4 GB fp32 encoder — fine
+> once cached, heavy on first visit. For a light demo use `?engines=tts-kokoro-en,
+> diarization-sortformer,vad-silero` (≈ tens of MB).
 
 WebGPU (Chrome/Edge 121+, Safari 26+) is **optional** — it accelerates the heavy
 encoders (Parakeet, Kokoro). Everything else, and every engine's fallback path,

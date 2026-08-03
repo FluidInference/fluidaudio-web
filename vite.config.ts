@@ -23,6 +23,10 @@ const crossOriginIsolation = {
 };
 
 export default defineConfig({
+  // GitHub Pages serves a project site under /<repo>/; local dev stays at /.
+  // (No COOP/COEP on Pages — WebGPU doesn't need it, WASM falls back to 1 thread,
+  //  and forcing COEP would block the cross-origin HuggingFace model fetches.)
+  base: process.env.GITHUB_ACTIONS ? "/fluidaudio-web/" : "/",
   plugins: [crossOriginIsolation],
   optimizeDeps: {
     // onnxruntime-web must NOT be pre-bundled: Vite rewrites its dynamic import
