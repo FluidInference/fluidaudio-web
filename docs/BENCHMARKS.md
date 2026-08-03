@@ -2,22 +2,38 @@
 
 ## Browser results (bench.html, real machine, WebGPU: true)
 
-12s sample, `?full=1`, macOS/Chrome (from a user run):
+12 s sample, `?full=1`, Chrome 150 / macOS, `webgpu: true` (measured 2026-08-03):
 
-| Engine | ok | run | RTFx | output |
-|---|---|--:|--:|---|
-| **Sortformer diarization** | ✅ | 97 ms | **123.7×** | 1 speaker, 5 segments |
-| **Kokoro TTS (en)** | ✅ | 338 ms | **9.99×** | 3.38 s audio |
-| **Kokoro TTS (zh)** | ✅ | 755 ms | **5.26×** | 3.98 s audio |
-| Parakeet TDT v3 (int8) | ❌ | 1197 ms | 10× | empty ← int8 fell back to WASM |
-| Nemotron 3.5 (int4) | ✅* | 1330 ms | 9× | *empty in that run due to lang_id=0 bug; fixed → works (en-US=lang_id 24)* |
-| Silero VAD | ❌ | — | — | `vad-web` CJS require error |
+| Engine | ok | load | run | RTFx | output |
+|---|---|--:|--:|--:|---|
+| **Silero VAD** | ✅ | 1673 ms | 86 ms | **139.5×** | 6 speech segments |
+| **Parakeet EOU 120M** | ✅ | 114 s* | 265 ms | **45.3×** | correct + `<EOU>@12s` |
+| **Diarization (Sortformer)** | ✅ | 9.5 s | 761 ms | **15.8×** | 1 spk, 5 seg (short audio) |
+| **Whisper (99 langs)** | ✅ | 14.6 s | 1297 ms | **9.3×** | correct transcript |
+| **Nemotron 3.5** | ⚠️ | 21.7 s | 1376 ms | 8.7× | ran but **empty output** — bug to chase |
+| **Kokoro TTS (zh)** | ✅ | 16.7 s | 703 ms | **4.4×** | 3.10 s audio |
+| **Kokoro TTS (en)** | ✅ | 5.9 s | 1686 ms | **2.0×** | 3.38 s audio (first-run incl. shader compile) |
+| Parakeet TDT v3 | ❌→fixed | — | — | — | `Array buffer allocation failed` (fp32 2.44 GB > cap) → **now fp16 1.24 GB** |
 
-**Finding:** the WebGPU EP has **no int8/int4 kernels**, so quantized encoders
-silently fall back to WASM → all-blank. Fix = run the **fp32** encoder on WebGPU
-(Parakeet switched to `encoder-model.onnx`, fp32-CPU-verified transcript correct).
-Nemotron ships int4 only → blocked until an fp16/fp32 export exists. Kokoro (9.99×)
-matches upstream's ~10× WebGPU claim.
+`*` EOU load = 459 MB fp32 encoder over the network on a cold cache.
+
+**Findings from the real run:**
+- **Parakeet hard-failed**: the fp32 encoder's 2.44 GB external data exceeds Chrome's
+  ~2 GB max ArrayBuffer → `Array buffer allocation failed`. Fixed by switching to the
+  **self-contained fp16 encoder (1.24 GB)** — fits the cap, halves the download, runs
+  on the WebGPU EP. (Re-run the bench to get its number.)
+- **Kokoro-en is 2.0×, not the ~10× previously guessed** — TTS RTFx is small here
+  because the run is short (3.4 s audio) and the *first* generate pays WebGPU shader
+  compilation; a warmed second run is faster. Numbers above are cold single-run.
+- **Nemotron ran but returned empty** on WebGPU — the int4 encoder likely mis-behaves
+  through the WebGPU EP path (it worked on WASM/ort-node headless). Open bug.
+- Every non-Parakeet engine works in-browser on WebGPU; VAD/EOU/Whisper/Sortformer/
+  Kokoro all correct.
+
+### Historical (earlier partial run — superseded)
+An earlier user run reported Sortformer 123.7×, Kokoro-en 9.99× / zh 5.26× — those
+predated the VAD/EOU rewrites and don't match this full measured run; treat the table
+above as current.
 
 
 

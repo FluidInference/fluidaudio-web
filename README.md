@@ -10,24 +10,23 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 > through `onnxruntime-web` (WebGPU EP, WASM fallback), `transformers.js`, and
 > `kokoro-js`. So this repo tracks the ONNX exports, not the CoreML bundles.
 
-**Every engine is verified on real data** — no scaffolds, no blocked rows:
-Parakeet v3 = **2.15% WER** on full LibriSpeech test-clean (matches native
-FluidAudio ~2.14%); Kokoro **~10× RTFx** on WebGPU; Sortformer **123× RTFx**;
-Nemotron 3.5 transcribing 40 languages; Silero VAD and Parakeet EOU (with
-`<EOU>`/`<EOB>` end-of-utterance detection) running on plain WASM. See
-[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+**Every engine is verified on real data** — no scaffolds. Parakeet v3 = **2.15% WER**
+on full LibriSpeech test-clean (matches native FluidAudio ~2.14%). Measured
+in-browser on WebGPU (Chrome/macOS, cold single-run): VAD **139×**, EOU **45×**,
+Sortformer **16×**, Whisper **9.3×**, Kokoro-zh **4.4×**, Kokoro-en **2.0×** (short
+clip + first-run shader compile). See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
 
 | Engine | Model | Runtime | Backend | Status |
 |---|---|---|---|---|
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | fp32 enc WebGPU + WASM dec | ✅ **2.15% WER** (full test-clean) |
-| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ verified |
-| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ verified (9.99× / 5.26× RTFx) |
-| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ verified short-audio (123× RTFx); long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | ✅ verified (int4 runs on WASM) |
-| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ verified (direct ORT, no `vad-web`) |
-| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ verified (transcript + `<EOU>`/`<EOB>`) |
+| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**; fp16 encoder (1.24 GB; fp32 exceeded the 2 GB buffer cap) |
+| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ 9.3× (browser) |
+| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ 2.0× en / 4.4× zh (cold single-run) |
+| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ 15.8× short-audio; long-audio needs streaming loop |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | ⚠️ runs but empty output on WebGPU (works on WASM/headless) — open bug |
+| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ 139× (direct ORT, no `vad-web`) |
+| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ 45× (transcript + `<EOU>`/`<EOB>`) |
 
 ✅ = correctness checked (WER / RTFx / output) on real data. Numbers in
 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).

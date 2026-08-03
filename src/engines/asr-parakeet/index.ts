@@ -16,11 +16,12 @@ import { ParakeetTokenizer } from "./tokenizer.js";
 import { transcribeTdt } from "./tdt.js";
 
 const REPO = "ysdede/parakeet-tdt-0.6b-v3-onnx";
-// fp32 encoder (with external .data) — the WebGPU EP has no int8 kernels, so the
-// int8 encoder silently falls back to WASM where it decodes to all-blank. fp32
-// runs correctly on WebGPU. (~2.4 GB; fp16 would halve it if a fp16 export exists.)
-const ENCODER = "encoder-model.onnx";
-const ENCODER_DATA = "encoder-model.onnx.data";
+// fp16 encoder (self-contained, 1.24 GB) on WebGPU. The int8 encoder collapses on
+// WASM (no WebGPU int kernels) and the fp32 encoder is 2.44 GB of external data —
+// which exceeds Chrome's ~2 GB max ArrayBuffer and hard-fails with "Array buffer
+// allocation failed". fp16 runs correctly on the WebGPU EP, halves the download,
+// and fits the buffer cap. (WER stays ~2.15%.)
+const ENCODER = "encoder-model.fp16.onnx";
 const DECODER = "decoder_joint-model.int8.onnx";
 const MEL = "nemo128.onnx";
 const VOCAB = "vocab.txt";
@@ -35,20 +36,18 @@ export class ParakeetV3Engine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     if (!webgpuAvailable()) {
-      throw new Error("Parakeet v3 needs WebGPU (the fp32 encoder runs there; int8 collapses on WASM).");
+      throw new Error("Parakeet v3 needs WebGPU (the fp16 encoder runs there; int8 collapses on WASM).");
     }
     const encBytes = await fetchCached(hfUrl(REPO, ENCODER), onProgress, ENCODER);
-    const encData = await fetchCached(hfUrl(REPO, ENCODER_DATA), onProgress, ENCODER_DATA);
     const decBytes = await fetchCached(hfUrl(REPO, DECODER), onProgress, DECODER);
     const melBytes = await fetchCached(hfUrl(REPO, MEL), onProgress, MEL);
     const vocabText = new TextDecoder().decode(await fetchCached(hfUrl(REPO, VOCAB), onProgress, VOCAB));
 
-    // fp32 encoder on WebGPU (external data); mel + decoder on WASM.
+    // fp16 encoder on WebGPU (self-contained, no external data); mel + decoder on WASM.
     configureOrt();
     this.encoder = await ort.InferenceSession.create(encBytes, {
       executionProviders: ["webgpu", "wasm"],
       graphOptimizationLevel: "all",
-      externalData: [{ path: ENCODER_DATA, data: encData }],
     } as any);
     this.decoder = await createSession(decBytes, "wasm");
     const melSession = await createSession(melBytes, "wasm");
