@@ -10,9 +10,11 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 > through `onnxruntime-web` (WebGPU EP, WASM fallback), `transformers.js`, and
 > `kokoro-js`. So this repo tracks the ONNX exports, not the CoreML bundles.
 
-**Verified on real data:** Parakeet v3 = **2.15% WER** on full LibriSpeech
-test-clean (matches native FluidAudio ~2.14%); Kokoro **~10× RTFx** on WebGPU;
-Sortformer **123× RTFx**; Nemotron 3.5 transcribing 40 languages. See
+**Every engine is verified on real data** — no scaffolds, no blocked rows:
+Parakeet v3 = **2.15% WER** on full LibriSpeech test-clean (matches native
+FluidAudio ~2.14%); Kokoro **~10× RTFx** on WebGPU; Sortformer **123× RTFx**;
+Nemotron 3.5 transcribing 40 languages; Silero VAD and Parakeet EOU (with
+`<EOU>`/`<EOB>` end-of-utterance detection) running on plain WASM. See
 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
@@ -27,11 +29,13 @@ Sortformer **123× RTFx**; Nemotron 3.5 transcribing 40 languages. See
 | `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ verified (direct ORT, no `vad-web`) |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ verified (transcript + `<EOU>`/`<EOB>`) |
 
-✅ = correctness checked (WER / RTFx / output) on real data; ⛔ = blocked (reason
-in the row). Numbers in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+✅ = correctness checked (WER / RTFx / output) on real data. Numbers in
+[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for per-engine integration
-notes and the WebGPU-vs-WASM tradeoffs.
+Per-engine deep dives: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) (integration +
+WebGPU-vs-WASM tradeoffs), [`NEMOTRON.md`](docs/NEMOTRON.md) (cache-aware streaming
+RNNT), [`EOU.md`](docs/EOU.md) (end-of-utterance detection + the NA-mel gotcha),
+[`KOKORO_ZH.md`](docs/KOKORO_ZH.md) (Chinese G2P frontend).
 
 ## Quick start
 
@@ -46,8 +50,8 @@ npm run build
 Open **`/bench.html`** — it runs each engine on a bundled 12s sample and downloads
 a results JSON (load/run ms, RTFx, per-stage timings, output, per-engine errors).
 This is where you get the real WebGPU numbers. First run downloads model weights
-(cached after). Params: `?full=1` (add Kokoro-zh + Nemotron), `?engines=a,b`
-(pick), `?noauto=1` (don't auto-download).
+(cached after). Params: `?full=1` (add the heavy engines — Kokoro-zh, Nemotron,
+Parakeet EOU), `?engines=a,b` (pick), `?noauto=1` (don't auto-download).
 
 ## Deploy
 
@@ -58,8 +62,11 @@ require-corp` (threaded WASM needs SharedArrayBuffer). `public/_headers` covers
 `vercel.json`, for nginx via `add_header`. Model weights stream from Hugging Face
 and cache client-side — no backend.
 
-Requires a browser with WebGPU (Chrome/Edge 121+, Safari 26+) — engines fall
-back to WASM automatically where WebGPU op coverage is incomplete.
+WebGPU (Chrome/Edge 121+, Safari 26+) is **optional** — it accelerates the heavy
+encoders (Parakeet, Kokoro). Everything else, and every engine's fallback path,
+runs on WASM: Silero VAD and Nemotron are WASM-only by design, and engines
+downgrade automatically where WebGPU op coverage is incomplete. A WASM-only
+browser still runs the full matrix, just slower on the big encoders.
 
 ## Layout
 
@@ -82,8 +89,9 @@ docs/           architecture + per-engine notes
 - **Task inputs matter more than precision.** Nemotron returned empty not because
   of int4 but because `lang_id=0` = Bulgarian; en-US is ordinal **24**. Always
   verify language/prompt ids.
-- **Models are big.** Parakeet fp32 encoder ≈ 2.4 GB, Nemotron int4 ≈ 750 MB,
-  Kokoro ≈ 90 MB. Fetched from Hugging Face once, persisted via the Cache API.
+- **Models vary wildly in size.** Parakeet fp32 encoder ≈ 2.4 GB, Nemotron int4
+  ≈ 750 MB, EOU fp32 ≈ 480 MB, Kokoro ≈ 90 MB, Silero VAD ≈ 2 MB. Fetched from
+  Hugging Face once, persisted via the Cache API.
 - **G2P is the TTS long pole.** The acoustic model is easy; Chinese uses a
   precomputed misaki-exact pinyin→IPA table + `pinyin-pro` (`docs/KOKORO_ZH.md`).
 - **onnxruntime-web + Vite:** keep ORT out of `optimizeDeps` (Vite rewrites its
