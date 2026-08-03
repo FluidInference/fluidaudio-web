@@ -7,9 +7,13 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 
 > **Why a separate repo?** CoreML (`.mlmodelc`) cannot run in a browser — it is
 > an Apple-only runtime. The browser runs the **ONNX** source of the same models
-> through `onnxruntime-web` (WebGPU EP, WASM fallback), `kokoro-js`,
-> `@ricky0123/vad-web`, and `sherpa-onnx` WASM. So this repo tracks the ONNX
-> exports, not the CoreML bundles.
+> through `onnxruntime-web` (WebGPU EP, WASM fallback), `transformers.js`, and
+> `kokoro-js`. So this repo tracks the ONNX exports, not the CoreML bundles.
+
+**Verified on real data:** Parakeet v3 = **2.15% WER** on full LibriSpeech
+test-clean (matches native FluidAudio ~2.14%); Kokoro **~10× RTFx** on WebGPU;
+Sortformer **123× RTFx**; Nemotron 3.5 transcribing 40 languages. See
+[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
 
@@ -23,9 +27,8 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 | `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ⛔ `vad-web` CJS/Vite issue |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ no public ONNX export |
 
-"Verified" = correctness checked (WER/RTFx/output) on real data. "Built" = full
-pipeline implemented + shape-verified; accuracy pending. See
-[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for numbers.
+✅ = correctness checked (WER / RTFx / output) on real data; ⛔ = blocked (reason
+in the row). Numbers in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for per-engine integration
 notes and the WebGPU-vs-WASM tradeoffs.
@@ -68,16 +71,24 @@ src/
 docs/           architecture + per-engine notes
 ```
 
-## Cross-cutting reality
+## Hard-won lessons (things that cost real debugging)
 
-- **WebGPU is per-op.** `onnxruntime-web`'s WebGPU EP lacks kernels for many
-  dynamic-shape ops; graphs silently fall back to CPU islands. In practice these
-  ship **WASM-first, WebGPU where the graph cooperates**. `core/ort.ts` picks the
-  backend per engine and lets each override.
-- **Models are big.** Nemotron INT4 ≈ 750 MB, Parakeet v3 ≈ 600 MB. First load is
-  fetched from Hugging Face and persisted via the Cache API (`core/modelCache.ts`).
-- **G2P is the TTS long pole.** The acoustic model is easy; Chinese needs a JS
-  frontend (jieba segmentation + polyphone disambiguation + pinyin→IPA).
+- **WebGPU has no int8/int4 kernels.** Quantized encoders silently fall back to
+  WASM. For Parakeet the int8 encoder then *collapses to all-blank* on WASM
+  (output std 0.017) — so it runs the **fp32** encoder on WebGPU instead. Check an
+  encoder's output std before blaming the decoder.
+- **int-quant is not always degenerate.** Nemotron's int4 encoder is healthy on
+  WASM (std 0.43) and runs fine there — no WebGPU required.
+- **Task inputs matter more than precision.** Nemotron returned empty not because
+  of int4 but because `lang_id=0` = Bulgarian; en-US is ordinal **24**. Always
+  verify language/prompt ids.
+- **Models are big.** Parakeet fp32 encoder ≈ 2.4 GB, Nemotron int4 ≈ 750 MB,
+  Kokoro ≈ 90 MB. Fetched from Hugging Face once, persisted via the Cache API.
+- **G2P is the TTS long pole.** The acoustic model is easy; Chinese uses a
+  precomputed misaki-exact pinyin→IPA table + `pinyin-pro` (`docs/KOKORO_ZH.md`).
+- **onnxruntime-web + Vite:** keep ORT out of `optimizeDeps` (Vite rewrites its
+  `jsep.mjs` import and breaks it), and don't pin `wasmPaths` to a mismatched
+  version — let ORT self-resolve.
 
 ## License
 
