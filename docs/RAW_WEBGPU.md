@@ -116,6 +116,26 @@ the node's input/output as graph outputs for an ORT reference) → `npm run gpu:
   correctness + the residency demo; a register-blocked / fp16 (`shader-f16` is
   available) kernel is the next perf step.
 
+## Wiring status (`src/gpu/kokoro.js`)
+
+The kernels are composed into the model graph, verified stage-by-stage against ONNX:
+
+| stage | status |
+|---|---|
+| `input_ids → ALBERT → bert_encoder → d_en` (the whole text frontend) | ✅ wired + parity **rel 4.2e-6** (`npm run gpu:kokoro`) |
+| DurationEncoder (alt. bidir-LSTM / AdaLayerNorm-with-style) → durations | kernels ready (lstm, layernorm, matmul); topology TODO |
+| length regulate (`gatherCols`) + F0/N predictor | kernels ready (gatherCols, lstm, adain, conv1d) |
+| iSTFTNet decoder — AdaIN resblocks + `convTranspose1d` upsampling | kernels ready (adain, conv1dFast, convTranspose1d, leakyRelu) |
+| NSF harmonic source (F0→sine via cumsum/phase) + iSTFT generator tail | needs a cumsum/scan kernel + faithful topology (weight-norm, ScatterND) — the last, most intricate mile |
+
+Everything up to `d_en` runs on the GPU and matches ONNX. The remaining stages need
+**no new compute kernels** except a cumsum/scan for the NSF source; the work is
+faithful topology reconstruction + weight extraction (the generator alone is ~500
+nodes: 51 Conv, 51 Sin, phase math), which is a multi-session integration, not a
+compute problem. Given the perf verdict is a **tie with kokoro-js**, finishing the
+audio tail is a completeness/bundle exercise, not a speed win — the raw-WebGPU
+effort pays off on the ORT-blocked models instead.
+
 ## Path to a raw-WebGPU Kokoro
 
 Kokoro 82M (StyleTTS2 + iSTFTNet) is ~7 subnets. Done so far: the **ALBERT text

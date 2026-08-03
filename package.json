@@ -43,7 +43,8 @@
     "gpu:lstm": "node scripts/gpu-lstm.mjs",
     "gpu:convt": "node scripts/gpu-convt.mjs",
     "gpu:kokoro-cost": "node scripts/gpu-kokoro-cost.mjs",
-    "gpu:kokoro-forward": "node scripts/gpu-kokoro-forward.mjs"
+    "gpu:kokoro-forward": "node scripts/gpu-kokoro-forward.mjs",
+    "gpu:kokoro": "node scripts/gpu-kokoro.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
