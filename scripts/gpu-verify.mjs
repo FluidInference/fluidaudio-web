@@ -102,6 +102,26 @@ for (const cfg of [
   report("mul (broadcast)", maxErr(await ctx.download(ctx.mul(ta, tb)), refMul), 1e-5);
 }
 
+// ---- f16-storage matmul + fused conv (looser tol: f16 ~3 decimal digits) ----
+{
+  const M = 128, K = 512, N = 256;
+  const A = rand(M * K), B = rand(K * N), bias = rand(N);
+  const gelu = (x) => 0.5 * x * (1 + Math.tanh(0.7978845608028654 * (x + 0.044715 * x ** 3)));
+  const ref = new Float32Array(M * N);
+  for (let i = 0; i < M; i++) for (let j = 0; j < N; j++) { let s = bias[j]; for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j]; ref[i * N + j] = gelu(s); }
+  const out = await ctx.downloadF16(ctx.matmulF16(ctx.uploadF16(A, M, K), ctx.uploadF16(B, K, N), { bias: ctx.uploadF16(bias, 1, N), act: "gelu" }));
+  const rel = (() => { let se = 0, sr = 0; for (let i = 0; i < ref.length; i++) { se += (out[i] - ref[i]) ** 2; sr += ref[i] ** 2; } return Math.sqrt(se / sr); })();
+  report("matmulF16 (rel)", rel, 5e-3);
+}
+{
+  const Cin = 48, L = 400, Cout = 64, K = 7, pad = 3;
+  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
+  const out = await ctx.downloadF16(ctx.conv1dFastF16(ctx.uploadF16(X, Cin, L), ctx.uploadF16(W, Cout, Cin * K), Cout, K, { pad, bias: ctx.uploadF16(bias, 1, Cout) }));
+  const rel = (() => { let se = 0, sr = 0; for (let i = 0; i < ref.length; i++) { se += (out[i] - ref[i]) ** 2; sr += ref[i] ** 2; } return Math.sqrt(se / sr); })();
+  report("conv1dFastF16 (rel)", rel, 1e-2);
+}
+
 // ---- conv1d via im2col + GEMM (matches the direct conv) ----
 {
   const Cin = 32, L = 500, Cout = 48, K = 5, pad = 2;

@@ -209,12 +209,13 @@ portable WGSL on this GPU**:
 The f32 plateau is a **hardware-feature-access** limit, not a tuning one: reaching
 60–70% of peak needs Apple's `simdgroup` matrix units (what MLX/MPS use), which
 portable WGSL can't reach yet (the cooperative-matrix / subgroup-matrix extension
-isn't exposed here). The one remaining *reachable* lever is **f16 storage**, which
-does help (2.2 → ~2.7 TFLOP/s, ~1.3–1.5×, parity rel 3e-4 — see the ship/no-ship
-notes). So the ordering is: register-blocking (done) → f16 storage (reachable,
-~1.4×) → `simdgroup` (blocked on a WGSL extension). raw-WebGPU *ties* ORT-WebGPU
-because both hit the same `simdgroup`-less WGSL wall; f16 storage is what tips it to
-a modest win, at the cost of an end-to-end f16 refactor.
+isn't exposed here). **f16 storage** is reachable and gives **2× on large square
+GEMMs** (1694 → 3410 GFLOP/s @ 2048³) — but it needs a *large M* to pay off, which
+Kokoro's small-Cout convs don't have, so it's **0× on the Kokoro forward** (measured
+end-to-end). Lever ordering: register-blocking (done) → f16 storage (2× on large
+GEMMs, 0× on Kokoro) → `simdgroup` (blocked on a WGSL extension). raw-WebGPU *ties*
+ORT-WebGPU on Kokoro because both hit the same wall on small-M ops; f16's 2× is why
+this stack is worth pointing at the **large-GEMM ORT-blocked models** instead.
 
 ### Full-forward measurement (the honest end-to-end number)
 
@@ -240,15 +241,19 @@ back in a **single submit**, timing submit→GPU-finish (excludes CPU alloc/reco
 - **fp16 shared-tile, f32 storage:** *slower* — 515 vs 1750 GFLOP/s. With f32 global
   buffers there's no memory-bandwidth win (global reads stay f32), just conversion
   overhead. This is the wrong way to do fp16.
-- **fp16 *storage* (f16 global buffers): a real win.** `array<f16>` storage is
-  reachable in portable WGSL (`shader-f16`). Measured on the M5 Pro: GEMM **1702 →
-  2552 GFLOP/s @ 2048³ (1.5×)**, **2175 → 2718 @ 4096³ (1.25×)**, parity vs f32 CPU
-  **rel 3.3e-4** (fine for TTS). Not the theoretical 2× (the 4×4 kernel is still
-  partly occupancy/shared-bound), but genuinely positive. Realizing it end-to-end
-  needs the whole pipeline in f16 storage (weights + activations) — a refactor, but
-  a *reachable* one that would take raw-WebGPU Kokoro from a ~10× tie to a modest win
-  (~13–14×). (Earlier docs called this "out of reach" — that was wrong; only the
-  `simdgroup` matrix units are unreachable in portable WGSL, not f16 storage.)
+- **fp16 *storage* (f16 global buffers): a 2× win on large GEMMs — but 0× on
+  Kokoro.** `array<f16>` storage is reachable in portable WGSL (`shader-f16`) and the
+  f16 kernels (`matmulF16`, `conv1dFastF16`) are parity-clean (rel 3.3e-4). Measured:
+  square GEMM 2048³ **1694 → 3410 GFLOP/s = 2.0×**. BUT the f16 path was **wired
+  end-to-end through the full Kokoro forward and it changed nothing** (202.2 vs
+  201.8 ms, ~10× both). Why: Kokoro's ops have **small M** (Cout ≤ 512, mostly 128),
+  so with 64-row blocks there are only ~2 rows of parallelism — the kernel is
+  occupancy/latency-bound there, and f16's bandwidth + 2× ALU can't be cashed in
+  (`conv f32 1760 vs f16 1749 GFLOP/s` at Cout=128). f16 only helps when M is large.
+  So the **~14× projection was wrong** — it assumed the microbench gain carries; it
+  doesn't (microbench ≠ pipeline, again). The f16 kernels stay because they *do* pay
+  off on **large-GEMM models** — exactly the ORT-blocked encoders (Nemotron 600M,
+  Parakeet), not small-conv Kokoro.
 
 Two hard-won measurement lessons:
 - **Denormals cost ~2×.** Replaying with uninitialized (garbage) buffers ran at
