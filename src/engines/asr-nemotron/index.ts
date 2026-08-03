@@ -1,10 +1,11 @@
 // Nemotron 3.5 streaming ASR (en + multilingual, 40 langs) — cache-aware
 // FastConformer-RNNT. ONNX: onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4.
 //
-// BUILD-ONLY: the full pipeline is implemented + verified for shape flow and
-// cache/LSTM-state threading (headless, ort-node). int4 output is degenerate on
-// CPU/WASM (like Parakeet int8) → correct transcripts need WebGPU. Verify by ear
-// in the browser. See docs/NEMOTRON.md.
+// The int4 encoder runs on **WASM**, NOT WebGPU. It's numerically healthy on WASM
+// (encoder std 0.43 — unlike Parakeet's int8, which collapses there), and ORT-web's
+// WebGPU EP mishandles the int4 `MatMulNBits` ops → EMPTY transcript in-browser.
+// Verified headless (ort-node WASM): correct output. So force WASM for the encoder;
+// WebGPU buys nothing here anyway (thin GEMMs — see docs/RAW_WEBGPU.md).
 //
 // mel is NA log-mel computed in JS (no ONNX mel ships for Nemotron, and the
 // parakeet nemo128 mel bakes per-feature CMVN which is wrong here) — the one JS
@@ -44,9 +45,10 @@ export class NemotronEngine implements AsrEngine {
   constructor(private opts: { language?: string } = {}) {}
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    // int4 encoder is numerically healthy on WASM (unlike Parakeet int8), so
-    // WebGPU is not required — the encoder EP falls back to WASM cleanly.
-    this.encoder = await createWithData("encoder", webgpuAvailable() ? "webgpu" : "wasm", onProgress);
+    // Encoder on WASM: int4 is healthy there, but ORT-web's WebGPU EP mishandles
+    // the int4 MatMulNBits ops and returns an empty transcript. (WASM is not slower
+    // for this thin-GEMM model — WebGPU wouldn't help even if it were correct.)
+    this.encoder = await createWithData("encoder", "wasm", onProgress);
     this.decoder = await createWithData("decoder", "wasm", onProgress);
     this.joint = await createWithData("joint", "wasm", onProgress);
     const vocab = new TextDecoder().decode(await fetchCached(hfUrl(REPO, "vocab.txt"), onProgress, "vocab.txt"));
