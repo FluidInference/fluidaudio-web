@@ -6,16 +6,39 @@
   "type": "module",
   "license": "MIT",
   "homepage": "https://github.com/FluidInference/fluidaudio-web#readme",
-  "repository": { "type": "git", "url": "https://github.com/FluidInference/fluidaudio-web.git" },
-  "bugs": { "url": "https://github.com/FluidInference/fluidaudio-web/issues" },
-  "keywords": ["asr", "tts", "diarization", "vad", "webgpu", "wasm", "onnxruntime-web", "speech", "parakeet", "kokoro", "whisper", "sortformer", "in-browser"],
-  "engines": { "node": ">=20" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FluidInference/fluidaudio-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FluidInference/fluidaudio-web/issues"
+  },
+  "keywords": [
+    "asr",
+    "tts",
+    "diarization",
+    "vad",
+    "webgpu",
+    "wasm",
+    "onnxruntime-web",
+    "speech",
+    "parakeet",
+    "kokoro",
+    "whisper",
+    "sortformer",
+    "in-browser"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "bench": "vite --open /bench.html?full=1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gpu:verify": "node scripts/gpu-verify.mjs",
+    "gpu:bench": "node scripts/gpu-bench.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
@@ -24,6 +47,7 @@
     "pinyin-pro": "^3.28.2"
   },
   "devDependencies": {
+    "@kmamal/gpu": "^0.2.1",
     "onnxruntime-node": "^1.27.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.0"
