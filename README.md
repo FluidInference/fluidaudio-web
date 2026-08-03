@@ -22,7 +22,7 @@ WebGPU compiles shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 | Engine | Model | Runtime | Backend | Status |
 |---|---|---|---|---|
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**, **14×**; fp16 encoder 1.24 GB (fp32 exceeded the 2 GB buffer cap) |
+| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**, **46×** (warm); fp16 encoder 1.24 GB (fp32 exceeded the 2 GB buffer cap) |
 | `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |

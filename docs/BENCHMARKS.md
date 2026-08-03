@@ -11,7 +11,7 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
 | **Parakeet EOU 120M** | ✅ | 139 ms | **86.3×** | correct + `<EOU>@12s` |
 | **Diarization (Sortformer)** | ✅ | 146 ms | **82.2×** | 1 spk, 5 seg (short audio) |
 | **Whisper (99 langs)** | ✅ | 500 ms | **24×** | correct transcript |
-| **Parakeet TDT v3** | ✅ | 835 ms | **14.4×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 |
+| **Parakeet TDT v3** | ✅ | 259 ms | **46.3×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 (fully warm; 14× on the compile-run) |
 | **Nemotron 3.5** | ✅ | — | — | **fixed** — int4 encoder forced to WASM (WebGPU EP mishandled int4 → empty); headless output correct, re-run for the number |
 | **Kokoro TTS (en)** | ✅ | 333 ms | **10.1×** | 3.38 s audio |
 | **Kokoro TTS (zh)** | ✅ | 316 ms | **9.8×** | 3.10 s audio |
