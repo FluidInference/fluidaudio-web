@@ -189,9 +189,30 @@ small/grouped convs; the hot vocoder convs route through `conv1dGemm`.
 
 ### Register-blocked GEMM (the perf lever)
 
-The GEMM is now register-blocked (64×64 block, 4×4 micro-tile per thread): **927 →
+The GEMM is register-blocked (64×64 block, 4×4 micro-tile per thread): **927 →
 2131 GFLOP/s**, and the dominant conv via `conv1dGemm` **876 → 1759 GFLOP/s** (that
 one conv, in isolation, projects to ~34× RTFx).
+
+### How far can the GEMM go? (measured optimization attempts)
+
+The 4×4 kernel plateaus at **~2.2 TFLOP/s = ~16% of the M5 Pro's ~13 TFLOP fp32
+peak** — confirmed at 4096³ (63 ms, 2175 GFLOP/s), so it's a real ceiling, not the
+bench's ~0.5 ms submit floor. The textbook levers were tried and **do not help in
+portable WGSL on this GPU**:
+
+| variant | result |
+|---|--:|
+| 4×4 micro-tile, 64×64 block (shipped) | **2131 GFLOP/s** |
+| 8×8 micro-tile, 128×128 block | 461 GFLOP/s — **regressed 4×** (64 acc + 16 reg ≈ 80 registers/thread → spills, occupancy collapse) |
+| 4×4 + double-buffered shared | 2124 GFLOP/s — **neutral** (not load-latency bound) |
+
+The plateau is a **hardware-feature-access** limit, not a tuning one: reaching
+60–70% of peak needs Apple's `simdgroup` matrix units (what MLX/MPS use), which
+portable WGSL can't reach yet — the WGSL cooperative-matrix / subgroup-matrix
+extension isn't standardized/exposed here. So `simdgroup` matmul + end-to-end fp16
+storage are the only remaining levers, and both are out of reach of portable WGSL
+today. `~2.2 TFLOP/s` is the practical WGSL ceiling on this GPU — which is why
+raw-WebGPU *ties* rather than *beats* ORT-WebGPU (ORT hits a similar WGSL wall).
 
 ### Full-forward measurement (the honest end-to-end number)
 
