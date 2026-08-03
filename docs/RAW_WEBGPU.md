@@ -19,9 +19,11 @@ browser, [dawn](https://github.com/kmamal/gpu) in Node). Tensors are GPU-residen
 | Kernel | WGSL | Notes |
 |---|---|---|
 | `matmul(a, b, {bias, act})` | tiled 16×16, shared-memory | **fused** bias + activation (none/gelu/tanh/relu) in one dispatch |
+| `conv1d(x, w, {…})` | one thread / (Cout, Lout) | stride / pad / dilation / groups; covers regular + depthwise (prosody predictor + vocoder) |
 | `layernorm(x, γ, β)` | 1 workgroup/row, 64-lane reduce | row-wise |
 | `softmax(x)` | row-wise, numerically stable | for attention |
 | `add` / `mul` | elementwise, row-broadcast | residuals, gating |
+| `transpose` / `sliceCols` / `setCols` | index kernels | multi-head attention plumbing |
 
 Every kernel is parity-checked against a CPU reference **on the real GPU**:
 
@@ -44,6 +46,33 @@ chains 4 kernels with **every intermediate resident on the GPU and a single
 readback**. That's the fusion+residency win ORT's per-op path can't match; a
 6-layer encoder is ~7.5 ms of FFN compute.
 
+## Milestone: ALBERT text encoder — end-to-end parity vs ONNX
+
+The first real Kokoro sub-network is ported and **numerically matches the ONNX
+model** (`src/gpu/albert.js`, `npm run gpu:albert`). Kokoro's PL-BERT: vocab 178,
+embed 128, hidden 768, FFN 2048, **12 weight-shared layers**, 12 heads (head_dim
+64), `gelu_new`, LN eps 1e-12. Embeddings (gather + sum + LN) run on CPU; the whole
+transformer stack — QKV projections, 12-head scaled-dot-product attention, output
+projection, FFN, residual LayerNorms — runs **GPU-resident** on the kernels above.
+
+Verified against the real Kokoro weights + an onnxruntime reference (input_ids →
+ALBERT output), on the M5 Pro GPU:
+
+```
+ALBERT input  (embeds + 128→768 map): rel 1.5e-7
+ALBERT output (12 layers)           : max 1.3e-5   rel 3.4e-6   ← exact, fp32
+```
+
+Reproduce: `kokoro-extract-albert.py` (trace ALBERT weights out of the ONNX — the
+Linear weights are anonymous `onnx::MatMul_*` initializers, found via the named
+bias each feeds) + `kokoro-ref-albert.py` (expose the ALBERT in/out tensors as
+graph outputs, run ORT for ground truth) → `npm run gpu:albert`. The attention
+scale `1/√64` is folded into the query projection so no extra kernel is needed.
+
+Gotcha: loading the weight `.bin`s in Node — `readFileSync().buffer` is a view into
+a shared pool, so slicing it grabs neighbouring garbage → NaN. Copy the exact byte
+range (`Uint8Array.from(buf)`).
+
 ## Gotchas already hit
 
 - **Metal `tanh` overflows.** It computes `exp(x)` directly, so a large argument →
@@ -60,16 +89,20 @@ readback**. That's the fusion+residency win ORT's per-op path can't match; a
 
 ## Path to a raw-WebGPU Kokoro
 
-Kokoro 82M (StyleTTS2 + iSTFTNet) is ~7 subnets. The transformer kernels above
-cover the ALBERT text encoder. Remaining kernels, each verifiable through the same
-`gpu:verify` harness before wiring:
+Kokoro 82M (StyleTTS2 + iSTFTNet) is ~7 subnets. Done so far: the **ALBERT text
+encoder** (parity above) and **conv1d** (regular + depthwise). Remaining, each
+verifiable through the same harness before wiring:
 
-1. **embedding gather** (phoneme ids → vectors) — trivial.
-2. **conv1d** (+ dilation, groups) — prosody predictor & decoder; the biggest new
-   kernel.
+1. ✅ **ALBERT text encoder** — parity vs ONNX (`gpu:albert`).
+2. ✅ **conv1d** (+ dilation, groups) — prosody predictor & decoder.
 3. **LSTM cell** — duration/prosody predictors.
 4. **iSTFT** (+ upsampling) — the vocoder tail; FFT kernel.
 5. **AdaIN / style modulation** — cheap elementwise once style is resident.
+6. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
+
+Next up is the prosody/duration predictor (LSTM + the conv1d now in place), then
+the iSTFTNet decoder (the FLOP-heavy tail). Only once the whole graph is resident +
+parity-clean do we benchmark against `kokoro-js` — that number decides ship/no-ship.
 
 Approach: extract each layer's weights + a reference intermediate from the Kokoro
 ONNX (via `onnxruntime-node`), port the layer to WGSL, gate on parity, then chain

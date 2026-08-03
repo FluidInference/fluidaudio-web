@@ -38,7 +38,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "gpu:verify": "node scripts/gpu-verify.mjs",
-    "gpu:bench": "node scripts/gpu-bench.mjs"
+    "gpu:bench": "node scripts/gpu-bench.mjs",
+    "gpu:albert": "node scripts/gpu-albert.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",

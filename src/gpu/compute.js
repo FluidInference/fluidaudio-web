@@ -111,6 +111,49 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>) {
   for (var j = 0u; j < m.cols; j++) { Y[base + j] = Y[base + j] * inv; }
 }`;
 
+// 1-D convolution (batch 1). X:[Cin, L], W:[Cout, Cin/groups, K], bias?:[Cout]
+// -> Y:[Cout, Lout], with stride/pad/dilation/groups. One thread per (Cout, Lout).
+// Covers regular (groups=1) and depthwise (groups=Cin) convs. act as in GEMM.
+const CONV1D_WGSL = `
+struct Meta { Cout:u32, Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, dil:u32,
+              groups:u32, hasBias:u32, act:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> W: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= m.Cout * m.Lout) { return; }
+  let co = idx / m.Lout;
+  let lo = idx % m.Lout;
+  let cinPerG = m.Cin / m.groups;
+  let coutPerG = m.Cout / m.groups;
+  let g = co / coutPerG;
+  var acc = 0.0;
+  for (var ci = 0u; ci < cinPerG; ci++) {
+    let realCi = g * cinPerG + ci;
+    let wBase = (co * cinPerG + ci) * m.K;
+    let xBase = realCi * m.L;
+    for (var k = 0u; k < m.K; k++) {
+      let li = i32(lo * m.stride + k * m.dil) - i32(m.pad);
+      if (li >= 0 && li < i32(m.L)) {
+        acc += X[xBase + u32(li)] * W[wBase + k];
+      }
+    }
+  }
+  if (m.hasBias == 1u) { acc += bias[co]; }
+  if (m.act == 1u) { acc = gelu(acc); }
+  else if (m.act == 2u) { acc = tanh(acc); }
+  else if (m.act == 3u) { acc = max(acc, 0.0); }
+  Y[co * m.Lout + lo] = acc;
+}`;
+
 // Elementwise C = A (op) B, with B broadcast over rows when B is [1,cols].
 // op: 0 add / 1 mul.
 const EWISE_WGSL = `
@@ -126,6 +169,44 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>) {
   let bIdx = select(i, i % m.cols, m.bRows == 1u);
   let a = A[i]; let b = B[bIdx];
   C[i] = select(a + b, a * b, m.op == 1u);
+}`;
+
+// Helpers for multi-head attention: 2-D transpose, and column slice / scatter
+// (to split [seq, H*d] into per-head [seq, d] and reassemble).
+const TRANSPOSE_WGSL = `
+struct Meta { rows:u32, cols:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.x; if (i >= m.rows * m.cols) { return; }
+  let r = i / m.cols; let c = i % m.cols;
+  Y[c * m.rows + r] = X[i];
+}`;
+
+const SLICECOLS_WGSL = `
+struct Meta { rows:u32, C:u32, col0:u32, W:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.x; if (i >= m.rows * m.W) { return; }
+  let r = i / m.W; let j = i % m.W;
+  Y[i] = X[r * m.C + m.col0 + j];
+}`;
+
+const SETCOLS_WGSL = `
+struct Meta { rows:u32, C:u32, col0:u32, W:u32 };
+@group(0) @binding(0) var<storage, read> src: array<f32>;
+@group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.x; if (i >= m.rows * m.W) { return; }
+  let r = i / m.W; let j = i % m.W;
+  dst[r * m.C + m.col0 + j] = src[i];
 }`;
 
 const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3 };
@@ -217,6 +298,22 @@ export class GpuContext {
     return y;
   }
 
+  /**
+   * 1-D conv. x:[Cin,L] (rows=Cin, cols=L), w GPU tensor of Cout*(Cin/groups)*K
+   * f32, bias?:[1,Cout]. Returns [Cout, Lout]. w/bias are passed as GpuTensors
+   * (any rows/cols — only .buf is used).
+   */
+  conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, act = "none" } = {}) {
+    const Cin = x.rows, L = x.cols;
+    const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
+    const y = this.alloc(cout, Lout);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
+    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
+    this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
+    return y;
+  }
+
   /** Elementwise. b broadcast over rows if b.rows===1. */
   ewise(a, b, op) {
     const n = a.rows * a.cols;
@@ -228,6 +325,32 @@ export class GpuContext {
   }
   add(a, b) { return this.ewise(a, b, "add"); }
   mul(a, b) { return this.ewise(a, b, "mul"); }
+
+  /** 2-D transpose: [rows,cols] -> [cols,rows]. */
+  transpose(x) {
+    const y = this.alloc(x.cols, x.rows);
+    const pipeline = this._pipeline("transpose", TRANSPOSE_WGSL);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
+    return y;
+  }
+
+  /** Extract columns [col0, col0+width) from x[rows,cols] -> [rows,width]. */
+  sliceCols(x, col0, width) {
+    const y = this.alloc(x.rows, width);
+    const pipeline = this._pipeline("slicecols", SLICECOLS_WGSL);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, col0, width]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * width) / 64));
+    return y;
+  }
+
+  /** Write src[rows,width] into dst[rows,cols] at column col0 (in place). */
+  setCols(dst, src, col0) {
+    const pipeline = this._pipeline("setcols", SETCOLS_WGSL);
+    const u = this._uniform(new Uint32Array([src.rows, dst.cols, col0, src.cols]));
+    this._run(pipeline, [src.buf, dst.buf], u, Math.ceil((src.rows * src.cols) / 64));
+    return dst;
+  }
 
   /** Copy a GPU tensor back to CPU. */
   async download(t) {
