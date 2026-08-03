@@ -12,7 +12,7 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
 | **Diarization (Sortformer)** | ✅ | 146 ms | **82.2×** | 1 spk, 5 seg (short audio) |
 | **Whisper (99 langs)** | ✅ | 500 ms | **24×** | correct transcript |
 | **Parakeet TDT v3** | ✅ | 259 ms | **46.3×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 (fully warm; 14× on the compile-run) |
-| **Nemotron 3.5** | ✅ | — | — | **fixed** — int4 encoder forced to WASM (WebGPU EP mishandled int4 → empty); headless output correct, re-run for the number |
+| **Nemotron 3.5** | ⚠️ | — | — | int4 correct on WASM but **freezes single-threaded** in-browser; **opt-in only** (`?engines=asr-nemotron`). WebGPU EP → empty. |
 | **Kokoro TTS (en)** | ✅ | 333 ms | **10.1×** | 3.38 s audio |
 | **Kokoro TTS (zh)** | ✅ | 316 ms | **9.8×** | 3.10 s audio |
 
@@ -25,11 +25,14 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
   Kokoro-en was **2.0× cold → 10.1× warm**, Whisper 9.3 → 24×, Sortformer 16 → 82×.
   The table above is warm/steady-state (what a user sees after first load); expect
   the first run to be several× slower.
-- **Nemotron empty-on-WebGPU — fixed.** The int4 encoder was requesting the WebGPU
-  EP, which mishandles the int4 `MatMulNBits` ops → empty transcript (ORT-web runs
-  them on WebGPU rather than falling back). The encoder now runs on **WASM**, where
-  int4 is healthy (headless-verified: correct transcript). WebGPU wasn't helping this
-  thin-GEMM model anyway.
+- **Nemotron int4 is the one browser hard case.** WebGPU EP mishandles the int4
+  `MatMulNBits` ops → empty; WASM is correct (headless-verified) but single-threaded
+  on hosts without cross-origin isolation, so the 690 MB encoder over many streaming
+  chunks blocks the main thread → **the page freezes**. So it's **opt-in only**
+  (`?engines=asr-nemotron`), never in the auto-run. The genuine fix is the
+  **raw-WebGPU int4 path** (`src/gpu` `matmulNBits`, built + parity-verified) wired
+  into the encoder — correct *and* GPU-fast, the one thing ORT-WebGPU can't do. That
+  wiring (219 MatMulNBits + FastConformer topology) is the remaining build.
 
 ### Superseded
 Earlier partial runs (Sortformer 123×, Kokoro 9.99×/5.26×, and the cold table) are

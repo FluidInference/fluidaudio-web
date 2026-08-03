@@ -19,6 +19,8 @@ interface Case {
   label: string;
   kind: "audio" | "text";
   heavy?: boolean;
+  /** Opt-in only: never in the auto-run (even with ?full) — must be named in ?engines=. */
+  manual?: boolean;
   make: () => Promise<Engine>;
   run: (engine: any, audio: { samples: Float32Array; sampleRate: number }) => Promise<any>;
   summarize: (out: any) => string;
@@ -62,10 +64,15 @@ const CASES: Case[] = [
     summarize: (o) => `${(o.samples.length / o.sampleRate).toFixed(2)}s audio`,
   },
   {
-    id: "asr-nemotron", label: "Nemotron 3.5", kind: "audio", heavy: true,
+    // Opt-in only (?engines=asr-nemotron): int4 encoder is correct on WASM but
+    // single-threaded on hosts without cross-origin isolation → it blocks the main
+    // thread for many seconds on a 12s clip (freezes the page). Not auto-run. The
+    // real fix is the raw-WebGPU int4 path (src/gpu/matmulNBits) — WebGPU's EP
+    // mishandles int4, so ORT can't do it fast+correct in-browser.
+    id: "asr-nemotron", label: "Nemotron 3.5 (opt-in; WASM int4, slow)", kind: "audio", heavy: true, manual: true,
     make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
     run: (e, a) => e.transcribe(a),
-    summarize: (o) => o.text || "(empty — needs WebGPU)",
+    summarize: (o) => o.text || "(empty)",
   },
   {
     id: "eou-parakeet", label: "Parakeet EOU 120M", kind: "audio", heavy: true,
@@ -88,7 +95,8 @@ async function main() {
   const params = new URLSearchParams(location.search);
   const only = params.get("engines")?.split(",").map((s) => s.trim());
   const full = params.has("full");
-  const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
+  // `manual` engines run ONLY when named explicitly in ?engines= (never via ?full).
+  const cases = CASES.filter((c) => (only ? only.includes(c.id) : !c.manual && (full || !c.heavy)));
 
   const audioBuf = await (await fetch("./sample.wav")).arrayBuffer();
   const audio = await decodeToMono16k(audioBuf);

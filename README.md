@@ -14,9 +14,10 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 on full LibriSpeech test-clean (matches native FluidAudio ~2.14%). Measured
 in-browser on WebGPU (Chrome/macOS, warm/steady-state): VAD **132×**, EOU **86×**,
 Sortformer **82×**, Whisper **24×**, Parakeet v3 **14×**, Kokoro-en **10×** / zh
-**10×** — all 8 engines correct in-browser (Nemotron fixed: int4 encoder runs on
-WASM, not the WebGPU EP that mishandled it). First (cold) run is several× slower —
-WebGPU compiles shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+**10×** — 7 engines correct + real-time in-browser. (Nemotron int4 is the exception:
+correct on WASM but single-threaded → freezes in-browser; it's opt-in only until the
+raw-WebGPU int4 path lands.) First (cold) run is several× slower — WebGPU compiles
+shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
 
@@ -26,7 +27,7 @@ WebGPU compiles shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 | `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | **WASM** (int4 enc) | ✅ fixed — encoder forced to WASM (WebGPU EP mishandled int4 → empty); headless-verified correct |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | **WASM** (int4 enc) | ⚠️ int4 correct on WASM but freezes single-threaded in-browser (WebGPU EP mishandles int4 → empty). **Opt-in only.** Real fix = raw-WebGPU int4 (`src/gpu` `matmulNBits`) |
 | `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ **132×** (direct ORT, no `vad-web`) |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ **86×** (transcript + `<EOU>`/`<EOB>`) |
 
