@@ -1,41 +1,40 @@
-// Silero VAD via @ricky0123/vad-web (onnxruntime-web + WASM). Mature, drop-in.
-// Uses the non-real-time path for whole-clip segmentation.
+// Silero VAD — reimplemented directly on core/ort.
+//
+// We do NOT use @ricky0123/vad-web: it's CJS and does a dynamic
+// `require("onnxruntime-web/wasm")` that Vite can't resolve once ORT is excluded
+// from optimizeDeps (excluding ORT is itself required — see core/ort.ts). The
+// Silero ONNX interface is trivial (512-sample windows + a 2×1×128 state), so we
+// drive it ourselves and drop the dependency entirely.
+//
+// Model: silero_vad.onnx (v5) — input[1,512] + state[2,1,128] + sr int64 ->
+// output[1,1] speech prob + stateN[2,1,128]. Runs on WASM (tiny, no WebGPU win).
 
-import * as vadWeb from "@ricky0123/vad-web";
+import { createSession, ort } from "../../core/ort";
+import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, ProgressCb, SpeechRange, VadEngine } from "../../core/types";
+import { sileroDetect } from "./silero.js";
 
-// vad-web is CJS; grab NonRealTimeVAD via namespace so the named-import interop
-// can't break at module load.
-const NonRealTimeVAD: any = (vadWeb as any).NonRealTimeVAD ?? (vadWeb as any).default?.NonRealTimeVAD;
+const REPO = "onnx-community/silero-vad";
+const MODEL = "onnx/model.onnx";
 
 export class SileroVadEngine implements VadEngine {
   readonly id = "vad-silero";
   readonly label = "Silero VAD";
-  private vad: any = null;
+  private session: any = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    onProgress?.({ file: "silero-vad", loaded: 0, total: 1, fraction: 0.1 });
-    // vad-web bundles the ONNX weights + wasm; it fetches them on first use.
-    // Point vad-web at the CDN for its silero ONNX + worklet so they resolve
-    // under Vite. ORT wasm is left to self-resolve (see core/ort.ts) — don't
-    // pin onnxWASMBasePath to a mismatched version.
-    this.vad = await NonRealTimeVAD.new({
-      baseAssetPath: "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/",
-    } as any);
-    onProgress?.({ file: "silero-vad", loaded: 1, total: 1, fraction: 1 });
+    const bytes = await fetchCached(hfUrl(REPO, MODEL), onProgress, "silero_vad.onnx");
+    this.session = await createSession(bytes, "wasm");
+    onProgress?.({ file: REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async detect(audio: AudioData): Promise<SpeechRange[]> {
-    if (!this.vad) throw new Error("SileroVadEngine.load() not called");
-    const ranges: SpeechRange[] = [];
-    for await (const { start, end } of this.vad.run(audio.samples, audio.sampleRate)) {
-      // vad-web yields start/end in milliseconds.
-      ranges.push({ start: start / 1000, end: end / 1000 });
-    }
-    return ranges;
+    if (!this.session) throw new Error("SileroVadEngine.load() not called");
+    return sileroDetect({ ort, session: this.session, audio: audio.samples });
   }
 
   async dispose(): Promise<void> {
-    this.vad = null;
+    await this.session?.release?.();
+    this.session = null;
   }
 }

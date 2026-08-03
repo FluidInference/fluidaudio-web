@@ -24,8 +24,8 @@ Sortformer **123× RTFx**; Nemotron 3.5 transcribing 40 languages. See
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ verified (9.99× / 5.26× RTFx) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ verified short-audio (123× RTFx); long-audio needs streaming loop |
 | `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | WebGPU / WASM | ✅ verified (int4 runs on WASM) |
-| `vad-silero` | Silero VAD | `@ricky0123/vad-web` | WASM | ⛔ `vad-web` CJS/Vite issue |
-| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WASM | ⛔ no public ONNX export |
+| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ verified (direct ORT, no `vad-web`) |
+| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ verified (transcript + `<EOU>`/`<EOB>`) |
 
 ✅ = correctness checked (WER / RTFx / output) on real data; ⛔ = blocked (reason
 in the row). Numbers in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
@@ -89,6 +89,16 @@ docs/           architecture + per-engine notes
 - **onnxruntime-web + Vite:** keep ORT out of `optimizeDeps` (Vite rewrites its
   `jsep.mjs` import and breaks it), and don't pin `wasmPaths` to a mismatched
   version — let ORT self-resolve.
+- **Don't fight `@ricky0123/vad-web`.** It's CJS and does a dynamic
+  `require("onnxruntime-web/wasm")` that Vite can't resolve once ORT is excluded
+  from `optimizeDeps`. Silero's ONNX interface is trivial (512-sample windows +
+  a 2×1×128 state), so `vad-silero` drives `silero_vad.onnx` directly through
+  `core/ort` and drops the dependency.
+- **EOU wants a different mel.** `parakeet-realtime-eou` is a NeMo streaming RNNT
+  and expects **NA (un-normalized) log-mel** — the Nemotron frontend, *not*
+  Parakeet's per-feature CMVN. Feed it the wrong normalization and the encoder
+  emits content-free frames (flat per-frame RMS) while the joint predicts blank
+  on every step — looks like a decode bug, is actually the frontend.
 
 ## License
 

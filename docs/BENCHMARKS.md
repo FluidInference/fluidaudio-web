@@ -95,7 +95,24 @@ above are the fp32 baseline; in-browser the encoder runs int8 on WebGPU.
 - Sustained ~2.5–2.7× RTF, ~39 chars/s on CPU. Upstream reports Kokoro **WebGPU**
   at ~10 s audio per ~1 s (≈10× RTF) — expect a similar jump in-browser.
 
+## Silero VAD + Parakeet EOU — verified (ort-node CPU, `scripts/smoke-{vad,eou}.mjs`)
+
+12 s LibriVox intro:
+
+| engine | run | output |
+|---|--:|---|
+| **Silero VAD v5** | 30 ms | 6 speech ranges, 7.78 s speech / 12 s (32 ms windows, hysteresis + duration guards) |
+| **Parakeet EOU 120M** | 300 ms | 35 tokens → *"four classes that a menace fromanti suffrage ten good reasons by grace duffield…"* + `<EOU>@12s` |
+
+Both share the browser core exactly: VAD runs `silero_vad.onnx` directly on
+`core/ort` (no `@ricky0123/vad-web` — its CJS `require` breaks under Vite), EOU
+runs the fp32 encoder (WebGPU/WASM) + fused RNNT decoder (WASM) with the **NA**
+log-mel frontend (see [`EOU.md`](EOU.md) — feeding per-feature CMVN yields
+all-blank). Reproduce:
+```bash
+node scripts/smoke-vad.mjs /tmp/pk_intro.wav /tmp/silero_vad.onnx
+node scripts/smoke-eou.mjs /tmp/pk_intro.wav   # needs /tmp/eou/{enc,dj}.onnx + vocab.txt
+```
+
 ## Not yet measured
-- **Silero VAD** — browser-only (`@ricky0123/vad-web`, AudioWorklet); measure via
-  the dev server.
-- **Nemotron / diarization / EOU** — scaffolds.
+- **Nemotron / diarization** WebGPU browser RTFx — capture via the dev server.

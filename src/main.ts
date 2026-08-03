@@ -45,7 +45,7 @@ const ENTRIES: Record<string, Entry> = {
     make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
   },
   "eou-parakeet": {
-    label: "Parakeet EOU ⛔", kind: "audio",
+    label: "Parakeet EOU 120M ✅", kind: "audio",
     make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
   },
 };
@@ -143,11 +143,14 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
   }
   if (typeof any.transcribe === "function") {
     const r = await any.transcribe(audio);
+    const events = r.events?.length
+      ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}`
+      : "";
     if (r.metrics) {
       const m = r.metrics;
-      return `stages: mel ${m.melMs}ms · encode(WebGPU) ${m.encodeMs}ms · decode ${m.decodeMs}ms\n\n${r.text}`;
+      return `stages: mel ${m.melMs}ms · encode(WebGPU) ${m.encodeMs}ms · decode ${m.decodeMs}ms\n\n${r.text}${events}`;
     }
-    return r.text;
+    return `${r.text}${events}`;
   }
   if (typeof any.diarize === "function") {
     const segs = await any.diarize(audio);

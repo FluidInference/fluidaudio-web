@@ -67,6 +67,13 @@ const CASES: Case[] = [
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text || "(empty — needs WebGPU)",
   },
+  {
+    id: "eou-parakeet", label: "Parakeet EOU 120M", kind: "audio", heavy: true,
+    make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
+    run: (e, a) => e.transcribe(a),
+    summarize: (o) =>
+      `${o.text || "(no speech)"}${o.events?.length ? ` · ${o.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`,
+  },
 ];
 
 const $ = (id: string) => document.getElementById(id)!;

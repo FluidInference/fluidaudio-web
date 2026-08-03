@@ -69,11 +69,25 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "MIT (seg: pyannote CC)",
     note: "Runs through sherpa-onnx WASM, not raw ORT. See engine for the wasm bundle.",
   },
-  // ⛔ No public ONNX export of parakeet-realtime-eou-120m yet.
+  // ✅ CONFIRMED — asrjs export of nvidia/parakeet_realtime_eou_120m-v1.
+  // fp32 encoder decodes on WASM *and* WebGPU (no int8-collapse like Parakeet).
+  // Wants NA (un-normalized) log-mel — the Nemotron frontend, not per_feature.
   "eou-parakeet": {
-    files: [],
-    approxMB: 120,
-    license: "cc-by-4.0",
-    note: "Greenfield. Needs a NeMo→ONNX export of the streaming EOU encoder first.",
+    files: [
+      { repo: "ysdede/parakeet-realtime-eou-120m-v1-onnx", path: "encoder-model.onnx" },
+      { repo: "ysdede/parakeet-realtime-eou-120m-v1-onnx", path: "decoder_joint-model.onnx" },
+      { repo: "ysdede/parakeet-realtime-eou-120m-v1-onnx", path: "vocab.txt" },
+    ],
+    approxMB: 480,
+    license: "nvidia-open-model",
+    note: "Streaming RNNT with <EOU>/<EOB> control tokens. NA mel (reuses Nemotron frontend). RNNT greedy decode + tokenizer in JS glue.",
+  },
+  // ✅ CONFIRMED — canonical Silero VAD v5 ONNX, driven directly via core/ort
+  // (no @ricky0123/vad-web; its CJS require breaks under Vite).
+  "vad-silero": {
+    files: [{ repo: "onnx-community/silero-vad", path: "onnx/model.onnx" }],
+    approxMB: 2,
+    license: "MIT",
+    note: "input[1,512]+state[2,1,128]+sr → prob+stateN. 32ms windows, hysteresis + duration guards in JS.",
   },
 };
