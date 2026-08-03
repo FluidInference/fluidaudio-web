@@ -114,6 +114,25 @@ for (const cfg of [
   report("conv1dGemm (im2col)", maxErr(g, ref), 1e-2);
 }
 
+// ---- conv1dFast (fused implicit GEMM, groups=1) matches direct conv ----
+{
+  const Cin = 48, L = 400, Cout = 64, K = 7, pad = 3;
+  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
+  const out = await ctx.download(ctx.conv1dFast(ctx.upload(X, Cin, L), ctx.upload(W, Cout, Cin * K), Cout, K, { pad, bias: ctx.upload(bias, 1, Cout) }));
+  report("conv1dFast (fused)", maxErr(out, ref), 1e-2);
+}
+
+// ---- gatherCols (length regulator) ----
+{
+  const C = 16, T = 8;
+  const X = rand(C * T);
+  const idx = Uint32Array.from([0, 0, 0, 1, 2, 2, 3, 4, 4, 4, 4, 7]);
+  const out = await ctx.download(ctx.gatherCols(ctx.upload(X, C, T), idx));
+  let e = 0; for (let r = 0; r < C; r++) for (let f = 0; f < idx.length; f++) e = Math.max(e, Math.abs(out[r * idx.length + f] - X[r * T + idx[f]]));
+  report("gatherCols (len-reg)", e, 0);
+}
+
 // ---- convTranspose1d (regular + depthwise) ----
 function convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups, outPad) {
   const Lout = (L - 1) * stride - 2 * pad + dil * (K - 1) + outPad + 1;

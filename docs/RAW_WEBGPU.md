@@ -19,8 +19,11 @@ browser, [dawn](https://github.com/kmamal/gpu) in Node). Tensors are GPU-residen
 | Kernel | WGSL | Notes |
 |---|---|---|
 | `matmul(a, b, {bias, act})` | tiled 16×16, shared-memory | **fused** bias + activation (none/gelu/tanh/relu) in one dispatch |
-| `conv1d(x, w, {…})` | one thread / (Cout, Lout) | stride / pad / dilation / groups; regular + depthwise |
+| `conv1d(x, w, {…})` | one thread / (Cout, Lout) | direct; small + depthwise/grouped convs |
+| `conv1dFast(x, wRows, …)` | **implicit GEMM**, register-blocked | groups=1 hot vocoder convs; no im2col materialization |
+| `conv1dGemm(x, wRows, …)` | im2col + tiled GEMM | groups=1; kept for reference (materializes patches) |
 | `convTranspose1d(x, w, {…})` | one thread / (Cout, Lout), gather form | iSTFTNet upsampler + iSTFT overlap-add; groups |
+| `gatherCols(x, idxMap)` | index kernel | length regulator (duration-expand text→mel) |
 | `lstm(x, w, r, b, hid)` | 1 workgroup/direction, hidden units as threads | **bidirectional**, ONNX `iofc` gates, timesteps in-kernel (H ≤ 256) |
 | `layernorm(x, γ, β)` | 1 workgroup/row, 64-lane reduce | row-wise |
 | `adain(x, scale, shift)` | 1 workgroup/channel, 64-lane reduce | instance-norm over time + style affine (StyleTTS2 decoder) |
@@ -125,14 +128,19 @@ verifiable through the same harness before wiring:
 4. ✅ **ConvTranspose1d** — iSTFTNet upsampler + iSTFT overlap-add (`gpu:convt`).
 5. ✅ **AdaIN** — instance-norm over time + style affine (`adain`).
 6. ✅ **LeakyReLU** — iSTFTNet activation (`leakyRelu`).
-7. **length regulator** — expand text features by predicted durations (a gather).
+7. ✅ **length regulator** — duration-expand via `gatherCols`.
 8. **harmonic+noise source** for the generator (sine gen + the STFT is matmul/conv).
 9. **embedding gather** — currently CPU (a lookup); move to a kernel if it matters.
 
-Every compute-heavy primitive is done and parity-clean; the full op set already
-runs (`gpu:kokoro-forward`, 271/274 ops). What's left to hand-wire an end-to-end
-audio path is the length regulator (a gather) + source gen — plus the fused-conv /
-fp16 optimization pass that would turn the ~10× tie into a win.
+Every compute primitive is done and parity-clean (19 kernels, `gpu:verify`); the
+full op set runs in one submit (`gpu:kokoro-forward`, 271/274). The only remaining
+piece for an audio-producing end-to-end is the harmonic source generator — the rest
+is wiring. But the perf verdict is settled: **raw WebGPU ties kokoro-js at ~10×**,
+and neither fused-conv nor shared-tile fp16 breaks the tie. The realistic path to a
+win is end-to-end f16 storage — a large refactor whose payoff is uncertain when
+kokoro-js already ships at 10×. So the recommendation stands: **build raw WebGPU for
+the models where ORT is *blocked* (Nemotron int4, Parakeet int8-collapse), not for
+Kokoro speed.**
 
 ## Ship/no-ship: where the Kokoro time actually goes
 
@@ -178,12 +186,19 @@ back in a **single submit**, timing submit→GPU-finish (excludes CPU alloc/reco
 | kokoro-js (ORT WebGPU, browser) | ~10× |
 
 **Verdict: with correct, register-blocked kernels raw WebGPU *matches* kokoro-js
-(~10×) — it does not yet clearly beat it.** The 34× single-conv microbench doesn't
-carry to the whole pipeline: `im2col` trades compute for memory (it materializes a
-big patch matrix), and at Kokoro's near-audio-rate lengths (`L ≈ 9841`) the many
-convs are memory-bound in aggregate. Beating ORT decisively needs a **fused direct
-conv** (no im2col materialization) and/or **fp16** (`shader-f16` is available) — a
-real optimization pass, not just correct kernels.
+(~10×) — it does not clearly beat it,** and the two obvious levers don't move it:
+
+- **Fused conv (`conv1dFast`, implicit GEMM, no im2col):** parity-clean and, at the
+  dominant shape, exactly as fast as im2col+GEMM (~1750 GFLOP/s) — the heavy convs
+  were already compute-bound, so removing the patch-matrix materialization saves
+  memory but not time. The full-forward stays ~10× because the aggregate is
+  dominated by the *many smaller / depthwise* convs, which are intrinsically
+  lower-intensity, not by the one flagship conv.
+- **fp16 (shared-tile, f32 storage):** *slower* — 515 vs 1750 GFLOP/s at the
+  dominant shape. With f32 global buffers there's no memory-bandwidth win (global
+  reads stay f32), just conversion overhead. A real fp16 win needs **end-to-end f16
+  storage** (weights + activations), a large refactor with parity risk and — since
+  f32 already ties kokoro-js — uncertain payoff. Deferred.
 
 Two hard-won measurement lessons:
 - **Denormals cost ~2×.** Replaying with uninitialized (garbage) buffers ran at

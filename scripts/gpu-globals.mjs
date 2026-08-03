@@ -13,5 +13,6 @@ export async function getDevice() {
   const gpu = mod.create ? mod.create([]) : mod;
   const adapter = await gpu.requestAdapter();
   if (!adapter) throw new Error("no WebGPU adapter (dawn)");
-  return adapter.requestDevice();
+  const feats = adapter.features && adapter.features.has && adapter.features.has("shader-f16") ? ["shader-f16"] : [];
+  return adapter.requestDevice({ requiredFeatures: feats });
 }

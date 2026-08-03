@@ -33,7 +33,7 @@ function runOp(o) {
       const [, Cin, L] = o.in[0]; const w = o.in[1]; const Cout = o.out[0][1]; const K = w[2];
       const groups = Math.max(1, Math.round(Cin / w[1]));
       const x = ctx.alloc(Cin, L);
-      if (groups === 1) return ctx.conv1dGemm(x, ctx.alloc(Cout, Cin * K), Cout, K, { pad: (K - 1) >> 1 });
+      if (groups === 1) return ctx.conv1dFast(x, ctx.alloc(Cout, Cin * K), Cout, K, { pad: (K - 1) >> 1 });
       return ctx.conv1d(x, ctx.alloc(1, Cout * (Cin / groups) * K), { cout: Cout, k: K, pad: (K - 1) >> 1, groups });
     }
     if (o.op === "ConvTranspose") {

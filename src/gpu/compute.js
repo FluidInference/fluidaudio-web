@@ -241,6 +241,83 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nw
   Cols[i] = select(0.0, X[ci * m.L + u32(li)], li >= 0 && li < i32(m.L));
 }`;
 
+// Fused conv1d as an IMPLICIT GEMM (groups=1): C[Cout,Lout] = W[Cout,Cin*K] @
+// cols[Cin*K,Lout], but the cols matrix is never materialized — the B tile reads
+// X directly via the conv index map. Same register-blocking as the GEMM (64×64
+// block, 4×4 micro-tile), so it hits GEMM throughput WITHOUT im2col's memory
+// blow-up (which is what capped the vocoder convs). bias per-Cout (per output row).
+const CONV1D_IMPLICIT_WGSL = `
+struct Meta { Cout:u32, Lout:u32, CinK:u32, Cin:u32, L:u32, K:u32, stride:u32, pad:u32,
+              dil:u32, hasBias:u32, act:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> W: array<f32>;
+@group(0) @binding(1) var<storage, read> X: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return gelu(x); }
+  if (a == 2u) { return tanh(x); }
+  if (a == 3u) { return max(x, 0.0); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; // over Cout
+  let blockCol = wg.x * BN; // over Lout
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.CinK + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK; // Cout row, contraction col
+      As[idxA] = select(0.0, W[(blockRow + aRow) * m.CinK + kk + aCol], blockRow + aRow < m.Cout && kk + aCol < m.CinK);
+      let idxB = tid + i * 256u;
+      let cr = kk + idxB / BN;          // contraction index = ci*K + kpos
+      let lo = blockCol + idxB % BN;    // output position
+      var bv = 0.0;
+      if (cr < m.CinK && lo < m.Lout) {
+        let ci = cr / m.K; let kpos = cr % m.K;
+        let li = i32(lo * m.stride + kpos * m.dil) - i32(m.pad);
+        if (li >= 0 && li < i32(m.L)) { bv = X[ci * m.L + u32(li)]; }
+      }
+      Bs[idxB] = bv;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j = 0u; j < TN; j++) { bReg[j] = Bs[k * BN + threadCol + j]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j = 0u; j < TN; j++) { acc[i * TN + j] += aReg[i] * bReg[j]; }
+      }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    for (var j = 0u; j < TN; j++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j;
+      if (r < m.Cout && c < m.Lout) {
+        var v = acc[i * TN + j];
+        if (m.hasBias == 1u) { v += bias[r]; }
+        Y[r * m.Lout + c] = actf(v, m.act);
+      }
+    }
+  }
+}`;
+
 // AdaIN: instance-norm over time (per channel) + style-predicted per-channel affine.
 // x:[C,L], scale/shift:[C] -> y = (x-mean_c)/sqrt(var_c+eps)*scale[c] + shift[c].
 // One workgroup per channel; 64-lane reduce over L.
@@ -270,6 +347,23 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) l
   let inv = inverseSqrt(red[0] / f32(m.L) + m.eps);
   let sc = scale[ch]; let sh = shift[ch];
   for (var j = li; j < m.L; j += 64u) { Y[base + j] = (X[base + j] - mean) * inv * sc + sh; }
+}`;
+
+// Column gather (length regulator): Y[:, f] = X[:, idx[f]]. Expands text features
+// to mel frames by repeating each column per its predicted duration (idx = the
+// frame→text-token map, a duration cumsum built on the CPU).
+const GATHERCOLS_WGSL = `
+struct Meta { rows:u32, inCols:u32, outCols:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> idx: array<u32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x;
+  if (i >= m.rows * m.outCols) { return; }
+  let r = i / m.outCols; let f = i % m.outCols;
+  Y[i] = X[r * m.inCols + idx[f]];
 }`;
 
 // LeakyReLU (elementwise): y = x>0 ? x : slope*x. Slope in the uniform.
@@ -580,6 +674,22 @@ export class GpuContext {
     return y;
   }
 
+  /**
+   * Length regulator: expand x[C, T_text] to [C, T_mel] by repeating each text
+   * column per its duration. idxMap is a Uint32Array[T_mel] of source columns
+   * (the duration cumsum → frame→token map).
+   */
+  gatherCols(x, idxMap) {
+    const outCols = idxMap.length;
+    const y = this.alloc(x.rows, outCols);
+    const idxBuf = this.device.createBuffer({ size: Math.max(4, outCols * 4), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(idxBuf, 0, idxMap);
+    const pipeline = this._pipeline("gathercols", GATHERCOLS_WGSL);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, outCols, 0]));
+    this._run(pipeline, [x.buf, idxBuf, y.buf], u, Math.ceil((x.rows * outCols) / 64));
+    return y;
+  }
+
   /** LeakyReLU (elementwise), default slope 0.2 (StyleTTS2 / iSTFTNet). */
   leakyRelu(x, slope = 0.2) {
     const n = x.rows * x.cols;
@@ -591,6 +701,23 @@ export class GpuContext {
     const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(u, 0, meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
+    return y;
+  }
+
+  /**
+   * Fused conv1d via implicit GEMM (groups=1) — register-blocked, no im2col
+   * materialization. x:[Cin,L], wRows = weight as [Cout, Cin*K], bias?:[1,Cout].
+   * Returns [Cout, Lout]. The fast path for the big vocaoder convs.
+   */
+  conv1dFast(x, wRows, cout, k, { bias = null, stride = 1, pad = 0, dilation = 1, act = "none" } = {}) {
+    const Cin = x.rows, L = x.cols;
+    const CinK = Cin * k;
+    const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
+    const y = this.alloc(cout, Lout);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("conv1dImplicit", CONV1D_IMPLICIT_WGSL);
+    const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
+    this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
     return y;
   }
 

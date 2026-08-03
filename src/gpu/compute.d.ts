@@ -33,6 +33,10 @@ export class GpuContext {
   im2col(x: GpuTensor, k: number, opts?: { stride?: number; pad?: number; dilation?: number }): GpuTensor;
   /** conv1d via im2col + tiled GEMM (groups=1). wRows = weight as [Cout, Cin*K]. -> [Cout, Lout]. */
   conv1dGemm(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
+  /** Fused conv1d via implicit GEMM (groups=1), no im2col materialization. wRows=[Cout,Cin*K]. */
+  conv1dFast(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { bias?: GpuTensor | null; stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
+  /** Length regulator: expand x[C,T] to [C, idxMap.length] by column gather. */
+  gatherCols(x: GpuTensor, idxMap: Uint32Array): GpuTensor;
   layernorm(x: GpuTensor, gamma: GpuTensor, beta: GpuTensor, eps?: number): GpuTensor;
   softmax(x: GpuTensor): GpuTensor;
   ewise(a: GpuTensor, b: GpuTensor, op: "add" | "mul"): GpuTensor;
