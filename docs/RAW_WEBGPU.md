@@ -112,9 +112,9 @@ the node's input/output as graph outputs for an ORT reference) → `npm run gpu:
   ambient in the browser; `scripts/gpu-globals.mjs` registers them on `globalThis`
   so the *same* kernel code runs under dawn. That's what makes headless parity
   testing possible (Chrome has no `navigator.gpu` in the automation env).
-- **Naive tiled GEMM ≈ 1 TFLOP/s** (~10% of the M5 Pro's fp32 peak). Fine for
-  correctness + the residency demo; a register-blocked / fp16 (`shader-f16` is
-  available) kernel is the next perf step.
+- **GEMM: naive 1 TFLOP/s → register-blocked 2.2 TFLOP/s → f16-storage ~2.7
+  TFLOP/s** (~20% of the M5 Pro's fp32 peak). f16 storage is the last portable-WGSL
+  lever (~1.3–1.5×, parity rel 3e-4); beyond that needs `simdgroup` matrix units.
 
 ## Wiring status (`src/gpu/kokoro.js`)
 
@@ -206,13 +206,15 @@ portable WGSL on this GPU**:
 | 8×8 micro-tile, 128×128 block | 461 GFLOP/s — **regressed 4×** (64 acc + 16 reg ≈ 80 registers/thread → spills, occupancy collapse) |
 | 4×4 + double-buffered shared | 2124 GFLOP/s — **neutral** (not load-latency bound) |
 
-The plateau is a **hardware-feature-access** limit, not a tuning one: reaching
+The f32 plateau is a **hardware-feature-access** limit, not a tuning one: reaching
 60–70% of peak needs Apple's `simdgroup` matrix units (what MLX/MPS use), which
-portable WGSL can't reach yet — the WGSL cooperative-matrix / subgroup-matrix
-extension isn't standardized/exposed here. So `simdgroup` matmul + end-to-end fp16
-storage are the only remaining levers, and both are out of reach of portable WGSL
-today. `~2.2 TFLOP/s` is the practical WGSL ceiling on this GPU — which is why
-raw-WebGPU *ties* rather than *beats* ORT-WebGPU (ORT hits a similar WGSL wall).
+portable WGSL can't reach yet (the cooperative-matrix / subgroup-matrix extension
+isn't exposed here). The one remaining *reachable* lever is **f16 storage**, which
+does help (2.2 → ~2.7 TFLOP/s, ~1.3–1.5×, parity rel 3e-4 — see the ship/no-ship
+notes). So the ordering is: register-blocking (done) → f16 storage (reachable,
+~1.4×) → `simdgroup` (blocked on a WGSL extension). raw-WebGPU *ties* ORT-WebGPU
+because both hit the same `simdgroup`-less WGSL wall; f16 storage is what tips it to
+a modest win, at the cost of an end-to-end f16 refactor.
 
 ### Full-forward measurement (the honest end-to-end number)
 
@@ -235,11 +237,18 @@ back in a **single submit**, timing submit→GPU-finish (excludes CPU alloc/reco
   memory but not time. The full-forward stays ~10× because the aggregate is
   dominated by the *many smaller / depthwise* convs, which are intrinsically
   lower-intensity, not by the one flagship conv.
-- **fp16 (shared-tile, f32 storage):** *slower* — 515 vs 1750 GFLOP/s at the
-  dominant shape. With f32 global buffers there's no memory-bandwidth win (global
-  reads stay f32), just conversion overhead. A real fp16 win needs **end-to-end f16
-  storage** (weights + activations), a large refactor with parity risk and — since
-  f32 already ties kokoro-js — uncertain payoff. Deferred.
+- **fp16 shared-tile, f32 storage:** *slower* — 515 vs 1750 GFLOP/s. With f32 global
+  buffers there's no memory-bandwidth win (global reads stay f32), just conversion
+  overhead. This is the wrong way to do fp16.
+- **fp16 *storage* (f16 global buffers): a real win.** `array<f16>` storage is
+  reachable in portable WGSL (`shader-f16`). Measured on the M5 Pro: GEMM **1702 →
+  2552 GFLOP/s @ 2048³ (1.5×)**, **2175 → 2718 @ 4096³ (1.25×)**, parity vs f32 CPU
+  **rel 3.3e-4** (fine for TTS). Not the theoretical 2× (the 4×4 kernel is still
+  partly occupancy/shared-bound), but genuinely positive. Realizing it end-to-end
+  needs the whole pipeline in f16 storage (weights + activations) — a refactor, but
+  a *reachable* one that would take raw-WebGPU Kokoro from a ~10× tie to a modest win
+  (~13–14×). (Earlier docs called this "out of reach" — that was wrong; only the
+  `simdgroup` matrix units are unreachable in portable WGSL, not f16 storage.)
 
 Two hard-won measurement lessons:
 - **Denormals cost ~2×.** Replaying with uninitialized (garbage) buffers ran at
