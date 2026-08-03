@@ -64,12 +64,12 @@ const CASES: Case[] = [
     summarize: (o) => `${(o.samples.length / o.sampleRate).toFixed(2)}s audio`,
   },
   {
-    // Opt-in only (?engines=asr-nemotron): int4 encoder is correct on WASM but
-    // single-threaded on hosts without cross-origin isolation → it blocks the main
-    // thread for many seconds on a 12s clip (freezes the page). Not auto-run. The
-    // real fix is the raw-WebGPU int4 path (src/gpu/matmulNBits) — WebGPU's EP
-    // mishandles int4, so ORT can't do it fast+correct in-browser.
-    id: "asr-nemotron", label: "Nemotron 3.5 (opt-in; WASM int4, slow)", kind: "audio", heavy: true, manual: true,
+    // Runs in a Web Worker (nemotron.worker.ts) so the int4 WASM decode doesn't
+    // block the main thread. Correct output, but slow single-threaded (no cross-
+    // origin isolation on Pages) — the fast+correct path is the raw-WebGPU int4
+    // kernel (src/gpu/matmulNBits) wired into the encoder; ORT-web's WebGPU EP
+    // mishandles int4 → empty.
+    id: "asr-nemotron", label: "Nemotron 3.5 (worker; WASM int4)", kind: "audio", heavy: true,
     make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text || "(empty)",
