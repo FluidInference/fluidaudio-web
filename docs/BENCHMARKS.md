@@ -12,11 +12,11 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
 | **Diarization (Sortformer)** | ✅ | 146 ms | **82.2×** | 1 spk, 5 seg (short audio) |
 | **Whisper (99 langs)** | ✅ | 500 ms | **24×** | correct transcript |
 | **Parakeet TDT v3** | ✅ | 259 ms | **46.3×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 (fully warm; 14× on the compile-run) |
-| **Nemotron 3.5** | ✅ | — | — | int4 on WASM in a **Web Worker** — correct + non-blocking, slow single-threaded (re-run for the number). WebGPU EP → empty. |
+| **Nemotron 3.5** | ✅ | 24.4 s | **0.5×** | correct — *"Four classes that constitute a menace… by Grace Duffield Goodwin"*; int4 WASM in a **Web Worker** (non-blocking but **below real-time**, single-threaded). WebGPU EP → empty. |
 | **Kokoro TTS (en)** | ✅ | 333 ms | **10.1×** | 3.38 s audio |
 | **Kokoro TTS (zh)** | ✅ | 316 ms | **9.8×** | 3.10 s audio |
 
-**7 of 8 engines correct in-browser on WebGPU** (only Nemotron empty). Findings:
+**All 8 engines correct in-browser** (Nemotron via worker — see its row). Findings:
 - **fp16 Parakeet is the fix + is accurate.** The fp32 encoder (2.44 GB external
   data) crashed with `Array buffer allocation failed` (> Chrome's ~2 GB ArrayBuffer
   cap); the self-contained **fp16 encoder (1.24 GB)** loads, runs on WebGPU, and its

@@ -27,7 +27,7 @@ WebGPU compiles shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 | `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | **WASM** int4, **Web Worker** | ✅ correct, non-blocking (runs in a worker); slow single-threaded. WebGPU EP mishandles int4 → the fast path is raw-WebGPU int4 (`src/gpu` `matmulNBits`) |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | `onnxruntime-web` | **WASM** int4, **Web Worker** | ✅ correct, non-blocking (worker) but **0.5× / below real-time** single-threaded. WebGPU EP mishandles int4 → the fast path is raw-WebGPU int4 (`src/gpu` `matmulNBits`) |
 | `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ **132×** (direct ORT, no `vad-web`) |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ **86×** (transcript + `<EOU>`/`<EOB>`) |
 
