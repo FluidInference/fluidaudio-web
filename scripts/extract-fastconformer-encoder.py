@@ -54,6 +54,9 @@ for L in range(nl):
     if len(dwins) >= 2: add(f"L{L}_dwb", arr(dwins[1]), I[dwins[1]].dims)  # depthwise has bias
     else:
         cout = I[dww].dims[0]; add(f"L{L}_dwb", np.zeros(cout, np.float32), [cout])  # no bias → zeros
+    # conv-module norm after depthwise (EOU: explicit batch_norm applied as LN; Parakeet folds it)
+    bnw = f"{p}.conv.batch_norm.weight"
+    if bnw in I: add(f"L{L}_bnw", arr(bnw), I[bnw].dims); add(f"L{L}_bnb", arr(f"{p}.conv.batch_norm.bias"), I[f"{p}.conv.batch_norm.bias"].dims)
     add(f"L{L}_pw2", R(L, "conv/pointwise_conv2/Conv"), I[role[(L, "conv/pointwise_conv2/Conv")]].dims)
     add(f"L{L}_lnff2_w", arr(f"{p}.norm_feed_forward2.weight"), I[f"{p}.norm_feed_forward2.weight"].dims); add(f"L{L}_lnff2_b", arr(f"{p}.norm_feed_forward2.bias"), I[f"{p}.norm_feed_forward2.bias"].dims)
     add(f"L{L}_ff2w1", R(L, "feed_forward2/linear1/MatMul"), I[role[(L, "feed_forward2/linear1/MatMul")]].dims); add(f"L{L}_ff2w2", R(L, "feed_forward2/linear2/MatMul"), I[role[(L, "feed_forward2/linear2/MatMul")]].dims)

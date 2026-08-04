@@ -59,6 +59,7 @@ export function loadParakeetEncoder(ctx, bin, man) {
       pbvT: Array.from({ length: cfg.H }, (_, h) => ctx.upload(pbvS.slice(h * HD, h * HD + HD), 1, HD)),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
       pw1: vec(g("pw1")), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2: vec(g("pw2")),
+      bn: man[g("bnw")] ? [vec(g("bnw")), vec(g("bnb"))] : null, // conv-module norm (EOU)
       lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))], ff2w1: mat(g("ff2w1")), ff2w2: matScaled(g("ff2w2"), 0.5),
       lnout: [vec(g("lnout_w")), vec(g("lnout_b"))],
     });
@@ -105,6 +106,18 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   enc._pe = enc._pe || new Map();
   let peT = enc._pe.get(Tsub);
   if (!peT) { peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
+  // Streaming chunked-causal attention mask (EOU): query i attends keys
+  // [0, chunk*floor(i/chunk)+chunk-1]; -10000 elsewhere (added to scores pre-softmax).
+  let maskT = null;
+  if (enc.cfg.attChunk) {
+    enc._mask = enc._mask || new Map();
+    maskT = enc._mask.get(Tsub);
+    if (!maskT) {
+      const C = enc.cfg.attChunk, mk = new Float32Array(Tsub * Tsub);
+      for (let i = 0; i < Tsub; i++) { const hi = C * Math.floor(i / C) + C - 1; for (let j = 0; j < Tsub; j++) mk[i * Tsub + j] = j <= hi ? 0 : -10000; }
+      maskT = ctx.upload(mk, Tsub, Tsub); enc._mask.set(Tsub, maskT);
+    }
+  }
   // Depthwise conv module pad: symmetric (Parakeet) or causal (EOU streaming: all
   // pad on the left, none on the right).
   const dwPadL = enc.cfg.convCausal ? dwK - 1 : (dwK - 1) >> 1;
@@ -125,13 +138,23 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
       const qv = ctx.add(qh, w.pbvT[h]);
       const ac = ctx.matmul(qu, ctx.transpose(kh));
       const bd = ctx.relShift(ctx.matmul(qv, ctx.transpose(ph)));
-      const probs = ctx.softmax(ctx.add(ac, bd));
+      let sc = ctx.add(ac, bd);
+      if (maskT) sc = ctx.add(sc, maskT);
+      const probs = ctx.softmax(sc);
       ctx.setCols(outc, ctx.matmul(probs, vh), h * HD);
     }
     x = ctx.add(x, ctx.matmul(outc, w.out));
     const hT = ctx.transpose(ln(x, w.lnconv));
     const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1 }));
-    const dwo = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
+    let dwo;
+    if (w.bn) {
+      // EOU: depthwise (no act) → LayerNorm over channels → SiLU. [D,Tsub]→[Tsub,D]→LN→[D,Tsub]
+      const d = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb });
+      dwo = ctx.transpose(ctx.silu(ln(ctx.transpose(d), w.bn)));
+    } else {
+      // Parakeet: BatchNorm folded into depthwise, SiLU fused.
+      dwo = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
+    }
     x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1 })));
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2);
     x = ln(x, w.lnout);
