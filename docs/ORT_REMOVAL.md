@@ -186,7 +186,25 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
     - Transcript (cowen.wav): "The people here to me are the smartest people I've ever met,
       but I think a side result of that is that people here overvalue intelligence and their
       models of the world are built on intelligence mattering much."
-  - [ ] Sortformer (18-layer transformer head + spkcache/fifo streaming) — /tmp/sf
+  - [~] Sortformer diarizer (4-spk) — RECON DONE + encoder extraction, WIP.
+    Arch: 17-layer FastConformer (d512, 8h×64, dwK9) encoder → sortformer_modules.encoder_proj
+    (512→192) → 18-layer STANDARD transformer head (transformer_encoder, d192: layer_norm_1
+    → first_sub_layer MHA (query/key/value/out_projection, NO rel-pos) → layer_norm_2 →
+    second_sub_layer FFN 192→768→192, pre-LN) → single_hidden_to_spks (192→4) → sigmoid.
+    Offline single-chunk (empty spkcache/fifo [1,0,512]) = FULL attention (the -10000
+    limited-context mask is all-pass for offline), symmetric Parakeet-style subsampling
+    (1200 mel→150 exactly), per_feature mel (ParakeetMel), BN-folded conv.
+    DONE: extractor fixed (robust pre_encode.out lookup); FastConformer extracted (17L,
+    /tmp/sf-raw/enc); ORT reference + gating targets saved (/tmp/sf/ref-{preds,encout,proj}.bin,
+    sf_dbg/sf_l0/sf_sub/sf_mask.onnx); cfg.xscale added (√512 xscaling, found /encoder/pos_enc
+    const 22.627). Subsampling BYTE-EXACT (3.4e-5).
+    BLOCKER: conformer block diverges — FF1 residual maxΔ 15.5, layer0 42.6 (5.68→2.17 with
+    xscale). The FF1 sub-block already diverges → a subtle xscale/pos-encoding interaction
+    (cf. EOU's rel-pos variant). Next: isolate whether ORT scales x before FF1 or only the
+    pos_emb (try FF1 WITHOUT xscale; check RelPositionalEncoding variant). THEN build the
+    transformer head (new standard-MHA forward) + encoder_proj + hidden_to_spks + sigmoid +
+    segment extraction (reuse sortformer.js), int8 quantize, engine, HF. preds [150,4].
+    Reference preds on cowen.wav: spk0 max 1.00 (single speaker, correct).
 - [ ] 4. Kokoro
 - [ ] 5. Whisper
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
