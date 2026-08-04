@@ -1,10 +1,11 @@
-// NA variant for Nemotron (normalize=NA, no CMVN; log add 1e-10). Adapted from
-// the parakeet vendored mel.js. Returns mel-major [128*T] raw log-mel.
-// Vendored from parakeet.js (MIT, https://github.com/ysdede/parakeet.js) —
-// NeMo-parity log-mel frontend (N_FFT=512, win=400, hop=160, 128 slaney mels,
-// preemph=0.97, log(mel+2^-24), per-feature CMVN). Copied verbatim to drop the
-// npm dependency; we own the tokenizer + TDT decode (tokenizer.ts / tdt.ts).
-// Keep in sync if upstream fixes the DSP.
+// NA log-mel for Nemotron: normalize=NA (NO CMVN), log(mel + 1e-10). Returns
+// mel-major [128*T] raw log-mel. N_FFT=512, win=400, hop=160, 128 slaney mels,
+// preemph=0.97. Adapted from the parakeet vendored mel.js (MIT, ysdede/parakeet.js)
+// but with TWO deliberate differences from that source: log guard 1e-10 (not 2^-24)
+// and NO per-feature normalization — process() returns the raw log-mel. The
+// per-feature-CMVN helper (normalizeFeatures) is retained but unused here.
+// NOTE: the JSDoc below is inherited from the parakeet source and still describes
+// the 2^-24 + CMVN path; the ACTIVE behavior is the NA/1e-10 above.
 /**
  * Pure JavaScript log-mel spectrogram computation matching NeMo / onnx-asr nemo preprocessor.
  * Drop-in replacement for OnnxPreprocessor, enabling incremental computation for streaming.

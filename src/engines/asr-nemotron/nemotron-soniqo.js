@@ -44,6 +44,7 @@ export async function soniqoTranscribe({ ort, encoder, decoder, joint, preproces
   const t0 = now();
   const { features } = await preprocessor.process(audio); // mel-major [MEL, T]
   const T = features.length / MEL;
+  if (T === 0) return { text: "", tokenIds: [], metrics: { totalMs: +(now() - t0).toFixed(1) } };
 
   const lm = new Float32Array(128); lm[langPrompt] = 1; // language one-hot
   const langMask = new ort.Tensor("float32", lm, [1, 128]);
@@ -100,14 +101,15 @@ export async function soniqoTranscribe({ ort, encoder, decoder, joint, preproces
         const lg = jr["logits"].data;
         let mi = 0, mv = -Infinity;
         for (let i = 0; i < 13088; i++) if (lg[i] > mv) { mv = lg[i]; mi = i; }
-        if (mi === BLANK) break;
-        ids.push(mi);
-        token = mi;
-        h = dr["h_out"].data.slice();
-        c = dr["c_out"].data.slice();
-        emitted++;
+        const blank = mi === BLANK;
+        if (!blank) { ids.push(mi); token = mi; h = dr["h_out"].data.slice(); c = dr["c_out"].data.slice(); emitted++; }
+        // release per-step ORT outputs (WASM native memory) — h_out/c_out already copied
+        dr["decoder_output"].dispose?.(); dr["h_out"].dispose?.(); dr["c_out"].dispose?.(); jr["logits"].dispose?.();
+        if (blank) break;
       }
+      encTensor.dispose?.();
     }
+    for (const k of Object.keys(eo)) eo[k].dispose?.(); // release encoder outputs (cache copies taken above)
   }
   return { text: tokenizer.decode(ids), tokenIds: ids, metrics: { totalMs: +(now() - t0).toFixed(1) } };
 }

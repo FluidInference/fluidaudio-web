@@ -62,6 +62,7 @@ export async function eouTranscribe({ ort, encoder, decoder, preprocessor, token
   const melBins = preprocessor.nMels;
   const { features, length } = await preprocessor.process(audio);
   const T = features.length / melBins;
+  if (T === 0) return { text: "", tokenIds: [], events: [], frames: 0, metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: 0 } };
   const tMel = now();
 
   const encOut = await encoder.run({

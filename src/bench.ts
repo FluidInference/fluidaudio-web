@@ -19,8 +19,6 @@ interface Case {
   label: string;
   kind: "audio" | "text";
   heavy?: boolean;
-  /** Opt-in only: never in the auto-run (even with ?full) — must be named in ?engines=. */
-  manual?: boolean;
   make: () => Promise<Engine>;
   run: (engine: any, audio: { samples: Float32Array; sampleRate: number }) => Promise<any>;
   summarize: (out: any) => string;
@@ -92,8 +90,7 @@ async function main() {
   const params = new URLSearchParams(location.search);
   const only = params.get("engines")?.split(",").map((s) => s.trim());
   const full = params.has("full");
-  // `manual` engines run ONLY when named explicitly in ?engines= (never via ?full).
-  const cases = CASES.filter((c) => (only ? only.includes(c.id) : !c.manual && (full || !c.heavy)));
+  const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
 
   const audioBuf = await (await fetch("./sample.wav")).arrayBuffer();
   const audio = await decodeToMono16k(audioBuf);

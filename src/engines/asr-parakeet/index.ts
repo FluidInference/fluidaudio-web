@@ -3,10 +3,10 @@
 // and TDT greedy decode are our own (tokenizer.js / tdt.js), shared verbatim with
 // the headless Node verifier (scripts/smoke-parakeet-internal.mjs).
 //
-// Backend: the int8 encoder is numerically degenerate on the CPU/WASM EP (it
-// collapses to ~0 — verified: encoder output std 0.017 → all-blank), so it MUST
-// run on WebGPU. The tiny decoder+joint runs on WASM. Without WebGPU this engine
-// throws rather than emit silent garbage.
+// Backend: the fp16 encoder runs on WebGPU (the int8 encoder collapses to ~0 on
+// WASM — std 0.017, all-blank; the fp32 encoder's 2.44 GB external data exceeds
+// Chrome's ~2 GB ArrayBuffer cap). The tiny decoder+joint run on WASM. Without
+// WebGPU this engine throws rather than emit silent garbage. See ENCODER below.
 
 import { configureOrt, createSession, ort, webgpuAvailable } from "../../core/ort";
 import { fetchCached, hfUrl } from "../../core/modelCache";

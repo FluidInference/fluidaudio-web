@@ -602,7 +602,9 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) n
     let zpv=f32((bz>>(4u*(b&1u)))&0xFu);
     let s=scales[n*m.nblk+b];
     for(var jj=0u;jj<32u;jj++){
-      let k=b*32u+jj; let bi=(n*m.nblk+b)*16u+(jj>>1u);
+      let k=b*32u+jj;
+      if(k>=m.K){break;} // last block is partial when K % 32 != 0
+      let bi=(n*m.nblk+b)*16u+(jj>>1u);
       let wq=Bq[bi>>2u]; let bq=(wq>>(8u*(bi&3u)))&0xFFu; let q=f32((bq>>(4u*(jj&1u)))&0xFu);
       acc+=A[mrow*m.K+k]*((q-zpv)*s);
     }

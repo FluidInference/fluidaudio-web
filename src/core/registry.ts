@@ -1,9 +1,7 @@
-// Central registry of the ONNX sources each engine pulls. Kept in one place so
-// swapping quant levels / repos is a data change, not a code change.
-//
-// ⚠️ Repos marked TODO must be confirmed against the actual HF tree before the
-// engine can load — filenames vary between community exports. Confirmed entries
-// were verified against upstream at authoring time.
+// Reference catalog of the ONNX sources each engine pulls. NOTE: this is
+// documentation only — engines currently hardcode their own repo/filename
+// constants (grep `const REPO`), so keep these entries in sync with the engine
+// code by hand. (A future refactor could make the engines consume this.)
 
 export interface ModelFile {
   repo: string;
@@ -44,34 +42,33 @@ export const REGISTRY: Record<string, ModelSpec> = {
       { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "decoder.onnx" },
       { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "joint.onnx" },
       { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "vocab.json" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "languages.json" },
     ],
     approxMB: 1300,
     license: "nvidia-open-model",
     note: "Multilingual. fp16 encoder on WebGPU + LSTM decoder/joint on WASM; 320ms streaming chunks, RNN-T greedy. mel = NA log-mel (JS).",
   },
-  // ✅ CONFIRMED — loaded directly by the internalized engine (no ASR library).
-  // int8 encoder runs on WebGPU only (CPU/WASM collapses it to all-blank).
+  // ✅ loaded directly by the internalized engine (no ASR library).
   "asr-parakeet-v3": {
     files: [
-      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "encoder-model.int8.onnx" },
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "encoder-model.fp16.onnx" },
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "decoder_joint-model.int8.onnx" },
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "nemo128.onnx" },
       { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "vocab.txt" },
     ],
-    approxMB: 670,
+    approxMB: 1300,
     license: "cc-by-4.0",
-    note: "All ORT: mel (nemo128) + decoder on WASM, encoder int8 on WebGPU (required). TDT decode + tokenizer in JS glue.",
+    note: "mel (nemo128) + int8 decoder on WASM; fp16 encoder on WebGPU (int8 collapses on WASM, fp32 exceeds the 2GB buffer cap). TDT decode + tokenizer in JS glue.",
   },
-  // ✅ CONFIRMED — sherpa-onnx pretrained diarization set.
-  "diarization-pyannote": {
+  // ✅ what diarization-sortformer actually loads (single-chunk offline path).
+  "diarization-sortformer": {
     files: [
-      { repo: "csukuangfj/sherpa-onnx-pyannote-segmentation-3-0", path: "model.onnx" },
-      // Embedding model: FluidAudio uses wespeaker_v2; sherpa ships 3D-Speaker/NeMo.
-      // Pick one embedding export here.
+      { repo: "cgus/diar_streaming_sortformer_4spk-v2.1-onnx", path: "diar_streaming_sortformer_4spk-v2.1.onnx" },
+      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "nemo128.onnx" }, // shared NeMo mel
     ],
-    approxMB: 80,
-    license: "MIT (seg: pyannote CC)",
-    note: "Runs through sherpa-onnx WASM, not raw ORT. See engine for the wasm bundle.",
+    approxMB: 500,
+    license: "nvidia-open-model",
+    note: "fp32, runs on WebGPU/WASM via raw ORT. Single-chunk offline; long-audio needs the streaming spkcache/fifo loop.",
   },
   // ✅ CONFIRMED — asrjs export of nvidia/parakeet_realtime_eou_120m-v1.
   // fp32 encoder decodes on WASM *and* WebGPU (no int8-collapse like Parakeet).

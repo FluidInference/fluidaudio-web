@@ -73,13 +73,13 @@ Pages** automatically (verify HF sends `Cross-Origin-Resource-Policy` under COEP
 Vercel via `vercel.json`, nginx via `add_header`. Model weights stream from Hugging
 Face and cache client-side — no backend.
 
-> **First-load weight:** the default `asr-parakeet` uses a ~2.4 GB fp32 encoder — fine
+> **First-load weight:** the default `asr-parakeet` uses a ~1.24 GB fp16 encoder — fine
 > once cached, heavy on first visit. For a light demo use `?engines=tts-kokoro-en,
 > diarization-sortformer,vad-silero` (≈ tens of MB).
 
 WebGPU (Chrome/Edge 121+, Safari 26+) is **optional** — it accelerates the heavy
 encoders (Parakeet, Kokoro). Everything else, and every engine's fallback path,
-runs on WASM: Silero VAD and Nemotron are WASM-only by design, and engines
+runs on WASM: Silero VAD is WASM-only by design (tiny model), and engines
 downgrade automatically where WebGPU op coverage is incomplete. A WASM-only
 browser still runs the full matrix, just slower on the big encoders.
 
@@ -95,17 +95,16 @@ docs/           architecture + per-engine notes
 
 ## Hard-won lessons (things that cost real debugging)
 
-- **WebGPU has no int8/int4 kernels.** Quantized encoders silently fall back to
-  WASM. For Parakeet the int8 encoder then *collapses to all-blank* on WASM
-  (output std 0.017) — so it runs the **fp32** encoder on WebGPU instead. Check an
-  encoder's output std before blaming the decoder.
-- **int-quant is not always degenerate.** Nemotron's int4 encoder is healthy on
-  WASM (std 0.43) and runs fine there — no WebGPU required.
-- **Task inputs matter more than precision.** Nemotron returned empty not because
-  of int4 but because `lang_id=0` = Bulgarian; en-US is ordinal **24**. Always
-  verify language/prompt ids.
-- **Models vary wildly in size.** Parakeet fp32 encoder ≈ 2.4 GB, Nemotron int4
-  ≈ 750 MB, EOU fp32 ≈ 480 MB, Kokoro ≈ 90 MB, Silero VAD ≈ 2 MB. Fetched from
+- **WebGPU has no int8/int4 kernels → use fp16 for the browser.** ORT-web's WebGPU EP
+  can't run quantized weights: Parakeet's int8 encoder *collapses to all-blank* and
+  Nemotron's int4 returns *empty*. The fix for both was the same — an **fp16 encoder**
+  (Parakeet 1.24 GB; Nemotron via soniqo's fp16 export, purpose-built for ORT-WebGPU),
+  which runs correctly and fast on the GPU. (Check an encoder's output std before
+  blaming the decoder.)
+- **Task inputs matter more than precision.** Nemotron returned empty *also* because
+  `lang_id=0` = Bulgarian; en-US is ordinal **24**. Always verify language/prompt ids.
+- **Models vary wildly in size.** Parakeet fp16 encoder ≈ 1.24 GB, Nemotron fp16
+  ≈ 1.24 GB, EOU fp32 ≈ 480 MB, Kokoro ≈ 90 MB, Silero VAD ≈ 2 MB. Fetched from
   Hugging Face once, persisted via the Cache API.
 - **G2P is the TTS long pole.** The acoustic model is easy; Chinese uses a
   precomputed misaki-exact pinyin→IPA table + `pinyin-pro` (`docs/KOKORO_ZH.md`).

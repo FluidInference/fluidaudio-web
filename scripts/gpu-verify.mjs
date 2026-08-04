@@ -124,7 +124,8 @@ for (const cfg of [
 
 // ---- int4 block-quant matmul (MatMulNBits) vs CPU dequant ----
 {
-  const M = 8, N = 64, blk = 32, nblk = 4, K = nblk * blk, zpb = Math.ceil(nblk / 2);
+  // K = 100 is NOT a multiple of 32 → last block is partial (exercises the OOB guard).
+  const M = 8, N = 64, blk = 32, K = 100, nblk = Math.ceil(K / blk), zpb = Math.ceil(nblk / 2);
   const Bq = new Uint8Array(N * nblk * 16);
   for (let i = 0; i < Bq.length; i++) Bq[i] = Math.floor(Math.random() * 256);
   const scales = rand(N * nblk).map((v) => Math.abs(v) * 0.1 + 0.02);
@@ -136,11 +137,11 @@ for (const cfg of [
   const ref = new Float32Array(M * N);
   for (let mi = 0; mi < M; mi++) for (let n = 0; n < N; n++) {
     let acc = 0;
-    for (let b = 0; b < nblk; b++) { const s = scales[n * nblk + b], z = zpAt(n, b); for (let jj = 0; jj < 32; jj++) { const k = b * 32 + jj; acc += A[mi * K + k] * ((q(n, b, jj) - z) * s); } }
+    for (let b = 0; b < nblk; b++) { const s = scales[n * nblk + b], z = zpAt(n, b); for (let jj = 0; jj < 32; jj++) { const k = b * 32 + jj; if (k >= K) break; acc += A[mi * K + k] * ((q(n, b, jj) - z) * s); } }
     ref[mi * N + n] = acc;
   }
   const out = await ctx.download(ctx.matmulNBits(ctx.upload(A, M, K), ctx.uploadBytes(Bq), ctx.upload(scales, 1, scales.length), ctx.uploadBytes(zpU8), N));
-  report("matmulNBits (int4)", maxErr(out, ref), 1e-3);
+  report("matmulNBits (int4, K%32≠0)", maxErr(out, ref), 1e-3);
 }
 
 // ---- conv1d via im2col + GEMM (matches the direct conv) ----
