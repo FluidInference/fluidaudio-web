@@ -37,8 +37,16 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    →decoder Conv[1,128,1]→Sigmoid. Weights: encoder.{0..3}.reparam_conv.{weight,
    bias}, LSTM W/R[1,512,128] b[1,1024], decoder.decoder.2.{weight[1,128,1],bias},
    stft.forward_basis_buffer[258,1,256]. Source ONNX: /tmp/silero_vad.onnx.
-2. **Parakeet v3 encoder** — [ALGORITHM FULLY VERIFIED in numpy vs ORT; GPU port
-   next] NeMo FastConformer, fp32 encoder
+2. **Parakeet v3** — [FULL RAW PIPELINE WORKS, ORT-FREE, 13.7× RTFx, correct
+   transcript. Remaining: engine wiring (index.ts) + mel frame-count reconcile.]
+   Encoder: int8 GPU (raw-encoder.js, 5.3e-7 fp32 / int8 transcript-identical),
+   HF parakeet/encoder-int8.bin (612MB). Decoder: JS (raw-decoder.js, embed+2×LSTM
+   +joint), HF parakeet/decoder-fp32.bin (72MB). Mel: JS (parakeet-mel.js, reuses
+   Nemotron mel + per-feature CMVN + 2^-24 guard) — transcript-correct but frame
+   count off-by-one vs nemo128 (800 vs 801), reconcile for robustness. rel_shift
+   GPU kernel (relShift) removed the 192-roundtrip bottleneck (20s→0.55s). Weights
+   fetched from HF; wire ParakeetV3Engine with GpuContext + windowing (tdt.js) +
+   delete ORT encoder/decoder/mel. NeMo FastConformer, fp32 encoder
    /tmp/pkv3/encoder-model.onnx(+.data 2.4GB). d_model=1024, 24 layers, 8 heads×128,
    d_ff=4096. Input audio_signal[1,128,T] mel → output [1,1024,T/8]. GPU-resident
    (compute.js), unlike Silero. Anchoring for parity: added /pre_encode/out/
