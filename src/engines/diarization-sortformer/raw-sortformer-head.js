@@ -56,3 +56,29 @@ export async function sortformerHead(ctx, head, framesGpu, Tsub) {
   for (let i = 0; i < logits.length; i++) preds[i] = 1 / (1 + Math.exp(-logits[i])); // sigmoid
   return preds;
 }
+
+/** preds[frames*SPK] → diarization segments (per-speaker threshold, merge gaps, drop shorts). */
+export function predsToSegments(preds, frames, frameSec, { threshold = 0.5, minSpeechSec = 0.25, mergeGapSec = 0.25 } = {}) {
+  const segments = [];
+  for (let s = 0; s < SPK; s++) {
+    let start = -1;
+    for (let t = 0; t <= frames; t++) {
+      const on = t < frames && preds[t * SPK + s] >= threshold;
+      if (on && start < 0) start = t;
+      if (!on && start >= 0) { segments.push({ speaker: s, start: start * frameSec, end: t * frameSec }); start = -1; }
+    }
+  }
+  const bySpk = new Map();
+  for (const seg of segments) (bySpk.get(seg.speaker) ?? bySpk.set(seg.speaker, []).get(seg.speaker)).push(seg);
+  const out = [];
+  for (const [, list] of bySpk) {
+    list.sort((a, b) => a.start - b.start);
+    let cur = null;
+    for (const seg of list) {
+      if (cur && seg.start - cur.end <= mergeGapSec) cur.end = seg.end;
+      else { if (cur) out.push(cur); cur = { ...seg }; }
+    }
+    if (cur) out.push(cur);
+  }
+  return out.filter((s) => s.end - s.start >= minSpeechSec).sort((a, b) => a.start - b.start);
+}

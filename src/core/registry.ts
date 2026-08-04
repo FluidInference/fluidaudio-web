@@ -60,15 +60,17 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "cc-by-4.0",
     note: "mel (nemo128) + int8 decoder on WASM; fp16 encoder on WebGPU (int8 collapses on WASM, fp32 exceeds the 2GB buffer cap). TDT decode + tokenizer in JS glue.",
   },
-  // ✅ what diarization-sortformer actually loads (single-chunk offline path).
+  // ✅ ORT-FREE — raw WebGPU int8 FastConformer + raw transformer head (single-chunk offline).
   "diarization-sortformer": {
     files: [
-      { repo: "cgus/diar_streaming_sortformer_4spk-v2.1-onnx", path: "diar_streaming_sortformer_4spk-v2.1.onnx" },
-      { repo: "ysdede/parakeet-tdt-0.6b-v3-onnx", path: "nemo128.onnx" }, // shared NeMo mel
+      { repo: "FluidInference/fluidaudio-web", path: "sortformer/encoder-int8.bin" },
+      { repo: "FluidInference/fluidaudio-web", path: "sortformer/encoder-int8.manifest.json" },
+      { repo: "FluidInference/fluidaudio-web", path: "sortformer/head-fp32.bin" },
+      { repo: "FluidInference/fluidaudio-web", path: "sortformer/head-fp32.manifest.json" },
     ],
-    approxMB: 500,
+    approxMB: 140,
     license: "nvidia-open-model",
-    note: "fp32, runs on WebGPU/WASM via raw ORT. Single-chunk offline; long-audio needs the streaming spkcache/fifo loop.",
+    note: "ORT-free: raw WebGPU int8 FastConformer encoder + 18-layer transformer head + sigmoid. Single-chunk offline (full pipeline == ORT preds, 1.79e-7 fp32 / 2.3e-3 int8); long-audio needs the streaming spkcache/fifo loop. mel = per_feature (JS).",
   },
   // ✅ CONFIRMED — asrjs export of nvidia/parakeet_realtime_eou_120m-v1.
   // fp32 encoder decodes on WASM *and* WebGPU (no int8-collapse like Parakeet).
