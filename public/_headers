@@ -1,9 +1,0 @@
-# Cross-origin isolation — enables SharedArrayBuffer (threaded onnxruntime-web WASM).
-# COEP is `credentialless` (NOT require-corp): still cross-origin-isolated on
-# Chromium, but it does NOT block the cross-origin Hugging Face / jsdelivr fetches
-# the way require-corp does (those downloads fail with a "No Access-Control-Allow-
-# Origin" error under require-corp). Netlify & Cloudflare read this from the publish
-# dir; Vercel → vercel.json; nginx → add_header.
-/*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: credentialless
