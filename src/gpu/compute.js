@@ -36,6 +36,7 @@ fn actf(x: f32) -> f32 {
   if (m.act == 1u) { return gelu(x); }
   if (m.act == 2u) { return tanh(x); }
   if (m.act == 3u) { return max(x, 0.0); }
+  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -175,7 +176,52 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.act == 1u) { acc = gelu(acc); }
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
+  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
   Y[co * m.Lout + lo] = acc;
+}`;
+
+// 2-D convolution (batch 1) — FastConformer dw-striding subsampling. X:[Cin,H*W]
+// (rows=Cin), W:[Cout,Cin/groups,Kh,Kw] flat, bias?:[Cout] -> Y:[Cout,Ho*Wo]. One
+// thread per (Cout, Ho*Wo). Supports groups (depthwise) + fused bias/act.
+const CONV2D_WGSL = `
+struct Meta { Cout:u32, Cin:u32, H:u32, W:u32, Ho:u32, Wo:u32, Kh:u32, Kw:u32,
+              sH:u32, sW:u32, padH:u32, padW:u32, groups:u32, hasBias:u32, act:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> Wt: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  let HW = m.Ho * m.Wo;
+  if (idx >= m.Cout * HW) { return; }
+  let co = idx / HW;
+  let ho = (idx % HW) / m.Wo;
+  let wo = (idx % HW) % m.Wo;
+  let cinPerG = m.Cin / m.groups;
+  let coutPerG = m.Cout / m.groups;
+  let g = co / coutPerG;
+  var acc = 0.0;
+  for (var ci = 0u; ci < cinPerG; ci++) {
+    let realCi = g * cinPerG + ci;
+    let xC = realCi * m.H * m.W;
+    let wC = ((co * cinPerG + ci) * m.Kh) * m.Kw;
+    for (var kh = 0u; kh < m.Kh; kh++) {
+      let hi = i32(ho * m.sH + kh) - i32(m.padH);
+      if (hi < 0 || hi >= i32(m.H)) { continue; }
+      for (var kw = 0u; kw < m.Kw; kw++) {
+        let wi = i32(wo * m.sW + kw) - i32(m.padW);
+        if (wi >= 0 && wi < i32(m.W)) {
+          acc += X[xC + u32(hi) * m.W + u32(wi)] * Wt[wC + kh * m.Kw + kw];
+        }
+      }
+    }
+  }
+  if (m.hasBias == 1u) { acc += bias[co]; }
+  if (m.act == 3u) { acc = max(acc, 0.0); }
+  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  Y[co * HW + ho * m.Wo + wo] = acc;
 }`;
 
 // 1-D transposed convolution (batch 1) — the iSTFTNet upsampler and iSTFT
@@ -219,6 +265,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
+  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -612,7 +659,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) n
   Y[mrow*m.N+n]=acc;
 }`;
 
-const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3 };
+const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4 };
 
 export class GpuContext {
   /** @param {GPUDevice} device */
@@ -824,6 +871,22 @@ export class GpuContext {
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
+    return y;
+  }
+
+  /**
+   * 2-D conv (batch 1). x:[Cin, H*W] (rows=Cin), w GPU tensor holding
+   * Cout*(Cin/groups)*Kh*Kw f32 (ONNX [Cout,Cin/g,Kh,Kw] flat), bias?:[Cout].
+   * Returns [Cout, Ho*Wo]. Supports groups (depthwise) + fused bias/relu/silu.
+   */
+  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, groups = 1, act = "none" } = {}) {
+    const Ho = Math.floor((h + 2 * padH - kh) / strideH) + 1;
+    const Wo = Math.floor((W_ + 2 * padW - kw) / strideW) + 1;
+    const y = this.alloc(cout, Ho * Wo);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
+    const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padH, padW, groups, bias ? 1 : 0, ACT[act], 0]));
+    this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Ho * Wo) / 64));
     return y;
   }
 

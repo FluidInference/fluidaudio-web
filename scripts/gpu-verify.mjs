@@ -286,5 +286,50 @@ for (const cfg of [
   report("setCols", dErr, 0);
 }
 
+// ---- conv2d (regular + depthwise) — FastConformer dw-striding subsampling ----
+function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, groups, relu) {
+  const Ho = Math.floor((H + 2 * padH - Kh) / sH) + 1, Wo = Math.floor((Wd + 2 * padW - Kw) / sW) + 1;
+  const Y = new Float32Array(Cout * Ho * Wo), cinG = Cin / groups, coutG = Cout / groups;
+  for (let co = 0; co < Cout; co++) {
+    const g = Math.floor(co / coutG);
+    for (let ho = 0; ho < Ho; ho++) for (let wo = 0; wo < Wo; wo++) {
+      let acc = bias ? bias[co] : 0;
+      for (let ci = 0; ci < cinG; ci++) {
+        const rc = g * cinG + ci;
+        for (let kh = 0; kh < Kh; kh++) { const hi = ho * sH + kh - padH; if (hi < 0 || hi >= H) continue;
+          for (let kw = 0; kw < Kw; kw++) { const wi = wo * sW + kw - padW; if (wi < 0 || wi >= Wd) continue;
+            acc += X[rc * H * Wd + hi * Wd + wi] * W[((co * cinG + ci) * Kh + kh) * Kw + kw]; } }
+      }
+      Y[co * Ho * Wo + ho * Wo + wo] = relu ? Math.max(acc, 0) : acc;
+    }
+  }
+  return Y;
+}
+{
+  const Cin = 1, H = 20, Wd = 16, Cout = 8, K = 3;
+  const X = rand(Cin * H * Wd), W = rand(Cout * Cin * K * K), b = rand(Cout);
+  const ref = conv2dRefCPU(X, W, b, Cin, H, Wd, Cout, K, K, 2, 2, 1, 1, 1, true);
+  const out = await ctx.download(ctx.conv2d(ctx.upload(X, Cin, H * Wd), ctx.upload(W, 1, W.length),
+    { cout: Cout, cin: Cin, h: H, w: Wd, kh: K, kw: K, bias: ctx.upload(b, 1, Cout), strideH: 2, strideW: 2, padH: 1, padW: 1, groups: 1, act: "relu" }));
+  report("conv2d (regular)", maxErr(out, ref), 1e-2);
+}
+{
+  const C = 16, H = 10, Wd = 8, K = 3;
+  const X = rand(C * H * Wd), W = rand(C * K * K), b = rand(C);
+  const ref = conv2dRefCPU(X, W, b, C, H, Wd, C, K, K, 2, 2, 1, 1, C, false);
+  const out = await ctx.download(ctx.conv2d(ctx.upload(X, C, H * Wd), ctx.upload(W, 1, W.length),
+    { cout: C, cin: C, h: H, w: Wd, kh: K, kw: K, bias: ctx.upload(b, 1, C), strideH: 2, strideW: 2, padH: 1, padW: 1, groups: C }));
+  report("conv2d (depthwise)", maxErr(out, ref), 1e-2);
+}
+// ---- matmul + silu (FastConformer FF activation) ----
+{
+  const M = 32, K = 128, N = 64, A = rand(M * K), B = rand(K * N);
+  const silu = (x) => x / (1 + Math.exp(-x));
+  const ref = new Float32Array(M * N);
+  for (let i = 0; i < M; i++) for (let j = 0; j < N; j++) { let s = 0; for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j]; ref[i * N + j] = silu(s); }
+  const out = await ctx.download(ctx.matmul(ctx.upload(A, M, K), ctx.upload(B, K, N), { act: "silu" }));
+  report("matmul + silu", maxErr(out, ref), 1e-2);
+}
+
 console.log(fails === 0 ? "\nALL KERNELS PARITY OK" : `\n${fails} KERNEL(S) FAILED`);
 process.exit(fails === 0 ? 0 : 1);

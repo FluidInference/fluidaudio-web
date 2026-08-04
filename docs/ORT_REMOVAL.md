@@ -77,11 +77,19 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
      pad last dim left 1 → reshape[h,pos+1,t] → drop row0 → reshape[h,t,pos] →
      slice[:,:,:t]. pos-enc gen (NeMo RelPositionalEncoding, positions T-1..-(T-1),
      sin even/cos odd, div=exp(arange(0,d,2)·-ln(10000)/d)) matches lifted pe 4e-7.
-     Encoder output = transpose(layer23 norm_out) → [1,1024,T/8]. REMAINING: assemble
-     full 24-layer numpy → parity final "outputs"; then GPU port (needs conv2d kernel
-     for subsampling + a rel_shift/GLU/SiLU; rest = existing matmul/conv1d/layernorm/
-     softmax); quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire
-     decoder+joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
+     Encoder output = transpose(layer23 norm_out) → [1,1024,T/8].
+   - **FULL 24-layer numpy encoder VERIFIED vs ORT final "outputs": 9.8e-7** (errors
+     don't compound). Per-layer weights mapped via node.name /layers.L/<role>/ →
+     weight input (FF linear1/linear2, self_attn/linear_{q,k,v,pos,out}, conv/
+     {pointwise_conv1,depthwise_conv,pointwise_conv2}). No xscale on conformer input
+     (pre_encode out used directly). depthwise done as per-channel np.convolve.
+   - **GPU primitives added + parity-gated** (compute.js, gpu-verify): conv2d (grouped/
+     depthwise, fused bias+relu/silu) 2.4e-7; silu activation (ACT=4) in gemm/conv
+     3.8e-6. REMAINING for GPU port: assemble encoder forward on GPU (wire kernels +
+     per-layer weights GPU-resident), add sigmoid for GLU (a·σ(b)), rel_shift on host
+     (reshape/slice), per-head attention as 8 matmul loops (or batch), parity vs ORT;
+     then quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire decoder+
+     joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
    WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
