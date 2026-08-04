@@ -18,9 +18,17 @@ export async function fetchCached(
   onProgress?: ProgressCb,
   label = url
 ): Promise<Uint8Array> {
-  const cache = await caches.open(CACHE_NAME);
-  const hit = await cache.match(url);
-  if (hit) return new Uint8Array(await hit.arrayBuffer());
+  // Cache API is best-effort: opening/matching/putting can throw (quota, or the
+  // per-entry size limit — a 600 MB weight file exceeds it in Chrome), and that
+  // must never fail the load.
+  let cache: Cache | null = null;
+  try {
+    cache = await caches.open(CACHE_NAME);
+    const hit = await cache.match(url);
+    if (hit) return new Uint8Array(await hit.arrayBuffer());
+  } catch {
+    cache = null;
+  }
 
   // referrerPolicy no-referrer: HF hotlink-protects some hosts (e.g. *.workers.dev)
   // by returning 404 when the Referer is theirs → surfaces as a CORS error. The
@@ -41,8 +49,16 @@ export async function fetchCached(
   }
 
   const bytes = concat(chunks, loaded);
-  // Store a fresh Response so subsequent loads are instant.
-  await cache.put(url, new Response(bytes, { headers: { "content-length": String(loaded) } }));
+  // Store a fresh Response so subsequent loads are instant — best-effort: Chrome's
+  // Cache API rejects entries beyond a few hundred MB ("Failed to execute 'put'"),
+  // so on failure we just skip caching (re-download next time) rather than fail.
+  if (cache) {
+    try {
+      await cache.put(url, new Response(bytes, { headers: { "content-length": String(loaded) } }));
+    } catch {
+      /* too large to cache — fine, keep going uncached */
+    }
+  }
   return bytes;
 }
 
