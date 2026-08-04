@@ -1,73 +1,93 @@
-// Parakeet EOU 120M — end-of-utterance detection + transcription.
+// Parakeet EOU 120M — end-of-utterance detection + transcription, fully ORT-free.
 //
-// NVIDIA's `parakeet_realtime_eou_120m-v1`, exported to ONNX by the asrjs project
-// (ysdede/parakeet-realtime-eou-120m-v1-onnx). It's a streaming FastConformer
-// RNNT with two extra control tokens — <EOU> (end of utterance) and <EOB> — so a
-// voice agent can tell when the user has finished speaking. We decode it offline
-// (whole clip) here; the transcript plus the <EOU>/<EOB> timestamps come back
-// together.
+// NVIDIA's `parakeet_realtime_eou_120m-v1`: a streaming FastConformer RNNT with two
+// control tokens — <EOU> (end of utterance) and <EOB> — so a voice agent can tell
+// when the user finished speaking. Decoded offline (whole clip); the transcript plus
+// the <EOU>/<EOB> timestamps come back together.
 //
-// Two things that cost debugging (see eou-decode.js / docs/EOU.md):
-//   • Mel: this model wants UN-normalized (NA) log-mel — the Nemotron frontend,
-//     NOT Parakeet's per-feature CMVN. Wrong normalization → the encoder emits
-//     content-free frames and the joint predicts blank on every step.
-//   • The fused decoder_joint returns a [1,1,2,1027] grid; the last 1027 values
-//     are the logits for this step (blank id 1026). Single-layer LSTM state.
-//
-// The fp32 encoder (~460 MB) decodes correctly on WASM *and* WebGPU (unlike
-// Parakeet's int8, which collapses on WASM), so WebGPU is preferred but not
-// required. The fused decoder + NA mel run on WASM.
+// Everything is hand-written on raw WebGPU + JS (no onnxruntime):
+//   • Mel: JsPreprocessor NA log-mel (no CMVN) — this model wants un-normalized mel.
+//   • Encoder: the shared FastConformer (raw-encoder.js) with EOU streaming config —
+//     causal subsampling pad, causal depthwise conv, conv-module LayerNorm, and a
+//     cache-aware chunked attention mask (chunk 2, left context 70). fp16 weights
+//     (int8 degrades this 120M RNNT). Runs on WebGPU.
+//   • Decoder+joint: 1-layer LSTM RNNT (raw-decoder-eou.js), small enough for plain JS.
+//     The exported joint prepends a zero SOS timestep per call (2-step LSTM).
+// Full raw path == ORT reference transcript; encoder maxΔ 4.4e-2 (fp16) vs ORT.
 
-import { createSession, ort, webgpuAvailable } from "../../core/ort";
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
+import { loadEouDecoder, eouDecode } from "../asr-parakeet/raw-decoder-eou.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
-import { eouTranscribe, makeEouTokenizer } from "./eou-decode.js";
+import { makeEouTokenizer } from "./eou-decode.js";
 
-const REPO = "ysdede/parakeet-realtime-eou-120m-v1-onnx";
-const ENCODER = "encoder-model.onnx"; // fp32; int8/fp16 also available
-const DECODER = "decoder_joint-model.onnx"; // fused decoder+joint, fp32
-const VOCAB = "vocab.txt";
+const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
+const VOCAB_REPO = "ysdede/parakeet-realtime-eou-120m-v1-onnx";
+const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
+// EOU streaming FastConformer config (see raw-encoder.js): causal subsampling pad,
+// causal depthwise conv, chunked-causal attention (chunk 2, left context 70).
+const EOU_CFG = { melBins: 128, subPad: { t: 2, b: 1, l: 2, r: 1 }, convCausal: true, attChunk: 2, attLeft: 70 };
 
 export class ParakeetEouEngine implements AsrEngine {
   readonly id = "eou-parakeet";
   readonly label = "Parakeet EOU 120M";
-  private encoder: any = null;
-  private decoder: any = null;
+  private ctx: any = null;
+  private enc: any = null;
+  private dec: any = null;
+  private mel: JsPreprocessor | null = null;
   private tokenizer: ReturnType<typeof makeEouTokenizer> | null = null;
-  private preprocessor: JsPreprocessor | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    const encBytes = await fetchCached(hfUrl(REPO, ENCODER), onProgress, ENCODER);
-    const decBytes = await fetchCached(hfUrl(REPO, DECODER), onProgress, DECODER);
-    const vocabText = new TextDecoder().decode(await fetchCached(hfUrl(REPO, VOCAB), onProgress, VOCAB));
+    this.ctx = new GpuContext(await requestGpuDevice());
+    const json = async (path: string) =>
+      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
+    const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
-    // fp32 encoder: WebGPU when available (faster), else WASM (still correct).
-    this.encoder = await createSession(encBytes, webgpuAvailable() ? "webgpu" : "wasm");
-    this.decoder = await createSession(decBytes, "wasm");
-    this.tokenizer = makeEouTokenizer(vocabText);
-    this.preprocessor = new JsPreprocessor({ nMels: 128 });
-    onProgress?.({ file: REPO, loaded: 1, total: 1, fraction: 1 });
+    const encMan = await json("eou/encoder-fp16.manifest.json");
+    const encBin = await bytes("eou/encoder-fp16.bin");
+    const decMan = await json("eou/decoder-fp32.manifest.json");
+    const decBin = await bytes("eou/decoder-fp32.bin");
+    const vocab = new TextDecoder().decode(await fetchCached(hfUrl(VOCAB_REPO, "vocab.txt"), onProgress, "vocab.txt"));
+
+    this.enc = loadParakeetEncoder(this.ctx, encBin, encMan, EOU_CFG);
+    this.dec = loadEouDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    this.mel = new JsPreprocessor({ nMels: 128 });
+    this.tokenizer = makeEouTokenizer(vocab);
+    onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
-    if (!this.encoder || !this.decoder || !this.tokenizer || !this.preprocessor) {
-      throw new Error("ParakeetEouEngine.load() not called");
-    }
-    const { text, events, metrics } = await eouTranscribe({
-      ort,
-      encoder: this.encoder,
-      decoder: this.decoder,
-      preprocessor: this.preprocessor,
-      tokenizer: this.tokenizer,
-      audio: audio.samples,
-    });
-    return { text, metrics, events };
+    if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
+    const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const t0 = now();
+    const { features, length } = this.mel.process(audio.samples);
+    if (length === 0) return { text: "", metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: 0 }, events: [] };
+    const tMel = now();
+
+    const r = await parakeetEncode(this.ctx, this.enc, features, length);
+    const frames = await this.ctx.download(r.framesGpu);
+    const tEnc = now();
+
+    const { ids, events: evFrames } = eouDecode(this.dec, frames, r.Tsub);
+    const events = evFrames.map((e: { type: string; frame: number }) => ({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) }));
+    const tDec = now();
+
+    return {
+      text: this.tokenizer.decode(ids),
+      metrics: {
+        melMs: +(tMel - t0).toFixed(1),
+        encodeMs: +(tEnc - tMel).toFixed(1),
+        decodeMs: +(tDec - tEnc).toFixed(1),
+        totalMs: +(tDec - t0).toFixed(1),
+      },
+      events,
+    };
   }
 
   async dispose(): Promise<void> {
-    await this.encoder?.release?.();
-    await this.decoder?.release?.();
-    this.encoder = this.decoder = this.tokenizer = this.preprocessor = null;
+    this.ctx?.device?.destroy?.();
+    this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
 }
