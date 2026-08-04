@@ -331,5 +331,15 @@ function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, 
   report("matmul + silu", maxErr(out, ref), 1e-2);
 }
 
+// ---- glu over channels (conformer conv module) ----
+{
+  const C = 32, T = 20, X = rand(2 * C * T);
+  const sig = (x) => 1 / (1 + Math.exp(-x));
+  const ref = new Float32Array(C * T);
+  for (let c = 0; c < C; c++) for (let t = 0; t < T; t++) ref[c * T + t] = X[c * T + t] * sig(X[(c + C) * T + t]);
+  const out = await ctx.download(ctx.glu(ctx.upload(X, 2 * C, T)));
+  report("glu (channels)", maxErr(out, ref), 1e-6);
+}
+
 console.log(fails === 0 ? "\nALL KERNELS PARITY OK" : `\n${fails} KERNEL(S) FAILED`);
 process.exit(fails === 0 ? 0 : 1);

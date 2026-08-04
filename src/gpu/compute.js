@@ -180,6 +180,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// GLU over channels (conformer conv module): X:[2C, T] -> Y:[C, T],
+// Y[c,t] = X[c,t] * sigmoid(X[c+C, t]).
+const GLU_WGSL = `
+struct Meta { C:u32, T:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.C * m.T) { return; }
+  let c = idx / m.T;
+  let t = idx % m.T;
+  let a = X[c * m.T + t];
+  let b = X[(c + m.C) * m.T + t];
+  Y[idx] = a * (1.0 / (1.0 + exp(-clamp(b, -30.0, 30.0))));
+}`;
+
 // 2-D convolution (batch 1) — FastConformer dw-striding subsampling. X:[Cin,H*W]
 // (rows=Cin), W:[Cout,Cin/groups,Kh,Kw] flat, bias?:[Cout] -> Y:[Cout,Ho*Wo]. One
 // thread per (Cout, Ho*Wo). Supports groups (depthwise) + fused bias/act.
@@ -871,6 +889,16 @@ export class GpuContext {
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
+    return y;
+  }
+
+  /** GLU over channels: x:[2C, T] -> [C, T], y[c,t] = x[c,t]*sigmoid(x[c+C,t]). */
+  glu(x) {
+    const C = x.rows / 2, T = x.cols;
+    const y = this.alloc(C, T);
+    const pipeline = this._pipeline("glu", GLU_WGSL);
+    const u = this._uniform(new Uint32Array([C, T, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((C * T) / 64));
     return y;
   }
 
