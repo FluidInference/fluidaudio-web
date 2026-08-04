@@ -59,23 +59,36 @@ export class ParakeetV3Engine implements AsrEngine {
     const hop = winSamples - overlapSamples;
     const single = samples.length <= winSamples;
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
-    let melMs = 0, encodeMs = 0, decodeMs = 0;
+    const t0 = now();
+
+    // Window start offsets.
+    const starts: number[] = [];
+    for (let s = 0; s < samples.length; s += hop) { starts.push(s); if (single) break; }
+
+    // Pipeline: encode window i+1 on the GPU while the CPU (WASM) decodes window i.
+    // parakeetEncode (no wantData) queues all its GPU dispatches synchronously, so
+    // beginWindow returns a promise of the downloaded frames while the GPU keeps
+    // working — overlapping the ~4.4s decode behind the ~9s encode.
+    const beginWindow = (i: number): Promise<{ frames: Float32Array; Tenc: number } | null> => {
+      const start = starts[i];
+      const slice = single ? samples : samples.subarray(start, Math.min(start + winSamples, samples.length));
+      const { features, length } = this.mel!.process(slice);
+      if (length === 0) return Promise.resolve(null);
+      return parakeetEncode(this.ctx, this.enc, features, length).then(async (r) => ({
+        frames: await this.ctx.download(r.framesGpu),
+        Tenc: r.Tsub,
+      }));
+    };
 
     const ids: number[] = [];
-    for (let start = 0, w = 0; start < samples.length; start += hop, w++) {
-      const slice = single ? samples : samples.subarray(start, Math.min(start + winSamples, samples.length));
-      let t0 = now();
-      const { features, length } = this.mel.process(slice);
-      melMs += now() - t0;
-      if (length === 0) { if (single) break; continue; }
-      t0 = now();
-      const { framesGpu, Tsub: Tenc } = await parakeetEncode(this.ctx, this.enc, features, length);
-      // download [Tsub,1024] (frames[t*1024+d]) — also flushes the encoder's GPU work.
-      const frames = await this.ctx.download(framesGpu);
-      encodeMs += now() - t0;
-      t0 = now();
+    let pending = beginWindow(0);
+    for (let w = 0; w < starts.length; w++) {
+      const cur = await pending;
+      if (w + 1 < starts.length) pending = beginWindow(w + 1); // queue next GPU encode now
+      if (!cur) continue;
+      const { frames, Tenc } = cur;
+      const slice = single ? samples : samples.subarray(starts[w], Math.min(starts[w] + winSamples, samples.length));
       const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
-      decodeMs += now() - t0;
 
       // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
       let skip = 0;
@@ -93,11 +106,12 @@ export class ParakeetV3Engine implements AsrEngine {
         skip = Math.max(matched, frameSkip);
       }
       for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
-      if (single) break;
     }
+    // GPU encode and CPU decode are pipelined, so a per-stage split is meaningless;
+    // report the wall-clock total.
     return {
       text: this.tokenizer.decode(ids),
-      metrics: { melMs: +melMs.toFixed(0), encodeMs: +encodeMs.toFixed(0), decodeMs: +decodeMs.toFixed(0), totalMs: +(melMs + encodeMs + decodeMs).toFixed(0) },
+      metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: +(now() - t0).toFixed(0) },
     };
   }
 
