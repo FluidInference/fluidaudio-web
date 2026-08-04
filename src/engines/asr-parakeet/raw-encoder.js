@@ -17,10 +17,27 @@ const D = 1024, H = 8, HD = 128, DFF = 4096, LAYERS = 24, INV = 1 / Math.sqrt(HD
  * Returns a handle consumed by `encode`.
  */
 export function loadParakeetEncoder(ctx, bin, man) {
-  const raw = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
+  // Two manifest formats: fp32 (bin=Float32Array, entries have offset/len) and int8
+  // (bin=Uint8Array/ArrayBuffer, entries have dtype "i8" + i8ByteOffset/scaleOffset).
+  // int8 is per-channel symmetric, dequantized to fp32 per-tensor at load (existing
+  // fp32 kernels). matmul weights: per output col; conv weights: per Cout group.
+  const int8 = Object.values(man).some((m) => m.dtype === "i8");
+  let f32v, i8v;
+  if (int8) { const ab = bin.buffer instanceof ArrayBuffer ? bin.buffer : bin; f32v = new Float32Array(ab); i8v = new Int8Array(ab); }
+  const raw = (k) => {
+    const m = man[k];
+    if (!int8) return bin.subarray(m.offset, m.offset + m.len);
+    if (m.dtype !== "i8") return f32v.subarray(m.offset, m.offset + m.count);
+    const q = i8v.subarray(m.i8ByteOffset, m.i8ByteOffset + m.count);
+    const sc = f32v.subarray(m.scaleOffset, m.scaleOffset + m.scaleCount);
+    const out = new Float32Array(m.count);
+    if (m.quant === "col") { const o = m.dims[1]; for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[i % o]; }
+    else { const rest = m.count / m.dims[0]; for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[(i / rest) | 0]; }
+    return out;
+  };
   const scaled = (k, s) => { const a = raw(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return a; };
   const mat = (k) => ctx.upload(raw(k).slice(), man[k].dims[0], man[k].dims[1]); // [in,out]
-  const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].len);
+  const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
   const matScaled = (k, s) => ctx.upload(scaled(k, s), man[k].dims[0], man[k].dims[1]);
 
   const sub = {
