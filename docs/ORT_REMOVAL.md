@@ -294,3 +294,14 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   REMAINING: extract SineGen constants (harmonic mults, sr scale, amp, upsample factors) → validate
   m_source numpy → decode resblocks → generator resblocks/Snake/ups → iSTFT → gate waveform →
   port full Kokoro (predictor+vocoder) numpy→GPU/JS → engine off kokoro-js → drop 3 deps.
+
+### Kokoro SineGen — validated structurally (KEY FINDING: stochastic source)
+NSF SineGen replicated op-exact (all constants extracted): F0[9000,1] → ×[1..9] harmonics →
+div/24000 → frac(=x-floor) → downsample→cumsum→×2π×300→upsample→Sin ×0.1 ×uv(F0>10) →
+l_linear[9,1]+bias(-0.0295) → tanh. Structural match ~0.12 maxΔ. The RESIDUAL is the NSF's
+random per-harmonic INITIAL PHASE (source[t=0] ≠ tanh(bias)) → the source is STOCHASTIC, so
+the vocoder waveform CANNOT be gated to exact ORT parity like the predictor/ASR models —
+validate the generator structurally + by-ear instead. Anchors: msrc_tanh.bin, f0in bin.
+REMAINING vocoder build: decode.0-3 AdaIN resblocks + generator (Snake resblocks ×144,
+noise_res ×48, ups ConvTranspose, STFT/iSTFT ScatterND) + cumsum & Snake kernels + full
+Kokoro GPU port + engine off kokoro-js. Predictor is exact; vocoder is stochastic-by-ear.
