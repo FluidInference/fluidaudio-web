@@ -234,3 +234,20 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   + delete core/ort.ts (only Kokoro uses them now; Whisper/Parakeet/VAD/EOU/Nemotron/Sortformer
   are all ORT-free).
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
+
+- [ ] 6. **Kokoro** — LAST + BIGGEST. MAPPED + reference captured (/tmp/kokoro/ref_{wav,ids,style}.bin).
+  Inputs input_ids[1,seq]+style[1,256]+speed[1]→waveform. Frontend (textEncoding→d_en) done 4.2e-6.
+  BACK HALF to build (gating anchors = ORT tensors below, expose via load_external_data=False dbg model):
+  A. Prosody predictor (encoder.predictor, ~49 w): DurationEncoder text_encoder.lstms.0-5
+     (even=bidir LSTM, odd=AdaLayerNorm fc[1024,128] from style) → duration_proj.linear_layer(→50)
+     → dur=/encoder/predictor/duration_proj/linear_layer/Add_output_0 → ReduceSum→Round(/encoder/Round)
+     →Clip(/encoder/Clip)=pred_dur → length-regulate (gatherCols by repeat). Then F0.0-2 + N.0-2
+     AdaINResBlocks (conv1/conv2 + norm1/norm2 AdaIN fc-from-style + pool upsample) →
+     F0=/encoder/F0_proj/Conv_output_0, N=/encoder/N_proj/Conv_output_0.
+  B. iSTFTNet decoder+generator (decoder.decoder, 236 w): input /decoder/decoder/Concat_output_0
+     (concat asr+F0+N). encode + decode.0-3 AdaIN resblocks (instancenorm+Gemm style→scale/shift+
+     Conv+LeakyRelu) + ConvTranspose upsample; generator NSF: F0→CumSum phase→Sin(51 harmonics)+noise
+     source, STFT, ScatterND, weight-norm convs, iSTFT overlap-add → waveform.
+  MISSING KERNEL: cumsum/scan (all others exist: matmul/conv1d/lstm/convTranspose1d/adain/leakyRelu/
+     gatherCols/STFT-via-DFT). Then engine off kokoro-js + delete core/ort.ts + drop 3 deps.
+  Model /tmp/kokoro/model.onnx (fp32 325MB). This is a dedicated multi-stage build (StyleTTS2+iSTFTNet).
