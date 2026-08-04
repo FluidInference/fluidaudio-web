@@ -80,19 +80,23 @@ function posEncoding(Tsub, D) {
  * Returns { framesGpu:[Tsub,D], Tsub, dims } (+ data when wantData). */
 export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   const { D, H, HD, layers: LAYERS, dwK, Csub, melBins } = enc.cfg;
+  // subsampling stride-2 conv padding. Parakeet: symmetric 1 each side. EOU (streaming
+  // causal): asymmetric, padTotal 3 → out=floor(in/2)+1. Default symmetric.
+  const sp = enc.cfg.subPad || { t: 1, b: 1, l: 1, r: 1 };
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
-  // subsampling: mel[melBins,T] -> conv2d input [1, T*melBins] (x[t*melBins+c])
   const x0 = new Float32Array(T * melBins);
   for (let t = 0; t < T; t++) for (let c = 0; c < melBins; c++) x0[t * melBins + c] = mel[c * T + t];
   let s = ctx.upload(x0, 1, T * melBins), Hh = T, Wd = melBins;
+  // [cout, cin, k, stride, groups, act, isStride2]
   const conv = [
-    [Csub, 1, 3, 2, 1, 1, "relu"], [Csub, Csub, 3, 2, 1, Csub, "none"], [Csub, Csub, 1, 1, 0, 1, "relu"],
-    [Csub, Csub, 3, 2, 1, Csub, "none"], [Csub, Csub, 1, 1, 0, 1, "relu"],
+    [Csub, 1, 3, 2, 1, "relu", true], [Csub, Csub, 3, 2, Csub, "none", true], [Csub, Csub, 1, 1, 1, "relu", false],
+    [Csub, Csub, 3, 2, Csub, "none", true], [Csub, Csub, 1, 1, 1, "relu", false],
   ];
   for (let i = 0; i < 5; i++) {
-    const [cout, cin, k, st, pad, gr, act] = conv[i];
-    s = ctx.conv2d(s, enc.sub.conv[i].w, { cout, cin, h: Hh, w: Wd, kh: k, kw: k, bias: enc.sub.conv[i].b, strideH: st, strideW: st, padH: pad, padW: pad, groups: gr, act });
-    Hh = Math.floor((Hh + 2 * pad - k) / st) + 1; Wd = Math.floor((Wd + 2 * pad - k) / st) + 1;
+    const [cout, cin, k, st, gr, act, s2] = conv[i];
+    const pt = s2 ? sp.t : 0, pb = s2 ? sp.b : 0, pl = s2 ? sp.l : 0, pr = s2 ? sp.r : 0;
+    s = ctx.conv2d(s, enc.sub.conv[i].w, { cout, cin, h: Hh, w: Wd, kh: k, kw: k, bias: enc.sub.conv[i].b, strideH: st, strideW: st, padTop: pt, padBottom: pb, padLeft: pl, padRight: pr, groups: gr, act });
+    Hh = Math.floor((Hh + pt + pb - k) / st) + 1; Wd = Math.floor((Wd + pl + pr - k) / st) + 1;
   }
   const Tsub = Hh, F = Wd;
   const flat = ctx.subReshape(s, Csub, Tsub, F);
@@ -101,7 +105,10 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   enc._pe = enc._pe || new Map();
   let peT = enc._pe.get(Tsub);
   if (!peT) { peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
-  const dwPad = (dwK - 1) >> 1;
+  // Depthwise conv module pad: symmetric (Parakeet) or causal (EOU streaming: all
+  // pad on the left, none on the right).
+  const dwPadL = enc.cfg.convCausal ? dwK - 1 : (dwK - 1) >> 1;
+  const dwPadR = enc.cfg.convCausal ? 0 : (dwK - 1) >> 1;
   const ff = (x, lp, w1, w2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { act: "silu" }), w2));
 
   for (let L = 0; L < LAYERS; L++) {
@@ -124,7 +131,7 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
     x = ctx.add(x, ctx.matmul(outc, w.out));
     const hT = ctx.transpose(ln(x, w.lnconv));
     const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1 }));
-    const dwo = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, pad: dwPad, bias: w.dwb, act: "silu" });
+    const dwo = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
     x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1 })));
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2);
     x = ln(x, w.lnout);

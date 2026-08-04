@@ -1071,13 +1071,15 @@ export class GpuContext {
    * f32, bias?:[1,Cout]. Returns [Cout, Lout]. w/bias are passed as GpuTensors
    * (any rows/cols — only .buf is used).
    */
-  conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, act = "none" } = {}) {
+  conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
+    // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
+    padLeft = padLeft ?? pad; padRight = padRight ?? pad;
     const Cin = x.rows, L = x.cols;
-    const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
+    const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
     const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
-    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
+    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, padLeft, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
     return y;
   }
@@ -1164,13 +1166,16 @@ export class GpuContext {
    * Cout*(Cin/groups)*Kh*Kw f32 (ONNX [Cout,Cin/g,Kh,Kw] flat), bias?:[Cout].
    * Returns [Cout, Ho*Wo]. Supports groups (depthwise) + fused bias/relu/silu.
    */
-  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, groups = 1, act = "none" } = {}) {
-    const Ho = Math.floor((h + 2 * padH - kh) / strideH) + 1;
-    const Wo = Math.floor((W_ + 2 * padW - kw) / strideW) + 1;
+  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, padTop, padBottom, padLeft, padRight, groups = 1, act = "none" } = {}) {
+    // Asymmetric padding supported (padTop/Bottom/Left/Right); default symmetric padH/padW.
+    padTop = padTop ?? padH; padBottom = padBottom ?? padH; padLeft = padLeft ?? padW; padRight = padRight ?? padW;
+    const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
+    const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
     const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
     const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
-    const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padH, padW, groups, bias ? 1 : 0, ACT[act], 0]));
+    // kernel Meta padH/padW slots = the "before" (top/left) offset.
+    const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padTop, padLeft, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Ho * Wo) / 64));
     return y;
   }
