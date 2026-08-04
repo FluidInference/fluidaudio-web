@@ -33,20 +33,20 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "Apache-2.0",
     note: "Acoustic only. Chinese text→phoneme frontend is NOT in the ONNX.",
   },
-  // ✅ CONFIRMED — soniqo FP16 export, built to run on onnxruntime-web WebGPU.
-  // (int4 export can't: WebGPU has no int kernels.) Verified transcript headless.
+  // ✅ ORT-FREE — raw WebGPU FastConformer (int8) run offline + JS 2-layer RNNT.
+  // Weights from FluidInference/fluidaudio-web (int8 encoder + fp32 decoder).
   "asr-nemotron": {
     files: [
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "encoder.onnx" },
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "encoder.onnx.data" },
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "decoder.onnx" },
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "joint.onnx" },
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "vocab.json" },
-      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "languages.json" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/encoder-int8.bin" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/encoder-int8.manifest.json" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/decoder-fp32.bin" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/decoder-fp32.manifest.json" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/vocab.json" },
+      { repo: "FluidInference/fluidaudio-web", path: "nemotron/languages.json" },
     ],
-    approxMB: 1300,
+    approxMB: 730,
     license: "nvidia-open-model",
-    note: "Multilingual. fp16 encoder on WebGPU + LSTM decoder/joint on WASM; 320ms streaming chunks, RNN-T greedy. mel = NA log-mel (JS).",
+    note: "Multilingual. ORT-free: raw WebGPU int8 FastConformer (offline whole-clip, cache-aware mask) + prompt_kernel language conditioning + JS 2-layer RNN-T. mel = NA log-mel (JS).",
   },
   // ✅ loaded directly by the internalized engine (no ASR library).
   "asr-parakeet-v3": {

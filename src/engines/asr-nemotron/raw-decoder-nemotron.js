@@ -17,6 +17,29 @@ export function loadNemotronDecoder(bin, man) {
   };
 }
 
+// Multilingual prompt_kernel: applied AFTER the conformer stack. Concats the
+// conformer output [1024] with the language one-hot [128], then a 2-layer MLP
+// (1152→2048→1024) produces the final encoded_output. Weights live in the encoder
+// manifest (pk0w/pk0b/pk2w/pk2b). f32bin = Float32Array over the encoder blob.
+export function loadPromptKernel(f32bin, man) {
+  const g = (k) => f32bin.subarray(man[k].offset, man[k].offset + (man[k].count ?? man[k].len));
+  return { pk0w: g("pk0w"), pk0b: g("pk0b"), pk2w: g("pk2w"), pk2b: g("pk2b") };
+}
+
+/** conformer frames[Tsub*1024] → encoded_output[Tsub*1024] for language `langId`. */
+export function applyPromptKernel(pk, frames, Tsub, langId = 0) {
+  const D = 1024, IN = 1152, H = 2048;
+  const out = new Float32Array(Tsub * D), inp = new Float32Array(IN), hb = new Float32Array(H);
+  for (let t = 0; t < Tsub; t++) {
+    for (let d = 0; d < D; d++) inp[d] = frames[t * D + d];
+    for (let d = D; d < IN; d++) inp[d] = 0;
+    inp[D + langId] = 1;
+    for (let h = 0; h < H; h++) { let s = pk.pk0b[h]; for (let k = 0; k < IN; k++) s += inp[k] * pk.pk0w[k * H + h]; hb[h] = s > 0 ? s : 0; }
+    for (let d = 0; d < D; d++) { let s = pk.pk2b[d]; for (let k = 0; k < H; k++) s += hb[k] * pk.pk2w[k * D + d]; out[t * D + d] = s; }
+  }
+  return out;
+}
+
 const sig = (x) => 1 / (1 + Math.exp(-x));
 
 // One ONNX-iofc LSTM step: x,h,c[HID] → nh,nc[HID].
