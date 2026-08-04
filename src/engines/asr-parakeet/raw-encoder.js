@@ -69,20 +69,29 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
     linw: xs === 1 ? mat("linw") : matScaled("linw", xs), linb: xs === 1 ? vec("linb") : ctx.upload(scaled("linb", xs), 1, man["linb"].count ?? man["linb"].len),
   };
   const layers = [];
+  // Optional per-layer linear biases: Sortformer's conformer FF/attn linears have
+  // bias=True; Parakeet/EOU/Nemotron don't. Present → vec, absent → null. FF2/FF1
+  // linear2 biases fold the 0.5 macaron factor; q bias folds 1/sqrt(HD).
+  const vecOpt = (k) => (man[k] ? vec(k) : null);
+  const vecScaledOpt = (k, s) => (man[k] ? ctx.upload(scaled(k, s), 1, man[k].count ?? man[k].len) : null);
   for (let L = 0; L < cfg.layers; L++) {
     const g = (s) => `L${L}_${s}`;
     // pos_bias_u/v uploaded ONCE as per-head GPU tensors [1,HD].
     const pbuS = scaled(g("pbu"), INV), pbvS = scaled(g("pbv"), INV);
     layers.push({
       lnff1: [vec(g("lnff1_w")), vec(g("lnff1_b"))], ff1w1: mat(g("ff1w1")), ff1w2: matScaled(g("ff1w2"), 0.5),
+      ff1b1: vecOpt(g("ff1b1")), ff1b2: vecScaledOpt(g("ff1b2"), 0.5),
       lnatt: [vec(g("lnatt_w")), vec(g("lnatt_b"))],
       q: matScaled(g("q"), INV), k: mat(g("k")), v: mat(g("v")), pos: mat(g("pos")), out: mat(g("out")),
+      qb: vecScaledOpt(g("qb"), INV), kb: vecOpt(g("kb")), vb: vecOpt(g("vb")), outb: vecOpt(g("outb")),
       pbuT: Array.from({ length: cfg.H }, (_, h) => ctx.upload(pbuS.slice(h * HD, h * HD + HD), 1, HD)),
       pbvT: Array.from({ length: cfg.H }, (_, h) => ctx.upload(pbvS.slice(h * HD, h * HD + HD), 1, HD)),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
       pw1: vec(g("pw1")), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2: vec(g("pw2")),
+      pw1b: vecOpt(g("pw1b")), pw2b: vecOpt(g("pw2b")), // pointwise conv biases (Sortformer)
       bn: man[g("bnw")] ? [vec(g("bnw")), vec(g("bnb"))] : null, // conv-module norm (EOU)
       lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))], ff2w1: mat(g("ff2w1")), ff2w2: matScaled(g("ff2w2"), 0.5),
+      ff2b1: vecOpt(g("ff2b1")), ff2b2: vecScaledOpt(g("ff2b2"), 0.5),
       lnout: [vec(g("lnout_w")), vec(g("lnout_b"))],
     });
   }
@@ -155,13 +164,14 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   // pad on the left, none on the right).
   const dwPadL = enc.cfg.convCausal ? dwK - 1 : (dwK - 1) >> 1;
   const dwPadR = enc.cfg.convCausal ? 0 : (dwK - 1) >> 1;
-  const ff = (x, lp, w1, w2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { act: "silu" }), w2));
+  // b1 (pre-SiLU) and b2 (on linear2) are null unless the model has FF linear biases.
+  const ff = (x, lp, w1, w2, b1, b2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2 }));
 
   for (let L = 0; L < LAYERS; L++) {
     const w = enc.layers[L];
-    x = ff(x, w.lnff1, w.ff1w1, w.ff1w2);
+    x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
     const xln = ln(x, w.lnatt);
-    const q = ctx.matmul(xln, w.q), k = ctx.matmul(xln, w.k), v = ctx.matmul(xln, w.v);
+    const q = ctx.matmul(xln, w.q, { bias: w.qb }), k = ctx.matmul(xln, w.k, { bias: w.kb }), v = ctx.matmul(xln, w.v, { bias: w.vb });
     const p = ctx.matmul(peT, w.pos);
     const outc = ctx.alloc(Tsub, D);
     for (let h = 0; h < H; h++) {
@@ -176,9 +186,9 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
       const probs = ctx.softmax(sc);
       ctx.setCols(outc, ctx.matmul(probs, vh), h * HD);
     }
-    x = ctx.add(x, ctx.matmul(outc, w.out));
+    x = ctx.add(x, ctx.matmul(outc, w.out, { bias: w.outb }));
     const hT = ctx.transpose(ln(x, w.lnconv));
-    const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1 }));
+    const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1, bias: w.pw1b }));
     let dwo;
     if (w.bn) {
       // EOU: depthwise (no act) → LayerNorm over channels → SiLU. [D,Tsub]→[Tsub,D]→LN→[D,Tsub]
@@ -188,8 +198,8 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
       // Parakeet: BatchNorm folded into depthwise, SiLU fused.
       dwo = ctx.conv1d(glu, w.dw, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
     }
-    x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1 })));
-    x = ff(x, w.lnff2, w.ff2w1, w.ff2w2);
+    x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1, bias: w.pw2b })));
+    x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
     x = ln(x, w.lnout);
   }
   const out = { dims: [1, D, Tsub], framesGpu: x, Tsub };

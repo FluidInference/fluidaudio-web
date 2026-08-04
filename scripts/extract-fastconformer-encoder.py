@@ -39,16 +39,22 @@ mm_in = [i for i in addn.input if i != out_bias][0]
 mmn = [n for n in g.node if mm_in in n.output][0]
 add("linw", arr(mmn.input[1]), I[mmn.input[1]].dims); add("linb", arr(out_bias), I[out_bias].dims)
 W = w_pref
+def add_opt(k, name):  # optional named bias — Sortformer's conformer FF/attn linears
+    if name in I: add(k, arr(name), I[name].dims)  # have bias=True; Parakeet/EOU don't.
 for L in range(nl):
     p = f"{W}layers.{L}"
     add(f"L{L}_lnff1_w", arr(f"{p}.norm_feed_forward1.weight"), I[f"{p}.norm_feed_forward1.weight"].dims); add(f"L{L}_lnff1_b", arr(f"{p}.norm_feed_forward1.bias"), I[f"{p}.norm_feed_forward1.bias"].dims)
     add(f"L{L}_ff1w1", R(L, "feed_forward1/linear1/MatMul"), I[role[(L, "feed_forward1/linear1/MatMul")]].dims); add(f"L{L}_ff1w2", R(L, "feed_forward1/linear2/MatMul"), I[role[(L, "feed_forward1/linear2/MatMul")]].dims)
+    add_opt(f"L{L}_ff1b1", f"{p}.feed_forward1.linear1.bias"); add_opt(f"L{L}_ff1b2", f"{p}.feed_forward1.linear2.bias")
     add(f"L{L}_lnatt_w", arr(f"{p}.norm_self_att.weight"), I[f"{p}.norm_self_att.weight"].dims); add(f"L{L}_lnatt_b", arr(f"{p}.norm_self_att.bias"), I[f"{p}.norm_self_att.bias"].dims)
     for nm, rl in [("q", "self_attn/linear_q/MatMul"), ("k", "self_attn/linear_k/MatMul"), ("v", "self_attn/linear_v/MatMul"), ("pos", "self_attn/linear_pos/MatMul"), ("out", "self_attn/linear_out/MatMul")]:
         add(f"L{L}_{nm}", R(L, rl), I[role[(L, rl)]].dims)
+    for nm, an in [("q", "linear_q"), ("k", "linear_k"), ("v", "linear_v"), ("out", "linear_out")]:
+        add_opt(f"L{L}_{nm}b", f"{p}.self_attn.{an}.bias")  # attn linear biases (Sortformer)
     add(f"L{L}_pbu", arr(f"{p}.self_attn.pos_bias_u"), I[f"{p}.self_attn.pos_bias_u"].dims); add(f"L{L}_pbv", arr(f"{p}.self_attn.pos_bias_v"), I[f"{p}.self_attn.pos_bias_v"].dims)
     add(f"L{L}_lnconv_w", arr(f"{p}.norm_conv.weight"), I[f"{p}.norm_conv.weight"].dims); add(f"L{L}_lnconv_b", arr(f"{p}.norm_conv.bias"), I[f"{p}.norm_conv.bias"].dims)
     add(f"L{L}_pw1", R(L, "conv/pointwise_conv1/Conv"), I[role[(L, "conv/pointwise_conv1/Conv")]].dims)
+    add_opt(f"L{L}_pw1b", f"{p}.conv.pointwise_conv1.bias"); add_opt(f"L{L}_pw2b", f"{p}.conv.pointwise_conv2.bias")
     dww = role[(L, "conv/depthwise_conv/Conv")]
     add(f"L{L}_dw", arr(dww), I[dww].dims)
     dwnode = [n for n in g.node if n.name and n.name.endswith(f"{enc_pref}{L}/conv/depthwise_conv/Conv")][0]
@@ -62,6 +68,7 @@ for L in range(nl):
     add(f"L{L}_pw2", R(L, "conv/pointwise_conv2/Conv"), I[role[(L, "conv/pointwise_conv2/Conv")]].dims)
     add(f"L{L}_lnff2_w", arr(f"{p}.norm_feed_forward2.weight"), I[f"{p}.norm_feed_forward2.weight"].dims); add(f"L{L}_lnff2_b", arr(f"{p}.norm_feed_forward2.bias"), I[f"{p}.norm_feed_forward2.bias"].dims)
     add(f"L{L}_ff2w1", R(L, "feed_forward2/linear1/MatMul"), I[role[(L, "feed_forward2/linear1/MatMul")]].dims); add(f"L{L}_ff2w2", R(L, "feed_forward2/linear2/MatMul"), I[role[(L, "feed_forward2/linear2/MatMul")]].dims)
+    add_opt(f"L{L}_ff2b1", f"{p}.feed_forward2.linear1.bias"); add_opt(f"L{L}_ff2b2", f"{p}.feed_forward2.linear2.bias")
     add(f"L{L}_lnout_w", arr(f"{p}.norm_out.weight"), I[f"{p}.norm_out.weight"].dims); add(f"L{L}_lnout_b", arr(f"{p}.norm_out.bias"), I[f"{p}.norm_out.bias"].dims)
 open(f"{out}/weights.bin", "wb").write(blob); json.dump(man, open(f"{out}/manifest.json", "w"))
 print(f"{len(man)} tensors, {len(blob)//1024//1024}MB, {nl} layers (prefix {enc_pref})")
