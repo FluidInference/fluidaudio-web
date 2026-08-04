@@ -279,3 +279,18 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   overlap-add) → waveform. Decoder uses style[:128] (acoustic half). anchors ref_wav.bin +
   /decoder/decoder/Concat. NEW KERNEL: cumsum/scan. Have: conv1d/convTranspose1d/adain/
   leakyRelu/STFT-via-DFT. This is a full iSTFTNet vocoder — the single biggest component.
+
+
+### Kokoro Stage B (vocoder) build notes
+- NSF m_source (SineGen) traced: F0[T] → Resize(upsample to sample rate) → phase=CumSum(F0*2π/sr)
+  → Sin (9 harmonics via harmonic multipliers) → ×amplitude → ×uv-mask(F0>0, from Greater/Cast)
+  → l_linear MatMul[9,1]+bias → l_tanh Tanh = source[samples]. Anchor exposed:
+  /decoder/decoder/generator/m_source/l_tanh/Tanh_output_0 (model_msrc.onnx).
+- generator body: source → noise_convs(4) + noise_res(48, Snake=x+sin²(αx)/α activations) merged
+  with decode.3 output → resblocks(144, HiFiGAN multi-receptive, Snake) → ups(2 ConvTranspose) →
+  STFT/conv_post → iSTFT (ScatterND overlap-add) → waveform. decode.0-3 = AdaIN resblocks w/
+  upsampling, concat asr_res/F0_conv/N_conv + acoustic style each. NEW KERNEL: cumsum. Snake
+  activation kernel also needed (x + sin²(αx)/α, per-channel α). Anchors: ref_wav.bin + m_source.
+  REMAINING: extract SineGen constants (harmonic mults, sr scale, amp, upsample factors) → validate
+  m_source numpy → decode resblocks → generator resblocks/Snake/ups → iSTFT → gate waveform →
+  port full Kokoro (predictor+vocoder) numpy→GPU/JS → engine off kokoro-js → drop 3 deps.
