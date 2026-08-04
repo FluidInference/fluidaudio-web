@@ -1169,6 +1169,24 @@ export class GpuContext {
     return y;
   }
 
+  /** Elementwise ReLU (standalone; matmul act=relu covers the fused case). */
+  relu(x) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("relu", `
+      struct Meta { n:u32, _a:u32, _b:u32, _c:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(2) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
+        Y[i] = max(X[i], 0.0);
+      }`);
+    const u = this._uniform(new Uint32Array([x.rows * x.cols, 0, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
+    return y;
+  }
+
   /** GLU over channels: x:[2C, T] -> [C, T], y[c,t] = x[c,t]*sigmoid(x[c+C,t]). */
   glu(x) {
     const C = x.rows / 2, T = x.cols;
