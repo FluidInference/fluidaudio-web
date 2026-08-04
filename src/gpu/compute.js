@@ -180,6 +180,42 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// int8 GEMM with in-shader dequant: A[M,K] fp32 @ dequant(Wq)[K,N] -> Y[M,N].
+// Wq = int8 weights packed 4-per-u32, row-major [k*N+n]; scale[N] per output column
+// (symmetric: w = q * scale[n]). Reads weights at 1/4 the bandwidth of fp32 and keeps
+// them 1/4 the GPU memory. Fused bias/act. out[m,n] = act(scale[n]*Σ a[m,k]*q[k,n] + b[n]).
+const MATMUL_INT8_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> Wq: array<u32>;
+@group(0) @binding(2) var<storage, read> scale: array<f32>;
+@group(0) @binding(3) var<storage, read> bias: array<f32>;
+@group(0) @binding(4) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.M * m.N) { return; }
+  let row = idx / m.N;
+  let col = idx % m.N;
+  let aBase = row * m.K;
+  var acc = 0.0;
+  for (var k = 0u; k < m.K; k++) {
+    let li = k * m.N + col;
+    let u = Wq[li >> 2u];
+    let sh = (li & 3u) * 8u;
+    var q = i32((u >> sh) & 255u);
+    if (q > 127) { q = q - 256; }
+    acc += A[aBase + k] * f32(q);
+  }
+  acc = acc * scale[col];
+  if (m.hasBias == 1u) { acc += bias[col]; }
+  if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
+  else if (m.act == 3u) { acc = max(acc, 0.0); }
+  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  Y[idx] = acc;
+}`;
+
 // Fused TDT joint + argmax (one dispatch per decode step). Computes
 // j = relu(encProj[frame] + predProj) [hidden], out = j @ outW + outB [logits],
 // then reduces to token argmax (n<vocab) and duration argmax (n>=vocab). Writes
@@ -988,6 +1024,21 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([frame, hidden, vocab, logits]));
     this._run(pipeline, [encProj.buf, predProj.buf, outW.buf, outB.buf, res.buf], u, count);
     return res;
+  }
+
+  /**
+   * int8 GEMM: a[M,K] fp32 @ dequant(wq)[K,N] -> [M,N]. wq: GpuTensor over a u32
+   * buffer of int8 weights packed 4-per-u32 (row-major [k*N+n]); scale:[1,N] per
+   * output column; bias?:[1,N]. Fused act. Weights stay int8 in GPU memory (1/4).
+   */
+  matmulInt8(a, wq, scale, N, K, { bias = null, act = "none" } = {}) {
+    const M = a.rows;
+    const y = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("matmulI8", MATMUL_INT8_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+    this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil((M * N) / 64));
+    return y;
   }
 
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */

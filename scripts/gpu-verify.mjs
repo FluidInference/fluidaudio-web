@@ -353,5 +353,16 @@ function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, 
   report("relShift", maxErr(out, ref), 0);
 }
 
+// ---- matmulInt8 (in-shader dequant, per-column scale) ----
+{
+  const M = 40, K = 256, N = 128, A = rand(M * K), W = rand(K * N);
+  const q = new Int8Array(K * N), s = new Float32Array(N);
+  for (let n = 0; n < N; n++) { let mx = 0; for (let k = 0; k < K; k++) mx = Math.max(mx, Math.abs(W[k * N + n])); const sc = mx / 127 || 1; s[n] = sc; for (let k = 0; k < K; k++) q[k * N + n] = Math.max(-127, Math.min(127, Math.round(W[k * N + n] / sc))); }
+  const ref = new Float32Array(M * N);
+  for (let i = 0; i < M; i++) for (let n = 0; n < N; n++) { let acc = 0; for (let k = 0; k < K; k++) acc += A[i * K + k] * q[k * N + n]; ref[i * N + n] = acc * s[n]; }
+  const out = await ctx.download(ctx.matmulInt8(ctx.upload(A, M, K), ctx.uploadBytes(q), ctx.upload(s, 1, N), N, K));
+  report("matmulInt8", maxErr(out, ref), 1e-2);
+}
+
 console.log(fails === 0 ? "\nALL KERNELS PARITY OK" : `\n${fails} KERNEL(S) FAILED`);
 process.exit(fails === 0 ? 0 : 1);
