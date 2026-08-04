@@ -9,6 +9,9 @@
       body { max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
       h1 { font-size: 1.4rem; } h2 { font-size: 1.05rem; margin-top: 1.5rem; }
       .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .5rem 0; }
+      /* [hidden] must win over .row's display:flex (else TTS shows the file picker
+         and audio engines show the text box). */
+      [hidden] { display: none !important; }
       select, button, input, textarea { font: inherit; padding: .4rem .6rem; }
       textarea { width: 100%; min-height: 4rem; }
       #status { font-size: .85rem; opacity: .8; min-height: 1.2rem; }
@@ -33,7 +36,7 @@
     <progress id="progress" value="0" max="1" hidden></progress>
     <div id="status">Pick an engine and load it.</div>
 
-    <h2>Input</h2>
+    <h2 id="inputLabel">Input</h2>
     <div class="row" id="audioInput">
       <input type="file" id="file" accept="audio/*,video/*" />
     </div>

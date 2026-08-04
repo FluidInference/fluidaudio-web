@@ -74,6 +74,8 @@ function syncInputs() {
   const kind = currentEntry().kind;
   $("audioInput").hidden = kind !== "audio";
   $("textInput").hidden = kind !== "text";
+  // TTS takes text → text box; ASR/VAD/diarization take audio → file picker.
+  $("inputLabel").textContent = kind === "text" ? "Text to synthesize" : "Audio file";
 }
 engineSel.addEventListener("change", () => { syncInputs(); runBtn.disabled = true; });
 syncInputs();
