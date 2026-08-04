@@ -1,18 +1,20 @@
 // Parakeet TDT 0.6B v3 — fully ORT-free. Mel (parakeet-mel.js), FastConformer
 // encoder (raw-encoder.js, int8 on raw WebGPU), and TDT decoder+joint
-// (raw-decoder.js, JS) are all hand-written; no onnxruntime, no transformers.js.
-// Weights fetched from FluidInference/fluidaudio-web (encoder int8 ~600MB, decoder
-// fp32 ~72MB). Long audio is windowed (15s / 2s overlap) like native FluidAudio.
+// (raw-decoder-wasm.js, WASM-SIMD on CPU) are all hand-written; no onnxruntime.
+// Weights from FluidInference/fluidaudio-web. Long audio windowed (15s / 2s overlap).
 //
-// Parity: encoder 5.3e-7 vs ORT (fp32); int8 transcript byte-identical to fp32.
+// Split rationale: the encoder is GPU (big GEMMs); the RNNT decoder is CPU/WASM-SIMD
+// because it's autoregressive — one result per token — so a GPU decoder pays a
+// round-trip per token (the ~20× wall). WASM-SIMD decodes on CPU with no GPU sync.
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
 import { loadParakeetEncoder, parakeetEncode } from "./raw-encoder.js";
-import { loadParakeetDecoder, tdtGreedyGpu } from "./raw-decoder.js";
+import { loadWasmDecoder, wasmDecode } from "./raw-decoder-wasm.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
+import wasmUrl from "./parakeet-decoder.wasm?url";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const VOCAB_REPO = "ysdede/parakeet-tdt-0.6b-v3-onnx";
@@ -36,13 +38,14 @@ export class ParakeetV3Engine implements AsrEngine {
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("parakeet/encoder-int8.manifest.json");
-    const encBin = await bytes("parakeet/encoder-int8.bin"); // Uint8Array (int8 + fp32 scales)
+    const encBin = await bytes("parakeet/encoder-int8.bin");
     const decMan = await json("parakeet/decoder-fp32.manifest.json");
     const decBin = await bytes("parakeet/decoder-fp32.bin");
     const vocab = new TextDecoder().decode(await fetchCached(hfUrl(VOCAB_REPO, "vocab.txt"), onProgress, "vocab.txt"));
+    const wasmBytes = await (await fetch(wasmUrl)).arrayBuffer();
 
     this.enc = loadParakeetEncoder(this.ctx, encBin, encMan);
-    this.dec = loadParakeetDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan, this.ctx);
+    this.dec = await loadWasmDecoder(wasmBytes, new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
@@ -55,9 +58,9 @@ export class ParakeetV3Engine implements AsrEngine {
     const overlapSamples = OVERLAP_SEC * SAMPLE_RATE;
     const hop = winSamples - overlapSamples;
     const single = samples.length <= winSamples;
-
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     let melMs = 0, encodeMs = 0, decodeMs = 0;
+
     const ids: number[] = [];
     for (let start = 0, w = 0; start < samples.length; start += hop, w++) {
       const slice = single ? samples : samples.subarray(start, Math.min(start + winSamples, samples.length));
@@ -67,13 +70,14 @@ export class ParakeetV3Engine implements AsrEngine {
       if (length === 0) { if (single) break; continue; }
       t0 = now();
       const { framesGpu, Tsub: Tenc } = await parakeetEncode(this.ctx, this.enc, features, length);
+      // download [Tsub,1024] (frames[t*1024+d]) — also flushes the encoder's GPU work.
+      const frames = await this.ctx.download(framesGpu);
       encodeMs += now() - t0;
       t0 = now();
-      const { ids: wids, idFrames } = await tdtGreedyGpu(this.ctx, this.dec, framesGpu, Tenc);
+      const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
       decodeMs += now() - t0;
 
-      // Seam dedup (same as tdt.js): frame-estimated overlap, refined by an exact
-      // token-match stitch between the tail of what's emitted and this window's head.
+      // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
       let skip = 0;
       if (w > 0 && wids.length) {
         const overlapEnc = Math.round((Tenc * overlapSamples) / slice.length);
@@ -93,12 +97,7 @@ export class ParakeetV3Engine implements AsrEngine {
     }
     return {
       text: this.tokenizer.decode(ids),
-      metrics: {
-        melMs: +melMs.toFixed(0),
-        encodeMs: +encodeMs.toFixed(0),
-        decodeMs: +decodeMs.toFixed(0),
-        totalMs: +(melMs + encodeMs + decodeMs).toFixed(0),
-      },
+      metrics: { melMs: +melMs.toFixed(0), encodeMs: +encodeMs.toFixed(0), decodeMs: +decodeMs.toFixed(0), totalMs: +(melMs + encodeMs + decodeMs).toFixed(0) },
     };
   }
 

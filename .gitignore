@@ -5,3 +5,4 @@ dist/
 .vite/
 # cached model weights if ever mirrored locally
 models-cache/
+rust/*/target/
