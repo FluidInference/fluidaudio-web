@@ -251,3 +251,18 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   MISSING KERNEL: cumsum/scan (all others exist: matmul/conv1d/lstm/convTranspose1d/adain/leakyRelu/
      gatherCols/STFT-via-DFT). Then engine off kokoro-js + delete core/ort.ts + drop 3 deps.
   Model /tmp/kokoro/model.onnx (fp32 325MB). This is a dedicated multi-stage build (StyleTTS2+iSTFTNet).
+
+### Kokoro build progress (stage by stage)
+- [x] A1 duration path — VALIDATED numpy-exact vs ORT (pred_dur [1,1,1,1,1,2,1,2,1,1,1,2]).
+  Recipe: style[1,256] = [0:128 acoustic (decoder) | 128:256 prosodic (predictor)].
+  DurationEncoder text_encoder.lstms.0/2/4 = bidir LSTM (onnx iofc, hid256, INPUT =
+  concat(feat[512 first / 512 after], style128)=640); lstms.1/3/5 = AdaLN: h=fc(style128)
+  [1024,128]; γ,β = h[:512],h[512:]; x = LN(x)*(1+γ)+β. Then predictor.lstm (bidir, input
+  concat(x,style128)=640→512) → duration_proj (MatMul→50) → Sigmoid → ReduceSum(axis=-1)
+  → Round → Clip(1,50) = pred_dur. Anchors: /encoder/Clip_output_0, d_en=/encoder/
+  bert_encoder/Add_output_0.
+- [ ] A2 length-regulate (repeat d_en/en by pred_dur → 15 frames) + A3 F0/N AdaINResBlocks
+  (norm=AdaIN instance-norm+fc-style, conv1/conv2, LeakyRelu, pool upsample ×2 → F0/N [1,1,30]).
+  Anchors: /encoder/F0_proj/Conv_output_0, /encoder/N_proj/Conv_output_0.
+- [ ] B iSTFTNet decoder+generator (decoder.decoder 236w) → waveform. Anchor /decoder/decoder/
+  Concat_output_0 [1,514,15] + ref_wav.bin. Needs cumsum kernel + STFT/iSTFT.
