@@ -92,15 +92,21 @@ export function tdtGreedy(dec, frames, Tenc, maxSymbols = 10) {
   let lastTok = dec.blankId;
   let t = 0, emitted = 0;
   const enc = new Float32Array(D);
+  // The prediction net (LSTM) output depends only on lastTok + state, which change
+  // ONLY on a non-blank emission. Cache it so blank-advance frames (the majority)
+  // reuse it instead of recomputing the LSTM — the joint still runs every frame.
+  let pred = predict(dec, lastTok, state);
   while (t < Tenc) {
     enc.set(frames.subarray(t * D, t * D + D));
-    const pred = predict(dec, lastTok, state);
     const lg = joint(dec, enc, pred.decOut);
     let maxId = 0, maxV = -Infinity;
     for (let i = 0; i < dec.vocab; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
     let step = 0, dV = -Infinity;
     for (let i = dec.vocab; i < dec.logits; i++) if (lg[i] > dV) { dV = lg[i]; step = i - dec.vocab; }
-    if (maxId !== dec.blankId) { state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++; }
+    if (maxId !== dec.blankId) {
+      state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
+      pred = predict(dec, lastTok, state); // recompute only after emission
+    }
     if (step > 0) { t += step; emitted = 0; }
     else if (maxId === dec.blankId || emitted >= maxSymbols) { t += 1; emitted = 0; }
   }
