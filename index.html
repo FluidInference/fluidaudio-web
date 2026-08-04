@@ -18,9 +18,11 @@
     </style>
   </head>
   <body>
-    <h1>FluidAudio Web</h1>
-    <p>In-browser inference over FluidAudio's core models — WebGPU + WebAssembly,
-       nothing leaves your machine. <span id="gpu" class="badge"></span></p>
+    <h1>FluidAudio Web <span class="badge">Playground</span></h1>
+    <nav class="row" style="font-size:.85rem"><strong>Try it</strong> · <a href="bench.html">Benchmark all engines →</a></nav>
+    <p>Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing
+       leaves your machine. First load downloads the model weights (cached after).
+       <span id="gpu" class="badge"></span></p>
 
     <div class="row">
       <label>Engine
