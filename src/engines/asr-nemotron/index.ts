@@ -1,66 +1,72 @@
-// Nemotron 3.5 streaming ASR (en + multilingual, 40 langs) — cache-aware
-// FastConformer-RNNT. ONNX: onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4.
+// Nemotron 3.5 streaming ASR (multilingual, cache-aware FastConformer-RNNT).
 //
-// The int4 encoder runs on **WASM**, NOT WebGPU. It's numerically healthy on WASM
-// (encoder std 0.43 — unlike Parakeet's int8, which collapses there), and ORT-web's
-// WebGPU EP mishandles the int4 `MatMulNBits` ops → EMPTY transcript in-browser.
-// Verified headless (ort-node WASM): correct output. So force WASM for the encoder;
-// WebGPU buys nothing here anyway (thin GEMMs — see docs/RAW_WEBGPU.md).
-//
-// mel is NA log-mel computed in JS (no ONNX mel ships for Nemotron, and the
-// parakeet nemo128 mel bakes per-feature CMVN which is wrong here) — the one JS
-// DSP stage; could move to an NA-mel ONNX later.
+// Uses the soniqo FP16 export, which is purpose-built to run under
+// onnxruntime-web's WebGPU EP (the int4 export can't — no int kernels on WebGPU;
+// soniqo also rewrote the 24-input Concat into a ≤6-input tree to stay under the
+// 8-storage-buffer WebGPU limit). So the heavy encoder runs on the **GPU** (fast,
+// non-blocking); the tiny LSTM decoder + joint run on WASM. mel is NA log-mel in
+// JS. Verified headless: exact transcript. See docs/NEMOTRON.md.
 
+import { ort, webgpuAvailable } from "../../core/ort";
+import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { JsPreprocessor } from "./nemotron-mel.js";
+import { soniqoTranscribe, makeSoniqoTokenizer, soniqoLangPrompt } from "./nemotron-soniqo.js";
 
-const REPO = "onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4";
+const REPO = "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16";
 
-// Thin proxy to nemotron.worker.ts. All inference runs in the worker so the int4
-// WASM decode (thousands of tiny sequential calls, single-threaded without cross-
-// origin isolation) never blocks the main thread / freezes the page. It's still
-// slow — the real fast+correct path is the raw-WebGPU int4 kernel (src/gpu) wired
-// into the encoder — but the UI stays responsive.
+async function createWithData(name: string, ep: "webgpu" | "wasm", onProgress?: ProgressCb) {
+  const model = await fetchCached(hfUrl(REPO, `${name}.onnx`), onProgress, `${name}.onnx`);
+  const data = await fetchCached(hfUrl(REPO, `${name}.onnx.data`), onProgress, `${name}.onnx.data`);
+  const eps = ep === "webgpu" && webgpuAvailable() ? ["webgpu", "wasm"] : ["wasm"];
+  return ort.InferenceSession.create(model, {
+    executionProviders: eps as any,
+    graphOptimizationLevel: "all",
+    externalData: [{ path: `${name}.onnx.data`, data }] as any,
+  });
+}
+
 export class NemotronEngine implements AsrEngine {
   readonly id = "asr-nemotron";
   readonly label = "Nemotron 3.5 streaming";
-  private worker: Worker | null = null;
-  private seq = 0;
-  private pending = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();
+  private encoder: any = null;
+  private decoder: any = null;
+  private joint: any = null;
+  private preprocessor = new JsPreprocessor({ nMels: 128 });
+  private tokenizer: any = null;
+  private languages: any = null;
 
-  /** @param opts.language BCP-47-ish code, e.g. "en-US" / "de" / "zh" (default en-US). */
+  /** @param opts.language e.g. "en-US" / "de" / "zh-CN" / "ja-JP" (default en-US). */
   constructor(private opts: { language?: string } = {}) {}
 
-  private call(type: string, extra: Record<string, any> = {}, transfer: Transferable[] = []): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const id = ++this.seq;
-      this.pending.set(id, { resolve, reject });
-      this.worker!.postMessage({ type, id, ...extra }, transfer);
-    });
-  }
-
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.worker = new Worker(new URL("./nemotron.worker.ts", import.meta.url), { type: "module" });
-    this.worker.onmessage = (e: MessageEvent) => {
-      const { id, ok, error, ...rest } = e.data;
-      const p = this.pending.get(id);
-      if (!p) return;
-      this.pending.delete(id);
-      ok ? p.resolve(rest) : p.reject(new Error(error));
-    };
-    await this.call("load"); // worker fetches + compiles the int4 sessions (WASM)
+    // fp16 encoder on WebGPU (the heavy part); LSTM decoder + joint on WASM (tiny).
+    this.encoder = await createWithData("encoder", "webgpu", onProgress);
+    this.decoder = await createWithData("decoder", "wasm", onProgress);
+    this.joint = await createWithData("joint", "wasm", onProgress);
+    this.tokenizer = makeSoniqoTokenizer(JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(REPO, "vocab.json"), onProgress, "vocab.json"))));
+    this.languages = JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(REPO, "languages.json"), onProgress, "languages.json")));
     onProgress?.({ file: REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
-    if (!this.worker) throw new Error("NemotronEngine.load() not called");
-    const copy = audio.samples.slice(); // copy so we can transfer without touching the caller's buffer
-    const r = await this.call("transcribe", { audio: copy.buffer, language: this.opts.language }, [copy.buffer]);
-    return { text: r.text };
+    if (!this.encoder || !this.decoder || !this.joint || !this.tokenizer) {
+      throw new Error("NemotronEngine.load() not called");
+    }
+    const { text } = await soniqoTranscribe({
+      ort,
+      encoder: this.encoder, decoder: this.decoder, joint: this.joint,
+      preprocessor: this.preprocessor, tokenizer: this.tokenizer,
+      audio: audio.samples,
+      langPrompt: soniqoLangPrompt(this.languages, this.opts.language ?? "en-US"),
+    });
+    return { text };
   }
 
   async dispose(): Promise<void> {
-    this.worker?.terminate();
-    this.worker = null;
-    this.pending.clear();
+    await this.encoder?.release?.();
+    await this.decoder?.release?.();
+    await this.joint?.release?.();
+    this.encoder = this.decoder = this.joint = this.tokenizer = null;
   }
 }

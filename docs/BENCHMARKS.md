@@ -12,7 +12,7 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
 | **Diarization (Sortformer)** | ✅ | 146 ms | **82.2×** | 1 spk, 5 seg (short audio) |
 | **Whisper (99 langs)** | ✅ | 500 ms | **24×** | correct transcript |
 | **Parakeet TDT v3** | ✅ | 259 ms | **46.3×** | *"Four Classes … Grace Duffield Goodwin"* — fp16, matches fp32 (fully warm; 14× on the compile-run) |
-| **Nemotron 3.5** | ✅ | 24.4 s | **0.5×** | correct — *"Four classes that constitute a menace… by Grace Duffield Goodwin"*; int4 WASM in a **Web Worker** (non-blocking but **below real-time**, single-threaded). WebGPU EP → empty. |
+| **Nemotron 3.5** | ✅ | — | — | **fp16 encoder on WebGPU** (soniqo export) — correct headless (*"Four classes that constitute a menace… by Grace Duffield Goodwin"*), re-run for the browser number. Replaces the slow int4-WASM path. |
 | **Kokoro TTS (en)** | ✅ | 333 ms | **10.1×** | 3.38 s audio |
 | **Kokoro TTS (zh)** | ✅ | 316 ms | **9.8×** | 3.10 s audio |
 
@@ -25,15 +25,16 @@ the steady state after first load; `run` is inference only (measured 2026-08-03)
   Kokoro-en was **2.0× cold → 10.1× warm**, Whisper 9.3 → 24×, Sortformer 16 → 82×.
   The table above is warm/steady-state (what a user sees after first load); expect
   the first run to be several× slower.
-- **Nemotron int4 runs in a Web Worker.** WebGPU EP mishandles the int4 `MatMulNBits`
-  ops → empty; WASM is correct (headless-verified) but single-threaded (no cross-
-  origin isolation on Pages), and its streaming RNNT decode is thousands of tiny
-  sequential calls — on the main thread that froze the page. `nemotron.worker.ts`
-  runs the whole load + transcribe off-thread → correct + non-blocking (still slow).
-  The fast *and* correct path is the **raw-WebGPU int4 kernel** (`src/gpu`
-  `matmulNBits`, built + parity-verified) wired into the encoder — the one thing
-  ORT-WebGPU can't do; that wiring (219 MatMulNBits + FastConformer topology) is the
-  remaining build.
+- **Nemotron: solved via the soniqo fp16 export.** The int4 export can't run on
+  ORT-WebGPU (no int kernels → empty), and int4-on-WASM froze the page. The right
+  fix wasn't reimplementing the encoder — it was the right *model*: soniqo's **fp16**
+  export is purpose-built for ORT-WebGPU (they rewrote the 24-input Concat into a
+  ≤6-input tree to stay under WebGPU's 8-buffer limit). So the encoder runs on the
+  **GPU** (fast, non-blocking) and the tiny LSTM decoder + joint on WASM. Streaming
+  (320 ms / 32-mel-frame chunks, cache threading) + RNN-T greedy is ported in
+  `nemotron-soniqo.js`; verified headless (exact transcript). The raw-WebGPU int4
+  kernel (`src/gpu` `matmulNBits`) remains as a proven capability but isn't needed
+  here — fp16 + ORT-WebGPU is simpler and works.
 
 ### Superseded
 Earlier partial runs (Sortformer 123×, Kokoro 9.99×/5.26×, and the cold table) are

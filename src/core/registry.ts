@@ -35,15 +35,19 @@ export const REGISTRY: Record<string, ModelSpec> = {
     license: "Apache-2.0",
     note: "Acoustic only. Chinese text→phoneme frontend is NOT in the ONNX.",
   },
-  // ✅ CONFIRMED — the model khawjaahmad/nemotron-asr-webgpu loads.
+  // ✅ CONFIRMED — soniqo FP16 export, built to run on onnxruntime-web WebGPU.
+  // (int4 export can't: WebGPU has no int kernels.) Verified transcript headless.
   "asr-nemotron": {
     files: [
-      { repo: "onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4", path: "onnx/encoder_model.onnx" },
-      { repo: "onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4", path: "onnx/decoder_joint_model.onnx" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "encoder.onnx" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "encoder.onnx.data" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "decoder.onnx" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "joint.onnx" },
+      { repo: "soniqo/Nemotron-3.5-ASR-Streaming-Multilingual-0.6B-ONNX-FP16", path: "vocab.json" },
     ],
-    approxMB: 750,
+    approxMB: 1300,
     license: "nvidia-open-model",
-    note: "40 langs. Cache-aware streaming; chunk tiers 80/160/320/560/1120ms. Confirm exact file names.",
+    note: "Multilingual. fp16 encoder on WebGPU + LSTM decoder/joint on WASM; 320ms streaming chunks, RNN-T greedy. mel = NA log-mel (JS).",
   },
   // ✅ CONFIRMED — loaded directly by the internalized engine (no ASR library).
   // int8 encoder runs on WebGPU only (CPU/WASM collapses it to all-blank).

@@ -64,12 +64,9 @@ const CASES: Case[] = [
     summarize: (o) => `${(o.samples.length / o.sampleRate).toFixed(2)}s audio`,
   },
   {
-    // Runs in a Web Worker (nemotron.worker.ts) so the int4 WASM decode doesn't
-    // block the main thread. Correct output, but slow single-threaded (no cross-
-    // origin isolation on Pages) — the fast+correct path is the raw-WebGPU int4
-    // kernel (src/gpu/matmulNBits) wired into the encoder; ORT-web's WebGPU EP
-    // mishandles int4 → empty.
-    id: "asr-nemotron", label: "Nemotron 3.5 (worker; WASM int4)", kind: "audio", heavy: true,
+    // soniqo FP16 export: encoder on WebGPU (purpose-built for it), LSTM decoder +
+    // joint on WASM. Correct + fast in-browser (int4 export couldn't run on WebGPU).
+    id: "asr-nemotron", label: "Nemotron 3.5 (fp16, WebGPU)", kind: "audio", heavy: true,
     make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text || "(empty)",
