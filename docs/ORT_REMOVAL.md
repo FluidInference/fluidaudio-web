@@ -186,7 +186,18 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
     - Transcript (cowen.wav): "The people here to me are the smartest people I've ever met,
       but I think a side result of that is that people here overvalue intelligence and their
       models of the world are built on intelligence mattering much."
-  - [~] Sortformer diarizer (4-spk) — RECON DONE + encoder extraction, WIP.
+  - [x] **Sortformer diarizer (4-spk)** — DONE, ORT-FREE, weights on HF, full parity.
+    Full raw pipeline (17-layer FastConformer encoder int8 + encoder_proj + 18-layer
+    transformer head + sigmoid) == ORT preds: maxΔ 1.79e-7 (fp32) / 2.3e-3 (int8,
+    diarization-neutral). Cracked the encoder via bias-everywhere (Sortformer's conformer
+    has bias=True on ALL FF/attn/pointwise-conv linears, unlike Parakeet) + xscale (√512).
+    Transformer head: POST-LN, 8-head MHA (scale 1/√24), ReLU FFN — n_heads confirmed by
+    numpy parity. Weights FluidInference/fluidaudio-web sortformer/{encoder-int8,head-fp32}
+    (140MB). Engine ORT-free (predsToSegments threshold/merge). Offline single-chunk;
+    long-audio streaming (spkcache/fifo) = follow-up. Scripts: extract-sortformer-head.py.
+    (old sortformer.js now dead code.)
+  - [~] Sortformer streaming (spkcache/fifo across chunks) — follow-up for long audio.
+  - [_] EARLIER WIP NOTE (superseded):
     Arch: 17-layer FastConformer (d512, 8h×64, dwK9) encoder → sortformer_modules.encoder_proj
     (512→192) → 18-layer STANDARD transformer head (transformer_encoder, d192: layer_norm_1
     → first_sub_layer MHA (query/key/value/out_projection, NO rel-pos) → layer_norm_2 →
@@ -206,5 +217,5 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
     segment extraction (reuse sortformer.js), int8 quantize, engine, HF. preds [150,4].
     Reference preds on cowen.wav: spk0 max 1.00 (single speaker, correct).
 - [ ] 4. Kokoro
-- [ ] 5. Whisper
+- [ ] 5. Whisper (still transformers.js) + Kokoro (still kokoro-js) — the last two
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
