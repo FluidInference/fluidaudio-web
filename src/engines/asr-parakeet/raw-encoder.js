@@ -47,11 +47,15 @@ export function loadParakeetEncoder(ctx, bin, man) {
   const layers = [];
   for (let L = 0; L < LAYERS; L++) {
     const g = (s) => `L${L}_${s}`;
+    // pos_bias_u/v uploaded ONCE as per-head GPU tensors [1,128] (was ~7300 tiny
+    // per-head-per-window uploads across the run).
+    const pbuS = scaled(g("pbu"), INV), pbvS = scaled(g("pbv"), INV);
     layers.push({
       lnff1: [vec(g("lnff1_w")), vec(g("lnff1_b"))], ff1w1: mat(g("ff1w1")), ff1w2: matScaled(g("ff1w2"), 0.5),
       lnatt: [vec(g("lnatt_w")), vec(g("lnatt_b"))],
       q: matScaled(g("q"), INV), k: mat(g("k")), v: mat(g("v")), pos: mat(g("pos")), out: mat(g("out")),
-      pbu: scaled(g("pbu"), INV), pbv: scaled(g("pbv"), INV), // kept on host, sliced per head
+      pbuT: Array.from({ length: 8 }, (_, h) => ctx.upload(pbuS.slice(h * 128, h * 128 + 128), 1, 128)),
+      pbvT: Array.from({ length: 8 }, (_, h) => ctx.upload(pbvS.slice(h * 128, h * 128 + 128), 1, 128)),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
       pw1: vec(g("pw1")), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2: vec(g("pw2")),
       lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))], ff2w1: mat(g("ff2w1")), ff2w2: matScaled(g("ff2w2"), 0.5),
@@ -94,7 +98,10 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   const flat = ctx.subReshape(s, 256, Tsub, F); // [Tsub, 256*F], GPU-resident
   let x = ctx.matmul(flat, enc.sub.linw, { bias: enc.sub.linb });
 
-  const peT = ctx.upload(posEncoding(Tsub), 2 * Tsub - 1, D);
+  // Cache the positional encoding per window size (identical for all full windows).
+  enc._pe = enc._pe || new Map();
+  let peT = enc._pe.get(Tsub);
+  if (!peT) { peT = ctx.upload(posEncoding(Tsub), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
   const ff = (x, lp, w1, w2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { act: "silu" }), w2));
 
   for (let L = 0; L < LAYERS; L++) {
@@ -108,8 +115,8 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
     for (let h = 0; h < H; h++) {
       const qh = ctx.sliceCols(q, h * HD, HD), kh = ctx.sliceCols(k, h * HD, HD);
       const vh = ctx.sliceCols(v, h * HD, HD), ph = ctx.sliceCols(p, h * HD, HD);
-      const qu = ctx.add(qh, ctx.upload(w.pbu.slice(h * HD, h * HD + HD), 1, HD));
-      const qv = ctx.add(qh, ctx.upload(w.pbv.slice(h * HD, h * HD + HD), 1, HD));
+      const qu = ctx.add(qh, w.pbuT[h]);
+      const qv = ctx.add(qh, w.pbvT[h]);
       const ac = ctx.matmul(qu, ctx.transpose(kh));
       const bd = ctx.relShift(ctx.matmul(qv, ctx.transpose(ph))); // GPU, no roundtrip
       const probs = ctx.softmax(ctx.add(ac, bd));
