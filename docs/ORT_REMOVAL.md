@@ -84,12 +84,17 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
      {pointwise_conv1,depthwise_conv,pointwise_conv2}). No xscale on conformer input
      (pre_encode out used directly). depthwise done as per-channel np.convolve.
    - **GPU primitives added + parity-gated** (compute.js, gpu-verify): conv2d (grouped/
-     depthwise, fused bias+relu/silu) 2.4e-7; silu activation (ACT=4) in gemm/conv
-     3.8e-6. REMAINING for GPU port: assemble encoder forward on GPU (wire kernels +
-     per-layer weights GPU-resident), add sigmoid for GLU (a·σ(b)), rel_shift on host
-     (reshape/slice), per-head attention as 8 matmul loops (or batch), parity vs ORT;
-     then quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire decoder+
-     joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
+     depthwise, fused bias+relu/silu) 2.4e-7; silu (ACT=4); glu (a·σ(b)) 6e-8.
+   - **GPU ENCODER PORT DONE + parity-gated: full 24-layer raw-WebGPU encoder = 5.3e-7
+     vs ORT.** src/engines/asr-parakeet/raw-encoder.js (loadParakeetEncoder + async
+     parakeetEncode), scripts/extract-parakeet-encoder-weights.py, scripts/smoke-
+     parakeet-encoder-raw.mjs. GPU subsampling 4e-6, GPU conformer layer0 3e-6, full
+     5.3e-7. Folded into weights at load: q·(1/√128), pos_bias_u/v·(1/√128), FF out
+     proj·0.5. rel_shift on host (small index remap). per-head attn = 8× sliceCols/
+     matmul/softmax/setCols. Node readFileSync caps at 2GB → chunked reader for the
+     2.3GB fp32 bin (browser fetches quantized ~300MB, no issue).
+     REMAINING: quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire
+     decoder+joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
    WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
