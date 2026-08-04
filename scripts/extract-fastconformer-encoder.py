@@ -31,11 +31,13 @@ for n in g.node:
     if n.op_type == "Conv": convs.append((n.input[1], n.input[2] if len(n.input) > 2 else None))
     if len(convs) == 5: break
 for i, (wn, bn) in enumerate(convs): add(f"c{i}w", arr(wn), I[wn].dims); add(f"c{i}b", arr(bn), I[bn].dims)
-# pre_encode.out linear: Add(bias, MatMul_out)
-addn = [n for n in g.node if n.op_type == "Add" and n.output and "pre_encode/out/Add" in n.output[0]][0]
-mmn = [n for n in g.node if addn.input[1] in n.output][0]
-bias_name = [i for i in addn.input if i in I][0]
-add("linw", arr(mmn.input[1]), I[mmn.input[1]].dims); add("linb", arr(bias_name), I[bias_name].dims)
+# pre_encode.out linear: the Add consuming the named pre_encode.out.bias (its output
+# name varies — "pre_encode/out/Add" for some exports, a graph-output alias for others).
+out_bias = f"{w_pref}pre_encode.out.bias"
+addn = [n for n in g.node if n.op_type == "Add" and out_bias in n.input][0]
+mm_in = [i for i in addn.input if i != out_bias][0]
+mmn = [n for n in g.node if mm_in in n.output][0]
+add("linw", arr(mmn.input[1]), I[mmn.input[1]].dims); add("linb", arr(out_bias), I[out_bias].dims)
 W = w_pref
 for L in range(nl):
     p = f"{W}layers.{L}"

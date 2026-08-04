@@ -60,9 +60,13 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
   const matScaled = (k, s) => ctx.upload(scaled(k, s), man[k].dims[0], man[k].dims[1]);
 
+  // NeMo RelPositionalEncoding xscaling (x *= sqrt(d_model) after subsampling): fold
+  // sqrt(D) into the pre_encode linear. Some exports (Parakeet) bake it in already;
+  // Sortformer leaves it as a runtime Mul → set cfg.xscale to reproduce it.
+  const xs = cfg.xscale ? Math.sqrt(cfg.D) : 1;
   const sub = {
     conv: [0, 1, 2, 3, 4].map((i) => ({ w: vec(`c${i}w`), b: vec(`c${i}b`) })),
-    linw: mat("linw"), linb: vec("linb"),
+    linw: xs === 1 ? mat("linw") : matScaled("linw", xs), linb: xs === 1 ? vec("linb") : ctx.upload(scaled("linb", xs), 1, man["linb"].count ?? man["linb"].len),
   };
   const layers = [];
   for (let L = 0; L < cfg.layers; L++) {
