@@ -300,7 +300,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
-  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[idx] = acc;
 }`;
 
@@ -432,7 +431,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.hasBias == 1u) { acc += bias[co]; }
   if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
-  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * HW + ho * m.Wo + wo] = acc;
 }`;
 
@@ -478,7 +476,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
-  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * m.Lout + lo] = acc;
 }`;
 
