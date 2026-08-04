@@ -44,7 +44,7 @@ function uploadPredProj(ctx, dec, decOut) {
  * (encoder output, rows=frames). LSTM prediction net stays on CPU (per emission).
  * Returns { ids, idFrames }. Requires dec loaded with a ctx (dec.gpu present).
  */
-export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10) {
+export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10, batch = 32) {
   const encProj = ctx.matmul(framesGpu, dec.gpu.encW, { bias: dec.gpu.encB }); // [Tenc,640]
   const ids = [], idFrames = [];
   let state = newDecoderState();
@@ -52,17 +52,27 @@ export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10) {
   let pred = predict(dec, lastTok, state);
   let predProj = uploadPredProj(ctx, dec, pred.decOut);
   let t = 0, emitted = 0;
+  // predProj is constant until an emission, so joints for a run of frames can be
+  // computed in one dispatch. Replay the batch in JS; on emission, predProj changes
+  // → the rest of the batch is stale, so break and re-dispatch from the current frame.
   while (t < Tenc) {
-    const res = ctx.jointArgmax(encProj, t, predProj, dec.gpu.outW, dec.gpu.outB, HID, dec.vocab, dec.logits);
-    const r = await ctx.download(res);
-    const maxId = r[0] | 0, step = r[2] | 0;
-    if (maxId !== dec.blankId) {
-      state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
-      pred = predict(dec, lastTok, state);
-      predProj = uploadPredProj(ctx, dec, pred.decOut);
+    const base = t;
+    const count = Math.min(batch, Tenc - t);
+    const res = await ctx.download(ctx.jointArgmax(encProj, base, count, predProj, dec.gpu.outW, dec.gpu.outB, HID, dec.vocab, dec.logits));
+    while (t - base < count) {
+      const b = t - base;
+      const maxId = res[b * 4] | 0, step = res[b * 4 + 2] | 0;
+      if (maxId !== dec.blankId) {
+        state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
+        pred = predict(dec, lastTok, state);
+        predProj = uploadPredProj(ctx, dec, pred.decOut);
+        if (step > 0) { t += step; emitted = 0; }
+        else if (emitted >= maxSymbols) { t += 1; emitted = 0; }
+        break; // predProj changed → remaining batch results are stale
+      }
+      if (step > 0) { t += step; emitted = 0; }
+      else { t += 1; emitted = 0; }
     }
-    if (step > 0) { t += step; emitted = 0; }
-    else if (maxId === dec.blankId || emitted >= maxSymbols) { t += 1; emitted = 0; }
   }
   return { ids, idFrames };
 }

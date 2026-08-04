@@ -198,10 +198,15 @@ var<workgroup> tIdx: array<u32, 256>;
 var<workgroup> tVal: array<f32, 256>;
 var<workgroup> dIdx: array<u32, 256>;
 var<workgroup> dVal: array<f32, 256>;
+// One workgroup per frame in the batch [m.frame, m.frame+numWorkgroups): each computes
+// its own joint+argmax with the SAME predProj (valid until the next emission). result
+// is [batch,4]. The caller replays the batch in JS and re-dispatches after an emission.
 @compute @workgroup_size(256)
-fn main(@builtin(local_invocation_id) lid: vec3<u32>) {
+fn main(@builtin(local_invocation_id) lid: vec3<u32>, @builtin(workgroup_id) wid: vec3<u32>) {
   let L = lid.x;
-  let base = m.frame * m.hidden;
+  let frame = m.frame + wid.x;
+  let base = frame * m.hidden;
+  let rbase = wid.x * 4u;
   for (var k = L; k < m.hidden; k += 256u) { j[k] = max(0.0, encProj[base + k] + predProj[k]); }
   workgroupBarrier();
   var lt = 0u; var lv = -1e30; var ld = 0u; var ldv = -1e30;
@@ -219,7 +224,7 @@ fn main(@builtin(local_invocation_id) lid: vec3<u32>) {
       if (tVal[i] > bv) { bv = tVal[i]; bt = tIdx[i]; }
       if (dVal[i] > bdv) { bdv = dVal[i]; bd = dIdx[i]; }
     }
-    result[0] = f32(bt); result[1] = bv; result[2] = f32(bd); result[3] = bdv;
+    result[rbase] = f32(bt); result[rbase + 1u] = bv; result[rbase + 2u] = f32(bd); result[rbase + 3u] = bdv;
   }
 }`;
 
@@ -971,15 +976,17 @@ export class GpuContext {
   }
 
   /**
-   * Fused TDT joint + argmax for one decode step. encProj:[Tenc,hidden],
-   * predProj:[1,hidden], outW:[hidden,logits], outB:[1,logits]. Returns a [1,4]
-   * tensor: [tokenArgmax, tokenMax, durArgmax, durMax]. hidden must be <= 640.
+   * Fused TDT joint + argmax for a BATCH of `count` frames starting at `frame`, all
+   * sharing predProj (valid until the next emission). encProj:[Tenc,hidden],
+   * predProj:[1,hidden], outW:[hidden,logits], outB:[1,logits]. Returns [count,4]:
+   * per frame [tokenArgmax, tokenMax, durArgmax, durMax]. hidden must be <= 640.
+   * One workgroup per frame → good GPU utilization; one download per batch.
    */
-  jointArgmax(encProj, frame, predProj, outW, outB, hidden, vocab, logits) {
-    const res = this.alloc(1, 4);
+  jointArgmax(encProj, frame, count, predProj, outW, outB, hidden, vocab, logits) {
+    const res = this.alloc(count, 4);
     const pipeline = this._pipeline("tdtjoint", TDT_JOINT_WGSL);
     const u = this._uniform(new Uint32Array([frame, hidden, vocab, logits]));
-    this._run(pipeline, [encProj.buf, predProj.buf, outW.buf, outB.buf, res.buf], u, 1);
+    this._run(pipeline, [encProj.buf, predProj.buf, outW.buf, outB.buf, res.buf], u, count);
     return res;
   }
 
