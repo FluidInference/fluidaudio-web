@@ -12,11 +12,11 @@ framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVa
 
 **Every engine is verified on real data** — no scaffolds. Parakeet v3 = **2.15% WER**
 on full LibriSpeech test-clean (matches native FluidAudio ~2.14%). Measured
-in-browser on WebGPU (Chrome/macOS, warm/steady-state): VAD **132×**, EOU **86×**,
-Sortformer **82×**, Whisper **24×**, Parakeet v3 **14×**, Kokoro-en **10×** / zh
-**10×** — all 8 engines work in-browser, all on WebGPU/WASM via ONNX. (Nemotron now
-uses the soniqo **fp16** export — built to run on ORT-WebGPU, since the int4 export
-can't; correct + fast.) First (cold) run is several× slower — WebGPU compiles
+in-browser on WebGPU (Chrome/macOS, warm/steady-state): VAD **139×**, Sortformer
+**128×**, EOU **91×**, Parakeet v3 **47×**, Whisper **33×**, Kokoro **~10×**,
+Nemotron **4.1×** — **all 8 engines correct + real-time-plus**, on WebGPU/WASM via
+ONNX. (Nemotron uses the soniqo **fp16** export — built to run on ORT-WebGPU, since
+the int4 export can't.) First (cold) run is several× slower — WebGPU compiles
 shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Model matrix
@@ -27,7 +27,7 @@ shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 | `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
 | `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (multilingual) | `onnxruntime-web` | **fp16 enc WebGPU** + WASM dec | ✅ correct + fast — soniqo fp16 export (built for ORT-WebGPU; int4 export can't run there) |
+| `asr-nemotron` | Nemotron 3.5 streaming (multilingual) | `onnxruntime-web` | **fp16 enc WebGPU** + WASM dec | ✅ **4.1×**, correct — soniqo fp16 export (built for ORT-WebGPU; int4 can't run there) |
 | `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ **132×** (direct ORT, no `vad-web`) |
 | `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ **86×** (transcript + `<EOU>`/`<EOB>`) |
 
