@@ -37,7 +37,24 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    →decoder Conv[1,128,1]→Sigmoid. Weights: encoder.{0..3}.reparam_conv.{weight,
    bias}, LSTM W/R[1,512,128] b[1,1024], decoder.decoder.2.{weight[1,128,1],bias},
    stft.forward_basis_buffer[258,1,256]. Source ONNX: /tmp/silero_vad.onnx.
-2. **Parakeet v3** — [FULL RAW PIPELINE WORKS, ORT-FREE, 13.7× RTFx, correct
+2. **Parakeet v3** — [DONE: ORT-FREE, SHIPPED, 26.4× RTFx in-browser on a 4.7-min
+   clip, correct transcript.] Architecture: JS mel → int8 GPU FastConformer encoder
+   (raw-encoder.js) → WASM-SIMD CPU decoder (rust/parakeet-decoder → wasm32+simd128,
+   raw-decoder-wasm.js). Perf journey 12.4→26.4×: (a) decoder was the wall — GPU
+   joint hits the RNNT per-token GPU-sync wall (~101ms/roundtrip in dawn; ~20× in
+   browser), so moved it to WASM-SIMD CPU (no GPU sync, 3× over JS); (b) GPU-resident
+   encoder (subReshape kernel, no per-window download except the frames handoff);
+   (c) preload pos_bias + cache pos-enc (removed ~7300 tiny uploads — NO effect, so
+   encoder is FLOP/occupancy-bound not upload-bound); (d) PIPELINE GPU-encode(i+1)
+   with CPU-decode(i) → decode hides behind encode (13.5→10.8s). BOTTLENECK now =
+   encoder ~9s, small-M (Tsub≈187) GEMM occupancy at the WGSL ceiling (~0.5 TFLOP/s).
+   Gap to ORT (47×) = that GEMM occupancy; levers = batched attention heads / small-M
+   GEMM kernel (uncertain) or bigger windows (user declined). Weights: HF parakeet/
+   encoder-int8.bin (612MB) + decoder-fp32.bin (72MB). MEASUREMENT LESSON: dawn
+   headless has a ~101ms GPU-download sync wall → GPU-sync-heavy perf is unmeasurable
+   headless; the user's browser is the only real benchmark; WASM/CPU IS measurable.
+   [superseded lines below kept for detail]
+   [FULL RAW PIPELINE WORKS, ORT-FREE, 13.7× RTFx, correct
    transcript. Remaining: engine wiring (index.ts) + mel frame-count reconcile.]
    Encoder: int8 GPU (raw-encoder.js, 5.3e-7 fp32 / int8 transcript-identical),
    HF parakeet/encoder-int8.bin (612MB). Decoder: JS (raw-decoder.js, embed+2×LSTM
