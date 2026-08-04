@@ -50,13 +50,16 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    tokenizer (currently transformers.js does all of it). onnx-community/whisper-base.
 
 ## Status
-- [~] 1. Silero VAD — raw JS forward DONE + parity-verified (src/engines/vad-silero/
-  raw-silero.js; single-chunk Δ 2.5e-7, 187-chunk streaming Δ 5.8e-7 vs ORT).
-  scripts/extract-silero-weights.py + scripts/smoke-silero-raw.mjs. GOTCHA: the
-  ONNX inlines 8k+16k branches with SEPARATE encoder/decoder/LSTM weights (not
-  shared) — must extract strictly from the 16k subgraph. Pure JS (not GPU): tiny
-  model, per-chunk GPU dispatch would dominate. REMAINING: host weights (~1.2 MB
-  bin) + wire engine + delete ORT path.
+- [x] 1. Silero VAD — DONE, ORT fully removed from this engine. Raw JS forward
+  (src/engines/vad-silero/raw-silero.js), parity vs ORT: single-chunk Δ 2.5e-7,
+  187-chunk streaming Δ 5.8e-7; end-to-end 78× RTFx pure JS. Weights BUNDLED
+  (silero-weights.bin ~1.2 MB + .manifest.json, extracted 16k-scoped via
+  scripts/extract-silero-weights.py). silero.js + index.ts no longer touch
+  onnxruntime. scripts/smoke-silero-raw.mjs regression-gates parity. GOTCHA: the
+  ONNX inlines 8k+16k branches with SEPARATE weights (not shared) — extract
+  strictly from the 16k subgraph. Pure JS (not GPU): tiny model, per-chunk GPU
+  dispatch would dominate. NOTE: bundling chosen for weights; does NOT scale to the
+  big encoders (GBs) — revisit hosting for models 2–5.
 - [ ] 2. Parakeet v3 encoder (+ decoder/joint + JS mel)
 - [ ] 3. Nemotron / EOU / Sortformer
 - [ ] 4. Kokoro

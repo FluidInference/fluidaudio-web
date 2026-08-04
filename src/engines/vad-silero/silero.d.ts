@@ -1,6 +1,7 @@
+import type { SileroWeights } from "./raw-silero.js";
+
 export function sileroDetect(o: {
-  ort: any;
-  session: any;
+  weights: SileroWeights;
   audio: Float32Array;
   threshold?: number;
   negThreshold?: number;
