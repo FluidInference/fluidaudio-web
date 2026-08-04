@@ -15,7 +15,9 @@ const ORT_VERSION = JSON.parse(
 // for the dev server and preview; production hosts must send them too.
 const coopCoep = (_req: any, res: any, next: any) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  // credentialless (not require-corp) so cross-origin HF/jsdelivr fetches aren't
+  // blocked — matches public/_headers (the deployed policy).
+  res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
   next();
 };
 const crossOriginIsolation = {
