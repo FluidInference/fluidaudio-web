@@ -37,7 +37,8 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    →decoder Conv[1,128,1]→Sigmoid. Weights: encoder.{0..3}.reparam_conv.{weight,
    bias}, LSTM W/R[1,512,128] b[1,1024], decoder.decoder.2.{weight[1,128,1],bias},
    stft.forward_basis_buffer[258,1,256]. Source ONNX: /tmp/silero_vad.onnx.
-2. **Parakeet v3 encoder** — [IN PROGRESS] NeMo FastConformer, fp32 encoder
+2. **Parakeet v3 encoder** — [ALGORITHM FULLY VERIFIED in numpy vs ORT; GPU port
+   next] NeMo FastConformer, fp32 encoder
    /tmp/pkv3/encoder-model.onnx(+.data 2.4GB). d_model=1024, 24 layers, 8 heads×128,
    d_ff=4096. Input audio_signal[1,128,T] mel → output [1,1024,T/8]. GPU-resident
    (compute.js), unlike Silero. Anchoring for parity: added /pre_encode/out/
@@ -66,6 +67,21 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
      (attn input), the pos_emb Slice, /layers.0/norm_out/LayerNormalization_output_0
      (layer0 out). TODO: out-proj weight name + rel_shift indexing + pos-enc gen
      (or lift pos_emb and defer generation).
+   - **ALL SUB-MODULES VERIFIED numpy vs ORT (T=80 synthetic mel, layer 0):**
+     subsampling ~1e-4 rel; FF (macaron, ×0.5, SiLU, NO bias — W1=MatMul_6398,
+     W2=6399; FF2 W=6506/6507) 1.4e-6; rel-pos attn (q6400/k6410/v6411/pos6412/
+     out6500, pos_bias_u/v, rel_shift, /√128) 4e-6; conv module (norm_conv LN →
+     pointwise_conv1[2048,1024,1]→GLU(a·σ(b))→depthwise Conv6310[1024,1,9] g1024
+     sym-pad4 +bias6311→SiLU(σ·mul)→pointwise_conv2[1024,1024,1]) 2.3e-6; FULL
+     layer0 (FF1→attn→conv→FF2→norm_out) 3e-6. LayerNorm eps=1e-5. rel_shift:
+     pad last dim left 1 → reshape[h,pos+1,t] → drop row0 → reshape[h,t,pos] →
+     slice[:,:,:t]. pos-enc gen (NeMo RelPositionalEncoding, positions T-1..-(T-1),
+     sin even/cos odd, div=exp(arange(0,d,2)·-ln(10000)/d)) matches lifted pe 4e-7.
+     Encoder output = transpose(layer23 norm_out) → [1,1024,T/8]. REMAINING: assemble
+     full 24-layer numpy → parity final "outputs"; then GPU port (needs conv2d kernel
+     for subsampling + a rel_shift/GLU/SiLU; rest = existing matmul/conv1d/layernorm/
+     softmax); quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire
+     decoder+joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
    WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
