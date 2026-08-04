@@ -8,6 +8,21 @@
 // conformer blocks (macaron FF ½ · rel-pos MHA · conv module · FF ½ · norm_out).
 // Folded into weights at load: q·(1/√HD), pos_bias_u/v·(1/√HD), FF out proj·0.5.
 
+// fp16 → fp32 lookup table (65536 entries), built once and reused. Expanding an
+// fp16 weight blob to fp32 at load is a cheap table lookup per value.
+let _f16lut = null;
+function f16lut() {
+  if (_f16lut) return _f16lut;
+  const t = new Float32Array(65536);
+  for (let h = 0; h < 65536; h++) {
+    const s = h & 0x8000 ? -1 : 1, e = (h & 0x7c00) >> 10, f = h & 0x03ff;
+    if (e === 0) t[h] = s * Math.pow(2, -14) * (f / 1024);
+    else if (e === 0x1f) t[h] = f ? NaN : s * Infinity;
+    else t[h] = s * Math.pow(2, e - 15) * (1 + f / 1024);
+  }
+  return (_f16lut = t);
+}
+
 function inferConfig(man) {
   const layers = Object.keys(man).filter((k) => /^L\d+_lnff1_w$/.test(k)).length;
   const ff = man["L0_ff1w1"].dims; // [D, DFF]
@@ -24,10 +39,13 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   const { HD } = cfg;
   const INV = 1 / Math.sqrt(HD);
   const int8 = Object.values(man).some((m) => m.dtype === "i8");
-  let f32v, i8v;
+  const f16 = !int8 && Object.values(man).some((m) => m.dtype === "f16");
+  let f32v, i8v, u16v, lut;
   if (int8) { const ab = bin.buffer instanceof ArrayBuffer ? bin.buffer : bin; f32v = new Float32Array(ab); i8v = new Int8Array(ab); }
+  if (f16) { u16v = new Uint16Array(bin.buffer, bin.byteOffset, bin.byteLength >> 1); lut = f16lut(); }
   const raw = (k) => {
     const m = man[k];
+    if (f16) { const q = u16v.subarray(m.offset, m.offset + m.count), out = new Float32Array(m.count); for (let i = 0; i < m.count; i++) out[i] = lut[q[i]]; return out; }
     if (!int8) return bin.subarray(m.offset, m.offset + m.len);
     if (m.dtype !== "i8") return f32v.subarray(m.offset, m.offset + m.count);
     const q = i8v.subarray(m.i8ByteOffset, m.i8ByteOffset + m.count);
