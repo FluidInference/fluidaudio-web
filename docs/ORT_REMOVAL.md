@@ -58,6 +58,14 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
      module: LN→pointwise_conv1[2048,1024,1]→GLU→depthwise conv→SiLU→pointwise_conv2
      [1024,1024,1], residual. PLAN: lift pos_emb + layer0 output from ORT to parity
      the attention math separately from the sinusoidal pos-enc generation.
+     DECODED layer0 attn wiring (anonymous MatMul weights): q=onnx::MatMul_6400,
+     k=6410, v=6411, linear_pos=6412 (all applied to the norm_self_att LN output,
+     each reshaped→heads 8×128). pos_emb = the sliced positional table (graph tensor
+     "Slice_output_0") feeding linear_pos; q+pos_bias_u / q+pos_bias_v are the Adds.
+     Parity anchors to expose: /layers.0/norm_self_att/LayerNormalization_output_0
+     (attn input), the pos_emb Slice, /layers.0/norm_out/LayerNormalization_output_0
+     (layer0 out). TODO: out-proj weight name + rel_shift indexing + pos-enc gen
+     (or lift pos_emb and defer generation).
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
    WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
