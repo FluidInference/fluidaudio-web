@@ -167,7 +167,25 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
       parakeetEncode must take the stride from mel.length/melBins, not the passed T.
     - Weights: FluidInference/fluidaudio-web eou/{encoder-fp16,decoder-fp32}.{bin,manifest.json}.
     - Scripts: extract-fastconformer-encoder.py, quantize-encoder-fp16.py, smoke-eou.mjs (ORT ref).
-  - [ ] Nemotron (int4 matmulNBits — the capability win) — /tmp/nemo-fp16
+  - [x] **Nemotron 3.5 multilingual (0.6B)** — DONE, ORT-FREE, weights on HF.
+    - Run OFFLINE whole-clip (cache-aware streaming ≡ offline-with-limited-context-mask,
+      so no cache plumbing). Shared raw FastConformer (24L d1024) with Nemotron config
+      {subPad t2/b1/l2/r1, convCausal (dwK 9), attChunk 4, attLeft 56, attRight 3}.
+    - **int8** (not int4, per Alex) — 630MB. The 600M model is int8-robust: coherent
+      full transcript, unlike the 120M EOU which needed fp16. Offline int8 vs streaming
+      encoder-frame reference: per-frame maxΔ 0.03–0.13 in the bulk (final partial chunk
+      diverges, expected).
+    - **prompt_kernel** = multilingual conditioning MLP applied AFTER the conformer:
+      encoded_output = MLP(concat([conformer_out 1024, language_onehot 128]), 1152→2048→1024).
+      langId from languages.json promptDictionary (en-US=0). scripts/extract-nemotron-prompt-kernel.py.
+    - Decoder: JS 2-layer LSTM RNN-T (raw-decoder-nemotron.js). NO SOS-prepend (unlike
+      EOU's fused export — plain single step). joint = enc 1024→640 + pred 640→640 + relu
+      + out 640→13087. blank 13087. scripts/extract-nemotron-decoder.py.
+    - Weights: FluidInference/fluidaudio-web nemotron/{encoder-int8,decoder-fp32}.{bin,manifest.json}
+      + vocab.json + languages.json. Engine src/engines/asr-nemotron/index.ts ORT-free.
+    - Transcript (cowen.wav): "The people here to me are the smartest people I've ever met,
+      but I think a side result of that is that people here overvalue intelligence and their
+      models of the world are built on intelligence mattering much."
   - [ ] Sortformer (18-layer transformer head + spkcache/fifo streaming) — /tmp/sf
 - [ ] 4. Kokoro
 - [ ] 5. Whisper
