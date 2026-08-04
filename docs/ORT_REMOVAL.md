@@ -217,5 +217,20 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
     segment extraction (reuse sortformer.js), int8 quantize, engine, HF. preds [150,4].
     Reference preds on cowen.wav: spk0 max 1.00 (single speaker, correct).
 - [ ] 4. Kokoro
-- [ ] 5. Whisper (still transformers.js) + Kokoro (still kokoro-js) — the last two
+- [x] 5. **Whisper (whisper-base)** — DONE, ORT-FREE (off transformers.js), weights on HF.
+  Full raw pipeline == transformers.js transcript (1 trailing token differs, encoder 8.6e-3):
+  WhisperMel (JS, 80-bin, direct 400-pt DFT, 1.37e-5) + raw WebGPU encoder (conv stem +
+  6 PRE-LN layers, erf-GELU act=5, 8.6e-3) + autoregressive raw decoder (causal self-attn +
+  cross-attn KV-precomputed, logits 5.15e-5) + GPT-2 BPE detokenizer + forced-prefix/suppress
+  greedy. fp32 weights FluidInference/fluidaudio-web whisper/. Single 30s window (long-audio
+  chunking = follow-up). Scripts: extract-whisper-{encoder,decoder}.py.
+- [ ] 6. **Kokoro** — LAST + BIGGEST. Only textEncoding (frontend, 4.2e-6) built in
+  src/gpu/kokoro.js; the whole StyleTTS2+iSTFTNet BACK HALF is unbuilt: DurationEncoder
+  (alt bidir-LSTM/AdaLN) → length-reg → F0/N predictor → iSTFTNet decoder (AdaIN resblocks)
+  → generator (~500 nodes: NSF harmonic source F0→cumsum-phase→Sin+noise, STFT, ScatterND,
+  weight-norm, iSTFT). All kernels exist EXCEPT a cumsum/scan. kokoro-js pulls transformers.js
+  → it's the SOLE remaining blocker for dropping all 3 deps.
+- [ ] 7. remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
+  + delete core/ort.ts (only Kokoro uses them now; Whisper/Parakeet/VAD/EOU/Nemotron/Sortformer
+  are all ORT-free).
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
