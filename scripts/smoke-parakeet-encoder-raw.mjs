@@ -17,7 +17,7 @@ const ctx = new GpuContext(await getDevice());
 const man = JSON.parse(readFileSync(`${dir}/enc/manifest.json`, "utf8"));
 const enc = loadParakeetEncoder(ctx, readBig(`${dir}/enc/weights.bin`), man);
 const ref = JSON.parse(readFileSync(`${dir}/ref_final.json`, "utf8"));
-const { data } = await parakeetEncode(ctx, enc, Float32Array.from(ref.mel), ref.T);
+const { data } = await parakeetEncode(ctx, enc, Float32Array.from(ref.mel), ref.T, true);
 const refO = Float32Array.from(ref.out);
 let md = 0; for (let i = 0; i < data.length; i++) md = Math.max(md, Math.abs(data[i] - refO[i]));
 console.log(`raw Parakeet encoder maxΔ vs ORT = ${md.toExponential(2)}`);

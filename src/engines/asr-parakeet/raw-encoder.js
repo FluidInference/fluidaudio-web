@@ -75,7 +75,7 @@ function posEncoding(Tsub) {
  * Run the encoder. `mel`: Float32Array[128*T] (channel-major, mel[c*T+t]).
  * Returns { data: Float32Array, dims: [1,1024,Tsub] } (encoder output, downloaded).
  */
-export async function parakeetEncode(ctx, enc, mel, T) {
+export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
   // --- subsampling: mel[128,T] -> conv2d input [1,T*128] (x[t*128+c]) ---
   const x0 = new Float32Array(T * 128);
@@ -91,11 +91,8 @@ export async function parakeetEncode(ctx, enc, mel, T) {
     Hh = Math.floor((Hh + 2 * pad - k) / st) + 1; Wd = Math.floor((Wd + 2 * pad - k) / st) + 1;
   }
   const Tsub = Hh, F = Wd;
-  const sd = await ctx.download(s); // [256, Tsub*F] -> [Tsub, 256*F]
-  const flat = new Float32Array(Tsub * 256 * F);
-  for (let c = 0; c < 256; c++) for (let ho = 0; ho < Tsub; ho++) for (let wo = 0; wo < F; wo++)
-    flat[ho * (256 * F) + c * F + wo] = sd[c * (Tsub * F) + ho * F + wo];
-  let x = ctx.matmul(ctx.upload(flat, Tsub, 256 * F), enc.sub.linw, { bias: enc.sub.linb });
+  const flat = ctx.subReshape(s, 256, Tsub, F); // [Tsub, 256*F], GPU-resident
+  let x = ctx.matmul(flat, enc.sub.linw, { bias: enc.sub.linb });
 
   const peT = ctx.upload(posEncoding(Tsub), 2 * Tsub - 1, D);
   const ff = (x, lp, w1, w2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { act: "silu" }), w2));
@@ -127,8 +124,10 @@ export async function parakeetEncode(ctx, enc, mel, T) {
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2);
     x = ln(x, w.lnout);
   }
-  // x is [Tsub, D] (frames × d_model) — the GPU decoder consumes it directly.
-  // Also return the transposed [1,D,Tsub] download for the ORT-parity path/tests.
-  const outT = ctx.transpose(x);
-  return { data: await ctx.download(outT), dims: [1, D, Tsub], framesGpu: x, Tsub };
+  // x is [Tsub, D] (frames × d_model) — the GPU decoder consumes it directly (no
+  // download). Only materialize the transposed [1,D,Tsub] output when asked (parity
+  // tests / ORT-shaped consumers).
+  const out = { dims: [1, D, Tsub], framesGpu: x, Tsub };
+  if (wantData) out.data = await ctx.download(ctx.transpose(x));
+  return out;
 }

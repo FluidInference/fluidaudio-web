@@ -180,6 +180,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// FastConformer subsampling reshape: conv output [C, Tsub*F] (rows=C) -> [Tsub, C*F]
+// with out[ho, c*F+wo] = in[c, ho*F+wo]. Keeps it GPU-resident (was a download +
+// host rearrange + upload per window).
+const SUBRESHAPE_WGSL = `
+struct Meta { C:u32, Tsub:u32, F:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  let CF = m.C * m.F;
+  if (idx >= m.Tsub * CF) { return; }
+  let ho = idx / CF;
+  let rem = idx % CF;
+  let c = rem / m.F;
+  let wo = rem % m.F;
+  Y[idx] = X[c * (m.Tsub * m.F) + ho * m.F + wo];
+}`;
+
 // TDT joint, split for speed: (1) jBatch builds j = relu(encProj[base+i] + predProj)
 // for B frames [B,hid]; (2) the fast TILED matmul does [B,hid]@[hid,logits]; (3)
 // argmaxRows reduces each row to token/dur argmax. Between emissions predProj is
@@ -1089,6 +1109,15 @@ export class GpuContext {
     const pipeline = this._pipeline("matmulI8", MATMUL_INT8_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
     this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil((M * N) / 64));
+    return y;
+  }
+
+  /** Subsampling reshape: x[C, Tsub*F] -> [Tsub, C*F] (GPU-resident, no download). */
+  subReshape(x, C, Tsub, F) {
+    const y = this.alloc(Tsub, C * F);
+    const pipeline = this._pipeline("subreshape", SUBRESHAPE_WGSL);
+    const u = this._uniform(new Uint32Array([C, Tsub, F, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((Tsub * C * F) / 64));
     return y;
   }
 
