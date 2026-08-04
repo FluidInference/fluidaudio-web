@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- No Referer: HF 404s some hosts (e.g. *.workers.dev) by Referer, which
+         reads as a CORS error on model fetches. See index.html. -->
+    <meta name="referrer" content="no-referrer" />
     <title>FluidAudio Web — Benchmark</title>
     <style>
       :root { color-scheme: light dark; font-family: ui-monospace, monospace; }

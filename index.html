@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Send no Referer on any request. Hugging Face hotlink-protects some hosts
+         (e.g. *.workers.dev) by returning 404 when the Referer is theirs, which
+         surfaces as a "No Access-Control-Allow-Origin" CORS error on model
+         downloads. No Referer → HF serves the file on every host. -->
+    <meta name="referrer" content="no-referrer" />
     <title>FluidAudio Web — in-browser inference (WebGPU/WASM)</title>
     <style>
       :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, sans-serif; }

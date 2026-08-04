@@ -22,7 +22,10 @@ export async function fetchCached(
   const hit = await cache.match(url);
   if (hit) return new Uint8Array(await hit.arrayBuffer());
 
-  const res = await fetch(url);
+  // referrerPolicy no-referrer: HF hotlink-protects some hosts (e.g. *.workers.dev)
+  // by returning 404 when the Referer is theirs → surfaces as a CORS error. The
+  // page-level <meta name="referrer"> covers third-party libs; this covers ours.
+  const res = await fetch(url, { referrerPolicy: "no-referrer" });
   if (!res.ok || !res.body) throw new Error(`fetch ${url} → ${res.status}`);
 
   const total = Number(res.headers.get("content-length") || 0);
