@@ -32,11 +32,19 @@ fn gelu(x: f32) -> f32 {
   let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
   return 0.5 * x * (1.0 + tanh(t));
 }
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+
 fn actf(x: f32) -> f32 {
   if (m.act == 1u) { return gelu(x); }
   if (m.act == 2u) { return tanh(x); }
   if (m.act == 3u) { return max(x, 0.0); }
   if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -151,6 +159,13 @@ fn gelu(x: f32) -> f32 {
   let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
   return 0.5 * x * (1.0 + tanh(t));
 }
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -177,6 +192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -284,6 +300,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[idx] = acc;
 }`;
 
@@ -415,6 +432,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   if (m.hasBias == 1u) { acc += bias[co]; }
   if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * HW + ho * m.Wo + wo] = acc;
 }`;
 
@@ -460,6 +478,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -853,7 +872,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) n
   Y[mrow*m.N+n]=acc;
 }`;
 
-const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4 };
+const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4, gelu_erf: 5 };
 
 /** Request a WebGPU device in the browser (throws if unavailable). */
 export async function requestGpuDevice() {
