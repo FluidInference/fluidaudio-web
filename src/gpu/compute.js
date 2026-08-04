@@ -180,6 +180,57 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// TDT joint, split for speed: (1) jBatch builds j = relu(encProj[base+i] + predProj)
+// for B frames [B,hid]; (2) the fast TILED matmul does [B,hid]@[hid,logits]; (3)
+// argmaxRows reduces each row to token/dur argmax. Between emissions predProj is
+// constant, so a run of frames is one tiled matmul instead of B tiny 1-workgroup ones.
+const JBATCH_WGSL = `
+struct Meta { base:u32, B:u32, hid:u32, tenc:u32 };
+@group(0) @binding(0) var<storage, read> encProj: array<f32>;
+@group(0) @binding(1) var<storage, read> predProj: array<f32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.B * m.hid) { return; }
+  let i = idx / m.hid;
+  let k = idx % m.hid;
+  let v = encProj[(m.base + i) * m.hid + k] + predProj[k];
+  out[idx] = max(0.0, v);
+}`;
+const ARGMAX_ROWS_WGSL = `
+struct Meta { B:u32, vocab:u32, logits:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> result: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+var<workgroup> tIdx: array<u32, 256>;
+var<workgroup> tVal: array<f32, 256>;
+var<workgroup> dIdx: array<u32, 256>;
+var<workgroup> dVal: array<f32, 256>;
+@compute @workgroup_size(256)
+fn main(@builtin(local_invocation_id) lid: vec3<u32>, @builtin(workgroup_id) wid: vec3<u32>) {
+  let L = lid.x;
+  let rowBase = wid.x * m.logits;
+  var lt = 0u; var lv = -1e30; var ld = 0u; var ldv = -1e30;
+  for (var n = L; n < m.logits; n += 256u) {
+    let s = X[rowBase + n];
+    if (n < m.vocab) { if (s > lv) { lv = s; lt = n; } }
+    else { if (s > ldv) { ldv = s; ld = n - m.vocab; } }
+  }
+  tIdx[L] = lt; tVal[L] = lv; dIdx[L] = ld; dVal[L] = ldv;
+  workgroupBarrier();
+  if (L == 0u) {
+    var bt = 0u; var bv = -1e30; var bd = 0u; var bdv = -1e30;
+    for (var i = 0u; i < 256u; i++) {
+      if (tVal[i] > bv) { bv = tVal[i]; bt = tIdx[i]; }
+      if (dVal[i] > bdv) { bdv = dVal[i]; bd = dIdx[i]; }
+    }
+    let r = wid.x * 4u;
+    result[r] = f32(bt); result[r + 1u] = bv; result[r + 2u] = f32(bd); result[r + 3u] = bdv;
+  }
+}`;
+
 // int8 GEMM with in-shader dequant: A[M,K] fp32 @ dequant(Wq)[K,N] -> Y[M,N].
 // Wq = int8 weights packed 4-per-u32, row-major [k*N+n]; scale[N] per output column
 // (symmetric: w = q * scale[n]). Reads weights at 1/4 the bandwidth of fp32 and keeps
@@ -1039,6 +1090,24 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
     this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil((M * N) / 64));
     return y;
+  }
+
+  /** j = relu(encProj[base+i] + predProj) for B frames -> [B, hid]. predProj:[1,hid]. */
+  jbatch(encProj, base, B, predProj, hid) {
+    const y = this.alloc(B, hid);
+    const pipeline = this._pipeline("jbatch", JBATCH_WGSL);
+    const u = this._uniform(new Uint32Array([base, B, hid, 0]));
+    this._run(pipeline, [encProj.buf, predProj.buf, y.buf], u, Math.ceil((B * hid) / 64));
+    return y;
+  }
+
+  /** Per-row token+dur argmax of x[B,logits] -> [B,4] (tokenIdx,tokenMax,durIdx,durMax). */
+  argmaxRows(x, B, vocab, logits) {
+    const res = this.alloc(B, 4);
+    const pipeline = this._pipeline("argmaxRows", ARGMAX_ROWS_WGSL);
+    const u = this._uniform(new Uint32Array([B, vocab, logits, 0]));
+    this._run(pipeline, [x.buf, res.buf], u, B);
+    return res;
   }
 
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */

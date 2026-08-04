@@ -58,7 +58,11 @@ export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10, b
   while (t < Tenc) {
     const base = t;
     const count = Math.min(batch, Tenc - t);
-    const res = await ctx.download(ctx.jointArgmax(encProj, base, count, predProj, dec.gpu.outW, dec.gpu.outB, HID, dec.vocab, dec.logits));
+    // j = relu(encProj + predProj) [count,640] → fast tiled matmul @ outW [count,8198]
+    // → per-row argmax. One download per batch; predProj constant until an emission.
+    const jb = ctx.jbatch(encProj, base, count, predProj, HID);
+    const outB = ctx.matmul(jb, dec.gpu.outW, { bias: dec.gpu.outB });
+    const res = await ctx.download(ctx.argmaxRows(outB, count, dec.vocab, dec.logits));
     while (t - base < count) {
       const b = t - base;
       const maxId = res[b * 4] | 0, step = res[b * 4 + 2] | 0;

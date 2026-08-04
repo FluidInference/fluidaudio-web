@@ -10,7 +10,7 @@ import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
 import { loadParakeetEncoder, parakeetEncode } from "./raw-encoder.js";
-import { loadParakeetDecoder, tdtGreedy } from "./raw-decoder.js";
+import { loadParakeetDecoder, tdtGreedyGpu } from "./raw-decoder.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 
@@ -42,7 +42,7 @@ export class ParakeetV3Engine implements AsrEngine {
     const vocab = new TextDecoder().decode(await fetchCached(hfUrl(VOCAB_REPO, "vocab.txt"), onProgress, "vocab.txt"));
 
     this.enc = loadParakeetEncoder(this.ctx, encBin, encMan);
-    this.dec = loadParakeetDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    this.dec = loadParakeetDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan, this.ctx);
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
@@ -66,13 +66,10 @@ export class ParakeetV3Engine implements AsrEngine {
       melMs += now() - t0;
       if (length === 0) { if (single) break; continue; }
       t0 = now();
-      const { data, dims } = await parakeetEncode(this.ctx, this.enc, features, length);
+      const { framesGpu, Tsub: Tenc } = await parakeetEncode(this.ctx, this.enc, features, length);
       encodeMs += now() - t0;
-      const D = dims[1], Tenc = dims[2];
-      const frames = new Float32Array(Tenc * D);
-      for (let t = 0; t < Tenc; t++) for (let d = 0; d < D; d++) frames[t * D + d] = data[d * Tenc + t];
       t0 = now();
-      const { ids: wids, idFrames } = tdtGreedy(this.dec, frames, Tenc);
+      const { ids: wids, idFrames } = await tdtGreedyGpu(this.ctx, this.dec, framesGpu, Tenc);
       decodeMs += now() - t0;
 
       // Seam dedup (same as tdt.js): frame-estimated overlap, refined by an exact
