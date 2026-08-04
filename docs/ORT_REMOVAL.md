@@ -37,10 +37,30 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    →decoder Conv[1,128,1]→Sigmoid. Weights: encoder.{0..3}.reparam_conv.{weight,
    bias}, LSTM W/R[1,512,128] b[1,1024], decoder.decoder.2.{weight[1,128,1],bias},
    stft.forward_basis_buffer[258,1,256]. Source ONNX: /tmp/silero_vad.onnx.
-2. **Parakeet v3 encoder** — the FastConformer template (MatMul+LayerNorm+Conv+
-   Softmax attention+SiLU). fp32 encoder /tmp/pkv3/encoder-model.onnx(+.data).
+2. **Parakeet v3 encoder** — [IN PROGRESS] NeMo FastConformer, fp32 encoder
+   /tmp/pkv3/encoder-model.onnx(+.data 2.4GB). d_model=1024, 24 layers, 8 heads×128,
+   d_ff=4096. Input audio_signal[1,128,T] mel → output [1,1024,T/8]. GPU-resident
+   (compute.js), unlike Silero. Anchoring for parity: added /pre_encode/out/
+   Add_output_0 (conformer-stack input) as an extra output → /tmp/pkv3/
+   enc_anchored.onnx (save with load_external_data=False, else it embeds 2.4GB >2GB
+   protobuf limit and won't load).
+   - **Subsampling (dw_striding 8×)** [DONE, numpy parity 6.6e-3 abs ≈1e-4 rel]:
+     mel[1,128,T]→transpose[1,T,128]→unsqueeze[1,1,T,128] → Conv2d(1→256,3×3,s2,
+     pad1)+ReLU → dwConv2d(256,3×3,s2,g256)→ptConv2d(256→256,1×1)+ReLU → dwConv2d+
+     ptConv2d+ReLU → [1,256,T/8,16] → transpose[0,2,1,3]→flatten[1,T/8,4096] →
+     Linear(pre_encode.out W[4096,1024]+bias)→[1,T/8,1024]. Freq 128→64→32→16. The
+     Add feeding the conformer input is [bias, matmul] (bias FIRST). NEEDS a conv2d
+     kernel in compute.js (only conv1d exists) for the GPU port.
+   - **Conformer block ×24** [NEXT — the crux]: each = FF1(½)+relposMHA+conv+FF2(½)
+     +norm_out, macaron. FF: LN→Linear1024→4096→SiLU→Linear4096→1024, ×0.5 residual.
+     relpos MHA (Transformer-XL style): pos_bias_u/v[8,128], q/k/v/out proj 1024²,
+     matrix_ac=（q+u)@kᵀ, matrix_bd=rel_shift((q+v)@pᵀ), scores/√128→softmax→@v. Conv
+     module: LN→pointwise_conv1[2048,1024,1]→GLU→depthwise conv→SiLU→pointwise_conv2
+     [1024,1024,1], residual. PLAN: lift pos_emb + layer0 output from ORT to parity
+     the attention math separately from the sinusoidal pos-enc generation.
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
+   WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
 3. **Nemotron / EOU / Sortformer** — reuse FastConformer. Nemotron encoder is
    int4 (matmulNBits) — the capability win. /tmp/nemo-fp16, /tmp/eou, /tmp/sf.
 4. **Kokoro** — most raw already built (src/gpu/kokoro.js frontend done). Finish
