@@ -93,8 +93,18 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
      proj·0.5. rel_shift on host (small index remap). per-head attn = 8× sliceCols/
      matmul/softmax/setCols. Node readFileSync caps at 2GB → chunked reader for the
      2.3GB fp32 bin (browser fetches quantized ~300MB, no issue).
-     REMAINING: quantize int4 (matmulNBits) → re-verify; upload HF parakeet/; wire
-     decoder+joint (LSTM+MatMul+Relu, int8 dj) + JS mel; delete ORT.
+   - **QUANTIZATION = int8, not int4** (user call: int4 too lossy). int8 per-channel
+     symmetric VALIDATED WER-neutral: raw encoder-output RMS perturbs ~23% (the 24-layer
+     residual stack is chaotically sensitive — matmul-only 23%, conv-only 22.7%, both
+     22.9%, block size irrelevant), BUT the TDT decoder is robust → **transcript is
+     byte-identical to fp32** on real speech ("The people here to me are the smartest
+     people..."). So raw-output RMS is a misleading metric for ASR; the transcript is
+     the gate. int8 ≈ 600MB (vs fp32 2.4GB, fp16 1.2GB). granularity (per-channel vs
+     per-block 128/64/32) doesn't matter here → use simple per-channel symmetric.
+     REMAINING: build int8 artifact (q int8 + per-channel fp32 scales), dequant at load
+     (→fp32, existing kernels) OR int8 matmul kernel; upload HF parakeet/; wire raw
+     decoder+joint (LSTM+MatMul+Relu) + JS mel (replace nemo128); windowing from tdt.js;
+     delete ORT.
    Once done, 3/4/5 reuse the encoder block. Decoder+joint: LSTM+MatMul+Relu.
    Mel: replace onnxMel (nemo128 custom op) with the repo's pure-JS NeMo mel.
    WEIGHTS: fp16 ~1.2GB — CANNOT bundle; must host (revisit the VAD bundle choice).
