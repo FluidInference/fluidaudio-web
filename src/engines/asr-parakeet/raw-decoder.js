@@ -9,9 +9,9 @@
 
 const HID = 640, VOCAB = 8193, LOGITS = 8198, LAYERS = 2;
 
-export function loadParakeetDecoder(bin, man) {
+export function loadParakeetDecoder(bin, man, ctx = null) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
-  return {
+  const dec = {
     embed: g("embed"),
     lstm: [
       { W: g("l0_W"), R: g("l0_R"), B: g("l0_B") },
@@ -21,6 +21,50 @@ export function loadParakeetDecoder(bin, man) {
     outW: g("outW"), outB: g("outB"),
     blankId: VOCAB - 1, vocab: VOCAB, logits: LOGITS,
   };
+  // GPU joint path: upload the joint projections so the per-frame 640→8198 matmul +
+  // argmax run on the GPU (jointArgmax) instead of JS. Embedding + LSTM stay on CPU
+  // (per-emission, tiny). encW/predW are [in,out] for ctx.matmul.
+  if (ctx) {
+    dec.gpu = {
+      encW: ctx.upload(dec.encW.slice(), 1024, HID), encB: ctx.upload(dec.encB.slice(), 1, HID),
+      predW: ctx.upload(dec.predW.slice(), HID, HID), predB: ctx.upload(dec.predB.slice(), 1, HID),
+      outW: ctx.upload(dec.outW.slice(), HID, LOGITS), outB: ctx.upload(dec.outB.slice(), 1, LOGITS),
+    };
+  }
+  return dec;
+}
+
+/** predProj [1,640] on GPU from a JS decoder-output vector (matmul + bias). */
+function uploadPredProj(ctx, dec, decOut) {
+  return ctx.matmul(ctx.upload(decOut.slice ? decOut.slice() : Float32Array.from(decOut), 1, HID), dec.gpu.predW, { bias: dec.gpu.predB });
+}
+
+/**
+ * TDT greedy decode with the joint on GPU. framesGpu: [Tenc, 640... 1024] GPU tensor
+ * (encoder output, rows=frames). LSTM prediction net stays on CPU (per emission).
+ * Returns { ids, idFrames }. Requires dec loaded with a ctx (dec.gpu present).
+ */
+export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10) {
+  const encProj = ctx.matmul(framesGpu, dec.gpu.encW, { bias: dec.gpu.encB }); // [Tenc,640]
+  const ids = [], idFrames = [];
+  let state = newDecoderState();
+  let lastTok = dec.blankId;
+  let pred = predict(dec, lastTok, state);
+  let predProj = uploadPredProj(ctx, dec, pred.decOut);
+  let t = 0, emitted = 0;
+  while (t < Tenc) {
+    const res = ctx.jointArgmax(encProj, t, predProj, dec.gpu.outW, dec.gpu.outB, HID, dec.vocab, dec.logits);
+    const r = await ctx.download(res);
+    const maxId = r[0] | 0, step = r[2] | 0;
+    if (maxId !== dec.blankId) {
+      state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
+      pred = predict(dec, lastTok, state);
+      predProj = uploadPredProj(ctx, dec, pred.decOut);
+    }
+    if (step > 0) { t += step; emitted = 0; }
+    else if (maxId === dec.blankId || emitted >= maxSymbols) { t += 1; emitted = 0; }
+  }
+  return { ids, idFrames };
 }
 
 /** Fresh zero decoder state: h/c for each of the 2 LSTM layers. */

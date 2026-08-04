@@ -180,6 +180,49 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// Fused TDT joint + argmax (one dispatch per decode step). Computes
+// j = relu(encProj[frame] + predProj) [hidden], out = j @ outW + outB [logits],
+// then reduces to token argmax (n<vocab) and duration argmax (n>=vocab). Writes
+// [tokenIdx, tokenMax, durIdx, durMax] — 4 floats downloaded per frame instead of
+// the full 8198 logits. Kills the JS decoder bottleneck.
+const TDT_JOINT_WGSL = `
+struct Meta { frame:u32, hidden:u32, vocab:u32, logits:u32 };
+@group(0) @binding(0) var<storage, read> encProj: array<f32>;
+@group(0) @binding(1) var<storage, read> predProj: array<f32>;
+@group(0) @binding(2) var<storage, read> outW: array<f32>;
+@group(0) @binding(3) var<storage, read> outB: array<f32>;
+@group(0) @binding(4) var<storage, read_write> result: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+var<workgroup> j: array<f32, 640>;
+var<workgroup> tIdx: array<u32, 256>;
+var<workgroup> tVal: array<f32, 256>;
+var<workgroup> dIdx: array<u32, 256>;
+var<workgroup> dVal: array<f32, 256>;
+@compute @workgroup_size(256)
+fn main(@builtin(local_invocation_id) lid: vec3<u32>) {
+  let L = lid.x;
+  let base = m.frame * m.hidden;
+  for (var k = L; k < m.hidden; k += 256u) { j[k] = max(0.0, encProj[base + k] + predProj[k]); }
+  workgroupBarrier();
+  var lt = 0u; var lv = -1e30; var ld = 0u; var ldv = -1e30;
+  for (var n = L; n < m.logits; n += 256u) {
+    var s = outB[n];
+    for (var k = 0u; k < m.hidden; k++) { s += j[k] * outW[k * m.logits + n]; }
+    if (n < m.vocab) { if (s > lv) { lv = s; lt = n; } }
+    else { if (s > ldv) { ldv = s; ld = n - m.vocab; } }
+  }
+  tIdx[L] = lt; tVal[L] = lv; dIdx[L] = ld; dVal[L] = ldv;
+  workgroupBarrier();
+  if (L == 0u) {
+    var bt = 0u; var bv = -1e30; var bd = 0u; var bdv = -1e30;
+    for (var i = 0u; i < 256u; i++) {
+      if (tVal[i] > bv) { bv = tVal[i]; bt = tIdx[i]; }
+      if (dVal[i] > bdv) { bdv = dVal[i]; bd = dIdx[i]; }
+    }
+    result[0] = f32(bt); result[1] = bv; result[2] = f32(bd); result[3] = bdv;
+  }
+}`;
+
 // rel_shift for relative-position attention: X = matrix_bd [t, 2t-1] -> Y [t, t].
 // Closed form of NeMo's pad→reshape→slice: Y[i,j] = xp[f], f = t + i*(2t-1) + j,
 // where xp is the left-padded [t,2t] view (col 0 = 0). Avoids the GPU→CPU roundtrip.
@@ -925,6 +968,19 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
     return y;
+  }
+
+  /**
+   * Fused TDT joint + argmax for one decode step. encProj:[Tenc,hidden],
+   * predProj:[1,hidden], outW:[hidden,logits], outB:[1,logits]. Returns a [1,4]
+   * tensor: [tokenArgmax, tokenMax, durArgmax, durMax]. hidden must be <= 640.
+   */
+  jointArgmax(encProj, frame, predProj, outW, outB, hidden, vocab, logits) {
+    const res = this.alloc(1, 4);
+    const pipeline = this._pipeline("tdtjoint", TDT_JOINT_WGSL);
+    const u = this._uniform(new Uint32Array([frame, hidden, vocab, logits]));
+    this._run(pipeline, [encProj.buf, predProj.buf, outW.buf, outB.buf, res.buf], u, 1);
+    return res;
   }
 
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */

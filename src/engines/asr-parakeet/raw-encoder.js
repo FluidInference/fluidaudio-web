@@ -127,6 +127,8 @@ export async function parakeetEncode(ctx, enc, mel, T) {
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2);
     x = ln(x, w.lnout);
   }
-  const outT = ctx.transpose(x); // [D, Tsub]
-  return { data: await ctx.download(outT), dims: [1, D, Tsub] };
+  // x is [Tsub, D] (frames × d_model) — the GPU decoder consumes it directly.
+  // Also return the transposed [1,D,Tsub] download for the ORT-parity path/tests.
+  const outT = ctx.transpose(x);
+  return { data: await ctx.download(outT), dims: [1, D, Tsub], framesGpu: x, Tsub };
 }
