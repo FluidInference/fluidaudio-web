@@ -261,8 +261,14 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   concat(x,style128)=640→512) → duration_proj (MatMul→50) → Sigmoid → ReduceSum(axis=-1)
   → Round → Clip(1,50) = pred_dur. Anchors: /encoder/Clip_output_0, d_en=/encoder/
   bert_encoder/Add_output_0.
-- [ ] A2 length-regulate (repeat d_en/en by pred_dur → 15 frames) + A3 F0/N AdaINResBlocks
-  (norm=AdaIN instance-norm+fc-style, conv1/conv2, LeakyRelu, pool upsample ×2 → F0/N [1,1,30]).
-  Anchors: /encoder/F0_proj/Conv_output_0, /encoder/N_proj/Conv_output_0.
+- [x] A2 alignment — VALIDATED 1e-5. d=concat(DurationEncoder_out[512],style128)=[seq,640];
+  A[seq,T]=0/1 from pred_dur (token i → its dur frames); en = d^T@A = [640,T]. asr (from
+  encoder.text_encoder) aligned by same A → [512,T] for decoder. T=sum(pred_dur).
+- [x] A3 F0/N — VALIDATED F0 maxΔ 0.0. Input = aligned prosody [512,T] (/encoder/Transpose_2).
+  3 AdaINResBlk1d each (F0.0/1/2, N.0/1/2): res path [if upsample: Resize-nearest×2; if sc:
+  conv1x1] ; main = AdaIN(norm1,instance-norm+ (1+γ)*.+β from fc(style128)) → LeakyRelu(0.2) →
+  [if upsample: pool=depthwise ConvTranspose1d W[C,1,3] g=C s2 pad1 opad1] → conv1(k3p1) →
+  AdaIN(norm2) → LeakyRelu → conv2(k3p1); out=(main+res)/√2. Block .1 upsamples ×2 (T→2T) + sc.
+  F0_proj/N_proj = conv1x1 (256→1) → F0/N [1,1,2T]. PREDICTOR FULLY VALIDATED numpy-exact.
 - [ ] B iSTFTNet decoder+generator (decoder.decoder 236w) → waveform. Anchor /decoder/decoder/
   Concat_output_0 [1,514,15] + ref_wav.bin. Needs cumsum kernel + STFT/iSTFT.
