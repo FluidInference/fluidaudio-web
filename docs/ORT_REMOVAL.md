@@ -153,7 +153,22 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   dispatch would dominate. NOTE: bundling chosen for weights; does NOT scale to the
   big encoders (GBs) — revisit hosting for models 2–5.
 - [ ] 2. Parakeet v3 encoder (+ decoder/joint + JS mel)
-- [ ] 3. Nemotron / EOU / Sortformer
+- [~] 3. Nemotron / EOU / Sortformer
+  - [x] **EOU (Parakeet-EOU 120M)** — DONE, ORT-FREE, weights on HF.
+    - Encoder: shared raw FastConformer (raw-encoder.js) with EOU streaming config
+      {subPad t2/b1/l2/r1, convCausal, attChunk 2, attLeft 70, melBins 128}. fp16
+      weights (int8 degrades this 120M RNNT: maxΔ 0.30 drops words; fp16 maxΔ 0.044
+      byte-identical transcript). Parity vs ORT 3.2e-5 (fp32) / 4.4e-2 (fp16).
+    - Decoder: JS RNNT (raw-decoder-eou.js). GOTCHA: the exported decoder_joint
+      prepends a zero SOS timestep EVERY call → the pred LSTM runs TWO steps
+      [zeros, embed(token)] from the incoming state. Single-step gave all-blank
+      (empty transcript). embed[blank=1026] is a zero padding row.
+    - Mel: JsPreprocessor NA (no CMVN). GOTCHA: its `length` = frames-1, so
+      parakeetEncode must take the stride from mel.length/melBins, not the passed T.
+    - Weights: FluidInference/fluidaudio-web eou/{encoder-fp16,decoder-fp32}.{bin,manifest.json}.
+    - Scripts: extract-fastconformer-encoder.py, quantize-encoder-fp16.py, smoke-eou.mjs (ORT ref).
+  - [ ] Nemotron (int4 matmulNBits — the capability win) — /tmp/nemo-fp16
+  - [ ] Sortformer (18-layer transformer head + spkcache/fifo streaming) — /tmp/sf
 - [ ] 4. Kokoro
 - [ ] 5. Whisper
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
