@@ -128,19 +128,20 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   enc._pe = enc._pe || new Map();
   let peT = enc._pe.get(Tsub);
   if (!peT) { peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
-  // Cache-aware streaming attention mask (EOU): chunk-limited on BOTH sides. With
+  // Cache-aware streaming attention mask: chunk-limited on BOTH sides. With
   // chunkStart = chunk*floor(i/chunk), query i attends keys j in
-  // [max(0, chunkStart-left), min(Tsub-1, chunkStart+chunk-1)]; -10000 elsewhere
-  // (added to scores pre-softmax). left = attLeft (70 frames for EOU).
+  // [max(0, chunkStart-left), min(Tsub-1, chunkStart+chunk-1+right)]; -10000
+  // elsewhere (added to scores pre-softmax). EOU: chunk 2, left 70, right 0.
+  // Nemotron: chunk 4, left 56, right 3 (rightContext lookahead).
   let maskT = null;
   if (enc.cfg.attChunk) {
     enc._mask = enc._mask || new Map();
     maskT = enc._mask.get(Tsub);
     if (!maskT) {
-      const C = enc.cfg.attChunk, LEFT = enc.cfg.attLeft ?? 70, mk = new Float32Array(Tsub * Tsub);
+      const C = enc.cfg.attChunk, LEFT = enc.cfg.attLeft ?? 70, RIGHT = enc.cfg.attRight ?? 0, mk = new Float32Array(Tsub * Tsub);
       for (let i = 0; i < Tsub; i++) {
         const cs = C * Math.floor(i / C);
-        const lo = Math.max(0, cs - LEFT), hi = Math.min(Tsub - 1, cs + C - 1);
+        const lo = Math.max(0, cs - LEFT), hi = Math.min(Tsub - 1, cs + C - 1 + RIGHT);
         for (let j = 0; j < Tsub; j++) mk[i * Tsub + j] = j >= lo && j <= hi ? 0 : -10000;
       }
       maskT = ctx.upload(mk, Tsub, Tsub); enc._mask.set(Tsub, maskT);
