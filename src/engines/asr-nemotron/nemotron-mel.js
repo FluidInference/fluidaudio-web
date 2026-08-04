@@ -384,6 +384,8 @@ export class JsPreprocessor {
    */
   constructor(opts = {}) {
     this.nMels = opts.nMels || 128;
+    // Log zero-guard: Nemotron uses 1e-10 (default); Parakeet's nemo128 uses 2^-24.
+    this.logGuard = opts.logGuard ?? LOG_ZERO_GUARD;
 
     // Share immutable precomputed constants across instances.
     this.melFilterbank = getCachedMelFilterbank(this.nMels);
@@ -575,7 +577,7 @@ export class JsPreprocessor {
         for (let k = start; k < end; k++) {
           melVal += powerBuf[k] * fb[fbOff + k];
         }
-        rawMel[m * nFrames + t] = Math.log(melVal + LOG_ZERO_GUARD);
+        rawMel[m * nFrames + t] = Math.log(melVal + this.logGuard);
       }
     }
 
