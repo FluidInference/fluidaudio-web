@@ -270,5 +270,12 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   [if upsample: pool=depthwise ConvTranspose1d W[C,1,3] g=C s2 pad1 opad1] → conv1(k3p1) →
   AdaIN(norm2) → LeakyRelu → conv2(k3p1); out=(main+res)/√2. Block .1 upsamples ×2 (T→2T) + sc.
   F0_proj/N_proj = conv1x1 (256→1) → F0/N [1,1,2T]. PREDICTOR FULLY VALIDATED numpy-exact.
-- [ ] B iSTFTNet decoder+generator (decoder.decoder 236w) → waveform. Anchor /decoder/decoder/
-  Concat_output_0 [1,514,15] + ref_wav.bin. Needs cumsum kernel + STFT/iSTFT.
+- [ ] B iSTFTNet decoder + NSF generator (decoder.decoder 236w) → waveform. MAPPED:
+  input = concat(asr[512,T], F0_conv(F0), N_conv(N)) = [514,T] (/decoder/decoder/Concat, T=15).
+  encode (AdaIN resblock conv1/conv2+norm1/norm2) → decode.0-3 (AdaIN resblocks; upsample;
+  each concats asr_res/F0/N + style128-acoustic) → generator: m_source NSF (F0→CumSum phase→
+  Sin×51 harmonics + noise, Atan/Exp/Cos) → noise_convs(4)/noise_res(48) → resblocks(144,
+  HiFiGAN multi-receptive) + ups(2 ConvTranspose) → stft(2)/conv_post → iSTFT (ScatterND
+  overlap-add) → waveform. Decoder uses style[:128] (acoustic half). anchors ref_wav.bin +
+  /decoder/decoder/Concat. NEW KERNEL: cumsum/scan. Have: conv1d/convTranspose1d/adain/
+  leakyRelu/STFT-via-DFT. This is a full iSTFTNet vocoder — the single biggest component.
