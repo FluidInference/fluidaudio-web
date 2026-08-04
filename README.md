@@ -62,16 +62,26 @@ Parakeet EOU), `?engines=a,b` (pick), `?noauto=1` (don't auto-download).
 `.github/workflows/deploy.yml` (one-time: repo **Settings → Pages → Source: GitHub
 Actions**).
 
-Static site — `npm run build` outputs `dist/`. **Threading:** onnxruntime-web's
-multi-threaded WASM needs `Cross-Origin-Opener-Policy: same-origin` +
-`Cross-Origin-Embedder-Policy: require-corp` (SharedArrayBuffer). GitHub Pages can't
-send headers, so the live demo runs **WebGPU (which doesn't need them) at full speed
-and WASM single-threaded** — and it deliberately avoids `require-corp`, which would
-block the cross-origin Hugging Face model fetches. For threaded WASM, deploy to a
-host that sets those two headers: `public/_headers` covers **Netlify / Cloudflare
-Pages** automatically (verify HF sends `Cross-Origin-Resource-Policy` under COEP);
-Vercel via `vercel.json`, nginx via `add_header`. Model weights stream from Hugging
+Static site — `npm run build` outputs `dist/`. Model weights stream from Hugging
 Face and cache client-side — no backend.
+
+### Cloudflare Pages (for threaded WASM)
+
+GitHub Pages can't send headers, so WASM runs single-threaded there (WebGPU engines
+are unaffected). For **multi-threaded WASM** (`SharedArrayBuffer` — speeds up the
+WASM-bound work like Nemotron's decode), deploy to Cloudflare Pages, which serves the
+`public/_headers` file that sets COOP/COEP. One-time dashboard setup:
+
+1. **Workers & Pages → Create → Pages → Connect to Git** → pick `FluidInference/fluidaudio-web`.
+2. Build settings: **Framework preset** = None (or Vite), **Build command** = `npm run build`, **Build output directory** = `dist`.
+3. **Environment variables** → add `NPM_FLAGS = --ignore-scripts` (skips the unused `sharp`/native postinstalls so the install doesn't fail).
+4. Deploy. CF sets `CF_PAGES=1`, so Vite uses base `/` (root of the `*.pages.dev` domain), and `public/_headers` turns on cross-origin isolation.
+
+COOP/COEP note: `_headers` uses `require-corp`. The HF model fetches are CORS
+(`fetch()` with `access-control-allow-origin: *`), which satisfies COEP — but if a
+download is ever blocked, switch the header to `Cross-Origin-Embedder-Policy:
+credentialless`. Netlify uses the same `_headers`; Vercel needs `vercel.json`; nginx
+`add_header`.
 
 > **First-load weight:** the default `asr-parakeet` uses a ~1.24 GB fp16 encoder — fine
 > once cached, heavy on first visit. For a light demo use `?engines=tts-kokoro-en,
