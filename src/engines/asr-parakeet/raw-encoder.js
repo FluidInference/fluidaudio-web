@@ -19,8 +19,8 @@ function inferConfig(man) {
 
 /** Upload all encoder weights to GPU once. bin: Float32Array (fp32 manifest) or
  * Uint8Array/ArrayBuffer (int8 manifest, dequantized per-tensor). Returns a handle. */
-export function loadParakeetEncoder(ctx, bin, man) {
-  const cfg = inferConfig(man);
+export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
+  const cfg = { ...inferConfig(man), ...cfgOverride };
   const { HD } = cfg;
   const INV = 1 / Math.sqrt(HD);
   const int8 = Object.values(man).some((m) => m.dtype === "i8");
@@ -85,9 +85,13 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   // causal): asymmetric, padTotal 3 → out=floor(in/2)+1. Default symmetric.
   const sp = enc.cfg.subPad || { t: 1, b: 1, l: 1, r: 1 };
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
-  const x0 = new Float32Array(T * melBins);
-  for (let t = 0; t < T; t++) for (let c = 0; c < melBins; c++) x0[t * melBins + c] = mel[c * T + t];
-  let s = ctx.upload(x0, 1, T * melBins), Hh = T, Wd = melBins;
+  // The mel buffer stride is its actual frame count, which can exceed the valid
+  // `length` (e.g. JsPreprocessor's NA mel reports length = frames-1). Reading
+  // mel[c*T+t] with T=length would use the wrong stride and scramble the input.
+  const Tfull = mel.length / melBins;
+  const x0 = new Float32Array(Tfull * melBins);
+  for (let t = 0; t < Tfull; t++) for (let c = 0; c < melBins; c++) x0[t * melBins + c] = mel[c * Tfull + t];
+  let s = ctx.upload(x0, 1, Tfull * melBins), Hh = Tfull, Wd = melBins;
   // [cout, cin, k, stride, groups, act, isStride2]
   const conv = [
     [Csub, 1, 3, 2, 1, "relu", true], [Csub, Csub, 3, 2, Csub, "none", true], [Csub, Csub, 1, 1, 1, "relu", false],
@@ -106,15 +110,21 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
   enc._pe = enc._pe || new Map();
   let peT = enc._pe.get(Tsub);
   if (!peT) { peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
-  // Streaming chunked-causal attention mask (EOU): query i attends keys
-  // [0, chunk*floor(i/chunk)+chunk-1]; -10000 elsewhere (added to scores pre-softmax).
+  // Cache-aware streaming attention mask (EOU): chunk-limited on BOTH sides. With
+  // chunkStart = chunk*floor(i/chunk), query i attends keys j in
+  // [max(0, chunkStart-left), min(Tsub-1, chunkStart+chunk-1)]; -10000 elsewhere
+  // (added to scores pre-softmax). left = attLeft (70 frames for EOU).
   let maskT = null;
   if (enc.cfg.attChunk) {
     enc._mask = enc._mask || new Map();
     maskT = enc._mask.get(Tsub);
     if (!maskT) {
-      const C = enc.cfg.attChunk, mk = new Float32Array(Tsub * Tsub);
-      for (let i = 0; i < Tsub; i++) { const hi = C * Math.floor(i / C) + C - 1; for (let j = 0; j < Tsub; j++) mk[i * Tsub + j] = j <= hi ? 0 : -10000; }
+      const C = enc.cfg.attChunk, LEFT = enc.cfg.attLeft ?? 70, mk = new Float32Array(Tsub * Tsub);
+      for (let i = 0; i < Tsub; i++) {
+        const cs = C * Math.floor(i / C);
+        const lo = Math.max(0, cs - LEFT), hi = Math.min(Tsub - 1, cs + C - 1);
+        for (let j = 0; j < Tsub; j++) mk[i * Tsub + j] = j >= lo && j <= hi ? 0 : -10000;
+      }
       maskT = ctx.upload(mk, Tsub, Tsub); enc._mask.set(Tsub, maskT);
     }
   }
