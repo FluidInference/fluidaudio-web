@@ -1,5 +1,14 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+
+// onnxruntime-web's threaded+jsep wasm is ~26 MB — over Cloudflare's 25 MB
+// per-file asset limit. So ORT loads its wasm from the jsdelivr CDN (see
+// core/ort.ts wasmPaths) at the EXACT installed version (no JS/wasm mismatch),
+// and postbuild strips the local copies from dist/. Inject the version here.
+const ORT_VERSION = JSON.parse(
+  readFileSync(resolve(__dirname, "node_modules/onnxruntime-web/package.json"), "utf8"),
+).version;
 
 // onnxruntime-web's multi-threaded WASM backend needs SharedArrayBuffer, which
 // browsers only expose under cross-origin isolation. These headers turn it on
@@ -30,6 +39,7 @@ export default defineConfig({
   //    headers there → WebGPU (no COI needed) + single-thread WASM fallback.
   //  - local dev: "/".
   base: process.env.CF_PAGES ? "/" : process.env.GITHUB_ACTIONS ? "/fluidaudio-web/" : "/",
+  define: { __ORT_VERSION__: JSON.stringify(ORT_VERSION) },
   plugins: [crossOriginIsolation],
   optimizeDeps: {
     // onnxruntime-web must NOT be pre-bundled: Vite rewrites its dynamic import

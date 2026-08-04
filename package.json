@@ -34,7 +34,7 @@
   "scripts": {
     "dev": "vite",
     "bench": "vite --open /bench.html?full=1",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "gpu:verify": "node scripts/gpu-verify.mjs",
