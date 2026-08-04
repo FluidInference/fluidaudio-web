@@ -341,5 +341,17 @@ function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, 
   report("glu (channels)", maxErr(out, ref), 1e-6);
 }
 
+// ---- rel_shift (relative-position attention) ----
+{
+  const t = 12, p = 2 * t - 1, X = rand(t * p);
+  // host reference (NeMo pad→reshape→slice)
+  const xp = new Float32Array(t * 2 * t);
+  for (let i = 0; i < t; i++) for (let c = 0; c < p; c++) xp[i * 2 * t + 1 + c] = X[i * p + c];
+  const ref = new Float32Array(t * t);
+  for (let i = 0; i < t; i++) for (let j = 0; j < t; j++) ref[i * t + j] = xp[t + i * p + j];
+  const out = await ctx.download(ctx.relShift(ctx.upload(X, t, p)));
+  report("relShift", maxErr(out, ref), 0);
+}
+
 console.log(fails === 0 ? "\nALL KERNELS PARITY OK" : `\n${fails} KERNEL(S) FAILED`);
 process.exit(fails === 0 ? 0 : 1);

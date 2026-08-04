@@ -61,14 +61,6 @@ export function loadParakeetEncoder(ctx, bin, man) {
   return { sub, layers };
 }
 
-function relShiftHost(bd, t) {
-  const p = 2 * t - 1, xp = new Float32Array(t * 2 * t);
-  for (let i = 0; i < t; i++) for (let c = 0; c < p; c++) xp[i * 2 * t + 1 + c] = bd[i * p + c];
-  const o = new Float32Array(t * t);
-  for (let i = 0; i < t; i++) for (let j = 0; j < t; j++) o[i * t + j] = xp[t + i * p + j];
-  return o;
-}
-
 function posEncoding(Tsub) {
   const pe = new Float32Array((2 * Tsub - 1) * D);
   const dv = (i) => Math.exp(i * -(Math.log(10000) / D));
@@ -122,8 +114,8 @@ export async function parakeetEncode(ctx, enc, mel, T) {
       const qu = ctx.add(qh, ctx.upload(w.pbu.slice(h * HD, h * HD + HD), 1, HD));
       const qv = ctx.add(qh, ctx.upload(w.pbv.slice(h * HD, h * HD + HD), 1, HD));
       const ac = ctx.matmul(qu, ctx.transpose(kh));
-      const bd = await ctx.download(ctx.matmul(qv, ctx.transpose(ph)));
-      const probs = ctx.softmax(ctx.add(ac, ctx.upload(relShiftHost(bd, Tsub), Tsub, Tsub)));
+      const bd = ctx.relShift(ctx.matmul(qv, ctx.transpose(ph))); // GPU, no roundtrip
+      const probs = ctx.softmax(ctx.add(ac, bd));
       ctx.setCols(outc, ctx.matmul(probs, vh), h * HD);
     }
     x = ctx.add(x, ctx.matmul(outc, w.out));

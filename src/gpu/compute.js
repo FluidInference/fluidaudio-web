@@ -180,6 +180,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// rel_shift for relative-position attention: X = matrix_bd [t, 2t-1] -> Y [t, t].
+// Closed form of NeMo's pad→reshape→slice: Y[i,j] = xp[f], f = t + i*(2t-1) + j,
+// where xp is the left-padded [t,2t] view (col 0 = 0). Avoids the GPU→CPU roundtrip.
+const RELSHIFT_WGSL = `
+struct Meta { t:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.t * m.t) { return; }
+  let i = idx / m.t;
+  let j = idx % m.t;
+  let p = 2u * m.t - 1u;
+  let twoT = 2u * m.t;
+  let f = m.t + i * p + j;
+  let col = f % twoT;
+  if (col == 0u) { Y[idx] = 0.0; } else { Y[idx] = X[(f / twoT) * p + (col - 1u)]; }
+}`;
+
 // GLU over channels (conformer conv module): X:[2C, T] -> Y:[C, T],
 // Y[c,t] = X[c,t] * sigmoid(X[c+C, t]).
 const GLU_WGSL = `
@@ -889,6 +910,16 @@ export class GpuContext {
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
+    return y;
+  }
+
+  /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */
+  relShift(x) {
+    const t = x.rows;
+    const y = this.alloc(t, t);
+    const pipeline = this._pipeline("relshift", RELSHIFT_WGSL);
+    const u = this._uniform(new Uint32Array([t, 0, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((t * t) / 64));
     return y;
   }
 
