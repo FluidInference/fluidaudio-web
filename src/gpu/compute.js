@@ -700,6 +700,20 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) n
 
 const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4 };
 
+/** Request a WebGPU device in the browser (throws if unavailable). */
+export async function requestGpuDevice() {
+  if (typeof navigator === "undefined" || !navigator.gpu) throw new Error("WebGPU not available");
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+  if (!adapter) throw new Error("no WebGPU adapter");
+  const lim = adapter.limits;
+  return adapter.requestDevice({
+    requiredLimits: {
+      maxBufferSize: lim.maxBufferSize,
+      maxStorageBufferBindingSize: lim.maxStorageBufferBindingSize,
+    },
+  });
+}
+
 export class GpuContext {
   /** @param {GPUDevice} device */
   constructor(device) {

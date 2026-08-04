@@ -81,12 +81,13 @@ export function joint(dec, encFrame, decOut) {
 
 /**
  * TDT greedy decode over encoder frames[Tenc][1024] (frames row-major, frames[t*1024+d]).
- * Returns emitted token ids. Advances by predicted duration; updates the prediction
- * net (LSTM state + last token) only on non-blank emission.
+ * Returns { ids, idFrames } (idFrames[k] = encoder frame token k was emitted at, for
+ * window-seam dedup). Advances by predicted duration; updates the prediction net
+ * (LSTM state + last token) only on non-blank emission.
  */
 export function tdtGreedy(dec, frames, Tenc, maxSymbols = 10) {
   const D = 1024;
-  const ids = [];
+  const ids = [], idFrames = [];
   let state = newDecoderState();
   let lastTok = dec.blankId;
   let t = 0, emitted = 0;
@@ -99,9 +100,9 @@ export function tdtGreedy(dec, frames, Tenc, maxSymbols = 10) {
     for (let i = 0; i < dec.vocab; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
     let step = 0, dV = -Infinity;
     for (let i = dec.vocab; i < dec.logits; i++) if (lg[i] > dV) { dV = lg[i]; step = i - dec.vocab; }
-    if (maxId !== dec.blankId) { state = pred.state; lastTok = maxId; ids.push(maxId); emitted++; }
+    if (maxId !== dec.blankId) { state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++; }
     if (step > 0) { t += step; emitted = 0; }
     else if (maxId === dec.blankId || emitted >= maxSymbols) { t += 1; emitted = 0; }
   }
-  return ids;
+  return { ids, idFrames };
 }

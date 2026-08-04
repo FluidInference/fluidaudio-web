@@ -4,7 +4,10 @@ export interface GpuTensor {
   cols: number;
 }
 
-export type Activation = "none" | "gelu" | "tanh" | "relu";
+export type Activation = "none" | "gelu" | "tanh" | "relu" | "silu";
+
+/** Request a WebGPU device in the browser (throws if unavailable). */
+export function requestGpuDevice(): Promise<GPUDevice>;
 
 /**
  * Raw-WebGPU compute core: hand-written WGSL kernels over GPU-resident tensors.
