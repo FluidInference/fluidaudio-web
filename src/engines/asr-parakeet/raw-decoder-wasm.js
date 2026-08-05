@@ -47,6 +47,18 @@ export async function loadWasmDecoder(wasmBytes, decBin, decMan, { int8 = true }
  * Decode encoder frames [Tenc*1024] (row-major, frames[t*1024+d]).
  * @returns {{ids:number[], idFrames:number[]}}
  */
+/** Decode from PRE-PROJECTED frames [Tenc*640] (encoder projection done on GPU). */
+export function wasmDecodeProj(dec, proj, Tenc) {
+  const { ex } = dec;
+  ex.reset_to(dec.mark);
+  const fp = ex.alloc(proj.byteLength);
+  new Float32Array(ex.memory.buffer, fp, proj.length).set(proj);
+  const idp = ex.alloc(Tenc * 4);
+  const frp = ex.alloc(Tenc * 4);
+  const n = ex.decode_proj(fp, Tenc, idp, frp);
+  return { ids: Array.from(new Int32Array(ex.memory.buffer, idp, n)), idFrames: Array.from(new Int32Array(ex.memory.buffer, frp, n)) };
+}
+
 export function wasmDecode(dec, frames, Tenc) {
   const { ex } = dec;
   ex.reset_to(dec.mark); // reclaim previous window's scratch

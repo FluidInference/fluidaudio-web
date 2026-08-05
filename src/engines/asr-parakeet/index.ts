@@ -11,7 +11,7 @@ import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncodeBatch } from "./raw-encoder.js";
-import { loadWasmDecoder, wasmDecode } from "./raw-decoder-wasm.js";
+import { loadWasmDecoder, wasmDecodeProj } from "./raw-decoder-wasm.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import wasmUrl from "./parakeet-decoder.wasm?url";
@@ -29,6 +29,8 @@ export class ParakeetV3Engine implements AsrEngine {
   private enc: any = null;
   private dec: any = null;
   private mel: ParakeetMel | null = null;
+  private encProjW: any = null;
+  private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
@@ -45,7 +47,15 @@ export class ParakeetV3Engine implements AsrEngine {
     const wasmBytes = await (await fetch(wasmUrl)).arrayBuffer();
 
     this.enc = loadParakeetEncoder(this.ctx, encBin, encMan);
-    this.dec = await loadWasmDecoder(wasmBytes, new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    const decF32 = new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4);
+    this.dec = await loadWasmDecoder(wasmBytes, decF32, decMan);
+    // The joint's encoder projection (1024→640) runs on the GPU before download:
+    // 37% smaller readback and no per-frame GEMV in the wasm decoder.
+    {
+      const g = (k: string) => decF32.subarray(decMan[k].offset, decMan[k].offset + decMan[k].len);
+      this.encProjW = this.ctx.upload(g("encW").slice(), 1024, 640);
+      this.encProjB = this.ctx.upload(g("encB").slice(), 1, 640);
+    }
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
@@ -88,12 +98,10 @@ export class ParakeetV3Engine implements AsrEngine {
         if (length > 0) mels.push(features);
       }
       if (!mels.length) return Promise.resolve(null);
-      return parakeetEncodeBatch(this.ctx, this.enc, mels).then(async (r: any) => ({
-        frames: await this.ctx.download(r.framesGpu),
-        Tenc: r.Tsub,
-        D: r.D,
-        n: mels.length,
-      }));
+      return parakeetEncodeBatch(this.ctx, this.enc, mels).then(async (r: any) => {
+        const proj = this.ctx.matmul(r.framesGpu, this.encProjW, { bias: this.encProjB }); // [W*Tsub, 640] on GPU
+        return { frames: await this.ctx.download(proj), Tenc: r.Tsub, D: 640, n: mels.length };
+      });
     };
 
     const ids: number[] = [];
@@ -107,7 +115,7 @@ export class ParakeetV3Engine implements AsrEngine {
       const Tenc = grp.Tenc;
       const frames = grp.frames.subarray(wi * Tenc * grp.D, (wi + 1) * Tenc * grp.D);
       const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-      const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
+      const { ids: wids, idFrames } = wasmDecodeProj(this.dec, frames, Tenc);
 
       // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
       let skip = 0;

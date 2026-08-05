@@ -1672,7 +1672,6 @@ export class GpuContext {
     const biasBuf = bias ? bias.buf : this._dummy();
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
     if (N % 4 === 0) {
-      // tiled/register-blocked variant (~3× on encoder shapes)
       const pipeline = this._pipeline("matmulI8v2", MATMUL_INT8_V2_WGSL);
       this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
       return y;
