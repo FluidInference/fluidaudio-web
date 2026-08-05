@@ -36,7 +36,7 @@ const mel = new ParakeetMel(128);
 
 const run = async (pipelined) => {
   const t = performance.now();
-  const ids = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, { pipelined });
+  const ids = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, { pipelined, wb: Number(process.env.WB || 6) });
   return { ids, ms: performance.now() - t };
 };
 

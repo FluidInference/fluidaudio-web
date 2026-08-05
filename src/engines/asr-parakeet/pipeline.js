@@ -19,7 +19,10 @@ import { wasmDecodeProj } from "./raw-decoder-wasm.js";
  * @returns {Promise<number[]>} deduped token ids across all windows
  */
 export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, samples, opts = {}) {
-  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 4, pipelined = true } = opts;
+  // wb=6 measured best on the 120s bench (M5): 130.3x vs 123.8x at wb=4 —
+  // bigger GEMM M-dim + fewer group boundaries, while the uneven 6+3 split
+  // still overlaps decode of the big group with encode of the small one.
+  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true } = opts;
   const winSamples = windowSec * sampleRate;
   const overlapSamples = overlapSec * sampleRate;
   const hop = winSamples - overlapSamples;
