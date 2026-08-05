@@ -515,8 +515,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
 // single dispatches: head-strided reads over the [T, H*HD] projections, so no
 // slicing/transposing/concat dispatches at all (~88 → ~11 dispatches/layer).
 
-// scores[h*T+i, j] = Σ_d (Q[i, h*HD+d] + qb[h*HD+d]) · B[j, h*HD+d]
+// scores[(w*H+h)*T+i, j] = Σ_d (Q[w*T+i, h*HD+d] + qb[h*HD+d]) · B[·, h*HD+d]
 // (B = keys → AC term, or projected pos-emb → BD term; qb = pos_bias_u/v.)
+// TILED: 64×64 output tile per z-block (w*H+h), register-blocked 4×4 like GEMM —
+// the naive 1-thread-per-output version regressed the browser bench ~10%.
 const BMM_QK_WGSL = `
 struct Meta { T:u32, Tb:u32, H:u32, HD:u32, hasBias:u32, W:u32, bShared:u32, _c:u32 };
 @group(0) @binding(0) var<storage, read> Q: array<f32>;
@@ -524,29 +526,64 @@ struct Meta { T:u32, Tb:u32, H:u32, HD:u32, hasBias:u32, W:u32, bShared:u32, _c:
 @group(0) @binding(2) var<storage, read> qb: array<f32>;
 @group(0) @binding(3) var<storage, read_write> S: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
-  let idx = gid.y * (nwg.x * 64u) + gid.x;
-  let total = m.W * m.H * m.T * m.Tb;
-  if (idx >= total) { return; }
-  let j = idx % m.Tb;
-  let rest = idx / m.Tb;
-  let i = rest % m.T;
-  let b = rest / m.T;      // window-head block = w*H + h
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let b = wg.z;            // window-head block = w*H + h
   let h = b % m.H;
   let w = b / m.H;
   let stride = m.H * m.HD;
-  let qBase = (w * m.T + i) * stride + h * m.HD;
-  // B rows are per-window (keys) or shared across windows (projected pos-emb)
-  let bRow = select(w * m.T + j, j, m.bShared == 1u);
-  let bBase = bRow * stride + h * m.HD;
-  var acc = 0.0;
-  for (var d = 0u; d < m.HD; d++) {
-    var qv = Q[qBase + d];
-    if (m.hasBias == 1u) { qv += qb[h * m.HD + d]; }
-    acc += qv * B[bBase + d];
+  let blockRow = wg.y * BM;   // over T (queries)
+  let blockCol = wg.x * BN;   // over Tb (keys / pos rows)
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.HD + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK;
+      var av = 0.0;
+      if (blockRow + aRow < m.T && kk + aCol < m.HD) {
+        av = Q[(w * m.T + blockRow + aRow) * stride + h * m.HD + kk + aCol];
+        if (m.hasBias == 1u) { av += qb[h * m.HD + kk + aCol]; }
+      }
+      As[idxA] = av;
+      // Bs[k][j]: B row = key j (per-window or shared), col = h*HD + k
+      let bRowT = idxA / BN; let bColT = idxA % BN;
+      var bv = 0.0;
+      let j = blockCol + bColT;
+      if (j < m.Tb && kk + bRowT < m.HD) {
+        let brow = select(w * m.T + j, j, m.bShared == 1u);
+        bv = B[brow * stride + h * m.HD + kk + bRowT];
+      }
+      Bs[idxA] = bv;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j2 = 0u; j2 < TN; j2++) { bReg[j2] = Bs[k * BN + threadCol + j2]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j2 = 0u; j2 < TN; j2++) { acc[i * TN + j2] += aReg[i] * bReg[j2]; }
+      }
+    }
+    workgroupBarrier();
   }
-  S[idx] = acc;
+  for (var i = 0u; i < TM; i++) {
+    for (var j2 = 0u; j2 < TN; j2++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j2;
+      if (r < m.T && c < m.Tb) {
+        S[(b * m.T + r) * m.Tb + c] = acc[i * TN + j2];
+      }
+    }
+  }
 }`;
 
 // out[i, h*HD+d] = Σ_j P[h*T+i, j] · V[j, h*HD+d]  (probs @ values, all heads)
@@ -556,20 +593,56 @@ struct Meta { T:u32, H:u32, HD:u32, W:u32 };
 @group(0) @binding(1) var<storage, read> V: array<f32>;
 @group(0) @binding(2) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(3) var<uniform> m: Meta;
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
-  let idx = gid.y * (nwg.x * 64u) + gid.x;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let b = wg.z;            // window-head block = w*H + h
+  let h = b % m.H;
+  let w = b / m.H;
   let stride = m.H * m.HD;
-  if (idx >= m.W * m.T * stride) { return; }
-  let g = idx / stride;            // global row = w*T + i
-  let c = idx % stride;
-  let h = c / m.HD;
-  let w = g / m.T;
-  let i = g % m.T;
-  let pBase = ((w * m.H + h) * m.T + i) * m.T;
-  var acc = 0.0;
-  for (var j = 0u; j < m.T; j++) { acc += P[pBase + j] * V[(w * m.T + j) * stride + c]; }
-  Y[idx] = acc;
+  let blockRow = wg.y * BM;   // over T (queries)
+  let blockCol = wg.x * BN;   // over HD (head cols; HD<=64 → one x-block)
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.T + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK;
+      As[idxA] = select(0.0, P[(b * m.T + blockRow + aRow) * m.T + kk + aCol], blockRow + aRow < m.T && kk + aCol < m.T);
+      let bRowT = idxA / BN; let bColT = idxA % BN;
+      var bv = 0.0;
+      if (kk + bRowT < m.T && blockCol + bColT < m.HD) {
+        bv = V[(w * m.T + kk + bRowT) * stride + h * m.HD + blockCol + bColT];
+      }
+      Bs[idxA] = bv;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j2 = 0u; j2 < TN; j2++) { bReg[j2] = Bs[k * BN + threadCol + j2]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j2 = 0u; j2 < TN; j2++) { acc[i * TN + j2] += aReg[i] * bReg[j2]; }
+      }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    for (var j2 = 0u; j2 < TN; j2++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j2;
+      if (r < m.T && c < m.HD) {
+        Y[(w * m.T + r) * stride + h * m.HD + c] = acc[i * TN + j2];
+      }
+    }
+  }
 }`;
 
 // Batched rel_shift: X [H*t, 2t-1] → Y [H*t, t], each head block shifted independently.
@@ -1425,7 +1498,7 @@ export class GpuContext {
     this._enc = this._pass = null;
   }
 
-  _run(pipeline, buffers, uniform, groupsX, groupsY = 1) {
+  _run(pipeline, buffers, uniform, groupsX, groupsY = 1, groupsZ = 1) {
     // WebGPU caps each grid dimension at 65535. For flat 1-D kernels (groupsY===1)
     // that exceed it, fold the excess into Y; those kernels linearize the group id
     // via num_workgroups. 2-D callers (GEMM) already pass groupsY and stay in range.
@@ -1439,14 +1512,14 @@ export class GpuContext {
     if (this._pass) { // batched
       this._pass.setPipeline(pipeline);
       this._pass.setBindGroup(0, bg);
-      this._pass.dispatchWorkgroups(groupsX, groupsY);
+      this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
       return;
     }
     const enc = this.device.createCommandEncoder();
     const pass = enc.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatchWorkgroups(groupsX, groupsY);
+    pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
     pass.end();
     this.device.queue.submit([enc.finish()]);
   }
@@ -1612,7 +1685,7 @@ export class GpuContext {
     const s = this.alloc(W * H * T, Tb);
     const pipeline = this._pipeline("bmmqk", BMM_QK_WGSL);
     const u = this._uniform(new Uint32Array([T, Tb, H, HD, qb ? 1 : 0, W, bShared ? 1 : 0, 0]));
-    this._run(pipeline, [q.buf, b.buf, qb ? qb.buf : this.alloc(1, 1).buf, s.buf], u, Math.ceil((W * H * T * Tb) / 64));
+    this._run(pipeline, [q.buf, b.buf, qb ? qb.buf : this.alloc(1, 1).buf, s.buf], u, Math.ceil(Tb / 64), Math.ceil(T / 64), W * H);
     return s;
   }
 
@@ -1622,7 +1695,7 @@ export class GpuContext {
     const y = this.alloc(W * T, H * HD);
     const pipeline = this._pipeline("bmmpv", BMM_PV_WGSL);
     const u = this._uniform(new Uint32Array([T, H, HD, W]));
-    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil((W * T * H * HD) / 64));
+    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil(HD / 64) || 1, Math.ceil(T / 64), W * H);
     return y;
   }
 
