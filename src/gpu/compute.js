@@ -1519,7 +1519,12 @@ export async function requestGpuDevice() {
   const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
   if (!adapter) throw new Error("no WebGPU adapter");
   const lim = adapter.limits;
+  // Optional features, taken only when the adapter has them: shader-f16 gates the
+  // f16-storage weight path (GpuContext falls back to fp32 without it),
+  // timestamp-query enables startProfile/endProfile in the browser.
+  const requiredFeatures = ["shader-f16", "timestamp-query"].filter((f) => adapter.features.has(f));
   return adapter.requestDevice({
+    requiredFeatures,
     requiredLimits: {
       maxBufferSize: lim.maxBufferSize,
       maxStorageBufferBindingSize: lim.maxStorageBufferBindingSize,
@@ -1532,6 +1537,13 @@ export class GpuContext {
   constructor(device) {
     this.device = device;
     this.pipelines = new Map();
+    // f16 storage needs the device feature AND Float16Array; without either,
+    // uploadF16 silently falls back to fp32 (kernels using `enable f16;` would
+    // otherwise fail validation asynchronously — no-op dispatches, zero outputs).
+    this.hasF16 = !!device.features?.has?.("shader-f16") && typeof Float16Array !== "undefined";
+    // Surface validation/OOM errors loudly: they are async in WebGPU and would
+    // otherwise show up only as silent garbage output.
+    device.addEventListener?.("uncapturederror", (e) => console.error("[gpu] uncaptured:", e.error?.message ?? e.error));
   }
 
   _pipeline(key, code, entry = "main") {
@@ -1565,8 +1577,10 @@ export class GpuContext {
   }
 
   // ── f16 storage ──────────────────────────────────────────────────────────
-  /** Upload f32 data as an f16 tensor (half the bytes). */
+  /** Upload f32 data as an f16 tensor (half the bytes). Falls back to fp32 when
+   * the device lacks shader-f16 (e.g. browsers where the feature is absent). */
   uploadF16(data, rows, cols) {
+    if (!this.hasF16) return this.upload(data, rows, cols);
     const u16 = new Uint16Array(new Float16Array(data).buffer);
     const size = Math.max(4, Math.ceil((u16.byteLength) / 4) * 4);
     const buf = this.device.createBuffer({ size, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
@@ -1778,7 +1792,7 @@ export class GpuContext {
   matmul(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
     // f16-storage B (weights): mixed-precision v4 (halves weight traffic + memory).
-    if (b.f16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
+    if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
       return this.matmulF16B(a, b, { bias, act });
     }
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
