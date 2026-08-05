@@ -3,3 +3,6 @@ export function loadParakeetEncoder(ctx: GpuContext, bin: Float32Array | Uint8Ar
 export function parakeetEncode(
   ctx: GpuContext, enc: any, mel: Float32Array, T: number, wantData?: boolean
 ): Promise<{ data?: Float32Array; dims: [number, number, number]; framesGpu: GpuTensor; Tsub: number }>;
+export function parakeetEncodeBatch(
+  ctx: GpuContext, enc: any, mels: Float32Array[], wantData?: boolean
+): Promise<{ framesGpu: any; Tsub: number; W: number; dims: number[]; data?: Float32Array }>;

@@ -509,6 +509,91 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[idx] = acc;
 }`;
 
+// ── Batched multi-head attention kernels ────────────────────────────────────
+// The per-head attention loop is ~80 dispatches/layer (slice/transpose/matmul/
+// softmax per head) and the encoders are LAUNCH-BOUND. These batch all heads into
+// single dispatches: head-strided reads over the [T, H*HD] projections, so no
+// slicing/transposing/concat dispatches at all (~88 → ~11 dispatches/layer).
+
+// scores[h*T+i, j] = Σ_d (Q[i, h*HD+d] + qb[h*HD+d]) · B[j, h*HD+d]
+// (B = keys → AC term, or projected pos-emb → BD term; qb = pos_bias_u/v.)
+const BMM_QK_WGSL = `
+struct Meta { T:u32, Tb:u32, H:u32, HD:u32, hasBias:u32, W:u32, bShared:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> Q: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read> qb: array<f32>;
+@group(0) @binding(3) var<storage, read_write> S: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  let total = m.W * m.H * m.T * m.Tb;
+  if (idx >= total) { return; }
+  let j = idx % m.Tb;
+  let rest = idx / m.Tb;
+  let i = rest % m.T;
+  let b = rest / m.T;      // window-head block = w*H + h
+  let h = b % m.H;
+  let w = b / m.H;
+  let stride = m.H * m.HD;
+  let qBase = (w * m.T + i) * stride + h * m.HD;
+  // B rows are per-window (keys) or shared across windows (projected pos-emb)
+  let bRow = select(w * m.T + j, j, m.bShared == 1u);
+  let bBase = bRow * stride + h * m.HD;
+  var acc = 0.0;
+  for (var d = 0u; d < m.HD; d++) {
+    var qv = Q[qBase + d];
+    if (m.hasBias == 1u) { qv += qb[h * m.HD + d]; }
+    acc += qv * B[bBase + d];
+  }
+  S[idx] = acc;
+}`;
+
+// out[i, h*HD+d] = Σ_j P[h*T+i, j] · V[j, h*HD+d]  (probs @ values, all heads)
+const BMM_PV_WGSL = `
+struct Meta { T:u32, H:u32, HD:u32, W:u32 };
+@group(0) @binding(0) var<storage, read> P: array<f32>;
+@group(0) @binding(1) var<storage, read> V: array<f32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  let stride = m.H * m.HD;
+  if (idx >= m.W * m.T * stride) { return; }
+  let g = idx / stride;            // global row = w*T + i
+  let c = idx % stride;
+  let h = c / m.HD;
+  let w = g / m.T;
+  let i = g % m.T;
+  let pBase = ((w * m.H + h) * m.T + i) * m.T;
+  var acc = 0.0;
+  for (var j = 0u; j < m.T; j++) { acc += P[pBase + j] * V[(w * m.T + j) * stride + c]; }
+  Y[idx] = acc;
+}`;
+
+// Batched rel_shift: X [H*t, 2t-1] → Y [H*t, t], each head block shifted independently.
+const RELSHIFT_B_WGSL = `
+struct Meta { t:u32, H:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.H * m.t * m.t) { return; }
+  let j = idx % m.t;
+  let hi = idx / m.t;
+  let i = hi % m.t;
+  let h = hi / m.t;
+  let p = 2u * m.t - 1u;
+  let twoT = 2u * m.t;
+  let f = m.t + i * p + j;
+  let col = f % twoT;
+  if (col == 0u) { Y[idx] = 0.0; }
+  else { Y[idx] = X[(h * m.t + f / twoT) * p + (col - 1u)]; }
+}`;
+
 // Tiled int8 GEMM (v2): the register-blocked 64×64/4×4 structure of GEMM_WGSL with
 // the packed int8 B dequanted during the cooperative tile load (4 int8 per u32 →
 // 4 consecutive Bs columns per thread; requires N%4==0, guaranteed for the speech
@@ -1519,6 +1604,36 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([B, vocab, logits, 0]));
     this._run(pipeline, [x.buf, res.buf], u, B);
     return res;
+  }
+
+  /** Batched QK^T / Q·pos^T over all heads: q[T,H*HD], b[Tb,H*HD] → [H*T, Tb]. qb?:[1,H*HD]. */
+  bmmQK(q, b, qb, H, HD, W = 1, bShared = false) {
+    const T = q.rows / W, Tb = bShared ? b.rows : b.rows / W;
+    const s = this.alloc(W * H * T, Tb);
+    const pipeline = this._pipeline("bmmqk", BMM_QK_WGSL);
+    const u = this._uniform(new Uint32Array([T, Tb, H, HD, qb ? 1 : 0, W, bShared ? 1 : 0, 0]));
+    this._run(pipeline, [q.buf, b.buf, qb ? qb.buf : this.alloc(1, 1).buf, s.buf], u, Math.ceil((W * H * T * Tb) / 64));
+    return s;
+  }
+
+  /** Batched probs@V over all heads: p[H*T,T], v[T,H*HD] → [T, H*HD]. */
+  bmmPV(p, v, H, HD, W = 1) {
+    const T = v.rows / W;
+    const y = this.alloc(W * T, H * HD);
+    const pipeline = this._pipeline("bmmpv", BMM_PV_WGSL);
+    const u = this._uniform(new Uint32Array([T, H, HD, W]));
+    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil((W * T * H * HD) / 64));
+    return y;
+  }
+
+  /** Batched rel_shift: x[H*t, 2t-1] → [H*t, t]. */
+  relShiftB(x, H) {
+    const t = x.rows / H;
+    const y = this.alloc(H * t, t);
+    const pipeline = this._pipeline("relshiftb", RELSHIFT_B_WGSL);
+    const u = this._uniform(new Uint32Array([t, H, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((H * t * t) / 64));
+    return y;
   }
 
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */
