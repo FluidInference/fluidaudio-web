@@ -305,3 +305,22 @@ validate the generator structurally + by-ear instead. Anchors: msrc_tanh.bin, f0
 REMAINING vocoder build: decode.0-3 AdaIN resblocks + generator (Snake resblocks ×144,
 noise_res ×48, ups ConvTranspose, STFT/iSTFT ScatterND) + cumsum & Snake kernels + full
 Kokoro GPU port + engine off kokoro-js. Predictor is exact; vocoder is stochastic-by-ear.
+
+### Kokoro — FULL algorithm reverse-engineered (deterministic half numpy-EXACT)
+DETERMINISTIC PIPELINE validated numpy-exact vs ORT (0.0 / 1e-5):
+- Predictor: duration, alignment (en=concat(DurEnc_out,style128[128:])^T@A), F0/N AdaINResBlocks.
+- Decoder body: encode + decode.0-3 (acoustic style[:128]; asr_res[64]/F0_conv-s2/N_conv-s2 concat
+  each level; decode.3 depthwise-ConvTranspose pool upsample main + nearest-repeat residual).
+GENERATOR fully mapped (stochastic source → by-ear, not gateable exact):
+- m_source SineGen (9 harm, sr24000, ×2π, amp0.1, uv F0>10, l_linear[9,1] b-0.0295, tanh); the
+  random init-phase is the parity limit.
+- STFT(n_fft20, hann win[20], hop5) of source → [22,~1800]. ups.0 ConvTranspose 512→256 k20s10p5,
+  ups.1 256→128 k12s6p3; noise_convs.0 22→256 k12s6p3, .1 22→128 k1. Each level: x=ups(x)+
+  noise_convs(source_spec); x=mean(3 AdaINResBlocks: convs1 dil[1,3,5] k3 + convs2 + AdaIN(fc[512,
+  128]→2×C from style[:128]) + Snake act x+(1/α)sin²(αx), α[1,C,1] per convs1/2). resblocks.0-2 @256,
+  3-5 @128. conv_post Snake→Conv 128→22 k7p3 → iSTFT (inverse_basis[22,1,20] ConvTranspose + window_sum
+  overlap-add) → waveform[9000].
+REMAINING to ship ort-free: (1) cumsum + Snake + iSTFT kernels; (2) port ENTIRE pipeline numpy→GPU/JS
+(predictor LSTMs/AdaLN/align/F0N + decoder AdaIN resblocks + generator Snake+iSTFT); (3) extract+upload
+Kokoro weights; (4) rewrite tts-kokoro engine off kokoro-js; (5) verify BY EAR in browser (stochastic
+source → no headless exact gate); (6) drop onnxruntime-web+@huggingface/transformers+kokoro-js+core/ort.ts.
