@@ -1466,6 +1466,7 @@ export class GpuContext {
     if (!p) {
       const module = this.device.createShaderModule({ code });
       p = this.device.createComputePipeline({ layout: "auto", compute: { module, entryPoint: entry } });
+      p.__label = key; // for the profiler
       this.pipelines.set(key, p);
     }
     return p;
@@ -1612,6 +1613,43 @@ export class GpuContext {
     return this._dummyBuf;
   }
 
+  /**
+   * Per-dispatch GPU profiling (timestamp-query): between startProfile()/endProfile()
+   * every _run gets its own compute pass with begin/end timestamps, labeled by
+   * pipeline. endProfile() resolves and returns [{label, ms, count}] sorted by ms.
+   * Works inside beginBatch/endBatch (passes share the batch encoder).
+   */
+  startProfile(maxOps = 2000) { // querySet count limit is 4096 → ≤2048 ops
+    if (!this.device.features.has("timestamp-query")) throw new Error("timestamp-query not available");
+    this._prof = {
+      qs: this.device.createQuerySet({ type: "timestamp", count: maxOps * 2 }),
+      labels: [],
+      max: maxOps,
+    };
+  }
+  async endProfile() {
+    const prof = this._prof;
+    this._prof = null;
+    const n = prof.labels.length;
+    const qb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+    const rb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    const enc = this.device.createCommandEncoder();
+    enc.resolveQuerySet(prof.qs, 0, n * 2, qb, 0);
+    enc.copyBufferToBuffer(qb, 0, rb, 0, n * 16);
+    this.device.queue.submit([enc.finish()]);
+    await rb.mapAsync(GPUMapMode.READ);
+    const t = new BigUint64Array(rb.getMappedRange());
+    const agg = new Map();
+    for (let i = 0; i < n; i++) {
+      const ms = Number(t[2 * i + 1] - t[2 * i]) / 1e6;
+      const a2 = agg.get(prof.labels[i]) || { label: prof.labels[i], ms: 0, count: 0 };
+      a2.ms += ms; a2.count++;
+      agg.set(prof.labels[i], a2);
+    }
+    rb.unmap(); qb.destroy(); rb.destroy(); prof.qs.destroy();
+    return [...agg.values()].sort((a2, b) => b.ms - a2.ms);
+  }
+
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
     this._enc = this.device.createCommandEncoder();
@@ -1635,14 +1673,27 @@ export class GpuContext {
     const entries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b } }));
     entries.push({ binding: buffers.length, resource: { buffer: uniform } });
     const bg = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries });
+    const prof = this._prof && this._prof.labels.length < this._prof.max ? this._prof : null;
+    const tw = prof ? { querySet: prof.qs, beginningOfPassWriteIndex: prof.labels.length * 2, endOfPassWriteIndex: prof.labels.length * 2 + 1 } : undefined;
+    if (prof) prof.labels.push(pipeline.__label || "op");
     if (this._pass) { // batched
+      if (prof) { // own timestamped pass inside the batch encoder
+        this._pass.end();
+        const p = this._enc.beginComputePass({ timestampWrites: tw });
+        p.setPipeline(pipeline);
+        p.setBindGroup(0, bg);
+        p.dispatchWorkgroups(groupsX, groupsY, groupsZ);
+        p.end();
+        this._pass = this._enc.beginComputePass();
+        return;
+      }
       this._pass.setPipeline(pipeline);
       this._pass.setBindGroup(0, bg);
       this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
       return;
     }
     const enc = this.device.createCommandEncoder();
-    const pass = enc.beginComputePass();
+    const pass = enc.beginComputePass(prof ? { timestampWrites: tw } : undefined);
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
     pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
@@ -1725,6 +1776,14 @@ export class GpuContext {
   conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
     // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
     padLeft = padLeft ?? pad; padRight = padRight ?? pad;
+    // k=1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin,L] (per-dispatch
+    // timestamps showed the pointwise conv-module convs at ~14% of the encoder).
+    // Per-row bias/act as an epilogue (matmul's fused bias is per-column).
+    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0) {
+      const out = this.matmul({ buf: w.buf, rows: cout, cols: x.rows }, x);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this.upload(new Float32Array(cout), 1, cout), act);
+      return out;
+    }
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
     // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
     // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
@@ -1902,6 +1961,17 @@ export class GpuContext {
   conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, padTop, padBottom, padLeft, padRight, groups = 1, act = "none" } = {}) {
     // Asymmetric padding supported (padTop/Bottom/Left/Right); default symmetric padH/padW.
     padTop = padTop ?? padH; padBottom = padBottom ?? padH; padLeft = padLeft ?? padW; padRight = padRight ?? padW;
+    // 1×1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin, H*W]. The naive
+    // conv2d kernel was 24% of the encoder window (per-dispatch timestamps); the
+    // tiled GEMM does it ~50-100× faster. Per-row bias/act applied as an epilogue.
+    if (kh === 1 && kw === 1 && strideH === 1 && strideW === 1 && groups === 1 &&
+        padTop === 0 && padBottom === 0 && padLeft === 0 && padRight === 0) {
+      const wMat = { buf: w.buf, rows: cout, cols: cin };
+      const xMat = { buf: x.buf, rows: cin, cols: h * W_ };
+      const out = this.matmul(wMat, xMat);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this.upload(new Float32Array(cout), 1, cout), act);
+      return out;
+    }
     const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
     const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
@@ -2013,6 +2083,30 @@ export class GpuContext {
     const pipeline = this._pipeline("conv1dImplicit", CONV1D_IMPLICIT_WGSL);
     const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
+    return y;
+  }
+
+  /** y = act(x + bias[row]) — per-ROW bias epilogue (for 1×1 convs routed to matmul,
+   * whose bias is per output CHANNEL = row, unlike matmul's per-column bias). */
+  rowBiasAct(x, bias, act = "none") {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("rowbias", `
+      struct Meta { rows:u32, cols:u32, act:u32, _p:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read> B: array<f32>;
+      @group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(3) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x;
+        if (i >= m.rows * m.cols) { return; }
+        var v = X[i] + B[i / m.cols];
+        if (m.act == 3u) { v = max(v, 0.0); }
+        else if (m.act == 4u) { v = v / (1.0 + exp(-clamp(v, -30.0, 30.0))); }
+        Y[i] = v;
+      }`);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, ACT[act], 0]));
+    this._run(pipeline, [x.buf, bias.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
   }
 
