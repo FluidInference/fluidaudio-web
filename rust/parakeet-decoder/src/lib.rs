@@ -89,6 +89,16 @@ pub extern "C" fn reset_to(mark: usize) { unsafe { BUMP = mark; } }
 #[no_mangle]
 pub extern "C" fn bump_mark() -> usize { unsafe { BUMP } }
 
+// Optional int8 out_w (per-row symmetric scales): the joint axpy is DRAM-bound on
+// the 21MB fp32 out matrix (~1.3GB/window); int8 cuts that 4x. Scale folds into
+// the per-row splat, so the inner loop only adds the i8->f32 widen/convert.
+static mut OUT_WQ: *const i8 = core::ptr::null();
+static mut OUT_SCALE: *const f32 = core::ptr::null();
+#[no_mangle]
+pub extern "C" fn set_out_q(q: *const i8, scale: *const f32) {
+    unsafe { OUT_WQ = q; OUT_SCALE = scale; }
+}
+
 #[no_mangle]
 pub extern "C" fn set_weights(
     embed: *const f32, l0w: *const f32, l0r: *const f32, l0b: *const f32,
@@ -102,26 +112,33 @@ pub extern "C" fn set_weights(
     }
 }
 
+// v128 dot product over contiguous f32 rows (4-wide + horizontal sum).
+#[inline]
+unsafe fn dotv(a: *const f32, b: *const f32, n: usize) -> f32 {
+    let n4 = n & !3;
+    let mut acc = f32x4_splat(0.0);
+    let mut i = 0;
+    while i < n4 {
+        acc = f32x4_add(acc, f32x4_mul(v128_load(a.add(i) as *const v128), v128_load(b.add(i) as *const v128)));
+        i += 4;
+    }
+    let mut s = f32x4_extract_lane::<0>(acc) + f32x4_extract_lane::<1>(acc)
+        + f32x4_extract_lane::<2>(acc) + f32x4_extract_lane::<3>(acc);
+    while i < n { s += *a.add(i) * *b.add(i); i += 1; }
+    s
+}
+
 // One LSTM layer step (ONNX iofc), reading h/c[layer], writing nh/nc[layer].
 unsafe fn lstm_step(layer: usize, x: *const f32) {
     let w = WT.lw[layer]; let r = WT.lr[layer]; let b = WT.lb[layer];
     let h = &H[layer]; let c = &C[layer];
+    let hp = h.as_ptr();
     for g in 0..HID {
         let wi = g * HID; let wo = (HID + g) * HID; let wf = (2 * HID + g) * HID; let wc = (3 * HID + g) * HID;
-        let mut zi = *b.add(g) + *b.add(4 * HID + g);
-        let mut zo = *b.add(HID + g) + *b.add(5 * HID + g);
-        let mut zf = *b.add(2 * HID + g) + *b.add(6 * HID + g);
-        let mut zc = *b.add(3 * HID + g) + *b.add(7 * HID + g);
-        for j in 0..HID {
-            let xj = *x.add(j);
-            zi += *w.add(wi + j) * xj; zo += *w.add(wo + j) * xj;
-            zf += *w.add(wf + j) * xj; zc += *w.add(wc + j) * xj;
-        }
-        for j in 0..HID {
-            let hj = h[j];
-            zi += *r.add(wi + j) * hj; zo += *r.add(wo + j) * hj;
-            zf += *r.add(wf + j) * hj; zc += *r.add(wc + j) * hj;
-        }
+        let zi = *b.add(g) + *b.add(4 * HID + g) + dotv(w.add(wi), x, HID) + dotv(r.add(wi), hp, HID);
+        let zo = *b.add(HID + g) + *b.add(5 * HID + g) + dotv(w.add(wo), x, HID) + dotv(r.add(wo), hp, HID);
+        let zf = *b.add(2 * HID + g) + *b.add(6 * HID + g) + dotv(w.add(wf), x, HID) + dotv(r.add(wf), hp, HID);
+        let zc = *b.add(3 * HID + g) + *b.add(7 * HID + g) + dotv(w.add(wc), x, HID) + dotv(r.add(wc), hp, HID);
         let cc = sigmoid(zf) * c[g] + sigmoid(zi) * tanhf(zc);
         NC[layer][g] = cc; NH[layer][g] = sigmoid(zo) * tanhf(cc);
     }
@@ -139,10 +156,19 @@ unsafe fn commit_state() { H = NH; C = NC; }
 // pred_proj = decOut @ predW + predB (cached across blank frames).
 unsafe fn compute_predproj() {
     let w = WT.pred_w; let b = WT.pred_b;
-    for n in 0..HID {
-        let mut s = *b.add(n);
-        for k in 0..HID { s += DECOUT[k] * *w.add(k * HID + n); }
-        PREDPROJ[n] = s;
+    for n in 0..HID { PREDPROJ[n] = *b.add(n); }
+    // axpy over n: w rows [k][0..HID] are contiguous → v128
+    let n4 = HID & !3;
+    for k in 0..HID {
+        let dv = f32x4_splat(DECOUT[k]);
+        let row = w.add(k * HID);
+        let mut n = 0;
+        while n < n4 {
+            let p = PREDPROJ.as_mut_ptr().add(n);
+            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(dv, v128_load(row.add(n) as *const v128))));
+            n += 4;
+        }
+        while n < HID { PREDPROJ[n] += DECOUT[k] * *row.add(n); n += 1; }
     }
 }
 
@@ -150,15 +176,55 @@ unsafe fn compute_predproj() {
 // The out matmul (640→8198) is the hot loop; SIMD over the logits dimension.
 unsafe fn joint(frame: *const f32) {
     let ew = WT.enc_w; let eb = WT.enc_b;
-    for n in 0..HID {
-        let mut s = *eb.add(n);
-        for k in 0..ENC_D { s += *frame.add(k) * *ew.add(k * HID + n); }
-        ENCPROJ[n] = s;
+    for n in 0..HID { ENCPROJ[n] = *eb.add(n); }
+    let n4 = HID & !3;
+    for k in 0..ENC_D {
+        let fk = *frame.add(k);
+        if fk == 0.0 { continue; }
+        let fv = f32x4_splat(fk);
+        let row = ew.add(k * HID);
+        let mut n = 0;
+        while n < n4 {
+            let p = ENCPROJ.as_mut_ptr().add(n);
+            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(fv, v128_load(row.add(n) as *const v128))));
+            n += 4;
+        }
+        while n < HID { ENCPROJ[n] += fk * *row.add(n); n += 1; }
     }
     for n in 0..HID { let v = ENCPROJ[n] + PREDPROJ[n]; J[n] = if v > 0.0 { v } else { 0.0 }; }
     // OUT[m] = outB[m] + Σ_n J[n] * outW[n*LOGITS+m] — axpy over m (v128 x4).
-    let ow = WT.out_w; let ob = WT.out_b;
+    let ob = WT.out_b;
     for m in 0..LOGITS { OUT[m] = *ob.add(m); }
+    if !OUT_WQ.is_null() {
+        // int8 path: 16 weights per v128 load, widen i8→i16→i32→f32, fma.
+        let mm16 = LOGITS & !15;
+        for n in 0..HID {
+            let jn = J[n];
+            if jn == 0.0 { continue; }
+            let sc = jn * *OUT_SCALE.add(n);
+            let jv = f32x4_splat(sc);
+            let row = OUT_WQ.add(n * LOGITS);
+            let mut m = 0;
+            while m < mm16 {
+                let w16 = v128_load(row.add(m) as *const v128);
+                let lo = i16x8_extend_low_i8x16(w16);
+                let hi = i16x8_extend_high_i8x16(w16);
+                let f0 = f32x4_convert_i32x4(i32x4_extend_low_i16x8(lo));
+                let f1 = f32x4_convert_i32x4(i32x4_extend_high_i16x8(lo));
+                let f2 = f32x4_convert_i32x4(i32x4_extend_low_i16x8(hi));
+                let f3 = f32x4_convert_i32x4(i32x4_extend_high_i16x8(hi));
+                let o = OUT.as_mut_ptr().add(m);
+                v128_store(o as *mut v128, f32x4_add(v128_load(o as *const v128), f32x4_mul(jv, f0)));
+                v128_store(o.add(4) as *mut v128, f32x4_add(v128_load(o.add(4) as *const v128), f32x4_mul(jv, f1)));
+                v128_store(o.add(8) as *mut v128, f32x4_add(v128_load(o.add(8) as *const v128), f32x4_mul(jv, f2)));
+                v128_store(o.add(12) as *mut v128, f32x4_add(v128_load(o.add(12) as *const v128), f32x4_mul(jv, f3)));
+                m += 16;
+            }
+            while m < LOGITS { OUT[m] += sc * (*row.add(m) as f32); m += 1; }
+        }
+        return;
+    }
+    let ow = WT.out_w;
     let mm4 = LOGITS & !3;
     for n in 0..HID {
         let jn = J[n];
