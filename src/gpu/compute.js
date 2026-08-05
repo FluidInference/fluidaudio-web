@@ -758,6 +758,101 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// int8 GEMM v3: the fp32-v4 structure (128x128 block, 8x8 micro-tile, 16 vec4
+// accumulators) with the packed int8 B dequanted in the tile load. Requires
+// K%4==0 and N%4==0; routed for M>=256 (window-batched encoder GEMMs), where
+// TRUE-GPU timing (timestamp-query) shows the 64-tile int8 kernel ~25-35%
+// behind fp32 v4 — this closes most of that gap.
+const MATMUL_INT8_V3_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> Wq: array<u32>;
+@group(0) @binding(2) var<storage, read> scale: array<f32>;
+@group(0) @binding(3) var<storage, read> bias: array<f32>;
+@group(0) @binding(4) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    {
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+      As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    }
+    {
+      let base = tid * 4u;
+      let bRow = base / BN;
+      let bCol = base % BN;
+      let gk = kk + bRow; let gn = blockCol + bCol;
+      if (gk < m.K && gn + 3u < m.N) {
+        let u = Wq[(gk * m.N + gn) >> 2u];
+        for (var j = 0u; j < 4u; j++) {
+          var q = i32((u >> (j * 8u)) & 255u);
+          if (q > 127) { q = q - 256; }
+          Bs[base + j] = f32(q);
+        }
+      } else {
+        for (var j = 0u; j < 4u; j++) {
+          var bv = 0.0;
+          if (gk < m.K && gn + j < m.N) {
+            let li = gk * m.N + gn + j;
+            let u2 = Wq[li >> 2u];
+            var q2 = i32((u2 >> ((li & 3u) * 8u)) & 255u);
+            if (q2 > 127) { q2 = q2 - 256; }
+            bv = f32(q2);
+          }
+          Bs[base + j] = bv;
+        }
+      }
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj] * scale[c];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          Y[r * m.N + c] = actf(x, m.act);
+        }
+      }
+    }
+  }
+}`;
+
 // Fused TDT joint + argmax (one dispatch per decode step). Computes
 // j = relu(encProj[frame] + predProj) [hidden], out = j @ outW + outB [logits],
 // then reduces to token argmax (n<vocab) and duration argmax (n>=vocab). Writes
@@ -1671,6 +1766,11 @@ export class GpuContext {
     const y = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+    if (M >= 256 && N % 4 === 0 && K % 4 === 0 && globalThis.__i8v2force !== true) {
+      const pipeline = this._pipeline("matmulI8v3", MATMUL_INT8_V3_WGSL);
+      this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
+      return y;
+    }
     if (N % 4 === 0) {
       const pipeline = this._pipeline("matmulI8v2", MATMUL_INT8_V2_WGSL);
       this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
