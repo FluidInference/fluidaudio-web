@@ -298,6 +298,79 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// Mixed-precision GEMM: fp32 A (activations) x f16 B (weights) with the v4
+// 128x128/8x8 vec4 structure and f32 accumulation. Halves the dominant weight
+// traffic of the encoder GEMMs; activations stay fp32 (no requant error).
+const GEMM_V4_F16B_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;    // A [128][8] = 256 vec4
+  let bRow = tid / 32u; let bC = tid % 32u;  // B [8][128] = 256 vec4
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    {
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+      As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    }
+    {
+      var bv = vec4<f32>(0.0);
+      if (kk + bRow < m.K && blockCol + bC * 4u < m.N) { bv = vec4<f32>(B[(kk + bRow) * N4 + blockCol / 4u + bC]); }
+      let bBase = bRow * BN + 4u * bC;
+      Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          C[r * m.N + c] = actf(x, m.act);
+        }
+      }
+    }
+  }
+}`;
+
 // Row-wise LayerNorm over the last dim: y = (x-mean)/sqrt(var+eps) * gamma + beta.
 // One workgroup per row; 64 lanes cooperatively reduce via shared memory.
 const LAYERNORM_WGSL = `
@@ -1704,6 +1777,10 @@ export class GpuContext {
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
   matmul(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
+    // f16-storage B (weights): mixed-precision v4 (halves weight traffic + memory).
+    if (b.f16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
+      return this.matmulF16B(a, b, { bias, act });
+    }
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
@@ -1735,6 +1812,17 @@ export class GpuContext {
     const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  /** Mixed-precision GEMM: fp32 A × f16-storage B (v4 structure, f32 accumulate). */
+  matmulF16B(a, bF16, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = bF16.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const pipeline = this._pipeline("gemmV4f16b", GEMM_V4_F16B_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
     return c;
   }
 

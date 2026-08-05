@@ -56,9 +56,14 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
     return out;
   };
   const scaled = (k, s) => { const a = raw(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return a; };
-  const mat = (k) => ctx.upload(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // Weight matrices upload as f16 storage when the backend supports it: the
+  // mixed-precision v4 kernel reads them at half the traffic and half the GPU
+  // memory (~2.3GB → 1.17GB for the fp32-dequantized encoder). Activations and
+  // biases stay fp32.
+  const upW = (data, r, c) => (ctx.uploadF16 && ctx.device ? ctx.uploadF16(data, r, c) : ctx.upload(data, r, c));
+  const mat = (k) => upW(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
-  const matScaled = (k, s) => ctx.upload(scaled(k, s), man[k].dims[0], man[k].dims[1]);
+  const matScaled = (k, s) => upW(scaled(k, s), man[k].dims[0], man[k].dims[1]);
 
   // NeMo RelPositionalEncoding xscaling (x *= sqrt(d_model) after subsampling): fold
   // sqrt(D) into the pre_encode linear. Some exports (Parakeet) bake it in already;
@@ -191,7 +196,12 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
     const xln = ln(x, w.lnatt);
     const q = ctx.matmul(xln, w.q, { bias: w.qb }), k = ctx.matmul(xln, w.k, { bias: w.kb }), v = ctx.matmul(xln, w.v, { bias: w.vb });
-    const p = ctx.matmul(peT, w.pos);
+    // pos-emb projection is constant per (layer, Tsub) — cache across window groups
+    // (was recomputed 24×/group: ~2.5ms/win on long files).
+    enc._posProj = enc._posProj || new Map();
+    const pKey = `${L}|${Tsub}`;
+    let p = enc._posProj.get(pKey);
+    if (!p) { p = ctx.matmul(peT, w.pos); enc._posProj.set(pKey, p); }
     // Batched over windows × heads (pos-emb rows shared across windows).
     const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W);                           // [W*H*T, T]
     const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
