@@ -40,12 +40,9 @@ export async function sortformerHead(ctx, head, framesGpu, Tsub) {
   for (const w of head.layers) {
     // POST-LN block: sub-layers read x directly (no pre-LN); LN applied to residual+sublayer.
     const q = ctx.matmul(x, w.qw, { bias: w.qb }), k = ctx.matmul(x, w.kw, { bias: w.kb }), v = ctx.matmul(x, w.vw, { bias: w.vb });
-    const outc = ctx.alloc(Tsub, D);
-    for (let h = 0; h < NH; h++) {
-      const qh = ctx.sliceCols(q, h * HD, HD), kh = ctx.sliceCols(k, h * HD, HD), vh = ctx.sliceCols(v, h * HD, HD);
-      const probs = ctx.softmax(ctx.matmul(qh, ctx.transpose(kh))); // scale folded into qw
-      ctx.setCols(outc, ctx.matmul(probs, vh), h * HD);
-    }
+    // batched over all heads (tiled bmm kernels; scale folded into qw)
+    const probs = ctx.softmax(ctx.bmmQK(q, k, null, NH, HD)); // [NH*T, T]
+    const outc = ctx.bmmPV(probs, v, NH, HD);                  // [T, NH*HD]
     x = ln(ctx.add(x, ctx.matmul(outc, w.ow, { bias: w.ob })), w.ln1);
     const ffn = ctx.matmul(ctx.matmul(x, w.dinw, { bias: w.dinb, act: "relu" }), w.doutw, { bias: w.doutb });
     x = ln(ctx.add(x, ffn), w.ln2);
