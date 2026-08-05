@@ -116,11 +116,38 @@ export class WasmContext {
     return { data: f.slice(yPtr >> 2, (yPtr >> 2) + M * N), rows: M, cols: N };
   }
 
-  /** 1-D conv via the wasm kernel; bias(per-channel)+act applied here. */
+  /**
+   * 1-D conv. groups==1 goes through im2col + the SIMD matmul (the direct wasm
+   * conv is scalar over t with per-sample bounds checks — ~4× slower on the big
+   * vocoder convs). Grouped/depthwise convs use the direct kernel.
+   */
   conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
     padLeft = padLeft ?? pad; padRight = padRight ?? pad;
     const Cin = x.rows, L = x.cols;
     const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
+    if (groups === 1) {
+      // im2col (JS, memory-bound) → SIMD GEMM [Cout, Cin*K] @ [Cin*K, Lout].
+      const CinK = Cin * k;
+      const cols = new Float32Array(CinK * Lout);
+      for (let ci = 0; ci < Cin; ci++) {
+        const xrow = ci * L;
+        for (let kk = 0; kk < k; kk++) {
+          const row = (ci * k + kk) * Lout, off = kk * dilation - padLeft;
+          if (stride === 1) {
+            const lo0 = Math.max(0, -off), lo1 = Math.min(Lout, L - off);
+            for (let lo = lo0; lo < lo1; lo++) cols[row + lo] = x.data[xrow + lo + off];
+          } else {
+            for (let lo = 0; lo < Lout; lo++) {
+              const li = lo * stride + off;
+              if (li >= 0 && li < L) cols[row + lo] = x.data[xrow + li];
+            }
+          }
+        }
+      }
+      const out = this.matmul({ data: w.data, rows: cout, cols: CinK }, { data: cols, rows: CinK, cols: Lout });
+      this._biasActRows(out.data, cout, Lout, bias, act);
+      return out;
+    }
     const ex = this.ex;
     ex.wasm_reset();
     const xPtr = ex.wasm_alloc(Cin * L * 4), wPtr = ex.wasm_alloc(w.data.length * 4), yPtr = ex.wasm_alloc(cout * Lout * 4);
@@ -209,6 +236,14 @@ export class WasmContext {
   }
   add(a, b) { return this.ewise(a, b, "add"); }
   mul(a, b) { return this.ewise(a, b, "mul"); }
+  scale(x, s) { const o = new Float32Array(x.data.length); for (let i = 0; i < o.length; i++) o[i] = x.data[i] * s; return { data: o, rows: x.rows, cols: x.cols }; }
+  concatRows(tensors) {
+    const cols = tensors[0].cols, rows = tensors.reduce((s, t) => s + t.rows, 0);
+    const out = new Float32Array(rows * cols);
+    let off = 0;
+    for (const t of tensors) { out.set(t.data, off); off += t.rows * t.cols; }
+    return { data: out, rows, cols };
+  }
   silu(x) { const o = new Float32Array(x.data.length); for (let i = 0; i < o.length; i++) o[i] = silu1(x.data[i]); return { data: o, rows: x.rows, cols: x.cols }; }
   relu(x) { const o = new Float32Array(x.data.length); for (let i = 0; i < o.length; i++) o[i] = Math.max(0, x.data[i]); return { data: o, rows: x.rows, cols: x.cols }; }
   leakyRelu(x, slope = 0.2) { const o = new Float32Array(x.data.length); for (let i = 0; i < o.length; i++) { const v = x.data[i]; o[i] = v > 0 ? v : slope * v; } return { data: o, rows: x.rows, cols: x.cols }; }
@@ -315,6 +350,35 @@ export class WasmContext {
   convTranspose1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, outputPadding = 0, act = "none" } = {}) {
     const Cin = x.rows, L = x.cols;
     const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
+    if (groups === 1 && dilation === 1) {
+      // As GEMM + col2im: cols[(co,k), t] = Wt[(co,k), ci] @ x[ci, t], then
+      // scatter-add cols[(co,k), t] into y[co, t*stride + k - pad]. The GEMM is
+      // the SIMD matmul; the scatter is memory-bound JS.
+      const key = `convT:${cout}x${k}`;
+      if (!this._ctW) this._ctW = new Map();
+      let wt = this._ctW.get(w); // cache transposed weights per-tensor
+      if (!wt) {
+        wt = new Float32Array(cout * k * Cin); // [(co,k), ci] from w[ci, co, k]
+        for (let ci = 0; ci < Cin; ci++)
+          for (let co = 0; co < cout; co++)
+            for (let kk = 0; kk < k; kk++) wt[(co * k + kk) * Cin + ci] = w.data[ci * (cout * k) + co * k + kk];
+        this._ctW.set(w, wt);
+      }
+      const cols = this.matmul({ data: wt, rows: cout * k, cols: Cin }, x); // [(co,k), L]
+      const out = new Float32Array(cout * Lout);
+      if (bias) for (let co = 0; co < cout; co++) out.fill(bias.data[co], co * Lout, (co + 1) * Lout);
+      for (let co = 0; co < cout; co++) {
+        for (let kk = 0; kk < k; kk++) {
+          const crow = (co * k + kk) * L, base = kk - pad, orow = co * Lout;
+          for (let t = 0; t < L; t++) {
+            const p = t * stride + base;
+            if (p >= 0 && p < Lout) out[orow + p] += cols.data[crow + t];
+          }
+        }
+      }
+      if (act !== "none") for (let i = 0; i < out.length; i++) out[i] = applyAct(out[i], act);
+      return { data: out, rows: cout, cols: Lout };
+    }
     const out = new Float32Array(cout * Lout), cinG = Cin / groups, coutG = cout / groups;
     for (let co = 0; co < cout; co++) {
       const g = (co / coutG) | 0, coInG = co - g * coutG;

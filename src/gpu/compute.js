@@ -964,9 +964,11 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
         gf += R[rBase + (2u*H + u)*H + k] * hv;
         gc += R[rBase + (3u*H + u)*H + k] * hv;
       }
-      let cnew = sig(gf) * csh[u] + sig(gi) * tanh(gc);
+      // clamp tanh args: Metal tanh(x) = exp-based → Inf/Inf = NaN for |x| ≳ 44
+      // (cell state drifts past that on long sequences; tanh saturates by ±20).
+      let cnew = sig(gf) * csh[u] + sig(gi) * tanh(clamp(gc, -20.0, 20.0));
       csh[u] = cnew;
-      let ht = sig(go) * tanh(cnew);
+      let ht = sig(go) * tanh(clamp(cnew, -20.0, 20.0));
       htmp[u] = ht;
       Y[(t * 2u + dir) * H + u] = ht;
     }
@@ -1349,6 +1351,12 @@ export class GpuContext {
   conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
     // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
     padLeft = padLeft ?? pad; padRight = padRight ?? pad;
+    // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
+    // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
+    // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
+    if (groups === 1 && padLeft === padRight && (act === "none" || act === "gelu" || act === "tanh" || act === "relu")) {
+      return this.conv1dFast(x, w, cout, k, { bias, stride, pad: padLeft, dilation, act });
+    }
     const Cin = x.rows, L = x.cols;
     const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
@@ -1594,6 +1602,44 @@ export class GpuContext {
     const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
     return y;
+  }
+
+  /** Multiply by a scalar constant (elementwise). */
+  scale(x, s) {
+    const n = x.rows * x.cols;
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("scalek", `
+      struct Meta { n:u32, s:f32, _a:u32, _b:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(2) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
+        Y[i] = X[i] * m.s;
+      }`);
+    const meta = new ArrayBuffer(16);
+    new Uint32Array(meta, 0, 1)[0] = n;
+    new Float32Array(meta, 4, 1)[0] = s;
+    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(u, 0, meta);
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
+    return y;
+  }
+
+  /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */
+  concatRows(tensors) {
+    const cols = tensors[0].cols;
+    const rows = tensors.reduce((s, t) => s + t.rows, 0);
+    const out = this.alloc(rows, cols);
+    const enc = this.device.createCommandEncoder();
+    let off = 0;
+    for (const t of tensors) {
+      enc.copyBufferToBuffer(t.buf, 0, out.buf, off * 4, t.rows * t.cols * 4);
+      off += t.rows * t.cols;
+    }
+    this.device.queue.submit([enc.finish()]);
+    return out;
   }
 
   /** Elementwise. b broadcast over rows if b.rows===1. */

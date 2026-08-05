@@ -57,6 +57,24 @@ export function makeKokoro(ctx, weights, manifest, roles) {
 
 // ── host helpers (one-shot exotic ops) ───────────────────────────────────────
 const leakyHost = (data, slope) => { const o = new Float32Array(data.length); for (let i = 0; i < data.length; i++) o[i] = data[i] > 0 ? data[i] : slope * data[i]; return o; };
+// Normalize a CPU-side {data,rows,cols} into a ctx tensor (no-op for real tensors:
+// WasmContext tensors ARE {data,…}; GpuContext tensors have .buf and no .data).
+const toT = (ctx, t) => (t && t.data !== undefined && !t.buf ? ctx.upload(t.data, t.rows, t.cols) : t);
+// h = W[2C,128] @ style[128] (+b), computed on HOST from the CPU weight views —
+// avoids a GPU round-trip per AdaIN/AdaLN (~140 syncs per synthesis otherwise).
+function styleFc(K, suffix, style128) {
+  const r = K.findRole(suffix);
+  const w = K.raw(r.w), b = r.b ? K.raw(r.b) : null;
+  const twoC = K.dims(r.w)[0];
+  const h = new Float32Array(twoC);
+  for (let i = 0; i < twoC; i++) {
+    let acc = b ? b[i] : 0;
+    const ro = i * 128;
+    for (let j = 0; j < 128; j++) acc += w[ro + j] * style128[j];
+    h[i] = acc;
+  }
+  return h;
+}
 
 /**
  * iSTFTNet generator: decode3 [512,T0] + source spec [22,Ts] → waveform.
@@ -76,15 +94,11 @@ export async function generator(K, decode3, sourceSpec, style128) {
     const b = r.b ? K.up(r.b, 1, wd[1]) : null;
     return ctx.convTranspose1d(x, w, { cout: wd[1], k: wd[2], bias: b, stride, pad });
   };
-  // AdaIN: h = fc(style)  → scale = 1+h[:C], shift = h[C:]; instance-norm(x)*scale+shift.
+  // AdaIN: h = fc(style) → scale = 1+h[:C], shift = h[C:]; instance-norm(x)*scale+shift.
   const adain = async (x, suffix) => {
-    const r = K.findRole(`${suffix}/fc/Gemm`); const wd = K.dims(r.w); // Gemm weight [2C, 128]
-    const twoC = wd[0], C = twoC / 2;
-    const w = K.up(r.w, twoC, 128), b = r.b ? K.up(r.b, 1, twoC) : null;
-    const h = await ctx.download(ctx.matmul(w, style128T(ctx, style128))); // [2C,1]
-    const bd = b ? await ctx.download(b) : null;
+    const h = styleFc(K, `${suffix}/fc/Gemm`, style128); const C = h.length / 2;
     const scale = new Float32Array(C), shift = new Float32Array(C);
-    for (let i = 0; i < C; i++) { scale[i] = 1 + h[i] + (bd ? bd[i] : 0); shift[i] = h[C + i] + (bd ? bd[C + i] : 0); }
+    for (let i = 0; i < C; i++) { scale[i] = 1 + h[i]; shift[i] = h[C + i]; }
     return ctx.adain(x, ctx.upload(scale, 1, C), ctx.upload(shift, 1, C));
   };
   const alpha = (name) => { const d = K.raw(name); return ctx.upload(d.slice(), 1, d.length); };
@@ -103,29 +117,22 @@ export async function generator(K, decode3, sourceSpec, style128) {
   };
   const group = async (x, a, b, c) => {
     const ra = await resb(x, a), rb = await resb(x, b), rc = await resb(x, c);
-    const sum = ctx.add(ctx.add(ra, rb), rc);
-    // divide by 3
-    const d = await ctx.download(sum); for (let i = 0; i < d.length; i++) d[i] /= 3;
-    return ctx.upload(d, sum.rows, sum.cols);
+    return ctx.scale(ctx.add(ctx.add(ra, rb), rc), 1 / 3);
   };
   const leaky = (x, slope) => ctx.leakyRelu(x, slope);
-  // reflect-pad ups to noise length (front pad), then add.
+  // reflect-pad ups to noise length (front pad) via a gather index map, then add.
   const merge = async (ups, noise) => {
-    const u = await ctx.download(ups), n = await ctx.download(noise);
-    const C = ups.rows, Lu = ups.cols, Ln = noise.cols, L = Math.min(Lu, Ln);
-    const out = new Float32Array(C * L);
+    const Lu = ups.cols, Ln = noise.cols, L = Math.min(Lu, Ln);
     const padF = Ln > Lu ? Ln - Lu : 0; // front reflect pad amount (numpy mode='reflect')
-    for (let c = 0; c < C; c++) for (let t = 0; t < L; t++) {
-      let uv;
-      if (padF && t < padF) uv = u[c * Lu + (padF - t)]; // reflect
-      else uv = u[c * Lu + (t - padF)];
-      out[c * L + t] = uv + n[c * Ln + t];
-    }
-    return ctx.upload(out, C, L);
+    const idx = new Uint32Array(L);
+    for (let t = 0; t < L; t++) idx[t] = t < padF ? padF - t : t - padF;
+    const padded = ctx.gatherCols(ups, idx);
+    const nz = Ln === L ? noise : ctx.sliceCols(noise, 0, L);
+    return ctx.add(padded, nz);
   };
 
-  const spec = ctx.upload(sourceSpec.data.slice(), sourceSpec.rows, sourceSpec.cols);
-  let x = ctx.upload(decode3.data.slice(), decode3.rows, decode3.cols);
+  const spec = toT(ctx, sourceSpec);
+  let x = toT(ctx, decode3);
   x = convT(leaky(x, 0.1), "ups.0/ConvTranspose", 10, 5); // 512→256, stride10 pad5
   x = await merge(x, await resb(conv(spec, "noise_convs.0/Conv", { pad: 3, stride: 6 }), "noise_res.0"));
   x = await group(x, "resblocks.0", "resblocks.1", "resblocks.2");
@@ -150,7 +157,8 @@ export async function synth(K, dEn, ids, style) {
   const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style);
   // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
   const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
-  const source = sineGen(K, F0, { nsfNoise: zh, randPhase: zh }); // [2T*300]
+  const F0cpu = { data: await ctx.download(F0), rows: 1, cols: F0.cols };
+  const source = sineGen(K, F0cpu, { nsfNoise: zh, randPhase: zh }); // [2T*300]
   const spec = sourceSpec(source);                     // [22, ~frames]
   const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
   const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
@@ -164,19 +172,19 @@ export async function synth(K, dEn, ids, style) {
  */
 export async function predictor(K, dEn, ids, style) {
   const ctx = K.ctx;
+  dEn = toT(ctx, dEn);
   const seq = dEn.rows;
   const sp = style.slice(128, 256); // prosodic style
-  const spT = ctx.upload(sp.slice(), 128, 1);
-  const spRow = ctx.upload(sp.slice(), 1, 128);
+  const spTile = (() => { const t = new Float32Array(seq * 128); for (let i = 0; i < seq; i++) t.set(sp, i * 128); return ctx.upload(t, seq, 128); })();
   const lstmB = (x, ...sfx) => { const r = K.findRole(...sfx); return ctx.lstm(x, K.up(r.w, 1, K.manifest[r.w].len), K.up(r.r, 1, K.manifest[r.r].len), K.up(r.b, 1, K.manifest[r.b].len), 256); };
   const gemm = (sfx) => { const r = K.findRole(sfx); const wd = K.dims(r.w); return { w: K.up(r.w, wd[0], wd[1]), b: r.b ? K.up(r.b, 1, wd[0]) : null, wd }; };
-  // concat style (broadcast over seq) to x[seq,C] → [seq,C+128]
-  const catStyle = async (x) => { const d = await ctx.download(x); const C = x.cols, out = new Float32Array(seq * (C + 128)); for (let i = 0; i < seq; i++) { out.set(d.subarray(i * C, i * C + C), i * (C + 128)); out.set(sp, i * (C + 128) + C); } return ctx.upload(out, seq, C + 128); };
+  // concat style (broadcast over seq) to x[seq,C] → [seq,C+128] (GPU-resident)
+  const catStyle = async (x) => { const out = ctx.alloc(seq, x.cols + 128); ctx.setCols(out, x, 0); ctx.setCols(out, spTile, x.cols); return out; };
   // AdaLN: x = layernorm(x)*(1+γ)+β, γ,β = fc(sp). fc weight [1024,128].
   const adaLN = async (x, sfx) => {
-    const g = gemm(`${sfx}/fc/Gemm`); const h = await ctx.download(ctx.matmul(g.w, spT)); const bd = g.b ? await ctx.download(g.b) : null;
+    const h = styleFc(K, `${sfx}/fc/Gemm`, sp);
     const C = x.cols, gA = new Float32Array(C), bA = new Float32Array(C);
-    for (let i = 0; i < C; i++) { gA[i] = 1 + h[i] + (bd ? bd[i] : 0); bA[i] = h[C + i] + (bd ? bd[C + i] : 0); }
+    for (let i = 0; i < C; i++) { gA[i] = 1 + h[i]; bA[i] = h[C + i]; }
     return ctx.layernorm(x, ctx.upload(gA, 1, C), ctx.upload(bA, 1, C));
   };
 
@@ -205,8 +213,8 @@ export async function predictor(K, dEn, ids, style) {
   const prosody = ctx.upload(transposeHost(await ctx.download(shared), T, 512), 512, T); // [512,T]
 
   // F0/N AdaINResBlocks (prosodic style)
-  const f0 = await predResBlocks(K, prosody, "F0", spT, spRow);
-  const nn = await predResBlocks(K, prosody, "N", spT, spRow);
+  const f0 = await predResBlocks(K, prosody, "F0", sp);
+  const nn = await predResBlocks(K, prosody, "N", sp);
 
   // ── Chain A: text_encoder → asr, aligned by A ──
   const emb = K.raw("encoder.text_encoder.embedding.weight"); // [178,512]
@@ -226,8 +234,10 @@ export async function predictor(K, dEn, ids, style) {
   const asrT = ctx.upload(asr, 512, T);
 
   // decoder input Concat = [asr; F0_conv(F0)s2; N_conv(N)s2]
-  const f0conv = convHost(K, f0, "F0_conv/Conv", 1, 2);
-  const nconv = convHost(K, nn, "N_conv/Conv", 1, 2);
+  const f0cpu = { data: await ctx.download(f0), rows: f0.rows, cols: f0.cols };
+  const nncpu = { data: await ctx.download(nn), rows: nn.rows, cols: nn.cols };
+  const f0conv = convHost(K, f0cpu, "F0_conv/Conv", 1, 2);
+  const nconv = convHost(K, nncpu, "N_conv/Conv", 1, 2);
   const Tc = Math.min(asr.length / 512, f0conv.cols);
   const xConcat = new Float32Array(514 * Tc);
   for (let c = 0; c < 512; c++) for (let t = 0; t < Tc; t++) xConcat[c * Tc + t] = asr[c * T + t];
@@ -249,11 +259,11 @@ function lnChan(K, x, cnn) {
 }
 
 // F0/N AdaINResBlocks (which='F0'|'N'): blocks .0/.1/.2 (.1 upsamples ×2), then which_proj.
-async function predResBlocks(K, prosody, which, spT) {
+async function predResBlocks(K, prosody, which, sp) {
   const ctx = K.ctx;
   const conv = (x, sfx, { pad = 1, stride = 1 } = {}) => { const r = K.findRole(sfx); const wd = K.dims(r.w); return ctx.conv1d(x, K.up(r.w, 1, wd[0] * wd[1] * wd[2]), { cout: wd[0], k: wd[2], bias: r.b ? K.up(r.b, 1, wd[0]) : null, stride, pad, groups: wd[1] === 1 ? wd[0] : 1 }); };
   const hasRole = (sfx) => { try { K.findRole(sfx); return true; } catch { return false; } };
-  const adain = async (x, sfx) => { const r = K.findRole(`${sfx}/fc/Gemm`); const wd = K.dims(r.w); const twoC = wd[0], C = twoC / 2; const h = await ctx.download(ctx.matmul(K.up(r.w, twoC, 128), spT)); const bd = r.b ? await ctx.download(K.up(r.b, 1, twoC)) : null; const sc = new Float32Array(C), sh = new Float32Array(C); for (let i = 0; i < C; i++) { sc[i] = 1 + h[i] + (bd ? bd[i] : 0); sh[i] = h[C + i] + (bd ? bd[C + i] : 0); } return ctx.adain(x, ctx.upload(sc, 1, C), ctx.upload(sh, 1, C)); };
+  const adain = async (x, sfx) => { const h = styleFc(K, `${sfx}/fc/Gemm`, sp); const C = h.length / 2; const sc = new Float32Array(C), sh = new Float32Array(C); for (let i = 0; i < C; i++) { sc[i] = 1 + h[i]; sh[i] = h[C + i]; } return ctx.adain(x, ctx.upload(sc, 1, C), ctx.upload(sh, 1, C)); };
   const upRep = (x) => { const idx = new Uint32Array(x.cols * 2); for (let i = 0; i < x.cols; i++) { idx[2 * i] = i; idx[2 * i + 1] = i; } return ctx.gatherCols(x, idx); };
   const dwcT = (x, sfx) => { const r = K.findRole(sfx); const wd = K.dims(r.w); return ctx.convTranspose1d(x, K.up(r.w, 1, wd[0] * wd[1] * wd[2]), { cout: wd[0], k: wd[2], bias: r.b ? K.up(r.b, 1, wd[0]) : null, stride: 2, pad: 1, groups: wd[0], outputPadding: 1 }); };
   const block = async (x, pre, up) => {
@@ -264,7 +274,7 @@ async function predResBlocks(K, prosody, which, spT) {
     x = conv(x, `${pre}/conv1/Conv`, { pad: 1 });
     x = ctx.leakyRelu(await adain(x, `${pre}/norm2`), 0.2);
     x = conv(x, `${pre}/conv2/Conv`, { pad: 1 });
-    const sum = ctx.add(x, res); const d = await ctx.download(sum); const inv = 1 / Math.sqrt(2); for (let i = 0; i < d.length; i++) d[i] *= inv; return ctx.upload(d, sum.rows, sum.cols);
+    return ctx.scale(ctx.add(x, res), Math.SQRT1_2);
   };
   let x = prosody;
   for (const b of [`${which}.0`, `${which}.1`, `${which}.2`]) x = await block(x, b, b === `${which}.1`);
@@ -369,7 +379,7 @@ async function concatRows(ctx, tensors) {
  */
 export async function decoder(K, xConcat, asr, F0, N, style128, onStage) {
   const ctx = K.ctx;
-  const styT = style128T(ctx, style128);
+  xConcat = toT(ctx, xConcat); asr = toT(ctx, asr); F0 = toT(ctx, F0); N = toT(ctx, N);
   const conv = (x, suffix, { pad = 1, stride = 1 } = {}) => {
     const r = K.findRole(suffix); const wd = K.dims(r.w);
     const w = K.up(r.w, 1, wd[0] * wd[1] * wd[2]);
@@ -377,11 +387,9 @@ export async function decoder(K, xConcat, asr, F0, N, style128, onStage) {
     return ctx.conv1d(x, w, { cout: wd[0], k: wd[2], bias: b, stride, pad });
   };
   const adain = async (x, suffix) => {
-    const r = K.findRole(`${suffix}/fc/Gemm`); const wd = K.dims(r.w); const twoC = wd[0], C = twoC / 2;
-    const h = await ctx.download(ctx.matmul(K.up(r.w, twoC, 128), styT));
-    const bd = r.b ? await ctx.download(K.up(r.b, 1, twoC)) : null;
+    const h = styleFc(K, `${suffix}/fc/Gemm`, style128); const C = h.length / 2;
     const scale = new Float32Array(C), shift = new Float32Array(C);
-    for (let i = 0; i < C; i++) { scale[i] = 1 + h[i] + (bd ? bd[i] : 0); shift[i] = h[C + i] + (bd ? bd[C + i] : 0); }
+    for (let i = 0; i < C; i++) { scale[i] = 1 + h[i]; shift[i] = h[C + i]; }
     return ctx.adain(x, ctx.upload(scale, 1, C), ctx.upload(shift, 1, C));
   };
   const lrelu = (x) => ctx.leakyRelu(x, 0.2);
@@ -400,9 +408,7 @@ export async function decoder(K, xConcat, asr, F0, N, style128, onStage) {
     x = conv(x, `${pre}/conv1/Conv`, { pad: 1 });
     x = lrelu(await adain(x, `${pre}/norm2`));
     x = conv(x, `${pre}/conv2/Conv`, { pad: 1 });
-    const sum = ctx.add(x, res);
-    const d = await ctx.download(sum); const inv = 1 / Math.sqrt(2); for (let i = 0; i < d.length; i++) d[i] *= inv;
-    return ctx.upload(d, sum.rows, sum.cols);
+    return ctx.scale(ctx.add(x, res), Math.SQRT1_2);
   };
 
   const asrRes = conv(asr, "asr_res.0/Conv", { pad: 0 });
@@ -411,7 +417,7 @@ export async function decoder(K, xConcat, asr, F0, N, style128, onStage) {
   let x = await block(xConcat, "encode", false);
   if (onStage) await onStage("encode", x, { asrRes, F0d, Nd });
   for (const b of ["decode.0", "decode.1", "decode.2", "decode.3"]) {
-    x = await concatRows(ctx, [x, asrRes, F0d, Nd]);
+    x = ctx.concatRows([x, asrRes, F0d, Nd]);
     x = await block(x, b, b === "decode.3");
     if (onStage) await onStage(b, x);
   }
