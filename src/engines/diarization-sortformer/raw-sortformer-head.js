@@ -79,3 +79,50 @@ export function predsToSegments(preds, frames, frameSec, { threshold = 0.5, minS
   }
   return out.filter((s) => s.end - s.start >= minSpeechSec).sort((a, b) => a.start - b.start);
 }
+
+// ── long-audio window stitching ───────────────────────────────────────────────
+// Sortformer's 4 output channels have no global identity: each window assigns
+// speakers arbitrarily, and a single chunk over long audio collapses to the
+// dominant speaker. Windows are stitched by choosing, per window, the channel
+// permutation that best agrees with the previous window on the OVERLAP frames.
+const PERMS4 = (() => {
+  const out = [];
+  const rec = (cur, rest) => { if (!rest.length) out.push(cur.slice()); for (let i = 0; i < rest.length; i++) { cur.push(rest[i]); rec(cur, rest.slice(0, i).concat(rest.slice(i + 1))); cur.pop(); } };
+  rec([], [0, 1, 2, 3]);
+  return out;
+})();
+
+/**
+ * Merge per-window preds ([frames*4], row-major [t*4+s]) into one stream.
+ * ovlFrames[i] = overlap frames between window i-1 and i (ovlFrames[0] ignored).
+ */
+export function mergeWindowPreds(windows, ovlFrames) {
+  const totalFrames = windows.reduce((s, w, i) => s + w.frames - (i ? Math.min(ovlFrames[i], w.frames) : 0), 0);
+  const out = new Float32Array(totalFrames * SPK);
+  let accFrames = 0;
+  // running channel map: identity for window 0
+  for (let i = 0; i < windows.length; i++) {
+    const { preds, frames } = windows[i];
+    let perm = [0, 1, 2, 3];
+    let skip = 0;
+    if (i > 0) {
+      const ovl = Math.min(ovlFrames[i], frames, accFrames);
+      skip = ovl;
+      let best = -Infinity;
+      for (const p of PERMS4) {
+        let sc = 0;
+        for (let t = 0; t < ovl; t++) {
+          const ar = (accFrames - ovl + t) * SPK, br = t * SPK;
+          for (let k = 0; k < SPK; k++) sc += out[ar + k] * preds[br + p[k]];
+        }
+        if (sc > best) { best = sc; perm = p; }
+      }
+    }
+    for (let t = skip; t < frames; t++) {
+      const dst = (accFrames + t - skip) * SPK, src = t * SPK;
+      for (let k = 0; k < SPK; k++) out[dst + k] = preds[src + perm[k]];
+    }
+    accFrames += frames - skip;
+  }
+  return { preds: out, frames: accFrames };
+}

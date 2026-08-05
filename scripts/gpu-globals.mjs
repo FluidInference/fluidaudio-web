@@ -14,5 +14,11 @@ export async function getDevice() {
   const adapter = await gpu.requestAdapter();
   if (!adapter) throw new Error("no WebGPU adapter (dawn)");
   const feats = adapter.features && adapter.features.has && adapter.features.has("shader-f16") ? ["shader-f16"] : [];
-  return adapter.requestDevice({ requiredFeatures: feats });
+  // lift the 256MB default buffer caps to the adapter's real limits (the browser
+  // path in compute.js requestGpuDevice already does this)
+  const lim = adapter.limits || {};
+  const requiredLimits = {};
+  if (lim.maxBufferSize) requiredLimits.maxBufferSize = lim.maxBufferSize;
+  if (lim.maxStorageBufferBindingSize) requiredLimits.maxStorageBufferBindingSize = lim.maxStorageBufferBindingSize;
+  return adapter.requestDevice({ requiredFeatures: feats, requiredLimits });
 }

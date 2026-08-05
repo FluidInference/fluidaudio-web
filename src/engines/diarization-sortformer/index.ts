@@ -11,7 +11,7 @@ import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
-import { loadSortformerHead, sortformerHead, predsToSegments } from "./raw-sortformer-head.js";
+import { loadSortformerHead, sortformerHead, predsToSegments, mergeWindowPreds } from "./raw-sortformer-head.js";
 import { ParakeetMel } from "../asr-parakeet/parakeet-mel.js";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
@@ -46,13 +46,44 @@ export class SortformerDiarizationEngine implements DiarizationEngine {
 
   async diarize(audio: AudioData): Promise<DiarSegment[]> {
     if (!this.enc || !this.head) throw new Error("SortformerDiarizationEngine.load() not called");
-    const { features, length } = this.mel.process(audio.samples);
-    if (length === 0) return [];
-    const r = await parakeetEncode(this.ctx, this.enc, features, length);
-    const preds = await sortformerHead(this.ctx, this.head, r.framesGpu, r.Tsub);
-    const frames = preds.length / SPK;
-    const frameSec = audio.samples.length / audio.sampleRate / frames;
-    return predsToSegments(preds, frames, frameSec) as DiarSegment[];
+    // Long audio is WINDOWED (90s / 15s overlap) and stitched by overlap-permutation
+    // matching: a single chunk over minutes collapses to the dominant speaker (the
+    // known single-chunk Sortformer failure mode), and full attention is quadratic.
+    const sr = audio.sampleRate;
+    // Window size adapts to the device's storage-buffer cap: the subsampling
+    // intermediate is 256ch × (melFrames/2) × 64 × 4B ≈ winSec × 3.28 MB (WebGPU
+    // spec floor is 128MB → ~35s windows; typical adapters allow the full 90s).
+    const capBytes = this.ctx?.device?.limits?.maxStorageBufferBindingSize ?? Infinity;
+    const winSec = Math.max(30, Math.min(90, Math.floor((capBytes * 0.85) / (3.28 * 1024 * 1024))));
+    const WIN = winSec * sr, OVL = Math.min(15, Math.floor(winSec / 4)) * sr, hop = WIN - OVL;
+    const runWindow = async (samples: Float32Array) => {
+      const { features, length } = this.mel.process(samples);
+      if (length === 0) return null;
+      const r = await parakeetEncode(this.ctx, this.enc, features, length);
+      const preds = await sortformerHead(this.ctx, this.head, r.framesGpu, r.Tsub);
+      return { preds, frames: preds.length / SPK };
+    };
+    if (audio.samples.length <= WIN) {
+      const w = await runWindow(audio.samples);
+      if (!w) return [];
+      const frameSec = audio.samples.length / sr / w.frames;
+      return predsToSegments(w.preds, w.frames, frameSec) as DiarSegment[];
+    }
+    const windows: { preds: Float32Array; frames: number }[] = [];
+    const ovlFrames: number[] = [];
+    for (let s = 0; s < audio.samples.length; s += hop) {
+      const end = Math.min(s + WIN, audio.samples.length);
+      const w = await runWindow(audio.samples.subarray(s, end));
+      if (!w) break;
+      const fps = w.frames / ((end - s) / sr);
+      windows.push(w);
+      ovlFrames.push(Math.round((OVL / sr) * fps));
+      if (end >= audio.samples.length) break;
+    }
+    if (!windows.length) return [];
+    const merged = mergeWindowPreds(windows, ovlFrames);
+    const frameSec = audio.samples.length / sr / merged.frames;
+    return predsToSegments(merged.preds, merged.frames, frameSec) as DiarSegment[];
   }
 
   async dispose(): Promise<void> {
