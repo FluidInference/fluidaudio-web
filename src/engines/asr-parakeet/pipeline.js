@@ -1,0 +1,126 @@
+// Windowed Parakeet transcription with a 3-stage software pipeline:
+//
+//   GPU:  encode + joint-projection + staging-copy of group g+1 (ONE submit)
+//   CPU:  mel extraction for group g+2, then WASM-SIMD decode of group g
+//
+// The projection and the staging copy ride the encoder's own submit (post hook
+// into parakeetEncodeBatch), so after a group's kernels drain the bytes are
+// already in a mappable buffer — the GPU never idles waiting for the JS thread
+// to submit a readback, and the readback never pays an extra round trip.
+// mapAsync for group g is issued BEFORE group g+1 is submitted, so even a
+// conservative mapAsync implementation (drain-everything-before-map) cannot
+// serialize the pipeline. Used by the browser engine (index.ts) and the node
+// gates — same shipping code path in both.
+
+import { parakeetEncodeBatch } from "./raw-encoder.js";
+import { wasmDecodeProj } from "./raw-decoder-wasm.js";
+
+/**
+ * @returns {Promise<number[]>} deduped token ids across all windows
+ */
+export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, samples, opts = {}) {
+  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 4, pipelined = true } = opts;
+  const winSamples = windowSec * sampleRate;
+  const overlapSamples = overlapSec * sampleRate;
+  const hop = winSamples - overlapSamples;
+  const single = samples.length <= winSamples;
+  const D = projW.cols; // joint dim (640)
+
+  const starts = [];
+  for (let s = 0; s < samples.length; s += hop) {
+    starts.push(s);
+    if (single) break;
+  }
+
+  // Groups of up to wb equal-length windows (batched through the encoder:
+  // bigger GEMMs + one readback per group). A short tail encodes alone.
+  const groups = [];
+  {
+    let cur = [];
+    for (let i = 0; i < starts.length; i++) {
+      const len = Math.min(starts[i] + winSamples, samples.length) - starts[i];
+      if (cur.length && (len !== winSamples || cur.length >= wb)) { groups.push(cur); cur = []; }
+      cur.push(i);
+      if (len !== winSamples) { groups.push(cur); cur = []; }
+    }
+    if (cur.length) groups.push(cur);
+  }
+
+  const melsFor = (g) => {
+    const mels = [];
+    for (const i of groups[g]) {
+      const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
+      const { features, length } = mel.process(slice);
+      if (length > 0) mels.push(features);
+    }
+    return mels;
+  };
+
+  // Joint encoder projection [W*Tsub,1024]→[W*Tsub,640] + staging copy, recorded
+  // inside the encoder's batch. WASM backend has no stageDownload — plain download.
+  const post = (x) => {
+    const proj = ctx.matmul(x, projW, { bias: projB });
+    return ctx.stageDownload ? ctx.stageDownload(proj) : { read: async () => ctx.download(proj) };
+  };
+
+  // Record + submit a group; resolves at submit (parakeetEncodeBatch has no
+  // internal GPU wait), with the readback's mapAsync already in flight.
+  const submit = async (g, mels) => {
+    if (!mels.length) return null;
+    const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
+    return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length };
+  };
+
+  const ids = [];
+  let w = 0;
+  let nextMels = melsFor(0);
+  let pending = await submit(0, nextMels);
+  nextMels = groups.length > 1 ? melsFor(1) : null;
+
+  for (let g = 0; g < groups.length; g++) {
+    const cur = pending;
+    const advance = async () => {
+      if (g + 1 < groups.length) {
+        pending = await submit(g + 1, nextMels);
+        nextMels = g + 2 < groups.length ? melsFor(g + 2) : null;
+      } else {
+        pending = null;
+      }
+    };
+    // Pipelined: submit g+1 before draining g so the GPU flows group-to-group.
+    // Serial (gate baseline): drain g fully first.
+    if (pipelined) await advance();
+    if (!cur) {
+      if (!pipelined) await advance();
+      w += groups[g].length;
+      continue;
+    }
+    const frames = await cur.framesP;
+    if (!pipelined) await advance();
+
+    const Tenc = cur.Tsub;
+    for (let wi = 0; wi < cur.n; wi++, w++) {
+      const win = frames.subarray(wi * Tenc * D, (wi + 1) * Tenc * D);
+      const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
+      const { ids: wids, idFrames } = wasmDecodeProj(dec, win, Tenc);
+
+      // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
+      let skip = 0;
+      if (w > 0 && wids.length) {
+        const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
+        let frameSkip = 0;
+        while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
+        const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
+        let matched = 0;
+        for (let L = maxL; L >= 2; L--) {
+          let ok = true;
+          for (let i = 0; i < L; i++) if (ids[ids.length - L + i] !== wids[i]) { ok = false; break; }
+          if (ok) { matched = L; break; }
+        }
+        skip = Math.max(matched, frameSkip);
+      }
+      for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
+    }
+  }
+  return ids;
+}

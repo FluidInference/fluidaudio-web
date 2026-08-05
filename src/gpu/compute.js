@@ -2329,4 +2329,32 @@ export class GpuContext {
     stg.destroy();
     return out;
   }
+
+  /** Record a copy of t into a fresh MAP_READ staging buffer; read() maps it later.
+   * Batch-aware: inside beginBatch/endBatch the copy rides the SAME submit as the
+   * kernels that produce t (pass paused/reopened like copyRows), so the bytes are
+   * mappable the instant that submit drains — no extra submit or GPU round trip.
+   * Call read() only after the producing batch has been submitted. */
+  stageDownload(t) {
+    const size = t.rows * t.cols * 4;
+    const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    if (this._enc && this._pass) {
+      this._pass.end();
+      this._enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this._pass = this._enc.beginComputePass();
+    } else {
+      const enc = this.device.createCommandEncoder();
+      enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this.device.queue.submit([enc.finish()]);
+    }
+    return {
+      read: async () => {
+        await stg.mapAsync(GPUMapMode.READ);
+        const out = new Float32Array(stg.getMappedRange().slice(0));
+        stg.unmap();
+        stg.destroy();
+        return out;
+      },
+    };
+  }
 }

@@ -147,7 +147,7 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
  * FF/projection GEMMs see M = W·Tsub (the thin-GEMM occupancy fix); attention and
  * the depthwise conv stay per-window. Returns framesGpu [W·Tsub, D].
  */
-export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
+export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post = null) {
   const { D, H, HD, layers: LAYERS, dwK, Csub, melBins } = enc.cfg;
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
   const W = mels.length;
@@ -235,8 +235,12 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
     x = ln(x, w.lnout);
   }
+  // Optional post hook (e.g. the joint's encoder projection + staging copy)
+  // recorded INSIDE the same batch: its work rides this submit, so the readback
+  // is mappable the instant the encode drains — no extra CPU→GPU round trip.
+  const staged = post ? post(x) : null;
   if (ctx.endBatch) ctx.endBatch();
-  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D };
+  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D, staged };
   if (wantData) out.data = await ctx.download(ctx.transpose(x));
   return out;
 }
