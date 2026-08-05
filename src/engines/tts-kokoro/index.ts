@@ -1,20 +1,22 @@
-// Kokoro 82M TTS via kokoro-js (transformers.js under the hood; WebGPU with WASM
-// fallback). The FluidAudio CoreML backend is a 7-stage ANE split — that split
-// is Apple-specific and irrelevant here; the browser runs the single upstream
-// Kokoro ONNX.
+// Kokoro 82M TTS — fully ORT-free. No kokoro-js / transformers.js / onnxruntime.
+// The StyleTTS2+iSTFTNet pipeline (ALBERT frontend → prosody predictor → SineGen →
+// iSTFTNet decoder+generator) is hand-ported to raw WebGPU / WASM-SIMD in
+// src/gpu/kokoro-synth.js (parity vs the ONNX model: waveform corr ~0.97, source
+// spec exact, decode3 5e-5). Weights: FluidInference/fluidaudio-web/kokoro{,-zh}.
 //
-// English works out of the box. **Chinese is the open item**: kokoro-js's built-in
-// phonemizer (misaki) covers English/EN-style G2P well; robust Mandarin needs a
-// JS frontend — jieba word segmentation + polyphone (多音字) disambiguation +
-// pinyin→IPA — mirroring FluidAudio's separate g2pW CoreML model. Until that's
-// wired, `zh` falls back to kokoro-js's own handling (lower polyphone accuracy).
+// G2P (text → phonemes): English via the Misaki lexicon (lexicon.js, IPA); Chinese
+// via pinyin-pro → misaki[zh] v1.1 format (zh-frontend-v11.js, Bopomofo + tone
+// digits). Both onnx-free. Out-of-lexicon English currently has no espeak fallback
+// (kokoro-js provided that) — OOV words are skipped; the gold/silver lexicon tiers
+// carry coverage.
 
-import { KokoroTTS } from "kokoro-js";
-import { webgpuAvailable } from "../../core/ort";
-import { fetchCached } from "../../core/modelCache";
+import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
 import { EnglishLexicon } from "./lexicon.js";
-import { chineseToIpa } from "./chinese-g2p.js";
+import { chineseToZh11 } from "./zh-frontend-v11.js";
+import { loadKokoroBackend } from "./synth-backend.js";
+import vocabEn from "./vocab.json";
+import vocabZh from "./vocab-zh.json";
 
 export interface KokoroOptions {
   /** "en" (v1.0) or "zh" (v1.1-zh). */
@@ -24,95 +26,55 @@ export interface KokoroOptions {
 export class KokoroTtsEngine implements TtsEngine {
   readonly id: string;
   readonly label: string;
-  private tts: KokoroTTS | null = null;
-  private readonly modelId: string;
+  private readonly zh: boolean;
+  private backend: Awaited<ReturnType<typeof loadKokoroBackend>> | null = null;
   private lexicon: EnglishLexicon | null = null;
 
-  constructor(private opts: KokoroOptions = {}) {
-    const zh = opts.lang === "zh";
-    this.id = zh ? "tts-kokoro-zh" : "tts-kokoro-en";
-    this.label = zh ? "Kokoro TTS (Chinese)" : "Kokoro TTS (English)";
-    this.modelId = zh
-      ? "onnx-community/Kokoro-82M-v1.1-zh-ONNX"
-      : "onnx-community/Kokoro-82M-v1.0-ONNX";
+  constructor(opts: KokoroOptions = {}) {
+    this.zh = opts.lang === "zh";
+    this.id = this.zh ? "tts-kokoro-zh" : "tts-kokoro-en";
+    this.label = this.zh ? "Kokoro TTS (Chinese)" : "Kokoro TTS (English)";
   }
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    const device = webgpuAvailable() ? "webgpu" : "wasm";
-    this.tts = await KokoroTTS.from_pretrained(this.modelId, {
-      dtype: device === "webgpu" ? "fp32" : "q8",
-      device,
-      progress_callback: (p: any) => {
-        // kokoro-js emits {status, file, progress, loaded, total}
-        if (p?.status === "progress") {
-          onProgress?.({
-            file: p.file ?? this.modelId,
-            loaded: p.loaded ?? 0,
-            total: p.total ?? 0,
-            fraction: (p.progress ?? 0) / 100,
-          });
-        }
-      },
+    this.backend = await loadKokoroBackend(fetchCached as any, hfUrl, (this.zh ? vocabZh : vocabEn) as Record<string, number>, {
+      modelDir: this.zh ? "kokoro-zh" : "kokoro",
+      voiceRepo: this.zh ? "onnx-community/Kokoro-82M-v1.1-zh-ONNX" : "onnx-community/Kokoro-82M-v1.0-ONNX",
+      onProgress,
     });
-    // English: prefer the Misaki lexicon (FluidAudio frontend) over espeak.
-    if (this.opts.lang !== "zh") {
-      try {
-        this.lexicon = await EnglishLexicon.load(fetchCached as any);
-      } catch {
-        this.lexicon = null; // lexicon optional; espeak fallback still works
-      }
+    if (!this.zh) {
+      // Fail loudly: with the espeak fallback gone, English synthesis is impossible
+      // without the lexicon — swallowing this error would brick every synthesize().
+      this.lexicon = await EnglishLexicon.load(fetchCached as any);
     }
   }
 
   async synthesize(text: string, opts?: { voice?: string; speed?: number }): Promise<AudioData> {
-    if (!this.tts) throw new Error("KokoroTtsEngine.load() not called");
-    const speed = opts?.speed ?? 1;
+    if (!this.backend) throw new Error("KokoroTtsEngine.load() not called");
+    const voice = opts?.voice ?? (this.zh ? "zf_001" : "af_heart");
 
-    // Chinese: g2pW-family frontend (pinyin-pro → misaki-exact IPA table) →
-    // phoneme injection. NOTE: uses an English voice for now — kokoro-js loads
-    // only the English voice pack for the zh model; native zf_/zm_ voice loading
-    // is a follow-up (docs/KOKORO_ZH.md). Polyphones use pinyin-pro (g2pW later).
-    if (this.opts.lang === "zh") {
-      const { phonemes, coverage } = chineseToIpa(text);
-      if (coverage > 0 && phonemes) {
-        const audio = await this.synthFromPhonemes(phonemes, opts?.voice ?? "af_heart", speed);
-        if (audio) return audio;
-      }
+    let phonemes = "", coverage = 1;
+    if (this.zh) {
+      ({ phonemes, coverage } = chineseToZh11(text));
+    } else if (this.lexicon) {
+      ({ phonemes, coverage } = this.lexicon.phonemize(text));
     }
+    if (!phonemes) throw new Error(`Kokoro: no phonemes for input (G2P coverage 0).`);
+    // Words the G2P can't cover are omitted from the audio — surface it instead
+    // of silently dropping them (no espeak fallback by design; gold/silver
+    // lexicon tiers carry coverage).
+    if (coverage < 0.95) console.warn(`[kokoro] G2P coverage ${(coverage * 100).toFixed(0)}% — some words will be missing from the audio`);
 
-    const voice = opts?.voice ?? "af_heart";
-
-    // Lexicon-first English: phonemize via the Misaki lexicon and inject through
-    // generate_from_ids (skips espeak). Fall back to kokoro-js generate() when
-    // coverage is low (OOV words) — that path uses espeak. Chinese will reuse
-    // this same injection with a g2pW-derived phoneme string (see docs/KOKORO_ZH.md).
-    if (this.lexicon) {
-      const { phonemes, coverage } = this.lexicon.phonemize(text);
-      if (coverage >= 0.95 && phonemes) {
-        const audio = await this.synthFromPhonemes(phonemes, voice, speed);
-        if (audio) return audio;
-      }
-    }
-    const audio = await this.tts.generate(text, { voice: voice as any, speed });
-    return { samples: audio.audio as Float32Array, sampleRate: audio.sampling_rate };
-  }
-
-  /** Inject a phoneme string straight into Kokoro (tokenizer → generate_from_ids). */
-  async synthFromPhonemes(phonemes: string, voice: string, speed = 1): Promise<AudioData | null> {
-    const tts = this.tts as any;
-    if (!tts) return null;
-    const { input_ids } = tts.tokenizer(phonemes, { truncation: true });
-    const audio = await tts.generate_from_ids(input_ids, { voice, speed });
-    return { samples: audio.audio as Float32Array, sampleRate: audio.sampling_rate };
+    const samples = await this.backend.synthFromPhonemes(phonemes, voice, opts?.speed ?? 1);
+    return { samples, sampleRate: 24000 };
   }
 
   async voices(): Promise<string[]> {
-    if (!this.tts) return [];
-    return Object.keys((this.tts as any).voices ?? {});
+    return this.zh ? ["zf_001", "zm_010"] : ["af_heart", "af_bella", "am_michael"];
   }
 
   async dispose(): Promise<void> {
-    this.tts = null;
+    this.backend = null;
     this.lexicon = null;
   }
 }

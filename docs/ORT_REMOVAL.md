@@ -37,7 +37,24 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
    →decoder Conv[1,128,1]→Sigmoid. Weights: encoder.{0..3}.reparam_conv.{weight,
    bias}, LSTM W/R[1,512,128] b[1,1024], decoder.decoder.2.{weight[1,128,1],bias},
    stft.forward_basis_buffer[258,1,256]. Source ONNX: /tmp/silero_vad.onnx.
-2. **Parakeet v3** — [FULL RAW PIPELINE WORKS, ORT-FREE, 13.7× RTFx, correct
+2. **Parakeet v3** — [DONE: ORT-FREE, SHIPPED, 26.4× RTFx in-browser on a 4.7-min
+   clip, correct transcript.] Architecture: JS mel → int8 GPU FastConformer encoder
+   (raw-encoder.js) → WASM-SIMD CPU decoder (rust/parakeet-decoder → wasm32+simd128,
+   raw-decoder-wasm.js). Perf journey 12.4→26.4×: (a) decoder was the wall — GPU
+   joint hits the RNNT per-token GPU-sync wall (~101ms/roundtrip in dawn; ~20× in
+   browser), so moved it to WASM-SIMD CPU (no GPU sync, 3× over JS); (b) GPU-resident
+   encoder (subReshape kernel, no per-window download except the frames handoff);
+   (c) preload pos_bias + cache pos-enc (removed ~7300 tiny uploads — NO effect, so
+   encoder is FLOP/occupancy-bound not upload-bound); (d) PIPELINE GPU-encode(i+1)
+   with CPU-decode(i) → decode hides behind encode (13.5→10.8s). BOTTLENECK now =
+   encoder ~9s, small-M (Tsub≈187) GEMM occupancy at the WGSL ceiling (~0.5 TFLOP/s).
+   Gap to ORT (47×) = that GEMM occupancy; levers = batched attention heads / small-M
+   GEMM kernel (uncertain) or bigger windows (user declined). Weights: HF parakeet/
+   encoder-int8.bin (612MB) + decoder-fp32.bin (72MB). MEASUREMENT LESSON: dawn
+   headless has a ~101ms GPU-download sync wall → GPU-sync-heavy perf is unmeasurable
+   headless; the user's browser is the only real benchmark; WASM/CPU IS measurable.
+   [superseded lines below kept for detail]
+   [FULL RAW PIPELINE WORKS, ORT-FREE, 13.7× RTFx, correct
    transcript. Remaining: engine wiring (index.ts) + mel frame-count reconcile.]
    Encoder: int8 GPU (raw-encoder.js, 5.3e-7 fp32 / int8 transcript-identical),
    HF parakeet/encoder-int8.bin (612MB). Decoder: JS (raw-decoder.js, embed+2×LSTM
@@ -136,7 +153,192 @@ Graph plumbing (Reshape/Unsqueeze/Gather/Shape/Concat/Slice/Cast) is NOT kernels
   dispatch would dominate. NOTE: bundling chosen for weights; does NOT scale to the
   big encoders (GBs) — revisit hosting for models 2–5.
 - [ ] 2. Parakeet v3 encoder (+ decoder/joint + JS mel)
-- [ ] 3. Nemotron / EOU / Sortformer
+- [~] 3. Nemotron / EOU / Sortformer
+  - [x] **EOU (Parakeet-EOU 120M)** — DONE, ORT-FREE, weights on HF.
+    - Encoder: shared raw FastConformer (raw-encoder.js) with EOU streaming config
+      {subPad t2/b1/l2/r1, convCausal, attChunk 2, attLeft 70, melBins 128}. fp16
+      weights (int8 degrades this 120M RNNT: maxΔ 0.30 drops words; fp16 maxΔ 0.044
+      byte-identical transcript). Parity vs ORT 3.2e-5 (fp32) / 4.4e-2 (fp16).
+    - Decoder: JS RNNT (raw-decoder-eou.js). GOTCHA: the exported decoder_joint
+      prepends a zero SOS timestep EVERY call → the pred LSTM runs TWO steps
+      [zeros, embed(token)] from the incoming state. Single-step gave all-blank
+      (empty transcript). embed[blank=1026] is a zero padding row.
+    - Mel: JsPreprocessor NA (no CMVN). GOTCHA: its `length` = frames-1, so
+      parakeetEncode must take the stride from mel.length/melBins, not the passed T.
+    - Weights: FluidInference/fluidaudio-web eou/{encoder-fp16,decoder-fp32}.{bin,manifest.json}.
+    - Scripts: extract-fastconformer-encoder.py, quantize-encoder-fp16.py, smoke-eou.mjs (ORT ref).
+  - [x] **Nemotron 3.5 multilingual (0.6B)** — DONE, ORT-FREE, weights on HF.
+    - Run OFFLINE whole-clip (cache-aware streaming ≡ offline-with-limited-context-mask,
+      so no cache plumbing). Shared raw FastConformer (24L d1024) with Nemotron config
+      {subPad t2/b1/l2/r1, convCausal (dwK 9), attChunk 4, attLeft 56, attRight 3}.
+    - **int8** (not int4, per Alex) — 630MB. The 600M model is int8-robust: coherent
+      full transcript, unlike the 120M EOU which needed fp16. Offline int8 vs streaming
+      encoder-frame reference: per-frame maxΔ 0.03–0.13 in the bulk (final partial chunk
+      diverges, expected).
+    - **prompt_kernel** = multilingual conditioning MLP applied AFTER the conformer:
+      encoded_output = MLP(concat([conformer_out 1024, language_onehot 128]), 1152→2048→1024).
+      langId from languages.json promptDictionary (en-US=0). scripts/extract-nemotron-prompt-kernel.py.
+    - Decoder: JS 2-layer LSTM RNN-T (raw-decoder-nemotron.js). NO SOS-prepend (unlike
+      EOU's fused export — plain single step). joint = enc 1024→640 + pred 640→640 + relu
+      + out 640→13087. blank 13087. scripts/extract-nemotron-decoder.py.
+    - Weights: FluidInference/fluidaudio-web nemotron/{encoder-int8,decoder-fp32}.{bin,manifest.json}
+      + vocab.json + languages.json. Engine src/engines/asr-nemotron/index.ts ORT-free.
+    - Transcript (cowen.wav): "The people here to me are the smartest people I've ever met,
+      but I think a side result of that is that people here overvalue intelligence and their
+      models of the world are built on intelligence mattering much."
+  - [x] **Sortformer diarizer (4-spk)** — DONE, ORT-FREE, weights on HF, full parity.
+    Full raw pipeline (17-layer FastConformer encoder int8 + encoder_proj + 18-layer
+    transformer head + sigmoid) == ORT preds: maxΔ 1.79e-7 (fp32) / 2.3e-3 (int8,
+    diarization-neutral). Cracked the encoder via bias-everywhere (Sortformer's conformer
+    has bias=True on ALL FF/attn/pointwise-conv linears, unlike Parakeet) + xscale (√512).
+    Transformer head: POST-LN, 8-head MHA (scale 1/√24), ReLU FFN — n_heads confirmed by
+    numpy parity. Weights FluidInference/fluidaudio-web sortformer/{encoder-int8,head-fp32}
+    (140MB). Engine ORT-free (predsToSegments threshold/merge). Offline single-chunk;
+    long-audio streaming (spkcache/fifo) = follow-up. Scripts: extract-sortformer-head.py.
+    (old sortformer.js now dead code.)
+  - [~] Sortformer streaming (spkcache/fifo across chunks) — follow-up for long audio.
+  - [_] EARLIER WIP NOTE (superseded):
+    Arch: 17-layer FastConformer (d512, 8h×64, dwK9) encoder → sortformer_modules.encoder_proj
+    (512→192) → 18-layer STANDARD transformer head (transformer_encoder, d192: layer_norm_1
+    → first_sub_layer MHA (query/key/value/out_projection, NO rel-pos) → layer_norm_2 →
+    second_sub_layer FFN 192→768→192, pre-LN) → single_hidden_to_spks (192→4) → sigmoid.
+    Offline single-chunk (empty spkcache/fifo [1,0,512]) = FULL attention (the -10000
+    limited-context mask is all-pass for offline), symmetric Parakeet-style subsampling
+    (1200 mel→150 exactly), per_feature mel (ParakeetMel), BN-folded conv.
+    DONE: extractor fixed (robust pre_encode.out lookup); FastConformer extracted (17L,
+    /tmp/sf-raw/enc); ORT reference + gating targets saved (/tmp/sf/ref-{preds,encout,proj}.bin,
+    sf_dbg/sf_l0/sf_sub/sf_mask.onnx); cfg.xscale added (√512 xscaling, found /encoder/pos_enc
+    const 22.627). Subsampling BYTE-EXACT (3.4e-5).
+    BLOCKER: conformer block diverges — FF1 residual maxΔ 15.5, layer0 42.6 (5.68→2.17 with
+    xscale). The FF1 sub-block already diverges → a subtle xscale/pos-encoding interaction
+    (cf. EOU's rel-pos variant). Next: isolate whether ORT scales x before FF1 or only the
+    pos_emb (try FF1 WITHOUT xscale; check RelPositionalEncoding variant). THEN build the
+    transformer head (new standard-MHA forward) + encoder_proj + hidden_to_spks + sigmoid +
+    segment extraction (reuse sortformer.js), int8 quantize, engine, HF. preds [150,4].
+    Reference preds on cowen.wav: spk0 max 1.00 (single speaker, correct).
 - [ ] 4. Kokoro
-- [ ] 5. Whisper
+- [x] 5. **Whisper (whisper-base)** — DONE, ORT-FREE (off transformers.js), weights on HF.
+  Full raw pipeline == transformers.js transcript (1 trailing token differs, encoder 8.6e-3):
+  WhisperMel (JS, 80-bin, direct 400-pt DFT, 1.37e-5) + raw WebGPU encoder (conv stem +
+  6 PRE-LN layers, erf-GELU act=5, 8.6e-3) + autoregressive raw decoder (causal self-attn +
+  cross-attn KV-precomputed, logits 5.15e-5) + GPT-2 BPE detokenizer + forced-prefix/suppress
+  greedy. fp32 weights FluidInference/fluidaudio-web whisper/. Single 30s window (long-audio
+  chunking = follow-up). Scripts: extract-whisper-{encoder,decoder}.py.
+- [ ] 6. **Kokoro** — LAST + BIGGEST. Only textEncoding (frontend, 4.2e-6) built in
+  src/gpu/kokoro.js; the whole StyleTTS2+iSTFTNet BACK HALF is unbuilt: DurationEncoder
+  (alt bidir-LSTM/AdaLN) → length-reg → F0/N predictor → iSTFTNet decoder (AdaIN resblocks)
+  → generator (~500 nodes: NSF harmonic source F0→cumsum-phase→Sin+noise, STFT, ScatterND,
+  weight-norm, iSTFT). All kernels exist EXCEPT a cumsum/scan. kokoro-js pulls transformers.js
+  → it's the SOLE remaining blocker for dropping all 3 deps.
+- [ ] 7. remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
+  + delete core/ort.ts (only Kokoro uses them now; Whisper/Parakeet/VAD/EOU/Nemotron/Sortformer
+  are all ORT-free).
 - [ ] remove onnxruntime-web / @huggingface/transformers / kokoro-js from package.json
+
+- [ ] 6. **Kokoro** — LAST + BIGGEST. MAPPED + reference captured (/tmp/kokoro/ref_{wav,ids,style}.bin).
+  Inputs input_ids[1,seq]+style[1,256]+speed[1]→waveform. Frontend (textEncoding→d_en) done 4.2e-6.
+  BACK HALF to build (gating anchors = ORT tensors below, expose via load_external_data=False dbg model):
+  A. Prosody predictor (encoder.predictor, ~49 w): DurationEncoder text_encoder.lstms.0-5
+     (even=bidir LSTM, odd=AdaLayerNorm fc[1024,128] from style) → duration_proj.linear_layer(→50)
+     → dur=/encoder/predictor/duration_proj/linear_layer/Add_output_0 → ReduceSum→Round(/encoder/Round)
+     →Clip(/encoder/Clip)=pred_dur → length-regulate (gatherCols by repeat). Then F0.0-2 + N.0-2
+     AdaINResBlocks (conv1/conv2 + norm1/norm2 AdaIN fc-from-style + pool upsample) →
+     F0=/encoder/F0_proj/Conv_output_0, N=/encoder/N_proj/Conv_output_0.
+  B. iSTFTNet decoder+generator (decoder.decoder, 236 w): input /decoder/decoder/Concat_output_0
+     (concat asr+F0+N). encode + decode.0-3 AdaIN resblocks (instancenorm+Gemm style→scale/shift+
+     Conv+LeakyRelu) + ConvTranspose upsample; generator NSF: F0→CumSum phase→Sin(51 harmonics)+noise
+     source, STFT, ScatterND, weight-norm convs, iSTFT overlap-add → waveform.
+  MISSING KERNEL: cumsum/scan (all others exist: matmul/conv1d/lstm/convTranspose1d/adain/leakyRelu/
+     gatherCols/STFT-via-DFT). Then engine off kokoro-js + delete core/ort.ts + drop 3 deps.
+  Model /tmp/kokoro/model.onnx (fp32 325MB). This is a dedicated multi-stage build (StyleTTS2+iSTFTNet).
+
+### Kokoro build progress (stage by stage)
+- [x] A1 duration path — VALIDATED numpy-exact vs ORT (pred_dur [1,1,1,1,1,2,1,2,1,1,1,2]).
+  Recipe: style[1,256] = [0:128 acoustic (decoder) | 128:256 prosodic (predictor)].
+  DurationEncoder text_encoder.lstms.0/2/4 = bidir LSTM (onnx iofc, hid256, INPUT =
+  concat(feat[512 first / 512 after], style128)=640); lstms.1/3/5 = AdaLN: h=fc(style128)
+  [1024,128]; γ,β = h[:512],h[512:]; x = LN(x)*(1+γ)+β. Then predictor.lstm (bidir, input
+  concat(x,style128)=640→512) → duration_proj (MatMul→50) → Sigmoid → ReduceSum(axis=-1)
+  → Round → Clip(1,50) = pred_dur. Anchors: /encoder/Clip_output_0, d_en=/encoder/
+  bert_encoder/Add_output_0.
+- [x] A2 alignment — VALIDATED 1e-5. d=concat(DurationEncoder_out[512],style128)=[seq,640];
+  A[seq,T]=0/1 from pred_dur (token i → its dur frames); en = d^T@A = [640,T]. asr (from
+  encoder.text_encoder) aligned by same A → [512,T] for decoder. T=sum(pred_dur).
+- [x] A3 F0/N — VALIDATED F0 maxΔ 0.0. Input = aligned prosody [512,T] (/encoder/Transpose_2).
+  3 AdaINResBlk1d each (F0.0/1/2, N.0/1/2): res path [if upsample: Resize-nearest×2; if sc:
+  conv1x1] ; main = AdaIN(norm1,instance-norm+ (1+γ)*.+β from fc(style128)) → LeakyRelu(0.2) →
+  [if upsample: pool=depthwise ConvTranspose1d W[C,1,3] g=C s2 pad1 opad1] → conv1(k3p1) →
+  AdaIN(norm2) → LeakyRelu → conv2(k3p1); out=(main+res)/√2. Block .1 upsamples ×2 (T→2T) + sc.
+  F0_proj/N_proj = conv1x1 (256→1) → F0/N [1,1,2T]. PREDICTOR FULLY VALIDATED numpy-exact.
+- [ ] B iSTFTNet decoder + NSF generator (decoder.decoder 236w) → waveform. MAPPED:
+  input = concat(asr[512,T], F0_conv(F0), N_conv(N)) = [514,T] (/decoder/decoder/Concat, T=15).
+  encode (AdaIN resblock conv1/conv2+norm1/norm2) → decode.0-3 (AdaIN resblocks; upsample;
+  each concats asr_res/F0/N + style128-acoustic) → generator: m_source NSF (F0→CumSum phase→
+  Sin×51 harmonics + noise, Atan/Exp/Cos) → noise_convs(4)/noise_res(48) → resblocks(144,
+  HiFiGAN multi-receptive) + ups(2 ConvTranspose) → stft(2)/conv_post → iSTFT (ScatterND
+  overlap-add) → waveform. Decoder uses style[:128] (acoustic half). anchors ref_wav.bin +
+  /decoder/decoder/Concat. NEW KERNEL: cumsum/scan. Have: conv1d/convTranspose1d/adain/
+  leakyRelu/STFT-via-DFT. This is a full iSTFTNet vocoder — the single biggest component.
+
+
+### Kokoro Stage B (vocoder) build notes
+- NSF m_source (SineGen) traced: F0[T] → Resize(upsample to sample rate) → phase=CumSum(F0*2π/sr)
+  → Sin (9 harmonics via harmonic multipliers) → ×amplitude → ×uv-mask(F0>0, from Greater/Cast)
+  → l_linear MatMul[9,1]+bias → l_tanh Tanh = source[samples]. Anchor exposed:
+  /decoder/decoder/generator/m_source/l_tanh/Tanh_output_0 (model_msrc.onnx).
+- generator body: source → noise_convs(4) + noise_res(48, Snake=x+sin²(αx)/α activations) merged
+  with decode.3 output → resblocks(144, HiFiGAN multi-receptive, Snake) → ups(2 ConvTranspose) →
+  STFT/conv_post → iSTFT (ScatterND overlap-add) → waveform. decode.0-3 = AdaIN resblocks w/
+  upsampling, concat asr_res/F0_conv/N_conv + acoustic style each. NEW KERNEL: cumsum. Snake
+  activation kernel also needed (x + sin²(αx)/α, per-channel α). Anchors: ref_wav.bin + m_source.
+  REMAINING: extract SineGen constants (harmonic mults, sr scale, amp, upsample factors) → validate
+  m_source numpy → decode resblocks → generator resblocks/Snake/ups → iSTFT → gate waveform →
+  port full Kokoro (predictor+vocoder) numpy→GPU/JS → engine off kokoro-js → drop 3 deps.
+
+### Kokoro SineGen — validated structurally (KEY FINDING: stochastic source)
+NSF SineGen replicated op-exact (all constants extracted): F0[9000,1] → ×[1..9] harmonics →
+div/24000 → frac(=x-floor) → downsample→cumsum→×2π×300→upsample→Sin ×0.1 ×uv(F0>10) →
+l_linear[9,1]+bias(-0.0295) → tanh. Structural match ~0.12 maxΔ. The RESIDUAL is the NSF's
+random per-harmonic INITIAL PHASE (source[t=0] ≠ tanh(bias)) → the source is STOCHASTIC, so
+the vocoder waveform CANNOT be gated to exact ORT parity like the predictor/ASR models —
+validate the generator structurally + by-ear instead. Anchors: msrc_tanh.bin, f0in bin.
+REMAINING vocoder build: decode.0-3 AdaIN resblocks + generator (Snake resblocks ×144,
+noise_res ×48, ups ConvTranspose, STFT/iSTFT ScatterND) + cumsum & Snake kernels + full
+Kokoro GPU port + engine off kokoro-js. Predictor is exact; vocoder is stochastic-by-ear.
+
+### Kokoro — FULL algorithm reverse-engineered (deterministic half numpy-EXACT)
+DETERMINISTIC PIPELINE validated numpy-exact vs ORT (0.0 / 1e-5):
+- Predictor: duration, alignment (en=concat(DurEnc_out,style128[128:])^T@A), F0/N AdaINResBlocks.
+- Decoder body: encode + decode.0-3 (acoustic style[:128]; asr_res[64]/F0_conv-s2/N_conv-s2 concat
+  each level; decode.3 depthwise-ConvTranspose pool upsample main + nearest-repeat residual).
+GENERATOR fully mapped (stochastic source → by-ear, not gateable exact):
+- m_source SineGen (9 harm, sr24000, ×2π, amp0.1, uv F0>10, l_linear[9,1] b-0.0295, tanh); the
+  random init-phase is the parity limit.
+- STFT(n_fft20, hann win[20], hop5) of source → [22,~1800]. ups.0 ConvTranspose 512→256 k20s10p5,
+  ups.1 256→128 k12s6p3; noise_convs.0 22→256 k12s6p3, .1 22→128 k1. Each level: x=ups(x)+
+  noise_convs(source_spec); x=mean(3 AdaINResBlocks: convs1 dil[1,3,5] k3 + convs2 + AdaIN(fc[512,
+  128]→2×C from style[:128]) + Snake act x+(1/α)sin²(αx), α[1,C,1] per convs1/2). resblocks.0-2 @256,
+  3-5 @128. conv_post Snake→Conv 128→22 k7p3 → iSTFT (inverse_basis[22,1,20] ConvTranspose + window_sum
+  overlap-add) → waveform[9000].
+REMAINING to ship ort-free: (1) cumsum + Snake + iSTFT kernels; (2) port ENTIRE pipeline numpy→GPU/JS
+(predictor LSTMs/AdaLN/align/F0N + decoder AdaIN resblocks + generator Snake+iSTFT); (3) extract+upload
+Kokoro weights; (4) rewrite tts-kokoro engine off kokoro-js; (5) verify BY EAR in browser (stochastic
+source → no headless exact gate); (6) drop onnxruntime-web+@huggingface/transformers+kokoro-js+core/ort.ts.
+
+### Kokoro GENERATOR + iSTFT — SOLVED, byte-exact (given source spec). /tmp/kfinal.py
+Gating the generator on ORT's exact source spec (c3.bin) + decode3 (real_decode3.bin), the WHOLE
+back half is now numpy-EXACT vs ORT waveform: maxΔ 2e-5, corr 1.0, rms 0.066=0.066. Every stage 0.0
+(ups.0/1, noise_convs, noise_res, all 6 resblocks, conv_post). Three non-obvious findings that closed it:
+1. LeakyReLU BEFORE conv_post uses slope **0.01** (torch F.leaky_relu DEFAULT), NOT 0.1. The MRF
+   resblocks + ups use 0.1 (HiFiGAN LRELU_SLOPE); only the final pre-conv_post leaky is 0.01. This was
+   the 3.27 "widespread" error — blocks were all individually exact, the combine leaky slope was wrong.
+2. STFT recombine (conv_post[22,T] → complex spec, before inverse_basis ConvTranspose):
+   mag = exp(cp[0:11]); p = sin(cp[11:22]); real = mag*cos(p); imag = mag*sin(p);
+   concat([real, imag], axis=0) = [22,T]. NOTE p itself is sin() of the raw phase channels (double-sin:
+   real=mag·cos(sin(raw)), imag=mag·sin(sin(raw))). Verified concat == ORT Concat_output_0 at 0.0.
+3. iSTFT norm: inverse_basis[22,1,20] ConvTranspose overlap-add (hop5,nfft20) → divide by overlap-added
+   window_sum (handles edge transients exactly) → × **6.0** (fixed-config const; ORT does ×4.0 Mul + a
+   differently-scaled window_sum, net 6.0 vs my window-overlap peak 1.5) → trim [nfft/2 : -nfft/2].
+The source (m_source SineGen) init-phase is the only stochastic piece → generator gateable ONLY when fed
+ORT's source; standalone pipeline validates predictor/decoder exact + generator by-ear. NEXT: chain the
+standalone numpy pipeline (predictor→decoder→SineGen→generator, no ORT anchors) → port numpy→GPU/JS.

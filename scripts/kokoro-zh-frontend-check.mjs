@@ -1,0 +1,21 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { createWasmContext } from "../src/gpu/wasm-context.js";
+import { textEncoding } from "../src/gpu/kokoro.js";
+import { ALBERT_DIMS } from "../src/gpu/albert.js";
+const Z="/tmp/kokoro-zh";
+const rd=(p)=>{const u=Uint8Array.from(readFileSync(p));return new Float32Array(u.buffer,u.byteOffset,u.byteLength/4);};
+const ctx=await createWasmContext(readFileSync(fileURLToPath(new URL("../src/gpu/wasm-kernels.wasm",import.meta.url))));
+const man=JSON.parse(readFileSync(`${Z}/albert/manifest.json`));
+const cpu={};for(const k of Object.keys(man))cpu[k]=rd(`${Z}/albert/${k}.bin`);
+const scale=1/Math.sqrt(ALBERT_DIMS.HEAD_DIM);
+for(let i=0;i<cpu.q_w.length;i++)cpu.q_w[i]*=scale; for(let i=0;i<cpu.q_b.length;i++)cpu.q_b[i]*=scale;
+const up2=(n)=>ctx.upload(cpu[n],man[n][0],man[n][1]),up1=(n)=>ctx.upload(cpu[n],1,cpu[n].length);
+const albertW={EMBED:ALBERT_DIMS.EMBED,map_w:up2("map_w"),map_b:up1("map_b"),q_w:up2("q_w"),q_b:up1("q_b"),k_w:up2("k_w"),k_b:up1("k_b"),v_w:up2("v_w"),v_b:up1("v_b"),dense_w:up2("dense_w"),dense_b:up1("dense_b"),ffn_w:up2("ffn_w"),ffn_b:up1("ffn_b"),ffn_out_w:up2("ffn_out_w"),ffn_out_b:up1("ffn_out_b"),attn_ln_w:up1("attn_ln_w"),attn_ln_b:up1("attn_ln_b"),full_ln_w:up1("full_ln_w"),full_ln_b:up1("full_ln_b"),word_emb:cpu.word_emb,pos_emb:cpu.pos_emb,tok_emb:cpu.tok_emb,emb_ln_w:cpu.emb_ln_w,emb_ln_b:cpu.emb_ln_b};
+const ref=JSON.parse(readFileSync(`${Z}/kw/ref.json`));
+const beW=ctx.upload(rd(`${Z}/kw/be_w.bin`),ref.be_in,ref.be_out),beB=ctx.upload(rd(`${Z}/kw/be_b.bin`),1,ref.be_out);
+const idb=Uint8Array.from(readFileSync(`${Z}/zh_ids.bin`));const ids=new Int32Array(idb.buffer,idb.byteOffset,idb.byteLength/4);
+const den=await ctx.download(textEncoding(ctx,ids,albertW,beW,beB));
+const refd=rd(`${Z}/zh_den.bin`);let m=0,se=0,sr=0;for(let i=0;i<den.length;i++){m=Math.max(m,Math.abs(den[i]-refd[i]));se+=(den[i]-refd[i])**2;sr+=refd[i]**2;}
+console.log(`zh frontend d_en [${ids.length},512] maxΔ ${m.toExponential(2)} rel ${Math.sqrt(se/sr).toExponential(2)}`);
+process.exit(0);

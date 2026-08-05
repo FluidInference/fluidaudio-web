@@ -9,7 +9,7 @@
  * @param {Float32Array} decBin decoder weights blob
  * @param {object} decMan manifest {key:{offset,len}}
  */
-export async function loadWasmDecoder(wasmBytes, decBin, decMan) {
+export async function loadWasmDecoder(wasmBytes, decBin, decMan, { int8 = true } = {}) {
   // WebAssembly.instantiate accepts any BufferSource (TypedArray or ArrayBuffer);
   // pass it as-is — don't use .buffer (a node Buffer views a shared pool).
   const { instance } = await WebAssembly.instantiate(wasmBytes, {});
@@ -22,6 +22,24 @@ export async function loadWasmDecoder(wasmBytes, decBin, decMan) {
   const keys = ["embed", "l0_W", "l0_R", "l0_B", "l1_W", "l1_R", "l1_B", "encW", "encB", "predW", "predB", "outW", "outB"];
   const ptrs = keys.map((k) => put(g(k)));
   ex.set_weights(...ptrs);
+  // int8 the 21MB out matrix (per-row symmetric scales) — 4× less weight traffic.
+  if (int8) {
+    const ow = g("outW"); // [640][8198] row-major
+    const HID = 640, LOGITS = ow.length / HID;
+    const q = new Int8Array(ow.length), scales = new Float32Array(HID);
+    for (let n = 0; n < HID; n++) {
+      let mx = 0;
+      for (let m = 0; m < LOGITS; m++) { const a = Math.abs(ow[n * LOGITS + m]); if (a > mx) mx = a; }
+      const sc = mx / 127 || 1;
+      scales[n] = sc;
+      for (let m = 0; m < LOGITS; m++) q[n * LOGITS + m] = Math.max(-127, Math.min(127, Math.round(ow[n * LOGITS + m] / sc)));
+    }
+    const qp = ex.alloc(q.byteLength);
+    new Int8Array(ex.memory.buffer, qp, q.length).set(q);
+    const sp = ex.alloc(scales.byteLength);
+    new Float32Array(ex.memory.buffer, sp, scales.length).set(scales);
+    ex.set_out_q(qp, sp);
+  }
   return { ex, mark: ex.bump_mark(), blankId: 8192, vocab: 8193 };
 }
 

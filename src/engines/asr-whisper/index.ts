@@ -1,49 +1,89 @@
-// Whisper ASR (99 languages) via transformers.js — WebGPU with WASM fallback.
-// Complements Parakeet (European) with broad multilingual coverage. The pipeline
-// handles mel + encoder + autoregressive decode internally; long audio is chunked.
+// Whisper ASR (whisper-base, 99 languages), fully ORT-free.
+//
+// Everything hand-written on raw WebGPU + JS (no onnxruntime / transformers.js):
+//   • Mel: WhisperMel (80-bin log-mel, direct 400-pt DFT, JS) — 1.4e-5 vs transformers.
+//   • Encoder: raw WebGPU conv stem + 6 PRE-LN transformer layers (erf-GELU).
+//   • Decoder: raw WebGPU autoregressive greedy (causal self-attn + cross-attn),
+//     GPT-2 byte-level BPE detokenizer, forced prefix + suppress tokens.
+// Full raw pipeline == the transformers.js transcript. Single 30s window (long-audio
+// chunking is a follow-up). Weights from FluidInference/fluidaudio-web (fp32).
 
-import { pipeline } from "@huggingface/transformers";
-import { webgpuAvailable } from "../../core/ort";
+import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { createContext } from "../../gpu/context.js";
+import { loadWhisperEncoder, whisperEncode } from "./raw-whisper-encoder.js";
+import { loadWhisperDecoder, whisperCrossKV, whisperDecodeInit, whisperDecodeNext } from "./raw-whisper-decoder.js";
+import { makeWhisperTokenizer } from "./whisper-tokenizer.js";
+import { WhisperMel } from "./whisper-mel.js";
+import melFiltersUrl from "./whisper-mel-filters.bin?url";
+import suppressTokens from "./whisper-suppress.json";
 
-export interface WhisperOptions {
-  /** HF model id; default multilingual base. Use whisper-tiny for speed. */
-  model?: string;
-}
+const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
+const VOCAB_REPO = "onnx-community/whisper-base";
+// Forced decoder prefix: <|startoftranscript|> <|en|> <|transcribe|> <|notimestamps|>.
+const PREFIX = [50258, 50259, 50359, 50363], EOT = 50257, MAX_NEW = 220;
 
 export class WhisperEngine implements AsrEngine {
   readonly id = "asr-whisper";
   readonly label = "Whisper (99 langs)";
-  private asr: any = null;
-  private readonly model: string;
-
-  constructor(opts: WhisperOptions = {}) {
-    this.model = opts.model ?? "onnx-community/whisper-base";
-  }
+  private ctx: any = null;
+  private enc: any = null;
+  private dec: any = null;
+  private mel: WhisperMel | null = null;
+  private tokenizer: ReturnType<typeof makeWhisperTokenizer> | null = null;
+  private suppress = new Set<number>(suppressTokens as number[]);
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    const device = webgpuAvailable() ? "webgpu" : "wasm";
-    this.asr = await pipeline("automatic-speech-recognition", this.model, {
-      device: device as any,
-      dtype: device === "webgpu" ? "fp32" : "q8",
-      progress_callback: (p: any) => {
-        if (p?.status === "progress") {
-          onProgress?.({ file: p.file ?? this.model, loaded: p.loaded ?? 0, total: p.total ?? 0, fraction: (p.progress ?? 0) / 100 });
-        }
-      },
-    });
-    onProgress?.({ file: this.model, loaded: 1, total: 1, fraction: 1 });
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-whisper] backend: ${b}`) });
+    const json = async (path: string, repo = WEIGHTS_REPO) =>
+      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
+    const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
+
+    const encMan = await json("whisper/encoder-fp32.manifest.json");
+    const encBin = await bytes("whisper/encoder-fp32.bin");
+    const decMan = await json("whisper/decoder-fp32.manifest.json");
+    const decBin = await bytes("whisper/decoder-fp32.bin");
+    const vocab = await json("vocab.json", VOCAB_REPO);
+    const melFilters = new Float32Array(await (await fetch(melFiltersUrl)).arrayBuffer());
+
+    this.enc = loadWhisperEncoder(this.ctx, new Float32Array(encBin.buffer, encBin.byteOffset, encBin.byteLength / 4), encMan);
+    this.dec = loadWhisperDecoder(this.ctx, new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    this.mel = new WhisperMel(melFilters);
+    this.tokenizer = makeWhisperTokenizer(vocab);
+    onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
-    if (!this.asr) throw new Error("WhisperEngine.load() not called");
-    // >30s is chunked automatically; sample must be 16 kHz mono float.
-    const out = await this.asr(audio.samples, { chunk_length_s: 30, stride_length_s: 5 });
-    return { text: (Array.isArray(out) ? out[0]?.text : out?.text) ?? "" };
+    if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("WhisperEngine.load() not called");
+    const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const t0 = now();
+    const { features } = this.mel.process(audio.samples);
+    const encG = whisperEncode(this.ctx, this.enc, features);
+    const kv = whisperCrossKV(this.ctx, this.dec, encG);
+    const tMel = now();
+
+    // KV-cached autoregressive decode: one token per step (O(1)/step; the old
+    // full-prefix path recomputed everything each step — proven token-identical).
+    const tokens = [...PREFIX];
+    const st = whisperDecodeInit(this.ctx, this.dec);
+    let logits: Float32Array | null = null;
+    for (const t of PREFIX) logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, t);
+    for (let step = 0; step < MAX_NEW; step++) {
+      const lg = logits!;
+      for (const t of this.suppress) lg[t] = -Infinity;
+      if (step === 0) { lg[220] = -Infinity; lg[EOT] = -Infinity; } // begin_suppress
+      let maxId = 0, maxV = -Infinity;
+      for (let i = 0; i < lg.length; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
+      if (maxId === EOT) break;
+      tokens.push(maxId);
+      logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);
+    }
+    const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
+    return { text, metrics: { melMs: +(tMel - t0).toFixed(0), encodeMs: 0, decodeMs: +(now() - tMel).toFixed(0), totalMs: +(now() - t0).toFixed(0) } };
   }
 
   async dispose(): Promise<void> {
-    await this.asr?.dispose?.();
-    this.asr = null;
+    this.ctx?.device?.destroy?.();
+    this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
 }

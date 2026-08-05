@@ -44,12 +44,12 @@
     "gpu:convt": "node scripts/gpu-convt.mjs",
     "gpu:kokoro-cost": "node scripts/gpu-kokoro-cost.mjs",
     "gpu:kokoro-forward": "node scripts/gpu-kokoro-forward.mjs",
-    "gpu:kokoro": "node scripts/gpu-kokoro.mjs"
+    "gpu:kokoro": "node scripts/gpu-kokoro.mjs",
+    "wasm:build": "cd rust/wasm-kernels && RUSTFLAGS='-C target-feature=+simd128' cargo build --release --target wasm32-unknown-unknown && cp target/wasm32-unknown-unknown/release/wasm_kernels.wasm ../../src/gpu/wasm-kernels.wasm",
+    "wasm:verify": "node scripts/wasm-verify.mjs",
+    "backend:parity": "node scripts/backend-parity.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
-    "kokoro-js": "^1.2.1",
-    "onnxruntime-web": "^1.20.1",
     "pinyin-pro": "^3.28.2"
   },
   "devDependencies": {

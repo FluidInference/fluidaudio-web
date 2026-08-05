@@ -32,11 +32,19 @@ fn gelu(x: f32) -> f32 {
   let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
   return 0.5 * x * (1.0 + tanh(t));
 }
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+
 fn actf(x: f32) -> f32 {
   if (m.act == 1u) { return gelu(x); }
   if (m.act == 2u) { return tanh(x); }
   if (m.act == 3u) { return max(x, 0.0); }
   if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -79,6 +87,212 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
         var v = acc[i * TN + j];
         if (m.hasBias == 1u) { v += bias[c]; }
         C[r * m.N + c] = actf(v);
+      }
+    }
+  }
+}`;
+
+// Vectorized GEMM (siboehm kernel 6): same 64×64 block / 4×4 micro-tile, but As is
+// staged TRANSPOSED ([BK][BM]) so each thread's inner-loop A read is 4 contiguous
+// floats (bank-conflict-free, vec4-loadable) and the 4×4 MAC is 4 vec4 FMAs. Cuts
+// shared-memory instruction count ~4× vs the scalar kernel. Same bias/act semantics.
+const GEMM_V2_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+fn actf(x: f32) -> f32 {
+  if (m.act == 1u) { return gelu(x); }
+  if (m.act == 2u) { return tanh(x); }
+  if (m.act == 3u) { return max(x, 0.0); }
+  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM;
+  let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc0 = vec4<f32>(0.0); var acc1 = vec4<f32>(0.0);
+  var acc2 = vec4<f32>(0.0); var acc3 = vec4<f32>(0.0);
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let p = tid + i * 256u;
+      let aRow = p / BK; let aCol = p % BK;               // source [BM][BK]
+      As[aCol * BM + aRow] = select(0.0, A[(blockRow + aRow) * m.K + kk + aCol], blockRow + aRow < m.M && kk + aCol < m.K);
+      let bRow = p / BN; let bCol = p % BN;               // [BK][BN]
+      Bs[p] = select(0.0, B[(kk + bRow) * m.N + blockCol + bCol], kk + bRow < m.K && blockCol + bCol < m.N);
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      let aReg = vec4<f32>(As[ab], As[ab + 1u], As[ab + 2u], As[ab + 3u]);
+      let bb = k * BN + threadCol;
+      let bReg = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      acc0 += aReg.x * bReg; acc1 += aReg.y * bReg; acc2 += aReg.z * bReg; acc3 += aReg.w * bReg;
+    }
+    workgroupBarrier();
+  }
+  let accs = array<vec4<f32>, 4>(acc0, acc1, acc2, acc3);
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i;
+    if (r >= m.M) { continue; }
+    let v = accs[i];
+    for (var j = 0u; j < TN; j++) {
+      let c = blockCol + threadCol + j;
+      if (c < m.N) {
+        var x = v[j];
+        if (m.hasBias == 1u) { x += bias[c]; }
+        C[r * m.N + c] = actf(x);
+      }
+    }
+  }
+}`;
+
+// GEMM v3: v2 + 128-bit GMEM loads (A/B bound as vec4<f32>). Tests whether reducing
+// global load instructions 4× breaks the plateau. Requires K%4==0 and N%4==0 (bench).
+const GEMM_V3_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  // A load: 64 rows × 4 vec4-cols (BK/4) = 256 vec4 = 1/thread
+  let aRow = tid / 4u; let aC = tid % 4u;
+  // B load: 16 rows × 16 vec4-cols (BN/4) = 256 vec4 = 1/thread
+  let bRow = tid / 16u; let bC = tid % 16u;
+  var acc0 = vec4<f32>(0.0); var acc1 = vec4<f32>(0.0);
+  var acc2 = vec4<f32>(0.0); var acc3 = vec4<f32>(0.0);
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    let av = A[(blockRow + aRow) * K4 + kk / 4u + aC];
+    let aBase = 4u * aC;
+    As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+    As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    let bv = B[(kk + bRow) * N4 + blockCol / 4u + bC];
+    let bBase = bRow * BN + 4u * bC;
+    Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      let aReg = vec4<f32>(As[ab], As[ab + 1u], As[ab + 2u], As[ab + 3u]);
+      let bb = k * BN + threadCol;
+      let bReg = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      acc0 += aReg.x * bReg; acc1 += aReg.y * bReg; acc2 += aReg.z * bReg; acc3 += aReg.w * bReg;
+    }
+    workgroupBarrier();
+  }
+  let accs = array<vec4<f32>, 4>(acc0, acc1, acc2, acc3);
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    let v = accs[i];
+    for (var j = 0u; j < TN; j++) {
+      let c = blockCol + threadCol + j;
+      if (c < m.N) { var x = v[j]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = x; }
+    }
+  }
+}`;
+
+// GEMM v4: 128×128 block, 8×8 micro-tile (16 vec4 accumulators/thread), vec4 GMEM.
+// 4× the per-thread arithmetic intensity of v3 — fewer global loads per FLOP. 256
+// threads, shared As[128×8]/Bs[8×128] (still 1024 each). Requires K%4==0, N%4==0.
+const GEMM_V4_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+fn actf(x: f32) -> f32 {
+  if (m.act == 1u) { return gelu(x); }
+  if (m.act == 2u) { return tanh(x); }
+  if (m.act == 3u) { return max(x, 0.0); }
+  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM; // 16 threads/row-group → 0..120 step 8
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;    // A [128][8] = 256 vec4
+  let bRow = tid / 32u; let bC = tid % 32u;  // B [8][128] = 256 vec4
+  var acc: array<vec4<f32>, 16>; // TM×(TN/4)
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    let av = A[(blockRow + aRow) * K4 + kk / 4u + aC];
+    let aBase = 4u * aC;
+    As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+    As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    let bv = B[(kk + bRow) * N4 + blockCol / 4u + bC];
+    let bBase = bRow * BN + 4u * bC;
+    Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) { var x = v[jj]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = actf(x); }
       }
     }
   }
@@ -151,6 +365,13 @@ fn gelu(x: f32) -> f32 {
   let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
   return 0.5 * x * (1.0 + tanh(t));
 }
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -177,6 +398,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   else if (m.act == 2u) { acc = tanh(acc); }
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  else if (m.act == 5u) { acc = gelu_erf(acc); }
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -285,6 +507,255 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   else if (m.act == 3u) { acc = max(acc, 0.0); }
   else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
   Y[idx] = acc;
+}`;
+
+// ── Batched multi-head attention kernels ────────────────────────────────────
+// The per-head attention loop is ~80 dispatches/layer (slice/transpose/matmul/
+// softmax per head) and the encoders are LAUNCH-BOUND. These batch all heads into
+// single dispatches: head-strided reads over the [T, H*HD] projections, so no
+// slicing/transposing/concat dispatches at all (~88 → ~11 dispatches/layer).
+
+// scores[(w*H+h)*T+i, j] = Σ_d (Q[w*T+i, h*HD+d] + qb[h*HD+d]) · B[·, h*HD+d]
+// (B = keys → AC term, or projected pos-emb → BD term; qb = pos_bias_u/v.)
+// TILED: 64×64 output tile per z-block (w*H+h), register-blocked 4×4 like GEMM —
+// the naive 1-thread-per-output version regressed the browser bench ~10%.
+const BMM_QK_WGSL = `
+struct Meta { T:u32, Tb:u32, H:u32, HD:u32, hasBias:u32, W:u32, bShared:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> Q: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read> qb: array<f32>;
+@group(0) @binding(3) var<storage, read_write> S: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let b = wg.z;            // window-head block = w*H + h
+  let h = b % m.H;
+  let w = b / m.H;
+  let stride = m.H * m.HD;
+  let blockRow = wg.y * BM;   // over T (queries)
+  let blockCol = wg.x * BN;   // over Tb (keys / pos rows)
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.HD + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK;
+      var av = 0.0;
+      if (blockRow + aRow < m.T && kk + aCol < m.HD) {
+        av = Q[(w * m.T + blockRow + aRow) * stride + h * m.HD + kk + aCol];
+        if (m.hasBias == 1u) { av += qb[h * m.HD + kk + aCol]; }
+      }
+      As[idxA] = av;
+      // Bs[k][j]: B row = key j (per-window or shared), col = h*HD + k
+      let bRowT = idxA / BN; let bColT = idxA % BN;
+      var bv = 0.0;
+      let j = blockCol + bColT;
+      if (j < m.Tb && kk + bRowT < m.HD) {
+        let brow = select(w * m.Tb + j, j, m.bShared == 1u); // per-window keys stride Tb
+        bv = B[brow * stride + h * m.HD + kk + bRowT];
+      }
+      Bs[idxA] = bv;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j2 = 0u; j2 < TN; j2++) { bReg[j2] = Bs[k * BN + threadCol + j2]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j2 = 0u; j2 < TN; j2++) { acc[i * TN + j2] += aReg[i] * bReg[j2]; }
+      }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    for (var j2 = 0u; j2 < TN; j2++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j2;
+      if (r < m.T && c < m.Tb) {
+        S[(b * m.T + r) * m.Tb + c] = acc[i * TN + j2];
+      }
+    }
+  }
+}`;
+
+// out[i, h*HD+d] = Σ_j P[h*T+i, j] · V[j, h*HD+d]  (probs @ values, all heads)
+const BMM_PV_WGSL = `
+struct Meta { Tq:u32, Tk:u32, H:u32, HD:u32, W:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> P: array<f32>;
+@group(0) @binding(1) var<storage, read> V: array<f32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let b = wg.z;            // window-head block = w*H + h
+  let h = b % m.H;
+  let w = b / m.H;
+  let stride = m.H * m.HD;
+  let blockRow = wg.y * BM;   // over Tq (queries)
+  let blockCol = wg.x * BN;   // over HD (head cols; HD<=64 → one x-block)
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.Tk + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK;
+      As[idxA] = select(0.0, P[(b * m.Tq + blockRow + aRow) * m.Tk + kk + aCol], blockRow + aRow < m.Tq && kk + aCol < m.Tk);
+      let bRowT = idxA / BN; let bColT = idxA % BN;
+      var bv = 0.0;
+      if (kk + bRowT < m.Tk && blockCol + bColT < m.HD) {
+        bv = V[(w * m.Tk + kk + bRowT) * stride + h * m.HD + blockCol + bColT];
+      }
+      Bs[idxA] = bv;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j2 = 0u; j2 < TN; j2++) { bReg[j2] = Bs[k * BN + threadCol + j2]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j2 = 0u; j2 < TN; j2++) { acc[i * TN + j2] += aReg[i] * bReg[j2]; }
+      }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    for (var j2 = 0u; j2 < TN; j2++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j2;
+      if (r < m.Tq && c < m.HD) {
+        Y[(w * m.Tq + r) * stride + h * m.HD + c] = acc[i * TN + j2];
+      }
+    }
+  }
+}`;
+
+// Batched rel_shift: X [H*t, 2t-1] → Y [H*t, t], each head block shifted independently.
+const RELSHIFT_B_WGSL = `
+struct Meta { t:u32, H:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.H * m.t * m.t) { return; }
+  let j = idx % m.t;
+  let hi = idx / m.t;
+  let i = hi % m.t;
+  let h = hi / m.t;
+  let p = 2u * m.t - 1u;
+  let twoT = 2u * m.t;
+  let f = m.t + i * p + j;
+  let col = f % twoT;
+  if (col == 0u) { Y[idx] = 0.0; }
+  else { Y[idx] = X[(h * m.t + f / twoT) * p + (col - 1u)]; }
+}`;
+
+// Tiled int8 GEMM (v2): the register-blocked 64×64/4×4 structure of GEMM_WGSL with
+// the packed int8 B dequanted during the cooperative tile load (4 int8 per u32 →
+// 4 consecutive Bs columns per thread; requires N%4==0, guaranteed for the speech
+// encoders). Per-column scale + bias + act applied at write-out. ~3× the naive
+// 1-thread-per-output int8 kernel on encoder shapes (A-rows reused from shared).
+const MATMUL_INT8_V2_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> Wq: array<u32>;
+@group(0) @binding(2) var<storage, read> scale: array<f32>;
+@group(0) @binding(3) var<storage, read> bias: array<f32>;
+@group(0) @binding(4) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>;
+var<workgroup> Bs: array<f32, 1024>;
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM;
+  let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc: array<f32, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    // A tile: 1024 f32 / 256 threads = 4 scalar loads
+    for (var i = 0u; i < 4u; i++) {
+      let idxA = tid + i * 256u;
+      let aRow = idxA / BK; let aCol = idxA % BK;
+      As[idxA] = select(0.0, A[(blockRow + aRow) * m.K + kk + aCol], blockRow + aRow < m.M && kk + aCol < m.K);
+    }
+    // B tile: each thread unpacks ONE u32 → 4 consecutive int8 columns
+    {
+      let base = tid * 4u;                 // element index in the 1024 tile
+      let bRow = base / BN;                // k within tile
+      let bCol = base % BN;                // n within tile
+      let gk = kk + bRow; let gn = blockCol + bCol;
+      if (gk < m.K && gn + 3u < m.N) {
+        let u = Wq[(gk * m.N + gn) >> 2u];
+        for (var j = 0u; j < 4u; j++) {
+          var q = i32((u >> (j * 8u)) & 255u);
+          if (q > 127) { q = q - 256; }
+          Bs[base + j] = f32(q);
+        }
+      } else {
+        for (var j = 0u; j < 4u; j++) {
+          var bv = 0.0;
+          if (gk < m.K && gn + j < m.N) {
+            let li = gk * m.N + gn + j;
+            let u2 = Wq[li >> 2u];
+            var q2 = i32((u2 >> ((li & 3u) * 8u)) & 255u);
+            if (q2 > 127) { q2 = q2 - 256; }
+            bv = f32(q2);
+          }
+          Bs[base + j] = bv;
+        }
+      }
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      var aReg: array<f32, 4>;
+      var bReg: array<f32, 4>;
+      for (var i = 0u; i < TM; i++) { aReg[i] = As[(threadRow + i) * BK + k]; }
+      for (var j = 0u; j < TN; j++) { bReg[j] = Bs[k * BN + threadCol + j]; }
+      for (var i = 0u; i < TM; i++) {
+        for (var j = 0u; j < TN; j++) { acc[i * TN + j] += aReg[i] * bReg[j]; }
+      }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    for (var j = 0u; j < TN; j++) {
+      let r = blockRow + threadRow + i;
+      let c = blockCol + threadCol + j;
+      if (r < m.M && c < m.N) {
+        var v = acc[i * TN + j] * scale[c];
+        if (m.hasBias == 1u) { v += bias[c]; }
+        Y[r * m.N + c] = actf(v, m.act);
+      }
+    }
+  }
 }`;
 
 // Fused TDT joint + argmax (one dispatch per decode step). Computes
@@ -621,6 +1092,23 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nw
   Y[i] = select(m.slope * v, v, v > 0.0);
 }`;
 
+// Snake activation (StyleTTS2/iSTFTNet): y = x + (1/(α+1e-9)) * sin(αx)² , with a
+// per-CHANNEL α (one α per row). alpha:[1,C] (C = x.rows).
+const SNAKE_WGSL = `
+struct Meta { C:u32, L:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> alpha: array<f32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x;
+  if (i >= m.C * m.L) { return; }
+  let a = alpha[i / m.L];
+  let s = sin(a * X[i]);
+  Y[i] = X[i] + (1.0 / (a + 1e-9)) * s * s;
+}`;
+
 // Elementwise C = A (op) B, with B broadcast over rows when B is [1,cols].
 // op: 0 add / 1 mul.
 const EWISE_WGSL = `
@@ -725,9 +1213,11 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
         gf += R[rBase + (2u*H + u)*H + k] * hv;
         gc += R[rBase + (3u*H + u)*H + k] * hv;
       }
-      let cnew = sig(gf) * csh[u] + sig(gi) * tanh(gc);
+      // clamp tanh args: Metal tanh(x) = exp-based → Inf/Inf = NaN for |x| ≳ 44
+      // (cell state drifts past that on long sequences; tanh saturates by ±20).
+      let cnew = sig(gf) * csh[u] + sig(gi) * tanh(clamp(gc, -20.0, 20.0));
       csh[u] = cnew;
-      let ht = sig(go) * tanh(cnew);
+      let ht = sig(go) * tanh(clamp(cnew, -20.0, 20.0));
       htmp[u] = ht;
       Y[(t * 2u + dir) * H + u] = ht;
     }
@@ -853,7 +1343,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>, @builtin(num_workgroups) n
   Y[mrow*m.N+n]=acc;
 }`;
 
-const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4 };
+const ACT = { none: 0, gelu: 1, tanh: 2, relu: 3, silu: 4, gelu_erf: 5 };
 
 /** Request a WebGPU device in the browser (throws if unavailable). */
 export async function requestGpuDevice() {
@@ -991,16 +1481,47 @@ export class GpuContext {
     return y;
   }
 
+  /**
+   * Uniform buffers come from a per-size ring (reused via writeBuffer) instead of
+   * one new GPUBuffer per dispatch — the dominant buffer churn. Reuse across
+   * submits is safe (queue operations are ordered); within ONE batched command
+   * buffer every dispatch sees the final write, so the ring must exceed the max
+   * dispatches per batch (largest today ~700; warn if a batch wraps the ring).
+   */
   _uniform(arr) {
-    const buf = this.device.createBuffer({ size: arr.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(buf, 0, arr);
+    const bytes = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+    const size = bytes.byteLength;
+    this._uniRing = this._uniRing || new Map();
+    let ring = this._uniRing.get(size);
+    if (!ring) { ring = { bufs: [], i: 0 }; this._uniRing.set(size, ring); }
+    const CAP = 4096;
+    let buf;
+    if (ring.bufs.length < CAP) {
+      buf = this.device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      ring.bufs.push(buf);
+    } else {
+      buf = ring.bufs[ring.i % CAP];
+    }
+    ring.i++;
+    if (this._pass) {
+      this._batchUniforms = (this._batchUniforms || 0) + 1;
+      if (this._batchUniforms > CAP && !this._warnedRing) { this._warnedRing = true; console.warn("[gpu] uniform ring wrapped within one batch — split the batch"); }
+    }
+    this.device.queue.writeBuffer(buf, 0, bytes);
     return buf;
+  }
+
+  /** Shared 4-byte dummy buffer for bias-less ops (was a fresh alloc per call). */
+  _dummy() {
+    if (!this._dummyBuf) this._dummyBuf = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.STORAGE });
+    return this._dummyBuf;
   }
 
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
     this._enc = this.device.createCommandEncoder();
     this._pass = this._enc.beginComputePass();
+    this._batchUniforms = 0;
   }
   endBatch() {
     this._pass.end();
@@ -1008,7 +1529,7 @@ export class GpuContext {
     this._enc = this._pass = null;
   }
 
-  _run(pipeline, buffers, uniform, groupsX, groupsY = 1) {
+  _run(pipeline, buffers, uniform, groupsX, groupsY = 1, groupsZ = 1) {
     // WebGPU caps each grid dimension at 65535. For flat 1-D kernels (groupsY===1)
     // that exceed it, fold the excess into Y; those kernels linearize the group id
     // via num_workgroups. 2-D callers (GEMM) already pass groupsY and stay in range.
@@ -1022,14 +1543,14 @@ export class GpuContext {
     if (this._pass) { // batched
       this._pass.setPipeline(pipeline);
       this._pass.setBindGroup(0, bg);
-      this._pass.dispatchWorkgroups(groupsX, groupsY);
+      this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
       return;
     }
     const enc = this.device.createCommandEncoder();
     const pass = enc.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatchWorkgroups(groupsX, groupsY);
+    pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
     pass.end();
     this.device.queue.submit([enc.finish()]);
   }
@@ -1037,11 +1558,47 @@ export class GpuContext {
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
   matmul(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
+    // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
+    // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
+    // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
+    if (M >= 256 && N >= 256 && K >= 256 && K % 8 === 0 && N % 4 === 0) {
+      return this.matmulV4(a, b, { bias, act });
+    }
     const c = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemm", GEMM_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV2(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const pipeline = this._pipeline("gemmV2", GEMM_V2_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV3(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV4(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const pipeline = this._pipeline("gemmV4", GEMM_V4_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
     return c;
   }
 
@@ -1052,8 +1609,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 2).set([x.rows, x.cols]);
     new Float32Array(meta, 8, 1)[0] = eps;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, gamma.buf, beta.buf, y.buf], u, x.rows);
     return y;
   }
@@ -1071,13 +1627,21 @@ export class GpuContext {
    * f32, bias?:[1,Cout]. Returns [Cout, Lout]. w/bias are passed as GpuTensors
    * (any rows/cols — only .buf is used).
    */
-  conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, act = "none" } = {}) {
+  conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
+    // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
+    padLeft = padLeft ?? pad; padRight = padRight ?? pad;
+    // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
+    // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
+    // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
+    if (groups === 1 && padLeft === padRight && (act === "none" || act === "gelu" || act === "tanh" || act === "relu")) {
+      return this.conv1dFast(x, w, cout, k, { bias, stride, pad: padLeft, dilation, act });
+    }
     const Cin = x.rows, L = x.cols;
-    const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
+    const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
-    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
+    const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, padLeft, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
     return y;
   }
@@ -1105,9 +1669,15 @@ export class GpuContext {
   matmulInt8(a, wq, scale, N, K, { bias = null, act = "none" } = {}) {
     const M = a.rows;
     const y = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
-    const pipeline = this._pipeline("matmulI8", MATMUL_INT8_WGSL);
+    const biasBuf = bias ? bias.buf : this._dummy();
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+    if (N % 4 === 0) {
+      // tiled/register-blocked variant (~3× on encoder shapes)
+      const pipeline = this._pipeline("matmulI8v2", MATMUL_INT8_V2_WGSL);
+      this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+      return y;
+    }
+    const pipeline = this._pipeline("matmulI8", MATMUL_INT8_WGSL);
     this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil((M * N) / 64));
     return y;
   }
@@ -1139,6 +1709,36 @@ export class GpuContext {
     return res;
   }
 
+  /** Batched QK^T / Q·pos^T over all heads: q[T,H*HD], b[Tb,H*HD] → [H*T, Tb]. qb?:[1,H*HD]. */
+  bmmQK(q, b, qb, H, HD, W = 1, bShared = false) {
+    const T = q.rows / W, Tb = bShared ? b.rows : b.rows / W;
+    const s = this.alloc(W * H * T, Tb);
+    const pipeline = this._pipeline("bmmqk", BMM_QK_WGSL);
+    const u = this._uniform(new Uint32Array([T, Tb, H, HD, qb ? 1 : 0, W, bShared ? 1 : 0, 0]));
+    this._run(pipeline, [q.buf, b.buf, qb ? qb.buf : this.alloc(1, 1).buf, s.buf], u, Math.ceil(Tb / 64), Math.ceil(T / 64), W * H);
+    return s;
+  }
+
+  /** Batched probs@V over all heads: p[W*H*Tq, Tk], v[W*Tk, H*HD] → [W*Tq, H*HD]. */
+  bmmPV(p, v, H, HD, W = 1) {
+    const Tk = v.rows / W, Tq = p.rows / (W * H);
+    const y = this.alloc(W * Tq, H * HD);
+    const pipeline = this._pipeline("bmmpv", BMM_PV_WGSL);
+    const u = this._uniform(new Uint32Array([Tq, Tk, H, HD, W, 0, 0, 0]));
+    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil(HD / 64) || 1, Math.ceil(Tq / 64) || 1, W * H);
+    return y;
+  }
+
+  /** Batched rel_shift: x[H*t, 2t-1] → [H*t, t]. */
+  relShiftB(x, H) {
+    const t = x.rows / H;
+    const y = this.alloc(H * t, t);
+    const pipeline = this._pipeline("relshiftb", RELSHIFT_B_WGSL);
+    const u = this._uniform(new Uint32Array([t, H, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((H * t * t) / 64));
+    return y;
+  }
+
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */
   relShift(x) {
     const t = x.rows;
@@ -1146,6 +1746,42 @@ export class GpuContext {
     const pipeline = this._pipeline("relshift", RELSHIFT_WGSL);
     const u = this._uniform(new Uint32Array([t, 0, 0, 0]));
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil((t * t) / 64));
+    return y;
+  }
+
+  /** SiLU (x*sigmoid(x)) elementwise, same shape. */
+  silu(x) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("silu", `
+      struct Meta { n:u32, _a:u32, _b:u32, _c:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(2) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
+        let v = X[i]; Y[i] = v / (1.0 + exp(-clamp(v, -30.0, 30.0)));
+      }`);
+    const u = this._uniform(new Uint32Array([x.rows * x.cols, 0, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
+    return y;
+  }
+
+  /** Elementwise ReLU (standalone; matmul act=relu covers the fused case). */
+  relu(x) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("relu", `
+      struct Meta { n:u32, _a:u32, _b:u32, _c:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(2) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
+        Y[i] = max(X[i], 0.0);
+      }`);
+    const u = this._uniform(new Uint32Array([x.rows * x.cols, 0, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
   }
 
@@ -1164,13 +1800,16 @@ export class GpuContext {
    * Cout*(Cin/groups)*Kh*Kw f32 (ONNX [Cout,Cin/g,Kh,Kw] flat), bias?:[Cout].
    * Returns [Cout, Ho*Wo]. Supports groups (depthwise) + fused bias/relu/silu.
    */
-  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, groups = 1, act = "none" } = {}) {
-    const Ho = Math.floor((h + 2 * padH - kh) / strideH) + 1;
-    const Wo = Math.floor((W_ + 2 * padW - kw) / strideW) + 1;
+  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, padTop, padBottom, padLeft, padRight, groups = 1, act = "none" } = {}) {
+    // Asymmetric padding supported (padTop/Bottom/Left/Right); default symmetric padH/padW.
+    padTop = padTop ?? padH; padBottom = padBottom ?? padH; padLeft = padLeft ?? padW; padRight = padRight ?? padW;
+    const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
+    const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
-    const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padH, padW, groups, bias ? 1 : 0, ACT[act], 0]));
+    // kernel Meta padH/padW slots = the "before" (top/left) offset.
+    const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padTop, padLeft, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Ho * Wo) / 64));
     return y;
   }
@@ -1183,7 +1822,7 @@ export class GpuContext {
     const Cin = x.rows, L = x.cols;
     const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("convt1d", CONVT1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
@@ -1218,8 +1857,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 2).set([x.rows, x.cols]);
     new Float32Array(meta, 8, 1)[0] = eps;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, scale.buf, shift.buf, y.buf], u, x.rows);
     return y;
   }
@@ -1248,9 +1886,17 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 1)[0] = n;
     new Float32Array(meta, 4, 1)[0] = slope;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
+    return y;
+  }
+
+  /** Snake activation: y = x + (1/(α+1e-9))·sin(αx)², per-channel α. x:[C,L], alpha:[1,C]. */
+  snake(x, alpha) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("snake", SNAKE_WGSL);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, 0, 0]));
+    this._run(pipeline, [x.buf, alpha.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
   }
 
@@ -1264,11 +1910,77 @@ export class GpuContext {
     const CinK = Cin * k;
     const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv1dImplicit", CONV1D_IMPLICIT_WGSL);
     const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
     return y;
+  }
+
+  /** Multiply by a scalar constant (elementwise). */
+  scale(x, s) {
+    const n = x.rows * x.cols;
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("scalek", `
+      struct Meta { n:u32, s:f32, _a:u32, _b:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(2) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
+        Y[i] = X[i] * m.s;
+      }`);
+    const meta = new ArrayBuffer(16);
+    new Uint32Array(meta, 0, 1)[0] = n;
+    new Float32Array(meta, 4, 1)[0] = s;
+    const u = this._uniform(meta);
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
+    return y;
+  }
+
+  /** Write src's rows into dst starting at rowOffset (contiguous, no readback).
+   * Batch-safe: inside beginBatch/endBatch the copy is recorded into the SAME
+   * command encoder (pass paused/reopened) so it stays ordered after the
+   * dispatches that produce src. */
+  copyRows(dst, src, rowOffset) {
+    if (this._enc && this._pass) {
+      this._pass.end();
+      this._enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
+      this._pass = this._enc.beginComputePass();
+      return dst;
+    }
+    const enc = this.device.createCommandEncoder();
+    enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
+    this.device.queue.submit([enc.finish()]);
+    return dst;
+  }
+
+  /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */
+  concatRows(tensors) {
+    // Batch-safe like copyRows: inside beginBatch/endBatch the copies are recorded
+    // into the SAME encoder (pass paused/reopened) so they stay ordered after the
+    // dispatches that produce the sources.
+    const cols = tensors[0].cols;
+    const rows = tensors.reduce((s, t) => s + t.rows, 0);
+    const out = this.alloc(rows, cols);
+    const record = (enc) => {
+      let off = 0;
+      for (const t of tensors) {
+        enc.copyBufferToBuffer(t.buf, 0, out.buf, off * 4, t.rows * t.cols * 4);
+        off += t.rows * t.cols;
+      }
+    };
+    if (this._enc && this._pass) {
+      this._pass.end();
+      record(this._enc);
+      this._pass = this._enc.beginComputePass();
+      return out;
+    }
+    const enc = this.device.createCommandEncoder();
+    record(enc);
+    this.device.queue.submit([enc.finish()]);
+    return out;
   }
 
   /** Elementwise. b broadcast over rows if b.rows===1. */
