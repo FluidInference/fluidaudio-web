@@ -9,7 +9,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
-import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "./raw-encoder.js";
 import { loadWasmDecoder, wasmDecode } from "./raw-decoder-wasm.js";
 import { ParakeetMel } from "./parakeet-mel.js";
@@ -32,7 +32,7 @@ export class ParakeetV3Engine implements AsrEngine {
   private tokenizer: ParakeetTokenizer | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.ctx = new GpuContext(await requestGpuDevice());
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
     const json = async (path: string, repo = WEIGHTS_REPO) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);

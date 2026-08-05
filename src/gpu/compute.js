@@ -92,6 +92,212 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// Vectorized GEMM (siboehm kernel 6): same 64×64 block / 4×4 micro-tile, but As is
+// staged TRANSPOSED ([BK][BM]) so each thread's inner-loop A read is 4 contiguous
+// floats (bank-conflict-free, vec4-loadable) and the 4×4 MAC is 4 vec4 FMAs. Cuts
+// shared-memory instruction count ~4× vs the scalar kernel. Same bias/act semantics.
+const GEMM_V2_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+fn actf(x: f32) -> f32 {
+  if (m.act == 1u) { return gelu(x); }
+  if (m.act == 2u) { return tanh(x); }
+  if (m.act == 3u) { return max(x, 0.0); }
+  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM;
+  let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  var acc0 = vec4<f32>(0.0); var acc1 = vec4<f32>(0.0);
+  var acc2 = vec4<f32>(0.0); var acc3 = vec4<f32>(0.0);
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    for (var i = 0u; i < 4u; i++) {
+      let p = tid + i * 256u;
+      let aRow = p / BK; let aCol = p % BK;               // source [BM][BK]
+      As[aCol * BM + aRow] = select(0.0, A[(blockRow + aRow) * m.K + kk + aCol], blockRow + aRow < m.M && kk + aCol < m.K);
+      let bRow = p / BN; let bCol = p % BN;               // [BK][BN]
+      Bs[p] = select(0.0, B[(kk + bRow) * m.N + blockCol + bCol], kk + bRow < m.K && blockCol + bCol < m.N);
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      let aReg = vec4<f32>(As[ab], As[ab + 1u], As[ab + 2u], As[ab + 3u]);
+      let bb = k * BN + threadCol;
+      let bReg = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      acc0 += aReg.x * bReg; acc1 += aReg.y * bReg; acc2 += aReg.z * bReg; acc3 += aReg.w * bReg;
+    }
+    workgroupBarrier();
+  }
+  let accs = array<vec4<f32>, 4>(acc0, acc1, acc2, acc3);
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i;
+    if (r >= m.M) { continue; }
+    let v = accs[i];
+    for (var j = 0u; j < TN; j++) {
+      let c = blockCol + threadCol + j;
+      if (c < m.N) {
+        var x = v[j];
+        if (m.hasBias == 1u) { x += bias[c]; }
+        C[r * m.N + c] = actf(x);
+      }
+    }
+  }
+}`;
+
+// GEMM v3: v2 + 128-bit GMEM loads (A/B bound as vec4<f32>). Tests whether reducing
+// global load instructions 4× breaks the plateau. Requires K%4==0 and N%4==0 (bench).
+const GEMM_V3_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  // A load: 64 rows × 4 vec4-cols (BK/4) = 256 vec4 = 1/thread
+  let aRow = tid / 4u; let aC = tid % 4u;
+  // B load: 16 rows × 16 vec4-cols (BN/4) = 256 vec4 = 1/thread
+  let bRow = tid / 16u; let bC = tid % 16u;
+  var acc0 = vec4<f32>(0.0); var acc1 = vec4<f32>(0.0);
+  var acc2 = vec4<f32>(0.0); var acc3 = vec4<f32>(0.0);
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    let av = A[(blockRow + aRow) * K4 + kk / 4u + aC];
+    let aBase = 4u * aC;
+    As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+    As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    let bv = B[(kk + bRow) * N4 + blockCol / 4u + bC];
+    let bBase = bRow * BN + 4u * bC;
+    Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      let aReg = vec4<f32>(As[ab], As[ab + 1u], As[ab + 2u], As[ab + 3u]);
+      let bb = k * BN + threadCol;
+      let bReg = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      acc0 += aReg.x * bReg; acc1 += aReg.y * bReg; acc2 += aReg.z * bReg; acc3 += aReg.w * bReg;
+    }
+    workgroupBarrier();
+  }
+  let accs = array<vec4<f32>, 4>(acc0, acc1, acc2, acc3);
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    let v = accs[i];
+    for (var j = 0u; j < TN; j++) {
+      let c = blockCol + threadCol + j;
+      if (c < m.N) { var x = v[j]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = x; }
+    }
+  }
+}`;
+
+// GEMM v4: 128×128 block, 8×8 micro-tile (16 vec4 accumulators/thread), vec4 GMEM.
+// 4× the per-thread arithmetic intensity of v3 — fewer global loads per FLOP. 256
+// threads, shared As[128×8]/Bs[8×128] (still 1024 each). Requires K%4==0, N%4==0.
+const GEMM_V4_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
+fn actf(x: f32) -> f32 {
+  if (m.act == 1u) { return gelu(x); }
+  if (m.act == 2u) { return tanh(x); }
+  if (m.act == 3u) { return max(x, 0.0); }
+  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (m.act == 5u) { return gelu_erf(x); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM; // 16 threads/row-group → 0..120 step 8
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;    // A [128][8] = 256 vec4
+  let bRow = tid / 32u; let bC = tid % 32u;  // B [8][128] = 256 vec4
+  var acc: array<vec4<f32>, 16>; // TM×(TN/4)
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    let av = A[(blockRow + aRow) * K4 + kk / 4u + aC];
+    let aBase = 4u * aC;
+    As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+    As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    let bv = B[(kk + bRow) * N4 + blockCol / 4u + bC];
+    let bBase = bRow * BN + 4u * bC;
+    Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) { var x = v[jj]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = actf(x); }
+      }
+    }
+  }
+}`;
+
 // Row-wise LayerNorm over the last dim: y = (x-mean)/sqrt(var+eps) * gamma + beta.
 // One workgroup per row; 64 lanes cooperatively reduce via shared memory.
 const LAYERNORM_WGSL = `
@@ -637,6 +843,23 @@ fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nw
   Y[i] = select(m.slope * v, v, v > 0.0);
 }`;
 
+// Snake activation (StyleTTS2/iSTFTNet): y = x + (1/(α+1e-9)) * sin(αx)² , with a
+// per-CHANNEL α (one α per row). alpha:[1,C] (C = x.rows).
+const SNAKE_WGSL = `
+struct Meta { C:u32, L:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> alpha: array<f32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) g: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let i = g.y * (nwg.x * 64u) + g.x;
+  if (i >= m.C * m.L) { return; }
+  let a = alpha[i / m.L];
+  let s = sin(a * X[i]);
+  Y[i] = X[i] + (1.0 / (a + 1e-9)) * s * s;
+}`;
+
 // Elementwise C = A (op) B, with B broadcast over rows when B is [1,cols].
 // op: 0 add / 1 mul.
 const EWISE_WGSL = `
@@ -1053,11 +1276,47 @@ export class GpuContext {
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
   matmul(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
+    // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
+    // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
+    // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
+    if (M >= 256 && N >= 256 && K >= 256 && K % 8 === 0 && N % 4 === 0) {
+      return this.matmulV4(a, b, { bias, act });
+    }
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
     const pipeline = this._pipeline("gemm", GEMM_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV2(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("gemmV2", GEMM_V2_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV3(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  matmulV4(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows, K = a.cols, N = b.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const pipeline = this._pipeline("gemmV4", GEMM_V4_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
     return c;
   }
 
@@ -1308,6 +1567,15 @@ export class GpuContext {
     const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(u, 0, meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
+    return y;
+  }
+
+  /** Snake activation: y = x + (1/(α+1e-9))·sin(αx)², per-channel α. x:[C,L], alpha:[1,C]. */
+  snake(x, alpha) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("snake", SNAKE_WGSL);
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, 0, 0]));
+    this._run(pipeline, [x.buf, alpha.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
   }
 

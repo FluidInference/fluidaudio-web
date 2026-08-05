@@ -16,7 +16,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
-import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadNemotronDecoder, nemotronDecode, loadPromptKernel, applyPromptKernel } from "./raw-decoder-nemotron.js";
 import { JsPreprocessor } from "./nemotron-mel.js";
@@ -41,7 +41,7 @@ export class NemotronEngine implements AsrEngine {
   constructor(private opts: { language?: string } = {}) {}
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.ctx = new GpuContext(await requestGpuDevice());
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-nemotron] backend: ${b}`) });
     const json = async (path: string) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);

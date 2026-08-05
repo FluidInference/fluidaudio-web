@@ -193,25 +193,36 @@ The GEMM is register-blocked (64×64 block, 4×4 micro-tile per thread): **927 �
 2131 GFLOP/s**, and the dominant conv via `conv1dGemm` **876 → 1759 GFLOP/s** (that
 one conv, in isolation, projects to ~34× RTFx).
 
-### How far can the GEMM go? (measured optimization attempts)
+### How far can the GEMM go? (measured 2026-08-04 vs a REAL baseline)
 
-The 4×4 kernel plateaus at **~2.2 TFLOP/s = ~16% of the M5 Pro's ~13 TFLOP fp32
-peak** — confirmed at 4096³ (63 ms, 2175 GFLOP/s), so it's a real ceiling, not the
-bench's ~0.5 ms submit floor. The textbook levers were tried and **do not help in
-portable WGSL on this GPU**:
+**Correction to an earlier claim in this doc:** the "~16% of peak / hard WGSL wall"
+was measured against a *wrong* ~13 TFLOP theoretical peak. The right baseline is an
+optimized-Metal GEMM. **MLX (Metal simdgroup matmul) fp32 = ~5.9 TFLOP/s** square on
+this M5 Pro (4096³ 5.87; fp16 6.15). Against that, the shipped kernel was already at
+**58%**, and the textbook levers *do* close the gap on large GEMMs:
 
-| variant | result |
-|---|--:|
-| 4×4 micro-tile, 64×64 block (shipped) | **2131 GFLOP/s** |
-| 8×8 micro-tile, 128×128 block | 461 GFLOP/s — **regressed 4×** (64 acc + 16 reg ≈ 80 registers/thread → spills, occupancy collapse) |
-| 4×4 + double-buffered shared | 2124 GFLOP/s — **neutral** (not load-latency bound) |
+| variant (4096³) | TFLOP/s | % of MLX |
+|---|--:|--:|
+| v1 scalar 2D-blocktile (64×64 / 4×4, was "shipped") | 3.40 | 58% |
+| v2 transposed `As` + vec4 FMA from shared | 3.14 | neutral (compiler already coalesced shared reads) |
+| v3 v2 + **vec4 GMEM loads** (`array<vec4<f32>>`) | 3.71 | 63% |
+| **v4 128×128 block / 8×8 micro-tile, 16 vec4 accumulators** | **4.08** | **70%** ✓ |
 
-The f32 plateau is a **hardware-feature-access** limit, not a tuning one: reaching
-60–70% of peak needs Apple's `simdgroup` matrix units (what MLX/MPS use), which
-portable WGSL can't reach yet (the cooperative-matrix / subgroup-matrix extension
-isn't exposed here). **f16 storage** gives **2× on large square GEMMs** (≥2048³) but
-**0× on every real speech-model matmul** (thin GEMMs, hidden 1024, seq a few hundred
-— measured on Kokoro *and* Parakeet). So f16 is a dead end for these workloads.
+The 8×8/128×128 tile that spilled as fp32 (461 GFLOP/s) does **not** spill with
+`vec4` accumulators — that was the miss. All variants parity 0.0 vs CPU (+ fused
+gelu/relu 2.4e-7). `matmul()` now **shape-dispatches**: M,N,K ≥ 256 & K%8==0 & N%4==0
+→ v4, else v1. `simdgroup` matrix units (MLX/MPS) remain unreachable in portable WGSL
+— that's the last ~30%, not the whole gap.
+
+**The caveat that actually matters for this repo:** the 70% win is on **large square**
+GEMM only. Real speech-model GEMMs are **thin** (M~200, K/N 512–1024) → v1==v3==v4
+(launch/occupancy-bound, kernel variant irrelevant): 200×512×512 = 0.10 TFLOP,
+512×1024×4096 = 2.13 (46% of MLX 4.58). MLX's edge on thin shapes is **lower launch
+overhead**, not a better inner kernel. So for the speech models the lever is
+**reducing dispatch count / keeping data resident (fusion)**, not a faster GEMM. v4
+pays off on genuinely large-GEMM models = the ORT-blocked encoders (Nemotron/Whisper
+big FFN). f16 storage still 2× on ≥2048³ square but 0× on thin — dead end for these.
+Bench harness: `scripts/gemm-bench-{large,shapes}.mjs`, `gemm-verify-v4.mjs`.
 
 Lever ordering, now fully measured: register-blocking (done, 2.2 TFLOP/s) → f16
 storage (2× only on ≥2048³ square, **0× on Kokoro/Parakeet/Nemotron shapes**) →

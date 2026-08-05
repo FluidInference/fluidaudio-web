@@ -8,7 +8,7 @@
 //   ?noauto=1 don't auto-download the JSON (still shown on page)
 
 import { decodeToMono16k } from "./core/audio";
-import { webgpuAvailable } from "./core/ort";
+import { webgpuAvailable } from "./core/webgpu";
 import type { Engine } from "./core/types";
 
 const TTS_EN = "The quick brown fox jumps over the lazy dog.";

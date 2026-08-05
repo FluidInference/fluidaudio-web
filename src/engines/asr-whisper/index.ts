@@ -10,7 +10,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
-import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { createContext } from "../../gpu/context.js";
 import { loadWhisperEncoder, whisperEncode } from "./raw-whisper-encoder.js";
 import { loadWhisperDecoder, whisperCrossKV, whisperDecodeStep } from "./raw-whisper-decoder.js";
 import { makeWhisperTokenizer } from "./whisper-tokenizer.js";
@@ -34,7 +34,7 @@ export class WhisperEngine implements AsrEngine {
   private suppress = new Set<number>(suppressTokens as number[]);
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.ctx = new GpuContext(await requestGpuDevice());
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-whisper] backend: ${b}`) });
     const json = async (path: string, repo = WEIGHTS_REPO) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);

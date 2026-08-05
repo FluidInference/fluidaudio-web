@@ -9,7 +9,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types";
-import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadSortformerHead, sortformerHead, predsToSegments } from "./raw-sortformer-head.js";
 import { ParakeetMel } from "../asr-parakeet/parakeet-mel.js";
@@ -29,7 +29,7 @@ export class SortformerDiarizationEngine implements DiarizationEngine {
   private mel = new ParakeetMel(128);
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.ctx = new GpuContext(await requestGpuDevice());
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[diarization-sortformer] backend: ${b}`) });
     const json = async (path: string) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);

@@ -17,7 +17,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
-import { GpuContext, requestGpuDevice } from "../../gpu/compute.js";
+import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadEouDecoder, eouDecode } from "../asr-parakeet/raw-decoder-eou.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
@@ -40,7 +40,7 @@ export class ParakeetEouEngine implements AsrEngine {
   private tokenizer: ReturnType<typeof makeEouTokenizer> | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    this.ctx = new GpuContext(await requestGpuDevice());
+    this.ctx = await createContext({ onBackend: (b) => console.info(`[eou-parakeet] backend: ${b}`) });
     const json = async (path: string) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);

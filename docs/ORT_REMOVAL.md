@@ -324,3 +324,21 @@ REMAINING to ship ort-free: (1) cumsum + Snake + iSTFT kernels; (2) port ENTIRE 
 (predictor LSTMs/AdaLN/align/F0N + decoder AdaIN resblocks + generator Snake+iSTFT); (3) extract+upload
 Kokoro weights; (4) rewrite tts-kokoro engine off kokoro-js; (5) verify BY EAR in browser (stochastic
 source → no headless exact gate); (6) drop onnxruntime-web+@huggingface/transformers+kokoro-js+core/ort.ts.
+
+### Kokoro GENERATOR + iSTFT — SOLVED, byte-exact (given source spec). /tmp/kfinal.py
+Gating the generator on ORT's exact source spec (c3.bin) + decode3 (real_decode3.bin), the WHOLE
+back half is now numpy-EXACT vs ORT waveform: maxΔ 2e-5, corr 1.0, rms 0.066=0.066. Every stage 0.0
+(ups.0/1, noise_convs, noise_res, all 6 resblocks, conv_post). Three non-obvious findings that closed it:
+1. LeakyReLU BEFORE conv_post uses slope **0.01** (torch F.leaky_relu DEFAULT), NOT 0.1. The MRF
+   resblocks + ups use 0.1 (HiFiGAN LRELU_SLOPE); only the final pre-conv_post leaky is 0.01. This was
+   the 3.27 "widespread" error — blocks were all individually exact, the combine leaky slope was wrong.
+2. STFT recombine (conv_post[22,T] → complex spec, before inverse_basis ConvTranspose):
+   mag = exp(cp[0:11]); p = sin(cp[11:22]); real = mag*cos(p); imag = mag*sin(p);
+   concat([real, imag], axis=0) = [22,T]. NOTE p itself is sin() of the raw phase channels (double-sin:
+   real=mag·cos(sin(raw)), imag=mag·sin(sin(raw))). Verified concat == ORT Concat_output_0 at 0.0.
+3. iSTFT norm: inverse_basis[22,1,20] ConvTranspose overlap-add (hop5,nfft20) → divide by overlap-added
+   window_sum (handles edge transients exactly) → × **6.0** (fixed-config const; ORT does ×4.0 Mul + a
+   differently-scaled window_sum, net 6.0 vs my window-overlap peak 1.5) → trim [nfft/2 : -nfft/2].
+The source (m_source SineGen) init-phase is the only stochastic piece → generator gateable ONLY when fed
+ORT's source; standalone pipeline validates predictor/decoder exact + generator by-ear. NEXT: chain the
+standalone numpy pipeline (predictor→decoder→SineGen→generator, no ORT anchors) → port numpy→GPU/JS.

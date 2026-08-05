@@ -3,7 +3,7 @@
 // TTS takes text.
 
 import { decodeToMono16k, pcmToWav } from "./core/audio";
-import { webgpuAvailable } from "./core/ort";
+import { webgpuAvailable } from "./core/webgpu";
 import type { Engine, LoadProgress } from "./core/types";
 
 type Kind = "audio" | "text";
