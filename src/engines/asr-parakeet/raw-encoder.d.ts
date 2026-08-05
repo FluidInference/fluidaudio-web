@@ -5,4 +5,4 @@ export function parakeetEncode(
 ): Promise<{ data?: Float32Array; dims: [number, number, number]; framesGpu: GpuTensor; Tsub: number }>;
 export function parakeetEncodeBatch(
   ctx: GpuContext, enc: any, mels: Float32Array[], wantData?: boolean
-): Promise<{ framesGpu: any; Tsub: number; W: number; dims: number[]; data?: Float32Array }>;
+): Promise<{ framesGpu: any; Tsub: number; W: number; D: number; dims: number[]; data?: Float32Array }>;

@@ -62,7 +62,7 @@ for (let b = 0; b < melWins.length; b += WB) {
   tEnc += now()-t;
   t = now();
   for (let wi = 0; wi < group.length; wi++) {
-    const { ids } = wasmDecode(dec, frames.subarray(wi * r.Tsub * 1024, (wi + 1) * r.Tsub * 1024), r.Tsub);
+    const { ids } = wasmDecode(dec, frames.subarray(wi * r.Tsub * r.D, (wi + 1) * r.Tsub * r.D), r.Tsub);
     nTok += ids.length; nWin++;
   }
   tDec += now()-t;

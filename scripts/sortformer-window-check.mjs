@@ -33,4 +33,4 @@ const segs=await diarize(three);
 console.log(`120s windowed (${(performance.now()-t0).toFixed(0)}ms):`); console.log(" ", fmt(segs));
 const spks=[...new Set(segs.map(s=>s.speaker))];
 console.log(`distinct speakers: ${spks.length} ${spks.length===2?"OK":"CHECK"}`);
-process.exit(0);
+process.exit(spks.length===2?0:1);

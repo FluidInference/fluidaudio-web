@@ -115,4 +115,5 @@ hdr.writeUInt32LE(sr, 24); hdr.writeUInt32LE(sr * 2, 28); hdr.writeUInt16LE(2, 3
 hdr.write("data", 36); hdr.writeUInt32LE(i16.byteLength, 40);
 writeFileSync(`${K0}/js_hello.wav`, Buffer.concat([hdr, Buffer.from(i16.buffer)]));
 console.log(`wrote ${K0}/js_hello.wav`);
-process.exit(0);
+const corr = dot / Math.sqrt(na * nb);
+process.exit(corr > 0.9 ? 0 : 1);

@@ -57,8 +57,11 @@ export class WasmContext {
   // f16 is a WebGPU storage optimization; on CPU everything is f32.
   uploadF16(data, rows, cols) { return this.upload(data, rows, cols); }
   allocF16(rows, cols) { return this.alloc(rows, cols); }
-  async download(t) { return t.data; }
-  async downloadF16(t) { return t.data; }
+  // download is ALWAYS a copy (GpuContext readback is a copy; callers mutate
+  // downloaded arrays — e.g. whisper's suppress writes — so aliasing the live
+  // tensor storage would silently diverge the two backends).
+  async download(t) { return t.data.slice(); }
+  async downloadF16(t) { return t.data.slice(); }
   beginBatch() {}
   endBatch() {}
 
@@ -286,7 +289,7 @@ export class WasmContext {
         for (let i = 0; i < T; i++) {
           const qBase = (w * T + i) * stride + ho, oBase = ((w * H + h) * T + i) * Tb;
           for (let j = 0; j < Tb; j++) {
-            const bBase = (bShared ? j : w * T + j) * stride + ho;
+            const bBase = (bShared ? j : w * Tb + j) * stride + ho; // per-window keys stride Tb
             let acc = 0;
             for (let d = 0; d < HD; d++) acc += (q.data[qBase + d] + (qb ? qb.data[ho + d] : 0)) * b.data[bBase + d];
             out[oBase + j] = acc;
@@ -404,7 +407,6 @@ export class WasmContext {
       // As GEMM + col2im: cols[(co,k), t] = Wt[(co,k), ci] @ x[ci, t], then
       // scatter-add cols[(co,k), t] into y[co, t*stride + k - pad]. The GEMM is
       // the SIMD matmul; the scatter is memory-bound JS.
-      const key = `convT:${cout}x${k}`;
       if (!this._ctW) this._ctW = new Map();
       let wt = this._ctW.get(w); // cache transposed weights per-tensor
       if (!wt) {

@@ -80,7 +80,7 @@ export class ParakeetV3Engine implements AsrEngine {
       }
       if (cur.length) groups.push(cur);
     }
-    const beginGroup = (g: number): Promise<{ frames: Float32Array; Tenc: number; n: number } | null> => {
+    const beginGroup = (g: number): Promise<{ frames: Float32Array; Tenc: number; D: number; n: number } | null> => {
       const mels: Float32Array[] = [];
       for (const i of groups[g]) {
         const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
@@ -91,6 +91,7 @@ export class ParakeetV3Engine implements AsrEngine {
       return parakeetEncodeBatch(this.ctx, this.enc, mels).then(async (r: any) => ({
         frames: await this.ctx.download(r.framesGpu),
         Tenc: r.Tsub,
+        D: r.D,
         n: mels.length,
       }));
     };
@@ -104,7 +105,7 @@ export class ParakeetV3Engine implements AsrEngine {
       if (!grp) { w += groups[g].length; continue; }
       for (let wi = 0; wi < grp.n; wi++, w++) {
       const Tenc = grp.Tenc;
-      const frames = grp.frames.subarray(wi * Tenc * 1024, (wi + 1) * Tenc * 1024);
+      const frames = grp.frames.subarray(wi * Tenc * grp.D, (wi + 1) * Tenc * grp.D);
       const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
       const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
 

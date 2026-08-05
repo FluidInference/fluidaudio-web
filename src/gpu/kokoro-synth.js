@@ -152,9 +152,9 @@ function style128T(ctx, style128) {
  * Full Kokoro synthesis (ORT-free): d_en (from frontend textEncoding) + phoneme ids +
  * style[256] → waveform Float32Array. Chains predictor → SineGen → decoder → generator.
  */
-export async function synth(K, dEn, ids, style) {
+export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
   const ctx = K.ctx;
-  const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style);
+  const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style, speed);
   // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
   const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
   const F0cpu = { data: await ctx.download(F0), rows: 1, cols: F0.cols };
@@ -170,7 +170,7 @@ export async function synth(K, dEn, ids, style) {
  * d_en:[seq,512] (bert), ids:Int32Array phoneme ids, style:[256]. Returns the decoder
  * inputs { xConcat[514,T], asr[512,T], F0[1,2T], N[1,2T] } (T = sum(pred_dur)).
  */
-export async function predictor(K, dEn, ids, style) {
+export async function predictor(K, dEn, ids, style, speed = 1) {
   const ctx = K.ctx;
   dEn = toT(ctx, dEn);
   const seq = dEn.rows;
@@ -197,11 +197,11 @@ export async function predictor(K, dEn, ids, style) {
   const durEncOut = x; // [seq,512]
   const xp = lstmB(await catStyle(x), "predictor/lstm/LSTM", "/lstm/LSTM"); // [seq,512] (zh: flat /lstm/LSTM, exact-match)
   const dp = gemm("duration_proj/linear_layer/MatMul");
-  const dprojBias = K.manifest["encoder.predictor.duration_proj.linear_layer.bias"];
+  // K.has resolves en→kmodel names (a direct manifest[] check dropped the zh bias).
   const durLogits = await ctx.download(ctx.matmul(xp, dp.w)); // [seq,50]
-  const db = dprojBias ? K.raw("encoder.predictor.duration_proj.linear_layer.bias") : null;
+  const db = K.has("encoder.predictor.duration_proj.linear_layer.bias") ? K.raw("encoder.predictor.duration_proj.linear_layer.bias") : null;
   const predDur = new Int32Array(seq);
-  for (let i = 0; i < seq; i++) { let s = 0; for (let j = 0; j < 50; j++) { const v = durLogits[i * 50 + j] + (db ? db[j] : 0); s += 1 / (1 + Math.exp(-v)); } predDur[i] = Math.max(1, Math.min(50, Math.round(s))); }
+  for (let i = 0; i < seq; i++) { let s = 0; for (let j = 0; j < 50; j++) { const v = durLogits[i * 50 + j] + (db ? db[j] : 0); s += 1 / (1 + Math.exp(-v)); } predDur[i] = Math.max(1, Math.min(50, Math.round(s / speed))); }
   const T = predDur.reduce((a, b) => a + b, 0);
   // alignment A[seq,T]; en = d^T @ A where d = concat(durEncOut, sp)[seq,640]
   const dData = await ctx.download(durEncOut);

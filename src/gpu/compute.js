@@ -558,7 +558,7 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
       var bv = 0.0;
       let j = blockCol + bColT;
       if (j < m.Tb && kk + bRowT < m.HD) {
-        let brow = select(w * m.T + j, j, m.bShared == 1u);
+        let brow = select(w * m.Tb + j, j, m.bShared == 1u); // per-window keys stride Tb
         bv = B[brow * stride + h * m.HD + kk + bRowT];
       }
       Bs[idxA] = bv;
@@ -1481,16 +1481,47 @@ export class GpuContext {
     return y;
   }
 
+  /**
+   * Uniform buffers come from a per-size ring (reused via writeBuffer) instead of
+   * one new GPUBuffer per dispatch — the dominant buffer churn. Reuse across
+   * submits is safe (queue operations are ordered); within ONE batched command
+   * buffer every dispatch sees the final write, so the ring must exceed the max
+   * dispatches per batch (largest today ~700; warn if a batch wraps the ring).
+   */
   _uniform(arr) {
-    const buf = this.device.createBuffer({ size: arr.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(buf, 0, arr);
+    const bytes = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
+    const size = bytes.byteLength;
+    this._uniRing = this._uniRing || new Map();
+    let ring = this._uniRing.get(size);
+    if (!ring) { ring = { bufs: [], i: 0 }; this._uniRing.set(size, ring); }
+    const CAP = 4096;
+    let buf;
+    if (ring.bufs.length < CAP) {
+      buf = this.device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      ring.bufs.push(buf);
+    } else {
+      buf = ring.bufs[ring.i % CAP];
+    }
+    ring.i++;
+    if (this._pass) {
+      this._batchUniforms = (this._batchUniforms || 0) + 1;
+      if (this._batchUniforms > CAP && !this._warnedRing) { this._warnedRing = true; console.warn("[gpu] uniform ring wrapped within one batch — split the batch"); }
+    }
+    this.device.queue.writeBuffer(buf, 0, bytes);
     return buf;
+  }
+
+  /** Shared 4-byte dummy buffer for bias-less ops (was a fresh alloc per call). */
+  _dummy() {
+    if (!this._dummyBuf) this._dummyBuf = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.STORAGE });
+    return this._dummyBuf;
   }
 
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
     this._enc = this.device.createCommandEncoder();
     this._pass = this._enc.beginComputePass();
+    this._batchUniforms = 0;
   }
   endBatch() {
     this._pass.end();
@@ -1534,7 +1565,7 @@ export class GpuContext {
       return this.matmulV4(a, b, { bias, act });
     }
     const c = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemm", GEMM_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
@@ -1544,7 +1575,7 @@ export class GpuContext {
   matmulV2(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
     const c = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV2", GEMM_V2_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
@@ -1554,7 +1585,7 @@ export class GpuContext {
   matmulV3(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
     const c = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
@@ -1564,7 +1595,7 @@ export class GpuContext {
   matmulV4(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
     const c = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV4", GEMM_V4_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
@@ -1578,8 +1609,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 2).set([x.rows, x.cols]);
     new Float32Array(meta, 8, 1)[0] = eps;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, gamma.buf, beta.buf, y.buf], u, x.rows);
     return y;
   }
@@ -1609,7 +1639,7 @@ export class GpuContext {
     const Cin = x.rows, L = x.cols;
     const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv1d", CONV1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, padLeft, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
@@ -1639,7 +1669,7 @@ export class GpuContext {
   matmulInt8(a, wq, scale, N, K, { bias = null, act = "none" } = {}) {
     const M = a.rows;
     const y = this.alloc(M, N);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
     if (N % 4 === 0) {
       // tiled/register-blocked variant (~3× on encoder shapes)
@@ -1776,7 +1806,7 @@ export class GpuContext {
     const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
     const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
     // kernel Meta padH/padW slots = the "before" (top/left) offset.
     const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padTop, padLeft, groups, bias ? 1 : 0, ACT[act], 0]));
@@ -1792,7 +1822,7 @@ export class GpuContext {
     const Cin = x.rows, L = x.cols;
     const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("convt1d", CONVT1D_WGSL);
     const u = this._uniform(new Uint32Array([cout, Cin, L, Lout, k, stride, pad, dilation, groups, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Lout) / 64));
@@ -1827,8 +1857,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 2).set([x.rows, x.cols]);
     new Float32Array(meta, 8, 1)[0] = eps;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, scale.buf, shift.buf, y.buf], u, x.rows);
     return y;
   }
@@ -1857,8 +1886,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 1)[0] = n;
     new Float32Array(meta, 4, 1)[0] = slope;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
     return y;
   }
@@ -1882,7 +1910,7 @@ export class GpuContext {
     const CinK = Cin * k;
     const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
-    const biasBuf = bias ? bias.buf : this.alloc(1, 1).buf;
+    const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("conv1dImplicit", CONV1D_IMPLICIT_WGSL);
     const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
@@ -1906,8 +1934,7 @@ export class GpuContext {
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 1)[0] = n;
     new Float32Array(meta, 4, 1)[0] = s;
-    const u = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(u, 0, meta);
+    const u = this._uniform(meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
     return y;
   }
@@ -1931,15 +1958,27 @@ export class GpuContext {
 
   /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */
   concatRows(tensors) {
+    // Batch-safe like copyRows: inside beginBatch/endBatch the copies are recorded
+    // into the SAME encoder (pass paused/reopened) so they stay ordered after the
+    // dispatches that produce the sources.
     const cols = tensors[0].cols;
     const rows = tensors.reduce((s, t) => s + t.rows, 0);
     const out = this.alloc(rows, cols);
-    const enc = this.device.createCommandEncoder();
-    let off = 0;
-    for (const t of tensors) {
-      enc.copyBufferToBuffer(t.buf, 0, out.buf, off * 4, t.rows * t.cols * 4);
-      off += t.rows * t.cols;
+    const record = (enc) => {
+      let off = 0;
+      for (const t of tensors) {
+        enc.copyBufferToBuffer(t.buf, 0, out.buf, off * 4, t.rows * t.cols * 4);
+        off += t.rows * t.cols;
+      }
+    };
+    if (this._enc && this._pass) {
+      this._pass.end();
+      record(this._enc);
+      this._pass = this._enc.beginComputePass();
+      return out;
     }
+    const enc = this.device.createCommandEncoder();
+    record(enc);
     this.device.queue.submit([enc.finish()]);
     return out;
   }

@@ -226,7 +226,7 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     x = ln(x, w.lnout);
   }
   if (ctx.endBatch) ctx.endBatch();
-  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W };
+  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D };
   if (wantData) out.data = await ctx.download(ctx.transpose(x));
   return out;
 }

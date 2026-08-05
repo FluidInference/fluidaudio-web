@@ -29,4 +29,4 @@ for (let s=0; s+WIN<=wav.length; s+=hop) {
   if (a.length===b.length && a.every((v,i)=>v===b[i])) same++; else diff++;
 }
 console.log(`windows identical: ${same}, differing: ${diff}  (tokens int8 ${tot8} vs fp32 ${tot32})`);
-process.exit(0);
+process.exit(diff ? 1 : 0);

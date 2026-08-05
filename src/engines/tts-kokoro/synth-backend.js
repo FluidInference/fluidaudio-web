@@ -57,9 +57,13 @@ export async function loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir = 
   return {
     backend: ctx.backend ?? "webgpu",
     /** phonemes (IPA string) → 24 kHz Float32Array. */
-    async synthFromPhonemes(phonemes, voice = "af_heart") {
+    async synthFromPhonemes(phonemes, voice = "af_heart", speed = 1) {
       const ids = [0]; // $ BOS
       for (const ch of phonemes) { const id = vocab[ch]; if (id !== undefined) ids.push(id); }
+      // ALBERT's positional table is 512 rows — cap at 510 phonemes + BOS/EOS
+      // (kokoro-js tokenized with truncation:true; without this, longer input
+      // reads past pos_emb → NaN audio).
+      if (ids.length > 511) { console.warn(`[kokoro] input truncated: ${ids.length - 1} phonemes > 510`); ids.length = 511; }
       ids.push(0); // $ EOS
       const idArr = Int32Array.from(ids);
       const pack = await getVoice(voice);
@@ -67,7 +71,7 @@ export async function loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir = 
       const style = pack.slice(si, si + 256);
       const dEnT = textEncoding(ctx, idArr, albertW, beW, beB);
       const dEn = { data: await ctx.download(dEnT), rows: idArr.length, cols: fref.be_out };
-      return await synth(K, dEn, idArr, style);
+      return await synth(K, dEn, idArr, style, { speed });
     },
   };
 }

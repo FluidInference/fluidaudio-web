@@ -31,4 +31,4 @@ const m = Math.min(o.length, ref.length);
 let md = 0; for (let i = 0; i < m; i++) md = Math.max(md, Math.abs(o[i] - ref[i]));
 console.log(`decoder out [${out.rows},${out.cols}] (${o.length}) vs ref ${ref.length}  maxΔ ${md.toExponential(2)}`);
 console.log(md < 5e-3 ? "DECODER PARITY OK" : "DECODER PARITY FAIL");
-process.exit(0);
+process.exit(md < 5e-3 ? 0 : 1);

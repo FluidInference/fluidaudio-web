@@ -43,11 +43,9 @@ export class KokoroTtsEngine implements TtsEngine {
       onProgress,
     });
     if (!this.zh) {
-      try {
-        this.lexicon = await EnglishLexicon.load(fetchCached as any);
-      } catch {
-        this.lexicon = null;
-      }
+      // Fail loudly: with the espeak fallback gone, English synthesis is impossible
+      // without the lexicon — swallowing this error would brick every synthesize().
+      this.lexicon = await EnglishLexicon.load(fetchCached as any);
     }
   }
 
@@ -55,15 +53,19 @@ export class KokoroTtsEngine implements TtsEngine {
     if (!this.backend) throw new Error("KokoroTtsEngine.load() not called");
     const voice = opts?.voice ?? (this.zh ? "zf_001" : "af_heart");
 
-    let phonemes = "";
+    let phonemes = "", coverage = 1;
     if (this.zh) {
-      phonemes = chineseToZh11(text).phonemes ?? "";
+      ({ phonemes, coverage } = chineseToZh11(text));
     } else if (this.lexicon) {
-      phonemes = this.lexicon.phonemize(text).phonemes ?? "";
+      ({ phonemes, coverage } = this.lexicon.phonemize(text));
     }
-    if (!phonemes) throw new Error(`Kokoro: no phonemes for input (G2P coverage 0). OOV English needs the espeak-ng follow-up.`);
+    if (!phonemes) throw new Error(`Kokoro: no phonemes for input (G2P coverage 0).`);
+    // Words the G2P can't cover are omitted from the audio — surface it instead
+    // of silently dropping them (no espeak fallback by design; gold/silver
+    // lexicon tiers carry coverage).
+    if (coverage < 0.95) console.warn(`[kokoro] G2P coverage ${(coverage * 100).toFixed(0)}% — some words will be missing from the audio`);
 
-    const samples = await this.backend.synthFromPhonemes(phonemes, voice);
+    const samples = await this.backend.synthFromPhonemes(phonemes, voice, opts?.speed ?? 1);
     return { samples, sampleRate: 24000 };
   }
 

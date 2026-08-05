@@ -16,4 +16,4 @@ for(const [M,K,N] of [[300,64,300],[512,256,512],[136,64,132]]){
   if(M>=256&&N>=256&&K>=256&&K%8===0&&N%4===0){const gd=await ctx.download(ctx.matmul(ga,gb,{bias:gbias,act}));let ed=0;for(let i=0;i<M*N;i++)ed=Math.max(ed,Math.abs(gd[i]-cpu[i]));console.log(`   matmul()dispatch: maxΔ ${ed.toExponential(2)} ${ed<2e-4?"OK":"FAIL"}`);if(ed>=2e-4)bad++;}
  }}
 console.log(bad?`${bad} FAILURES`:"ALL PARITY OK");
-process.exit(0);
+process.exit(bad ? 1 : 0);

@@ -1,6 +1,6 @@
 export interface KokoroBackend {
   backend: string;
-  synthFromPhonemes(phonemes: string, voice?: string): Promise<Float32Array>;
+  synthFromPhonemes(phonemes: string, voice?: string, speed?: number): Promise<Float32Array>;
 }
 
 export function loadKokoroBackend(
