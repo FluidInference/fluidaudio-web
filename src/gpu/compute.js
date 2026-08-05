@@ -588,7 +588,7 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 
 // out[i, h*HD+d] = Σ_j P[h*T+i, j] · V[j, h*HD+d]  (probs @ values, all heads)
 const BMM_PV_WGSL = `
-struct Meta { T:u32, H:u32, HD:u32, W:u32 };
+struct Meta { Tq:u32, Tk:u32, H:u32, HD:u32, W:u32, _a:u32, _b:u32, _c:u32 };
 @group(0) @binding(0) var<storage, read> P: array<f32>;
 @group(0) @binding(1) var<storage, read> V: array<f32>;
 @group(0) @binding(2) var<storage, read_write> Y: array<f32>;
@@ -602,23 +602,23 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   let h = b % m.H;
   let w = b / m.H;
   let stride = m.H * m.HD;
-  let blockRow = wg.y * BM;   // over T (queries)
+  let blockRow = wg.y * BM;   // over Tq (queries)
   let blockCol = wg.x * BN;   // over HD (head cols; HD<=64 → one x-block)
   let threadRow = (tid / (BN / TN)) * TM;
   let threadCol = (tid % (BN / TN)) * TN;
   var acc: array<f32, 16>;
   for (var i = 0u; i < 16u; i++) { acc[i] = 0.0; }
-  let nT = (m.T + BK - 1u) / BK;
+  let nT = (m.Tk + BK - 1u) / BK;
   for (var t = 0u; t < nT; t++) {
     let kk = t * BK;
     for (var i = 0u; i < 4u; i++) {
       let idxA = tid + i * 256u;
       let aRow = idxA / BK; let aCol = idxA % BK;
-      As[idxA] = select(0.0, P[(b * m.T + blockRow + aRow) * m.T + kk + aCol], blockRow + aRow < m.T && kk + aCol < m.T);
+      As[idxA] = select(0.0, P[(b * m.Tq + blockRow + aRow) * m.Tk + kk + aCol], blockRow + aRow < m.Tq && kk + aCol < m.Tk);
       let bRowT = idxA / BN; let bColT = idxA % BN;
       var bv = 0.0;
-      if (kk + bRowT < m.T && blockCol + bColT < m.HD) {
-        bv = V[(w * m.T + kk + bRowT) * stride + h * m.HD + blockCol + bColT];
+      if (kk + bRowT < m.Tk && blockCol + bColT < m.HD) {
+        bv = V[(w * m.Tk + kk + bRowT) * stride + h * m.HD + blockCol + bColT];
       }
       Bs[idxA] = bv;
     }
@@ -638,8 +638,8 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
     for (var j2 = 0u; j2 < TN; j2++) {
       let r = blockRow + threadRow + i;
       let c = blockCol + threadCol + j2;
-      if (r < m.T && c < m.HD) {
-        Y[(w * m.T + r) * stride + h * m.HD + c] = acc[i * TN + j2];
+      if (r < m.Tq && c < m.HD) {
+        Y[(w * m.Tq + r) * stride + h * m.HD + c] = acc[i * TN + j2];
       }
     }
   }
@@ -1689,13 +1689,13 @@ export class GpuContext {
     return s;
   }
 
-  /** Batched probs@V over all heads: p[H*T,T], v[T,H*HD] → [T, H*HD]. */
+  /** Batched probs@V over all heads: p[W*H*Tq, Tk], v[W*Tk, H*HD] → [W*Tq, H*HD]. */
   bmmPV(p, v, H, HD, W = 1) {
-    const T = v.rows / W;
-    const y = this.alloc(W * T, H * HD);
+    const Tk = v.rows / W, Tq = p.rows / (W * H);
+    const y = this.alloc(W * Tq, H * HD);
     const pipeline = this._pipeline("bmmpv", BMM_PV_WGSL);
-    const u = this._uniform(new Uint32Array([T, H, HD, W]));
-    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil(HD / 64) || 1, Math.ceil(T / 64), W * H);
+    const u = this._uniform(new Uint32Array([Tq, Tk, H, HD, W, 0, 0, 0]));
+    this._run(pipeline, [p.buf, v.buf, y.buf], u, Math.ceil(HD / 64) || 1, Math.ceil(Tq / 64) || 1, W * H);
     return y;
   }
 
@@ -1910,6 +1910,14 @@ export class GpuContext {
     this.device.queue.writeBuffer(u, 0, meta);
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil(n / 64));
     return y;
+  }
+
+  /** Write src's rows into dst starting at rowOffset (contiguous, no readback). */
+  copyRows(dst, src, rowOffset) {
+    const enc = this.device.createCommandEncoder();
+    enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
+    this.device.queue.submit([enc.finish()]);
+    return dst;
   }
 
   /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */

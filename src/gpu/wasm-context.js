@@ -297,18 +297,22 @@ export class WasmContext {
   }
   /** Batched probs@V over all heads: p[H*T,T], v[T,H*HD] → [T,H*HD]. */
   bmmPV(p, v, H, HD, W = 1) {
-    const T = v.rows / W, stride = H * HD;
-    const out = new Float32Array(W * T * stride);
+    const Tk = v.rows / W, Tq = p.rows / (W * H), stride = H * HD;
+    const out = new Float32Array(W * Tq * stride);
     for (let w = 0; w < W; w++)
-      for (let i = 0; i < T; i++) {
+      for (let i = 0; i < Tq; i++) {
         for (let c = 0; c < stride; c++) {
-          const h = (c / HD) | 0, pBase = ((w * H + h) * T + i) * T;
+          const h = (c / HD) | 0, pBase = ((w * H + h) * Tq + i) * Tk;
           let acc = 0;
-          for (let j = 0; j < T; j++) acc += p.data[pBase + j] * v.data[(w * T + j) * stride + c];
-          out[(w * T + i) * stride + c] = acc;
+          for (let j = 0; j < Tk; j++) acc += p.data[pBase + j] * v.data[(w * Tk + j) * stride + c];
+          out[(w * Tq + i) * stride + c] = acc;
         }
       }
-    return { data: out, rows: W * T, cols: stride };
+    return { data: out, rows: W * Tq, cols: stride };
+  }
+  copyRows(dst, src, rowOffset) {
+    dst.data.set(src.data, rowOffset * dst.cols);
+    return dst;
   }
   /** Batched rel_shift: x[H*t, 2t-1] → [H*t, t]. */
   relShiftB(x, H) {
