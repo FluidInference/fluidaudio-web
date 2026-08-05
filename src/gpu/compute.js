@@ -1912,8 +1912,17 @@ export class GpuContext {
     return y;
   }
 
-  /** Write src's rows into dst starting at rowOffset (contiguous, no readback). */
+  /** Write src's rows into dst starting at rowOffset (contiguous, no readback).
+   * Batch-safe: inside beginBatch/endBatch the copy is recorded into the SAME
+   * command encoder (pass paused/reopened) so it stays ordered after the
+   * dispatches that produce src. */
   copyRows(dst, src, rowOffset) {
+    if (this._enc && this._pass) {
+      this._pass.end();
+      this._enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
+      this._pass = this._enc.beginComputePass();
+      return dst;
+    }
     const enc = this.device.createCommandEncoder();
     enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
     this.device.queue.submit([enc.finish()]);

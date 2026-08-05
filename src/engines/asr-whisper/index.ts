@@ -12,7 +12,7 @@ import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { createContext } from "../../gpu/context.js";
 import { loadWhisperEncoder, whisperEncode } from "./raw-whisper-encoder.js";
-import { loadWhisperDecoder, whisperCrossKV, whisperDecodeStep } from "./raw-whisper-decoder.js";
+import { loadWhisperDecoder, whisperCrossKV, whisperDecodeInit, whisperDecodeNext } from "./raw-whisper-decoder.js";
 import { makeWhisperTokenizer } from "./whisper-tokenizer.js";
 import { WhisperMel } from "./whisper-mel.js";
 import melFiltersUrl from "./whisper-mel-filters.bin?url";
@@ -62,15 +62,21 @@ export class WhisperEngine implements AsrEngine {
     const kv = whisperCrossKV(this.ctx, this.dec, encG);
     const tMel = now();
 
+    // KV-cached autoregressive decode: one token per step (O(1)/step; the old
+    // full-prefix path recomputed everything each step — proven token-identical).
     const tokens = [...PREFIX];
+    const st = whisperDecodeInit(this.ctx, this.dec);
+    let logits: Float32Array | null = null;
+    for (const t of PREFIX) logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, t);
     for (let step = 0; step < MAX_NEW; step++) {
-      const logits = await whisperDecodeStep(this.ctx, this.dec, kv, tokens);
-      for (const t of this.suppress) logits[t] = -Infinity;
-      if (step === 0) { logits[220] = -Infinity; logits[EOT] = -Infinity; } // begin_suppress
+      const lg = logits!;
+      for (const t of this.suppress) lg[t] = -Infinity;
+      if (step === 0) { lg[220] = -Infinity; lg[EOT] = -Infinity; } // begin_suppress
       let maxId = 0, maxV = -Infinity;
-      for (let i = 0; i < logits.length; i++) if (logits[i] > maxV) { maxV = logits[i]; maxId = i; }
+      for (let i = 0; i < lg.length; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
       if (maxId === EOT) break;
       tokens.push(maxId);
+      logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);
     }
     const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
     return { text, metrics: { melMs: +(tMel - t0).toFixed(0), encodeMs: 0, decodeMs: +(now() - tMel).toFixed(0), totalMs: +(now() - t0).toFixed(0) } };

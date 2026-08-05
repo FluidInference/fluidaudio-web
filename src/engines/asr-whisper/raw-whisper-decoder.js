@@ -35,6 +35,57 @@ export function whisperCrossKV(ctx, dec, encGpu) {
   return dec.layers.map((w) => ({ k: ctx.matmul(encGpu, w.ckw), v: ctx.matmul(encGpu, w.cvw, { bias: w.cvb }) }));
 }
 
+/**
+ * KV-cached decode state: per-layer self-attn K/V preallocated [maxLen, D];
+ * each step feeds ONE token (the old path recomputed the whole prefix AND the
+ * [n,512]@[512,51865] vocab projection over all positions — O(n^2) with a huge
+ * constant; cached is O(1) per step).
+ */
+export function whisperDecodeInit(ctx, dec, maxLen = 448) {
+  return {
+    n: 0,
+    maxLen,
+    selfK: dec.layers.map(() => ctx.alloc(maxLen, D)),
+    selfV: dec.layers.map(() => ctx.alloc(maxLen, D)),
+  };
+}
+
+// rows-limited view over a preallocated cache tensor (no copy; both backends).
+const rowsView = (t, rows) => (t.buf ? { buf: t.buf, rows, cols: t.cols } : { data: t.data.subarray(0, rows * t.cols), rows, cols: t.cols });
+
+/** Feed one token through the cached decoder; returns logits [VOCAB] for it. */
+export async function whisperDecodeNext(ctx, dec, kv, st, token) {
+  const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
+  const n = st.n;
+  const emb = new Float32Array(D);
+  for (let d = 0; d < D; d++) emb[d] = dec.embed[token * D + d] + dec.pos[n * D + d];
+  let x = ctx.upload(emb, 1, D);
+  if (ctx.beginBatch) ctx.beginBatch(); // one submit for the whole step
+  for (let li = 0; li < dec.layers.length; li++) {
+    const w = dec.layers[li];
+    // causal self-attn against the cache (only past+current exist -> no mask)
+    let h = ln(x, w.ln1);
+    const q = ctx.matmul(h, w.sqw, { bias: w.sqb });
+    ctx.copyRows(st.selfK[li], ctx.matmul(h, w.skw), n);
+    ctx.copyRows(st.selfV[li], ctx.matmul(h, w.svw, { bias: w.svb }), n);
+    const K = rowsView(st.selfK[li], n + 1), V = rowsView(st.selfV[li], n + 1);
+    const probs = ctx.softmax(ctx.bmmQK(q, K, null, NH, HD)); // [NH, n+1]
+    x = ctx.add(x, ctx.matmul(ctx.bmmPV(probs, V, NH, HD), w.sow, { bias: w.sob }));
+    // cross-attn (K/V precomputed once from the encoder)
+    h = ln(x, w.ln2);
+    const cq = ctx.matmul(h, w.cqw, { bias: w.cqb });
+    const cprobs = ctx.softmax(ctx.bmmQK(cq, kv[li].k, null, NH, HD)); // [NH, Tenc]
+    x = ctx.add(x, ctx.matmul(ctx.bmmPV(cprobs, kv[li].v, NH, HD), w.cow, { bias: w.cob }));
+    // FFN
+    h = ln(x, w.ln3);
+    x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
+  }
+  st.n = n + 1;
+  const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCAB]
+  if (ctx.endBatch) ctx.endBatch();
+  return await ctx.download(logits);
+}
+
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */
 export async function whisperDecodeStep(ctx, dec, kv, tokens) {
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
