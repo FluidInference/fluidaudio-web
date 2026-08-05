@@ -4,9 +4,21 @@ import { loadKokoroBackend } from "../src/engines/tts-kokoro/synth-backend.js";
 import { chineseToZh11 } from "../src/engines/tts-kokoro/zh-frontend-v11.js";
 const Z = "/tmp/kokoro-zh";
 const vocab = JSON.parse(readFileSync("src/engines/tts-kokoro/vocab-zh.json"));
-const map = { "kokoro-zh/weights.bin": `${Z}/kw/weights.bin`, "kokoro-zh/manifest.json": `${Z}/kw/manifest.json`, "kokoro-zh/roles.json": `${Z}/kw/roles.json`, "kokoro-zh/be_w.bin": `${Z}/kw/be_w.bin`, "kokoro-zh/be_b.bin": `${Z}/kw/be_b.bin`, "kokoro-zh/ref.json": `${Z}/kw/ref.json`, "voices/zf_001.bin": `${Z}/zf_001.bin` };
+const map = {
+  "kokoro-zh/weights.bin": `${Z}/kw/weights.bin`,
+  "kokoro-zh/manifest.json": `${Z}/kw/manifest.json`,
+  "kokoro-zh/roles.json": `${Z}/kw/roles.json`,
+  "kokoro-zh/be_w.bin": `${Z}/kw/be_w.bin`,
+  "kokoro-zh/be_b.bin": `${Z}/kw/be_b.bin`,
+  "kokoro-zh/ref.json": `${Z}/kw/ref.json`,
+  "voices/zf_001.bin": `${Z}/zf_001.bin`,
+};
 const hfUrl = (repo, path) => path;
-const fetchCached = async (path) => { if (map[path]) return Uint8Array.from(readFileSync(map[path])); if (path.startsWith("kokoro-zh/albert/")) return Uint8Array.from(readFileSync(`${Z}/albert/${path.split("/").pop()}`)); throw new Error("no map " + path); };
+const fetchCached = async (path) => {
+  if (map[path]) return Uint8Array.from(readFileSync(map[path]));
+  if (path.startsWith("kokoro-zh/albert/")) return Uint8Array.from(readFileSync(`${Z}/albert/${path.split("/").pop()}`));
+  throw new Error("no map " + path);
+};
 const be = await loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir: "kokoro-zh", voiceRepo: "zh" });
 const { phonemes, coverage } = chineseToZh11("你好世界，这是一个测试。");
 console.log("phonemes:", phonemes, "cov", coverage);
@@ -14,9 +26,23 @@ const t0 = Date.now();
 const wav = await be.synthFromPhonemes(phonemes, "zf_001");
 const rms = Math.sqrt(wav.reduce((s, v) => s + v * v, 0) / wav.length);
 console.log(`synth ${Date.now() - t0}ms  len ${wav.length} (${(wav.length / 24000).toFixed(2)}s)  rms ${rms.toFixed(4)}`);
-const sr = 24000, i16 = new Int16Array(wav.length);
+const sr = 24000,
+  i16 = new Int16Array(wav.length);
 for (let i = 0; i < wav.length; i++) i16[i] = Math.max(-32768, Math.min(32767, Math.round(wav[i] * 32767)));
-const h = Buffer.alloc(44); h.write("RIFF", 0); h.writeUInt32LE(36 + i16.byteLength, 4); h.write("WAVE", 8); h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22); h.writeUInt32LE(sr, 24); h.writeUInt32LE(sr * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write("data", 36); h.writeUInt32LE(i16.byteLength, 40);
+const h = Buffer.alloc(44);
+h.write("RIFF", 0);
+h.writeUInt32LE(36 + i16.byteLength, 4);
+h.write("WAVE", 8);
+h.write("fmt ", 12);
+h.writeUInt32LE(16, 16);
+h.writeUInt16LE(1, 20);
+h.writeUInt16LE(1, 22);
+h.writeUInt32LE(sr, 24);
+h.writeUInt32LE(sr * 2, 28);
+h.writeUInt16LE(2, 32);
+h.writeUInt16LE(16, 34);
+h.write("data", 36);
+h.writeUInt32LE(i16.byteLength, 40);
 writeFileSync(`${Z}/js_zh_engine.wav`, Buffer.concat([h, Buffer.from(i16.buffer)]));
 console.log("wrote js_zh_engine.wav");
 process.exit(0);

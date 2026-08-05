@@ -18,18 +18,27 @@ export async function loadWasmDecoder(wasmBytes, decBin, decMan, { int8 = true }
   const g = (k) => decBin.subarray(decMan[k].offset, decMan[k].offset + decMan[k].len);
   // alloc may grow memory (detaching the buffer), so re-read ex.memory.buffer after
   // each alloc before writing.
-  const put = (arr) => { const p = ex.alloc(arr.byteLength); new Float32Array(ex.memory.buffer, p, arr.length).set(arr); return p; };
+  const put = (arr) => {
+    const p = ex.alloc(arr.byteLength);
+    new Float32Array(ex.memory.buffer, p, arr.length).set(arr);
+    return p;
+  };
   const keys = ["embed", "l0_W", "l0_R", "l0_B", "l1_W", "l1_R", "l1_B", "encW", "encB", "predW", "predB", "outW", "outB"];
   const ptrs = keys.map((k) => put(g(k)));
   ex.set_weights(...ptrs);
   // int8 the 21MB out matrix (per-row symmetric scales) — 4× less weight traffic.
   if (int8) {
     const ow = g("outW"); // [640][8198] row-major
-    const HID = 640, LOGITS = ow.length / HID;
-    const q = new Int8Array(ow.length), scales = new Float32Array(HID);
+    const HID = 640,
+      LOGITS = ow.length / HID;
+    const q = new Int8Array(ow.length),
+      scales = new Float32Array(HID);
     for (let n = 0; n < HID; n++) {
       let mx = 0;
-      for (let m = 0; m < LOGITS; m++) { const a = Math.abs(ow[n * LOGITS + m]); if (a > mx) mx = a; }
+      for (let m = 0; m < LOGITS; m++) {
+        const a = Math.abs(ow[n * LOGITS + m]);
+        if (a > mx) mx = a;
+      }
       const sc = mx / 127 || 1;
       scales[n] = sc;
       for (let m = 0; m < LOGITS; m++) q[n * LOGITS + m] = Math.max(-127, Math.min(127, Math.round(ow[n * LOGITS + m] / sc)));

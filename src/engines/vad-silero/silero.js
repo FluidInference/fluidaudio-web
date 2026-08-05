@@ -49,7 +49,11 @@ export async function sileroDetect({
     const p = probs[i];
     const t = i * winSec;
     if (!inSpeech) {
-      if (p >= threshold) { inSpeech = true; speechStart = t; silenceRun = 0; }
+      if (p >= threshold) {
+        inSpeech = true;
+        speechStart = t;
+        silenceRun = 0;
+      }
     } else if (p < negThreshold) {
       silenceRun += winSec;
       if (silenceRun >= minSilence) {

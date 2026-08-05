@@ -4,24 +4,52 @@
 // PRE-LN causal self-attn → PRE-LN cross-attn(to encoder) → PRE-LN erf-GELU FFN.
 // Final LN, logits tied to embed_tokens. 8-head MHA, scale 1/√64.
 
-const D = 512, NH = 8, HD = 64, VOCAB = 51865;
+const D = 512,
+  NH = 8,
+  HD = 64,
+  VOCAB = 51865;
 const SCALE = 1 / Math.sqrt(HD);
 
 export function loadWhisperDecoder(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
   const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
-  const matSc = (k, s) => { const a = g(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return ctx.upload(a, man[k].dims[0], man[k].dims[1]); };
+  const matSc = (k, s) => {
+    const a = g(k).slice();
+    for (let i = 0; i < a.length; i++) a[i] *= s;
+    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+  };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
-  const vecSc = (k, s) => { const a = g(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return ctx.upload(a, 1, man[k].len); };
+  const vecSc = (k, s) => {
+    const a = g(k).slice();
+    for (let i = 0; i < a.length; i++) a[i] *= s;
+    return ctx.upload(a, 1, man[k].len);
+  };
   const layers = [];
   const nl = Object.keys(man).filter((k) => /^L\d+_sqw$/.test(k)).length;
   for (let L = 0; L < nl; L++) {
     const t = (s) => `L${L}_${s}`;
     layers.push({
-      sqw: matSc(t("sqw"), SCALE), sqb: vecSc(t("sqb"), SCALE), skw: mat(t("skw")), svw: mat(t("svw")), svb: vec(t("svb")), sow: mat(t("sow")), sob: vec(t("sob")),
-      cqw: matSc(t("cqw"), SCALE), cqb: vecSc(t("cqb"), SCALE), ckw: mat(t("ckw")), cvw: mat(t("cvw")), cvb: vec(t("cvb")), cow: mat(t("cow")), cob: vec(t("cob")),
-      ln1: [vec(t("ln1w")), vec(t("ln1b"))], ln2: [vec(t("ln2w")), vec(t("ln2b"))], ln3: [vec(t("ln3w")), vec(t("ln3b"))],
-      f1w: mat(t("f1w")), f1b: vec(t("f1b")), f2w: mat(t("f2w")), f2b: vec(t("f2b")),
+      sqw: matSc(t("sqw"), SCALE),
+      sqb: vecSc(t("sqb"), SCALE),
+      skw: mat(t("skw")),
+      svw: mat(t("svw")),
+      svb: vec(t("svb")),
+      sow: mat(t("sow")),
+      sob: vec(t("sob")),
+      cqw: matSc(t("cqw"), SCALE),
+      cqb: vecSc(t("cqb"), SCALE),
+      ckw: mat(t("ckw")),
+      cvw: mat(t("cvw")),
+      cvb: vec(t("cvb")),
+      cow: mat(t("cow")),
+      cob: vec(t("cob")),
+      ln1: [vec(t("ln1w")), vec(t("ln1b"))],
+      ln2: [vec(t("ln2w")), vec(t("ln2b"))],
+      ln3: [vec(t("ln3w")), vec(t("ln3b"))],
+      f1w: mat(t("f1w")),
+      f1b: vec(t("f1b")),
+      f2w: mat(t("f2w")),
+      f2b: vec(t("f2b")),
     });
   }
   // embed on CPU (row-gather per token); embedT[D,VOCAB] on GPU for the tied vocab proj.
@@ -68,7 +96,8 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     const q = ctx.matmul(h, w.sqw, { bias: w.sqb });
     ctx.copyRows(st.selfK[li], ctx.matmul(h, w.skw), n);
     ctx.copyRows(st.selfV[li], ctx.matmul(h, w.svw, { bias: w.svb }), n);
-    const K = rowsView(st.selfK[li], n + 1), V = rowsView(st.selfV[li], n + 1);
+    const K = rowsView(st.selfK[li], n + 1),
+      V = rowsView(st.selfV[li], n + 1);
     const probs = ctx.softmax(ctx.bmmQK(q, K, null, NH, HD)); // [NH, n+1]
     x = ctx.add(x, ctx.matmul(ctx.bmmPV(probs, V, NH, HD), w.sow, { bias: w.sob }));
     // cross-attn (K/V precomputed once from the encoder)
@@ -106,10 +135,14 @@ export async function whisperDecodeStep(ctx, dec, kv, tokens) {
     const w = dec.layers[li];
     // causal self-attn
     let h = ln(x, w.ln1);
-    const q = ctx.matmul(h, w.sqw, { bias: w.sqb }), k = ctx.matmul(h, w.skw), v = ctx.matmul(h, w.svw, { bias: w.svb });
+    const q = ctx.matmul(h, w.sqw, { bias: w.sqb }),
+      k = ctx.matmul(h, w.skw),
+      v = ctx.matmul(h, w.svw, { bias: w.svb });
     let outc = ctx.alloc(n, D);
     for (let hd = 0; hd < NH; hd++) {
-      const qh = ctx.sliceCols(q, hd * HD, HD), kh = ctx.sliceCols(k, hd * HD, HD), vh = ctx.sliceCols(v, hd * HD, HD);
+      const qh = ctx.sliceCols(q, hd * HD, HD),
+        kh = ctx.sliceCols(k, hd * HD, HD),
+        vh = ctx.sliceCols(v, hd * HD, HD);
       const probs = ctx.softmax(ctx.add(ctx.matmul(qh, ctx.transpose(kh)), maskT));
       ctx.setCols(outc, ctx.matmul(probs, vh), hd * HD);
     }
@@ -119,7 +152,9 @@ export async function whisperDecodeStep(ctx, dec, kv, tokens) {
     const cq = ctx.matmul(h, w.cqw, { bias: w.cqb });
     outc = ctx.alloc(n, D);
     for (let hd = 0; hd < NH; hd++) {
-      const qh = ctx.sliceCols(cq, hd * HD, HD), kh = ctx.sliceCols(kv[li].k, hd * HD, HD), vh = ctx.sliceCols(kv[li].v, hd * HD, HD);
+      const qh = ctx.sliceCols(cq, hd * HD, HD),
+        kh = ctx.sliceCols(kv[li].k, hd * HD, HD),
+        vh = ctx.sliceCols(kv[li].v, hd * HD, HD);
       const probs = ctx.softmax(ctx.matmul(qh, ctx.transpose(kh))); // [n,Tenc]
       ctx.setCols(outc, ctx.matmul(probs, vh), hd * HD);
     }

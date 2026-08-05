@@ -17,15 +17,23 @@ import { transcribeTdt } from "../src/engines/asr-parakeet/tdt.js";
 function readWav(path) {
   const b = readFileSync(path);
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12, dO = -1, dL = 0, sr = 16000;
+  let o = 12,
+    dO = -1,
+    dL = 0,
+    sr = 16000;
   while (o + 8 <= b.length) {
     const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
     const s = dv.getUint32(o + 4, true);
     if (id === "fmt ") sr = dv.getUint32(o + 12, true);
-    if (id === "data") { dO = o + 8; dL = s; break; }
+    if (id === "data") {
+      dO = o + 8;
+      dL = s;
+      break;
+    }
     o += 8 + s + (s & 1);
   }
-  const n = dL / 2, out = new Float32Array(n);
+  const n = dL / 2,
+    out = new Float32Array(n);
   for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
   return { samples: out, sampleRate: sr };
 }

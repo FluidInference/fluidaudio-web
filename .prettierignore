@@ -1,0 +1,11 @@
+dist/
+node_modules/
+rust/**/target/
+*.wasm
+package-lock.json
+src/engines/tts-kokoro/vocab.json
+src/engines/tts-kokoro/vocab-zh.json
+src/engines/tts-kokoro/pinyin-ipa.json
+src/engines/vad-silero/silero-weights.manifest.json
+src/engines/asr-whisper/whisper-suppress.json
+public/

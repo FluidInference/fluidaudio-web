@@ -12,10 +12,26 @@ import { ParakeetTokenizer } from "../src/engines/asr-parakeet/tokenizer.js";
 import { transcribeTdt } from "../src/engines/asr-parakeet/tdt.js";
 
 function readWav(p) {
-  const b = readFileSync(p); const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12, dO = -1, dL = 0, sr = 16000;
-  while (o + 8 <= b.length) { const id = String.fromCharCode(b[o], b[o+1], b[o+2], b[o+3]); const s = dv.getUint32(o+4, true); if (id === "fmt ") sr = dv.getUint32(o+12, true); if (id === "data") { dO = o+8; dL = s; break; } o += 8 + s + (s & 1); }
-  const n = dL / 2, out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i*2, true) / 32768;
+  const b = readFileSync(p);
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let o = 12,
+    dO = -1,
+    dL = 0,
+    sr = 16000;
+  while (o + 8 <= b.length) {
+    const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    const s = dv.getUint32(o + 4, true);
+    if (id === "fmt ") sr = dv.getUint32(o + 12, true);
+    if (id === "data") {
+      dO = o + 8;
+      dL = s;
+      break;
+    }
+    o += 8 + s + (s & 1);
+  }
+  const n = dL / 2,
+    out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
   return { samples: out, sampleRate: sr };
 }
 
@@ -38,8 +54,9 @@ for (const wav of wavs) {
   const dur = samples.length / sampleRate;
   await transcribeTdt({ ort, encoder, decoder, preprocessor, tokenizer, audio: samples }); // warm
   const r = await transcribeTdt({ ort, encoder, decoder, preprocessor, tokenizer, audio: samples });
-  const m = r.metrics; const rtfx = dur / (m.totalMs / 1000);
+  const m = r.metrics;
+  const rtfx = dur / (m.totalMs / 1000);
   console.log(
-    `${dur.toFixed(1).padStart(6)}   ${String(m.melMs).padStart(6)}  ${String(m.encodeMs).padStart(6)}  ${String(m.decodeMs).padStart(6)}  ${String(m.totalMs).padStart(8)}   ${rtfx.toFixed(1).padStart(5)}   ${r.tokenIds.length}`
+    `${dur.toFixed(1).padStart(6)}   ${String(m.melMs).padStart(6)}  ${String(m.encodeMs).padStart(6)}  ${String(m.decodeMs).padStart(6)}  ${String(m.totalMs).padStart(8)}   ${rtfx.toFixed(1).padStart(5)}   ${r.tokenIds.length}`,
   );
 }

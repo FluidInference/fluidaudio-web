@@ -110,7 +110,10 @@ export async function eouTranscribe({ ort, encoder, decoder, preprocessor, token
     let maxVal = -Infinity;
     for (let i = 0; i < V; i++) {
       const v = data[off + i];
-      if (v > maxVal) { maxVal = v; maxId = i; }
+      if (v > maxVal) {
+        maxVal = v;
+        maxId = i;
+      }
     }
 
     if (maxId !== BLANK_ID) {
@@ -120,7 +123,10 @@ export async function eouTranscribe({ ort, encoder, decoder, preprocessor, token
       if (maxId === EOU_ID) events.push({ type: "eou", time: +(t * FRAME_SEC).toFixed(2) });
       else if (maxId === EOB_ID) events.push({ type: "eob", time: +(t * FRAME_SEC).toFixed(2) });
       emitted += 1;
-      if (emitted >= MAX_SYMBOLS_PER_STEP) { t += 1; emitted = 0; }
+      if (emitted >= MAX_SYMBOLS_PER_STEP) {
+        t += 1;
+        emitted = 0;
+      }
     } else {
       t += 1;
       emitted = 0;

@@ -9,9 +9,22 @@ import TABLE from "./pinyin-ipa.json" with { type: "json" };
 
 // misaki zh.py map_punctuation
 const PUNCT = {
-  "、": ", ", "，": ", ", "。": ". ", "．": ". ", "！": "! ", "：": ": ",
-  "；": "; ", "？": "? ", "《": " “", "》": "” ", "「": " “",
-  "」": "” ", "【": " “", "】": "” ", "（": " (", "）": ") ",
+  "、": ", ",
+  "，": ", ",
+  "。": ". ",
+  "．": ". ",
+  "！": "! ",
+  "：": ": ",
+  "；": "; ",
+  "？": "? ",
+  "《": " “",
+  "》": "” ",
+  "「": " “",
+  "」": "” ",
+  "【": " “",
+  "】": "” ",
+  "（": " (",
+  "）": ") ",
 };
 
 /**
@@ -27,14 +40,21 @@ export function chineseToIpa(text) {
   let zh = 0;
   let hit = 0;
   for (const seg of arr) {
-    if (PUNCT[seg]) { parts.push(PUNCT[seg]); continue; }
+    if (PUNCT[seg]) {
+      parts.push(PUNCT[seg]);
+      continue;
+    }
     // A zh syllable from pinyin-pro looks like "ni3" / "men0" (neutral = 0).
     const m = /^([a-zü]+)([0-4])$/.exec(seg);
     if (m) {
       zh++;
       const key = m[1] + (m[2] === "0" ? "5" : m[2]); // neutral 0 → table's 5
       const ipa = TABLE[key] || TABLE[m[1] + "5"];
-      if (ipa) { parts.push(ipa); hit++; continue; }
+      if (ipa) {
+        parts.push(ipa);
+        hit++;
+        continue;
+      }
     }
     // Non-Chinese run (Latin, digits, spaces) — pass through for espeak/lexicon
     // handling upstream, or drop pure whitespace.

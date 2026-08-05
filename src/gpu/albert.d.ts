@@ -9,9 +9,14 @@ export function albertForward(
   embTensor: GpuTensor,
   weights: Record<string, GpuTensor | Float32Array>,
   seq: number,
-  layers?: number
+  layers?: number,
 ): GpuTensor;
 
 export const ALBERT_DIMS: {
-  HIDDEN: number; HEADS: number; HEAD_DIM: number; EMBED: number; EPS: number; LAYERS: number;
+  HIDDEN: number;
+  HEADS: number;
+  HEAD_DIM: number;
+  EMBED: number;
+  EPS: number;
+  LAYERS: number;
 };

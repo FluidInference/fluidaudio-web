@@ -4,7 +4,12 @@
 // n_fft=400 is not power-of-2, so a direct 400-point DFT (precomputed cos/sin) is used —
 // fine for a one-shot 30s mel (~1s). Audio is padded/trimmed to 30s (480000 samples).
 
-const N_FFT = 400, HOP = 160, N_MEL = 80, N_FREQ = 201, N_SAMPLES = 480000, N_FRAMES = 3000;
+const N_FFT = 400,
+  HOP = 160,
+  N_MEL = 80,
+  N_FREQ = 201,
+  N_SAMPLES = 480000,
+  N_FRAMES = 3000;
 
 export class WhisperMel {
   /** @param {Float32Array} melFilters [201*80] row-major (freq-major). */
@@ -32,7 +37,10 @@ export class WhisperMel {
     const buf = new Float32Array(N_SAMPLES + 2 * pad);
     const n = Math.min(audio.length, N_SAMPLES);
     for (let i = 0; i < n; i++) buf[pad + i] = audio[i];
-    for (let i = 0; i < pad; i++) { buf[pad - 1 - i] = buf[pad + 1 + i]; buf[pad + N_SAMPLES + i] = buf[pad + N_SAMPLES - 2 - i]; }
+    for (let i = 0; i < pad; i++) {
+      buf[pad - 1 - i] = buf[pad + 1 + i];
+      buf[pad + N_SAMPLES + i] = buf[pad + N_SAMPLES - 2 - i];
+    }
 
     const power = new Float32Array(N_FREQ * N_FRAMES);
     const frame = new Float32Array(N_FFT);
@@ -40,9 +48,13 @@ export class WhisperMel {
       const off = t * HOP;
       for (let i = 0; i < N_FFT; i++) frame[i] = buf[off + i] * this.win[i];
       for (let k = 0; k < N_FREQ; k++) {
-        let re = 0, im = 0;
+        let re = 0,
+          im = 0;
         const cb = k * N_FFT;
-        for (let i = 0; i < N_FFT; i++) { re += frame[i] * this.cos[cb + i]; im += frame[i] * this.sin[cb + i]; }
+        for (let i = 0; i < N_FFT; i++) {
+          re += frame[i] * this.cos[cb + i];
+          im += frame[i] * this.sin[cb + i];
+        }
         power[k * N_FRAMES + t] = re * re + im * im;
       }
     }

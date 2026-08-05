@@ -4,8 +4,7 @@
 // espeak for known words; callers fall back to kokoro-js's espeak generate() for
 // out-of-vocabulary text.
 
-const LEX_URL =
-  "https://huggingface.co/FluidInference/kokoro-82m-coreml/resolve/main/us_lexicon_cache.json";
+const LEX_URL = "https://huggingface.co/FluidInference/kokoro-82m-coreml/resolve/main/us_lexicon_cache.json";
 
 export class EnglishLexicon {
   constructor(map) {

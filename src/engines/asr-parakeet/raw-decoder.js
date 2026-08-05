@@ -7,7 +7,10 @@
 // 2× LSTM (W/R[1,2560,640] iofc, B[1,5120]), joint enc[1024,640]+bias, pred[640,640]
 // +bias, out[640,8198]+bias. Output 8198 = 8193 vocab + 5 TDT durations.
 
-const HID = 640, VOCAB = 8193, LOGITS = 8198, LAYERS = 2;
+const HID = 640,
+  VOCAB = 8193,
+  LOGITS = 8198,
+  LAYERS = 2;
 
 export function loadParakeetDecoder(bin, man, ctx = null) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
@@ -17,18 +20,27 @@ export function loadParakeetDecoder(bin, man, ctx = null) {
       { W: g("l0_W"), R: g("l0_R"), B: g("l0_B") },
       { W: g("l1_W"), R: g("l1_R"), B: g("l1_B") },
     ],
-    encW: g("encW"), encB: g("encB"), predW: g("predW"), predB: g("predB"),
-    outW: g("outW"), outB: g("outB"),
-    blankId: VOCAB - 1, vocab: VOCAB, logits: LOGITS,
+    encW: g("encW"),
+    encB: g("encB"),
+    predW: g("predW"),
+    predB: g("predB"),
+    outW: g("outW"),
+    outB: g("outB"),
+    blankId: VOCAB - 1,
+    vocab: VOCAB,
+    logits: LOGITS,
   };
   // GPU joint path: upload the joint projections so the per-frame 640→8198 matmul +
   // argmax run on the GPU (jointArgmax) instead of JS. Embedding + LSTM stay on CPU
   // (per-emission, tiny). encW/predW are [in,out] for ctx.matmul.
   if (ctx) {
     dec.gpu = {
-      encW: ctx.upload(dec.encW.slice(), 1024, HID), encB: ctx.upload(dec.encB.slice(), 1, HID),
-      predW: ctx.upload(dec.predW.slice(), HID, HID), predB: ctx.upload(dec.predB.slice(), 1, HID),
-      outW: ctx.upload(dec.outW.slice(), HID, LOGITS), outB: ctx.upload(dec.outB.slice(), 1, LOGITS),
+      encW: ctx.upload(dec.encW.slice(), 1024, HID),
+      encB: ctx.upload(dec.encB.slice(), 1, HID),
+      predW: ctx.upload(dec.predW.slice(), HID, HID),
+      predB: ctx.upload(dec.predB.slice(), 1, HID),
+      outW: ctx.upload(dec.outW.slice(), HID, LOGITS),
+      outB: ctx.upload(dec.outB.slice(), 1, LOGITS),
     };
   }
   return dec;
@@ -46,12 +58,14 @@ function uploadPredProj(ctx, dec, decOut) {
  */
 export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10, batch = 32) {
   const encProj = ctx.matmul(framesGpu, dec.gpu.encW, { bias: dec.gpu.encB }); // [Tenc,640]
-  const ids = [], idFrames = [];
+  const ids = [],
+    idFrames = [];
   let state = newDecoderState();
   let lastTok = dec.blankId;
   let pred = predict(dec, lastTok, state);
   let predProj = uploadPredProj(ctx, dec, pred.decOut);
-  let t = 0, emitted = 0;
+  let t = 0,
+    emitted = 0;
   // predProj is constant until an emission, so joints for a run of frames can be
   // computed in one dispatch. Replay the batch in JS; on emission, predProj changes
   // → the rest of the batch is stale, so break and re-dispatch from the current frame.
@@ -65,17 +79,32 @@ export async function tdtGreedyGpu(ctx, dec, framesGpu, Tenc, maxSymbols = 10, b
     const res = await ctx.download(ctx.argmaxRows(outB, count, dec.vocab, dec.logits));
     while (t - base < count) {
       const b = t - base;
-      const maxId = res[b * 4] | 0, step = res[b * 4 + 2] | 0;
+      const maxId = res[b * 4] | 0,
+        step = res[b * 4 + 2] | 0;
       if (maxId !== dec.blankId) {
-        state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
+        state = pred.state;
+        lastTok = maxId;
+        ids.push(maxId);
+        idFrames.push(t);
+        emitted++;
         pred = predict(dec, lastTok, state);
         predProj = uploadPredProj(ctx, dec, pred.decOut);
-        if (step > 0) { t += step; emitted = 0; }
-        else if (emitted >= maxSymbols) { t += 1; emitted = 0; }
+        if (step > 0) {
+          t += step;
+          emitted = 0;
+        } else if (emitted >= maxSymbols) {
+          t += 1;
+          emitted = 0;
+        }
         break; // predProj changed → remaining batch results are stale
       }
-      if (step > 0) { t += step; emitted = 0; }
-      else { t += 1; emitted = 0; }
+      if (step > 0) {
+        t += step;
+        emitted = 0;
+      } else {
+        t += 1;
+        emitted = 0;
+      }
     }
   }
   return { ids, idFrames };
@@ -96,11 +125,27 @@ function lstmStep(x, h, c, W, R, B, nh, nc) {
     let zo = B[H + g] + B[5 * H + g];
     let zf = B[2 * H + g] + B[6 * H + g];
     let zc = B[3 * H + g] + B[7 * H + g];
-    const wi = g * H, wo = (H + g) * H, wf = (2 * H + g) * H, wc = (3 * H + g) * H;
-    for (let j = 0; j < H; j++) { const xj = x[j]; zi += W[wi + j] * xj; zo += W[wo + j] * xj; zf += W[wf + j] * xj; zc += W[wc + j] * xj; }
-    for (let j = 0; j < H; j++) { const hj = h[j]; zi += R[wi + j] * hj; zo += R[wo + j] * hj; zf += R[wf + j] * hj; zc += R[wc + j] * hj; }
+    const wi = g * H,
+      wo = (H + g) * H,
+      wf = (2 * H + g) * H,
+      wc = (3 * H + g) * H;
+    for (let j = 0; j < H; j++) {
+      const xj = x[j];
+      zi += W[wi + j] * xj;
+      zo += W[wo + j] * xj;
+      zf += W[wf + j] * xj;
+      zc += W[wc + j] * xj;
+    }
+    for (let j = 0; j < H; j++) {
+      const hj = h[j];
+      zi += R[wi + j] * hj;
+      zo += R[wo + j] * hj;
+      zf += R[wf + j] * hj;
+      zc += R[wc + j] * hj;
+    }
     const cc = sigmoid(zf) * c[g] + sigmoid(zi) * Math.tanh(zc);
-    nc[g] = cc; nh[g] = sigmoid(zo) * Math.tanh(cc);
+    nc[g] = cc;
+    nh[g] = sigmoid(zo) * Math.tanh(cc);
   }
 }
 
@@ -127,13 +172,19 @@ export function joint(dec, encFrame, decOut) {
   const H = HID;
   const j = new Float32Array(H);
   for (let n = 0; n < H; n++) {
-    let e = dec.encB[n], p = dec.predB[n];
+    let e = dec.encB[n],
+      p = dec.predB[n];
     for (let k = 0; k < 1024; k++) e += encFrame[k] * dec.encW[k * H + n];
     for (let k = 0; k < H; k++) p += decOut[k] * dec.predW[k * H + n];
-    const s = e + p; j[n] = s > 0 ? s : 0; // ReLU
+    const s = e + p;
+    j[n] = s > 0 ? s : 0; // ReLU
   }
   const out = new Float32Array(LOGITS);
-  for (let n = 0; n < LOGITS; n++) { let s = dec.outB[n]; for (let k = 0; k < H; k++) s += j[k] * dec.outW[k * LOGITS + n]; out[n] = s; }
+  for (let n = 0; n < LOGITS; n++) {
+    let s = dec.outB[n];
+    for (let k = 0; k < H; k++) s += j[k] * dec.outW[k * LOGITS + n];
+    out[n] = s;
+  }
   return out;
 }
 
@@ -145,10 +196,12 @@ export function joint(dec, encFrame, decOut) {
  */
 export function tdtGreedy(dec, frames, Tenc, maxSymbols = 10) {
   const D = 1024;
-  const ids = [], idFrames = [];
+  const ids = [],
+    idFrames = [];
   let state = newDecoderState();
   let lastTok = dec.blankId;
-  let t = 0, emitted = 0;
+  let t = 0,
+    emitted = 0;
   const enc = new Float32Array(D);
   // The prediction net (LSTM) output depends only on lastTok + state, which change
   // ONLY on a non-blank emission. Cache it so blank-advance frames (the majority)
@@ -157,16 +210,35 @@ export function tdtGreedy(dec, frames, Tenc, maxSymbols = 10) {
   while (t < Tenc) {
     enc.set(frames.subarray(t * D, t * D + D));
     const lg = joint(dec, enc, pred.decOut);
-    let maxId = 0, maxV = -Infinity;
-    for (let i = 0; i < dec.vocab; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
-    let step = 0, dV = -Infinity;
-    for (let i = dec.vocab; i < dec.logits; i++) if (lg[i] > dV) { dV = lg[i]; step = i - dec.vocab; }
+    let maxId = 0,
+      maxV = -Infinity;
+    for (let i = 0; i < dec.vocab; i++)
+      if (lg[i] > maxV) {
+        maxV = lg[i];
+        maxId = i;
+      }
+    let step = 0,
+      dV = -Infinity;
+    for (let i = dec.vocab; i < dec.logits; i++)
+      if (lg[i] > dV) {
+        dV = lg[i];
+        step = i - dec.vocab;
+      }
     if (maxId !== dec.blankId) {
-      state = pred.state; lastTok = maxId; ids.push(maxId); idFrames.push(t); emitted++;
+      state = pred.state;
+      lastTok = maxId;
+      ids.push(maxId);
+      idFrames.push(t);
+      emitted++;
       pred = predict(dec, lastTok, state); // recompute only after emission
     }
-    if (step > 0) { t += step; emitted = 0; }
-    else if (maxId === dec.blankId || emitted >= maxSymbols) { t += 1; emitted = 0; }
+    if (step > 0) {
+      t += step;
+      emitted = 0;
+    } else if (maxId === dec.blankId || emitted >= maxSymbols) {
+      t += 1;
+      emitted = 0;
+    }
   }
   return { ids, idFrames };
 }

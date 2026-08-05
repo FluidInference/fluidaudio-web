@@ -33,8 +33,7 @@ export class ParakeetV3Engine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
-    const json = async (path: string, repo = WEIGHTS_REPO) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
+    const json = async (path: string, repo = WEIGHTS_REPO) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("parakeet/encoder-int8.manifest.json");
@@ -63,7 +62,10 @@ export class ParakeetV3Engine implements AsrEngine {
 
     // Window start offsets.
     const starts: number[] = [];
-    for (let s = 0; s < samples.length; s += hop) { starts.push(s); if (single) break; }
+    for (let s = 0; s < samples.length; s += hop) {
+      starts.push(s);
+      if (single) break;
+    }
 
     // Encode windows in GROUPS of up to WB (equal-length windows batched through the
     // encoder: bigger GEMMs + one readback per group instead of per window), and
@@ -74,9 +76,15 @@ export class ParakeetV3Engine implements AsrEngine {
       let cur: number[] = [];
       for (let i = 0; i < starts.length; i++) {
         const len = Math.min(starts[i] + winSamples, samples.length) - starts[i];
-        if (cur.length && (len !== winSamples || cur.length >= WB)) { groups.push(cur); cur = []; }
+        if (cur.length && (len !== winSamples || cur.length >= WB)) {
+          groups.push(cur);
+          cur = [];
+        }
         cur.push(i);
-        if (len !== winSamples) { groups.push(cur); cur = []; } // short tail encodes alone
+        if (len !== winSamples) {
+          groups.push(cur);
+          cur = [];
+        } // short tail encodes alone
       }
       if (cur.length) groups.push(cur);
     }
@@ -102,29 +110,39 @@ export class ParakeetV3Engine implements AsrEngine {
     for (let g = 0; g < groups.length; g++) {
       const grp = await pendingG;
       if (g + 1 < groups.length) pendingG = beginGroup(g + 1); // queue next GPU encode now
-      if (!grp) { w += groups[g].length; continue; }
-      for (let wi = 0; wi < grp.n; wi++, w++) {
-      const Tenc = grp.Tenc;
-      const frames = grp.frames.subarray(wi * Tenc * grp.D, (wi + 1) * Tenc * grp.D);
-      const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-      const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
-
-      // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
-      let skip = 0;
-      if (w > 0 && wids.length) {
-        const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
-        let frameSkip = 0;
-        while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
-        const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
-        let matched = 0;
-        for (let L = maxL; L >= 2; L--) {
-          let ok = true;
-          for (let i = 0; i < L; i++) if (ids[ids.length - L + i] !== wids[i]) { ok = false; break; }
-          if (ok) { matched = L; break; }
-        }
-        skip = Math.max(matched, frameSkip);
+      if (!grp) {
+        w += groups[g].length;
+        continue;
       }
-      for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
+      for (let wi = 0; wi < grp.n; wi++, w++) {
+        const Tenc = grp.Tenc;
+        const frames = grp.frames.subarray(wi * Tenc * grp.D, (wi + 1) * Tenc * grp.D);
+        const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
+        const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
+
+        // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
+        let skip = 0;
+        if (w > 0 && wids.length) {
+          const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
+          let frameSkip = 0;
+          while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
+          const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
+          let matched = 0;
+          for (let L = maxL; L >= 2; L--) {
+            let ok = true;
+            for (let i = 0; i < L; i++)
+              if (ids[ids.length - L + i] !== wids[i]) {
+                ok = false;
+                break;
+              }
+            if (ok) {
+              matched = L;
+              break;
+            }
+          }
+          skip = Math.max(matched, frameSkip);
+        }
+        for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
       }
     }
     // GPU encode and CPU decode are pipelined, so a per-stage split is meaningless;

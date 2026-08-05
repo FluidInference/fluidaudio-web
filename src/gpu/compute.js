@@ -1399,7 +1399,7 @@ export class GpuContext {
   /** Upload f32 data as an f16 tensor (half the bytes). */
   uploadF16(data, rows, cols) {
     const u16 = new Uint16Array(new Float16Array(data).buffer);
-    const size = Math.max(4, Math.ceil((u16.byteLength) / 4) * 4);
+    const size = Math.max(4, Math.ceil(u16.byteLength / 4) * 4);
     const buf = this.device.createBuffer({ size, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
     this.device.queue.writeBuffer(buf, 0, u16);
     return { buf, rows, cols, f16: true };
@@ -1421,12 +1421,15 @@ export class GpuContext {
     await stg.mapAsync(GPUMapMode.READ);
     const h = new Float16Array(stg.getMappedRange().slice(0, n * 2));
     const out = Float32Array.from(h);
-    stg.unmap(); stg.destroy();
+    stg.unmap();
+    stg.destroy();
     return out;
   }
   /** f16 matmul: C = act(A@B + bias). a/b/bias/out all f16 tensors. */
   matmulF16(a, b, { bias = null, act = "none" } = {}) {
-    const M = a.rows, K = a.cols, N = b.cols;
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
     const c = this.allocF16(M, N);
     const biasBuf = bias ? bias.buf : this.allocF16(1, 1).buf;
     const pipeline = this._pipeline("gemmF16", GEMM_F16_WGSL);
@@ -1449,7 +1452,8 @@ export class GpuContext {
    * Returns f32 [M,N]. Runs on WebGPU where ORT's EP has no int kernel.
    */
   matmulNBits(a, bq, scales, zp, N, blockSize = 32) {
-    const M = a.rows, K = a.cols;
+    const M = a.rows,
+      K = a.cols;
     const nblk = Math.ceil(K / blockSize);
     const zpb = Math.ceil(nblk / 2);
     const y = this.alloc(M, N);
@@ -1465,13 +1469,18 @@ export class GpuContext {
     pass.setBindGroup(0, bg);
     const tot = Math.ceil((M * N) / 64);
     pass.dispatchWorkgroups(Math.min(tot, 65535), Math.ceil(tot / 65535));
-    if (!this._pass) { pass.end(); this.device.queue.submit([enc.finish()]); }
+    if (!this._pass) {
+      pass.end();
+      this.device.queue.submit([enc.finish()]);
+    }
     return y;
   }
 
   /** f16 fused conv1d (implicit GEMM, groups=1). x/wRows/bias/out all f16. */
   conv1dFastF16(x, wRows, cout, k, { bias = null, stride = 1, pad = 0, dilation = 1, act = "none" } = {}) {
-    const Cin = x.rows, L = x.cols, CinK = Cin * k;
+    const Cin = x.rows,
+      L = x.cols,
+      CinK = Cin * k;
     const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.allocF16(cout, Lout);
     const biasBuf = bias ? bias.buf : this.allocF16(1, 1).buf;
@@ -1493,7 +1502,10 @@ export class GpuContext {
     const size = bytes.byteLength;
     this._uniRing = this._uniRing || new Map();
     let ring = this._uniRing.get(size);
-    if (!ring) { ring = { bufs: [], i: 0 }; this._uniRing.set(size, ring); }
+    if (!ring) {
+      ring = { bufs: [], i: 0 };
+      this._uniRing.set(size, ring);
+    }
     const CAP = 4096;
     let buf;
     if (ring.bufs.length < CAP) {
@@ -1505,7 +1517,10 @@ export class GpuContext {
     ring.i++;
     if (this._pass) {
       this._batchUniforms = (this._batchUniforms || 0) + 1;
-      if (this._batchUniforms > CAP && !this._warnedRing) { this._warnedRing = true; console.warn("[gpu] uniform ring wrapped within one batch — split the batch"); }
+      if (this._batchUniforms > CAP && !this._warnedRing) {
+        this._warnedRing = true;
+        console.warn("[gpu] uniform ring wrapped within one batch — split the batch");
+      }
     }
     this.device.queue.writeBuffer(buf, 0, bytes);
     return buf;
@@ -1540,7 +1555,8 @@ export class GpuContext {
     const entries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b } }));
     entries.push({ binding: buffers.length, resource: { buffer: uniform } });
     const bg = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries });
-    if (this._pass) { // batched
+    if (this._pass) {
+      // batched
       this._pass.setPipeline(pipeline);
       this._pass.setBindGroup(0, bg);
       this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
@@ -1557,7 +1573,9 @@ export class GpuContext {
 
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
   matmul(a, b, { bias = null, act = "none" } = {}) {
-    const M = a.rows, K = a.cols, N = b.cols;
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
@@ -1573,7 +1591,9 @@ export class GpuContext {
   }
 
   matmulV2(a, b, { bias = null, act = "none" } = {}) {
-    const M = a.rows, K = a.cols, N = b.cols;
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV2", GEMM_V2_WGSL);
@@ -1583,7 +1603,9 @@ export class GpuContext {
   }
 
   matmulV3(a, b, { bias = null, act = "none" } = {}) {
-    const M = a.rows, K = a.cols, N = b.cols;
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
@@ -1593,7 +1615,9 @@ export class GpuContext {
   }
 
   matmulV4(a, b, { bias = null, act = "none" } = {}) {
-    const M = a.rows, K = a.cols, N = b.cols;
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemmV4", GEMM_V4_WGSL);
@@ -1629,14 +1653,16 @@ export class GpuContext {
    */
   conv1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, padLeft, padRight, dilation = 1, groups = 1, act = "none" } = {}) {
     // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
-    padLeft = padLeft ?? pad; padRight = padRight ?? pad;
+    padLeft = padLeft ?? pad;
+    padRight = padRight ?? pad;
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
     // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
     // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
     if (groups === 1 && padLeft === padRight && (act === "none" || act === "gelu" || act === "tanh" || act === "relu")) {
       return this.conv1dFast(x, w, cout, k, { bias, stride, pad: padLeft, dilation, act });
     }
-    const Cin = x.rows, L = x.cols;
+    const Cin = x.rows,
+      L = x.cols;
     const Lout = Math.floor((L + padLeft + padRight - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
     const biasBuf = bias ? bias.buf : this._dummy();
@@ -1711,7 +1737,8 @@ export class GpuContext {
 
   /** Batched QK^T / Q·pos^T over all heads: q[T,H*HD], b[Tb,H*HD] → [H*T, Tb]. qb?:[1,H*HD]. */
   bmmQK(q, b, qb, H, HD, W = 1, bShared = false) {
-    const T = q.rows / W, Tb = bShared ? b.rows : b.rows / W;
+    const T = q.rows / W,
+      Tb = bShared ? b.rows : b.rows / W;
     const s = this.alloc(W * H * T, Tb);
     const pipeline = this._pipeline("bmmqk", BMM_QK_WGSL);
     const u = this._uniform(new Uint32Array([T, Tb, H, HD, qb ? 1 : 0, W, bShared ? 1 : 0, 0]));
@@ -1721,7 +1748,8 @@ export class GpuContext {
 
   /** Batched probs@V over all heads: p[W*H*Tq, Tk], v[W*Tk, H*HD] → [W*Tq, H*HD]. */
   bmmPV(p, v, H, HD, W = 1) {
-    const Tk = v.rows / W, Tq = p.rows / (W * H);
+    const Tk = v.rows / W,
+      Tq = p.rows / (W * H);
     const y = this.alloc(W * Tq, H * HD);
     const pipeline = this._pipeline("bmmpv", BMM_PV_WGSL);
     const u = this._uniform(new Uint32Array([Tq, Tk, H, HD, W, 0, 0, 0]));
@@ -1752,7 +1780,9 @@ export class GpuContext {
   /** SiLU (x*sigmoid(x)) elementwise, same shape. */
   silu(x) {
     const y = this.alloc(x.rows, x.cols);
-    const pipeline = this._pipeline("silu", `
+    const pipeline = this._pipeline(
+      "silu",
+      `
       struct Meta { n:u32, _a:u32, _b:u32, _c:u32 };
       @group(0) @binding(0) var<storage, read> X: array<f32>;
       @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
@@ -1761,7 +1791,8 @@ export class GpuContext {
       fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
         let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
         let v = X[i]; Y[i] = v / (1.0 + exp(-clamp(v, -30.0, 30.0)));
-      }`);
+      }`,
+    );
     const u = this._uniform(new Uint32Array([x.rows * x.cols, 0, 0, 0]));
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
@@ -1770,7 +1801,9 @@ export class GpuContext {
   /** Elementwise ReLU (standalone; matmul act=relu covers the fused case). */
   relu(x) {
     const y = this.alloc(x.rows, x.cols);
-    const pipeline = this._pipeline("relu", `
+    const pipeline = this._pipeline(
+      "relu",
+      `
       struct Meta { n:u32, _a:u32, _b:u32, _c:u32 };
       @group(0) @binding(0) var<storage, read> X: array<f32>;
       @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
@@ -1779,7 +1812,8 @@ export class GpuContext {
       fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
         let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
         Y[i] = max(X[i], 0.0);
-      }`);
+      }`,
+    );
     const u = this._uniform(new Uint32Array([x.rows * x.cols, 0, 0, 0]));
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
@@ -1787,7 +1821,8 @@ export class GpuContext {
 
   /** GLU over channels: x:[2C, T] -> [C, T], y[c,t] = x[c,t]*sigmoid(x[c+C,t]). */
   glu(x) {
-    const C = x.rows / 2, T = x.cols;
+    const C = x.rows / 2,
+      T = x.cols;
     const y = this.alloc(C, T);
     const pipeline = this._pipeline("glu", GLU_WGSL);
     const u = this._uniform(new Uint32Array([C, T, 0, 0]));
@@ -1800,9 +1835,34 @@ export class GpuContext {
    * Cout*(Cin/groups)*Kh*Kw f32 (ONNX [Cout,Cin/g,Kh,Kw] flat), bias?:[Cout].
    * Returns [Cout, Ho*Wo]. Supports groups (depthwise) + fused bias/relu/silu.
    */
-  conv2d(x, w, { cout, cin, h, w: W_, kh, kw, bias = null, strideH = 1, strideW = 1, padH = 0, padW = 0, padTop, padBottom, padLeft, padRight, groups = 1, act = "none" } = {}) {
+  conv2d(
+    x,
+    w,
+    {
+      cout,
+      cin,
+      h,
+      w: W_,
+      kh,
+      kw,
+      bias = null,
+      strideH = 1,
+      strideW = 1,
+      padH = 0,
+      padW = 0,
+      padTop,
+      padBottom,
+      padLeft,
+      padRight,
+      groups = 1,
+      act = "none",
+    } = {},
+  ) {
     // Asymmetric padding supported (padTop/Bottom/Left/Right); default symmetric padH/padW.
-    padTop = padTop ?? padH; padBottom = padBottom ?? padH; padLeft = padLeft ?? padW; padRight = padRight ?? padW;
+    padTop = padTop ?? padH;
+    padBottom = padBottom ?? padH;
+    padLeft = padLeft ?? padW;
+    padRight = padRight ?? padW;
     const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
     const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
@@ -1819,7 +1879,8 @@ export class GpuContext {
    * Returns [Cout, Lout]. w/bias passed as GpuTensors (only .buf used).
    */
   convTranspose1d(x, w, { cout, k, bias = null, stride = 1, pad = 0, dilation = 1, groups = 1, outputPadding = 0, act = "none" } = {}) {
-    const Cin = x.rows, L = x.cols;
+    const Cin = x.rows,
+      L = x.cols;
     const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
     const y = this.alloc(cout, Lout);
     const biasBuf = bias ? bias.buf : this._dummy();
@@ -1831,7 +1892,8 @@ export class GpuContext {
 
   /** im2col: x[Cin,L] -> [Cin*K, Lout]. */
   im2col(x, k, { stride = 1, pad = 0, dilation = 1 } = {}) {
-    const Cin = x.rows, L = x.cols;
+    const Cin = x.rows,
+      L = x.cols;
     const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
     const cols = this.alloc(Cin * k, Lout);
     const pipeline = this._pipeline("im2col", IM2COL_WGSL);
@@ -1906,7 +1968,8 @@ export class GpuContext {
    * Returns [Cout, Lout]. The fast path for the big vocaoder convs.
    */
   conv1dFast(x, wRows, cout, k, { bias = null, stride = 1, pad = 0, dilation = 1, act = "none" } = {}) {
-    const Cin = x.rows, L = x.cols;
+    const Cin = x.rows,
+      L = x.cols;
     const CinK = Cin * k;
     const Lout = Math.floor((L + 2 * pad - dilation * (k - 1) - 1) / stride) + 1;
     const y = this.alloc(cout, Lout);
@@ -1921,7 +1984,9 @@ export class GpuContext {
   scale(x, s) {
     const n = x.rows * x.cols;
     const y = this.alloc(x.rows, x.cols);
-    const pipeline = this._pipeline("scalek", `
+    const pipeline = this._pipeline(
+      "scalek",
+      `
       struct Meta { n:u32, s:f32, _a:u32, _b:u32 };
       @group(0) @binding(0) var<storage, read> X: array<f32>;
       @group(0) @binding(1) var<storage, read_write> Y: array<f32>;
@@ -1930,7 +1995,8 @@ export class GpuContext {
       fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
         let i = gid.y * (nwg.x * 64u) + gid.x; if (i >= m.n) { return; }
         Y[i] = X[i] * m.s;
-      }`);
+      }`,
+    );
     const meta = new ArrayBuffer(16);
     new Uint32Array(meta, 0, 1)[0] = n;
     new Float32Array(meta, 4, 1)[0] = s;
@@ -1992,8 +2058,12 @@ export class GpuContext {
     this._run(pipeline, [a.buf, b.buf, c.buf], u, Math.ceil(n / 64));
     return c;
   }
-  add(a, b) { return this.ewise(a, b, "add"); }
-  mul(a, b) { return this.ewise(a, b, "mul"); }
+  add(a, b) {
+    return this.ewise(a, b, "add");
+  }
+  mul(a, b) {
+    return this.ewise(a, b, "mul");
+  }
 
   /**
    * Bidirectional LSTM (ONNX semantics, iofc gates, batch 1). x:[seq,inp];
@@ -2001,7 +2071,8 @@ export class GpuContext {
    * Returns Y:[seq, 2*hid] = [fwd | bwd]. H must be <= 256.
    */
   lstm(x, w, r, b, hid) {
-    const seq = x.rows, inp = x.cols;
+    const seq = x.rows,
+      inp = x.cols;
     const y = this.alloc(seq, 2 * hid);
     const pipeline = this._pipeline("lstm", LSTM_WGSL);
     const u = this._uniform(new Uint32Array([seq, inp, hid, 0]));

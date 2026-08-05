@@ -8,7 +8,11 @@ import { GpuContext } from "../src/gpu/compute.js";
 const dev = await getDevice();
 const ctx = new GpuContext(dev);
 const rand = (n) => Float32Array.from({ length: n }, () => Math.random() * 2 - 1);
-const maxErr = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
+const maxErr = (a, b) => {
+  let m = 0;
+  for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i]));
+  return m;
+};
 let fails = 0;
 function report(name, err, tol) {
   const ok = err <= tol;
@@ -18,12 +22,23 @@ function report(name, err, tol) {
 
 // ---- matmul (+ fused bias/gelu) ----
 {
-  const M = 80, K = 512, N = 512;
-  const A = rand(M * K), B = rand(K * N), bias = rand(N);
+  const M = 80,
+    K = 512,
+    N = 512;
+  const A = rand(M * K),
+    B = rand(K * N),
+    bias = rand(N);
   const gelu = (x) => 0.5 * x * (1 + Math.tanh(0.7978845608028654 * (x + 0.044715 * x ** 3)));
   const ref = new Float32Array(M * N);
-  for (let i = 0; i < M; i++) for (let j = 0; j < N; j++) { let s = bias[j]; for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j]; ref[i * N + j] = gelu(s); }
-  const ta = ctx.upload(A, M, K), tb = ctx.upload(B, K, N), tbias = ctx.upload(bias, 1, N);
+  for (let i = 0; i < M; i++)
+    for (let j = 0; j < N; j++) {
+      let s = bias[j];
+      for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j];
+      ref[i * N + j] = gelu(s);
+    }
+  const ta = ctx.upload(A, M, K),
+    tb = ctx.upload(B, K, N),
+    tbias = ctx.upload(bias, 1, N);
   const out = await ctx.download(ctx.matmul(ta, tb, { bias: tbias, act: "gelu" }));
   report("matmul+bias+gelu", maxErr(out, ref), 1e-2);
 }
@@ -32,7 +47,8 @@ function report(name, err, tol) {
 function convRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups) {
   const Lout = Math.floor((L + 2 * pad - dil * (K - 1) - 1) / stride) + 1;
   const Y = new Float32Array(Cout * Lout);
-  const cinG = Cin / groups, coutG = Cout / groups;
+  const cinG = Cin / groups,
+    coutG = Cout / groups;
   for (let co = 0; co < Cout; co++) {
     const g = Math.floor(co / coutG);
     for (let lo = 0; lo < Lout; lo++) {
@@ -55,21 +71,33 @@ for (const cfg of [
   { name: "conv1d depthwise", Cin: 80, L: 100, Cout: 80, K: 7, stride: 1, pad: 3, dil: 1, groups: 80 },
 ]) {
   const { Cin, L, Cout, K, stride, pad, dil, groups } = cfg;
-  const X = rand(Cin * L), W = rand(Cout * (Cin / groups) * K), bias = rand(Cout);
+  const X = rand(Cin * L),
+    W = rand(Cout * (Cin / groups) * K),
+    bias = rand(Cout);
   const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups);
-  const tx = ctx.upload(X, Cin, L), tw = ctx.upload(W, 1, W.length), tb = ctx.upload(bias, 1, Cout);
+  const tx = ctx.upload(X, Cin, L),
+    tw = ctx.upload(W, 1, W.length),
+    tb = ctx.upload(bias, 1, Cout);
   const out = await ctx.download(ctx.conv1d(tx, tw, { cout: Cout, k: K, bias: tb, stride, pad, dilation: dil, groups }));
   report(cfg.name, maxErr(out, ref), 1e-2);
 }
 
 // ---- layernorm ----
 {
-  const R = 64, C = 512;
-  const X = rand(R * C), g = rand(C), b = rand(C), eps = 1e-5;
+  const R = 64,
+    C = 512;
+  const X = rand(R * C),
+    g = rand(C),
+    b = rand(C),
+    eps = 1e-5;
   const ref = new Float32Array(R * C);
   for (let r = 0; r < R; r++) {
-    let mean = 0; for (let j = 0; j < C; j++) mean += X[r * C + j]; mean /= C;
-    let v = 0; for (let j = 0; j < C; j++) v += (X[r * C + j] - mean) ** 2; v /= C;
+    let mean = 0;
+    for (let j = 0; j < C; j++) mean += X[r * C + j];
+    mean /= C;
+    let v = 0;
+    for (let j = 0; j < C; j++) v += (X[r * C + j] - mean) ** 2;
+    v /= C;
     const inv = 1 / Math.sqrt(v + eps);
     for (let j = 0; j < C; j++) ref[r * C + j] = (X[r * C + j] - mean) * inv * g[j] + b[j];
   }
@@ -79,12 +107,19 @@ for (const cfg of [
 
 // ---- softmax ----
 {
-  const R = 128, C = 200;
+  const R = 128,
+    C = 200;
   const X = rand(R * C);
   const ref = new Float32Array(R * C);
   for (let r = 0; r < R; r++) {
-    let mx = -Infinity; for (let j = 0; j < C; j++) mx = Math.max(mx, X[r * C + j]);
-    let s = 0; for (let j = 0; j < C; j++) { const e = Math.exp(X[r * C + j] - mx); ref[r * C + j] = e; s += e; }
+    let mx = -Infinity;
+    for (let j = 0; j < C; j++) mx = Math.max(mx, X[r * C + j]);
+    let s = 0;
+    for (let j = 0; j < C; j++) {
+      const e = Math.exp(X[r * C + j] - mx);
+      ref[r * C + j] = e;
+      s += e;
+    }
     for (let j = 0; j < C; j++) ref[r * C + j] /= s;
   }
   const out = await ctx.download(ctx.softmax(ctx.upload(X, R, C)));
@@ -93,39 +128,84 @@ for (const cfg of [
 
 // ---- elementwise add (broadcast bias) + mul ----
 {
-  const R = 40, C = 512;
-  const A = rand(R * C), bcast = rand(C);
-  const refAdd = new Float32Array(R * C), refMul = new Float32Array(R * C);
-  for (let i = 0; i < R * C; i++) { refAdd[i] = A[i] + bcast[i % C]; refMul[i] = A[i] * bcast[i % C]; }
-  const ta = ctx.upload(A, R, C), tb = ctx.upload(bcast, 1, C);
+  const R = 40,
+    C = 512;
+  const A = rand(R * C),
+    bcast = rand(C);
+  const refAdd = new Float32Array(R * C),
+    refMul = new Float32Array(R * C);
+  for (let i = 0; i < R * C; i++) {
+    refAdd[i] = A[i] + bcast[i % C];
+    refMul[i] = A[i] * bcast[i % C];
+  }
+  const ta = ctx.upload(A, R, C),
+    tb = ctx.upload(bcast, 1, C);
   report("add (broadcast)", maxErr(await ctx.download(ctx.add(ta, tb)), refAdd), 1e-5);
   report("mul (broadcast)", maxErr(await ctx.download(ctx.mul(ta, tb)), refMul), 1e-5);
 }
 
 // ---- f16-storage matmul + fused conv (looser tol: f16 ~3 decimal digits) ----
 {
-  const M = 128, K = 512, N = 256;
-  const A = rand(M * K), B = rand(K * N), bias = rand(N);
+  const M = 128,
+    K = 512,
+    N = 256;
+  const A = rand(M * K),
+    B = rand(K * N),
+    bias = rand(N);
   const gelu = (x) => 0.5 * x * (1 + Math.tanh(0.7978845608028654 * (x + 0.044715 * x ** 3)));
   const ref = new Float32Array(M * N);
-  for (let i = 0; i < M; i++) for (let j = 0; j < N; j++) { let s = bias[j]; for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j]; ref[i * N + j] = gelu(s); }
+  for (let i = 0; i < M; i++)
+    for (let j = 0; j < N; j++) {
+      let s = bias[j];
+      for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j];
+      ref[i * N + j] = gelu(s);
+    }
   const out = await ctx.downloadF16(ctx.matmulF16(ctx.uploadF16(A, M, K), ctx.uploadF16(B, K, N), { bias: ctx.uploadF16(bias, 1, N), act: "gelu" }));
-  const rel = (() => { let se = 0, sr = 0; for (let i = 0; i < ref.length; i++) { se += (out[i] - ref[i]) ** 2; sr += ref[i] ** 2; } return Math.sqrt(se / sr); })();
+  const rel = (() => {
+    let se = 0,
+      sr = 0;
+    for (let i = 0; i < ref.length; i++) {
+      se += (out[i] - ref[i]) ** 2;
+      sr += ref[i] ** 2;
+    }
+    return Math.sqrt(se / sr);
+  })();
   report("matmulF16 (rel)", rel, 5e-3);
 }
 {
-  const Cin = 48, L = 400, Cout = 64, K = 7, pad = 3;
-  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const Cin = 48,
+    L = 400,
+    Cout = 64,
+    K = 7,
+    pad = 3;
+  const X = rand(Cin * L),
+    W = rand(Cout * Cin * K),
+    bias = rand(Cout);
   const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
-  const out = await ctx.downloadF16(ctx.conv1dFastF16(ctx.uploadF16(X, Cin, L), ctx.uploadF16(W, Cout, Cin * K), Cout, K, { pad, bias: ctx.uploadF16(bias, 1, Cout) }));
-  const rel = (() => { let se = 0, sr = 0; for (let i = 0; i < ref.length; i++) { se += (out[i] - ref[i]) ** 2; sr += ref[i] ** 2; } return Math.sqrt(se / sr); })();
+  const out = await ctx.downloadF16(
+    ctx.conv1dFastF16(ctx.uploadF16(X, Cin, L), ctx.uploadF16(W, Cout, Cin * K), Cout, K, { pad, bias: ctx.uploadF16(bias, 1, Cout) }),
+  );
+  const rel = (() => {
+    let se = 0,
+      sr = 0;
+    for (let i = 0; i < ref.length; i++) {
+      se += (out[i] - ref[i]) ** 2;
+      sr += ref[i] ** 2;
+    }
+    return Math.sqrt(se / sr);
+  })();
   report("conv1dFastF16 (rel)", rel, 1e-2);
 }
 
 // ---- int4 block-quant matmul (MatMulNBits) vs CPU dequant ----
 {
   // K = 100 is NOT a multiple of 32 → last block is partial (exercises the OOB guard).
-  const M = 8, N = 64, blk = 32, K = 100, nblk = Math.ceil(K / blk), zpb = Math.ceil(nblk / 2);
+  const M = 8,
+    N = 64,
+    blk = 32,
+    K = 100,
+    nblk = Math.ceil(K / blk),
+    zpb = Math.ceil(nblk / 2);
   const Bq = new Uint8Array(N * nblk * 16);
   for (let i = 0; i < Bq.length; i++) Bq[i] = Math.floor(Math.random() * 256);
   const scales = rand(N * nblk).map((v) => Math.abs(v) * 0.1 + 0.02);
@@ -135,19 +215,34 @@ for (const cfg of [
   const q = (n, b, jj) => (Bq[(n * nblk + b) * 16 + (jj >> 1)] >> (4 * (jj & 1))) & 0xf;
   const zpAt = (n, b) => (zpU8[n * zpb + (b >> 1)] >> (4 * (b & 1))) & 0xf;
   const ref = new Float32Array(M * N);
-  for (let mi = 0; mi < M; mi++) for (let n = 0; n < N; n++) {
-    let acc = 0;
-    for (let b = 0; b < nblk; b++) { const s = scales[n * nblk + b], z = zpAt(n, b); for (let jj = 0; jj < 32; jj++) { const k = b * 32 + jj; if (k >= K) break; acc += A[mi * K + k] * ((q(n, b, jj) - z) * s); } }
-    ref[mi * N + n] = acc;
-  }
+  for (let mi = 0; mi < M; mi++)
+    for (let n = 0; n < N; n++) {
+      let acc = 0;
+      for (let b = 0; b < nblk; b++) {
+        const s = scales[n * nblk + b],
+          z = zpAt(n, b);
+        for (let jj = 0; jj < 32; jj++) {
+          const k = b * 32 + jj;
+          if (k >= K) break;
+          acc += A[mi * K + k] * ((q(n, b, jj) - z) * s);
+        }
+      }
+      ref[mi * N + n] = acc;
+    }
   const out = await ctx.download(ctx.matmulNBits(ctx.upload(A, M, K), ctx.uploadBytes(Bq), ctx.upload(scales, 1, scales.length), ctx.uploadBytes(zpU8), N));
   report("matmulNBits (int4, K%32≠0)", maxErr(out, ref), 1e-3);
 }
 
 // ---- conv1d via im2col + GEMM (matches the direct conv) ----
 {
-  const Cin = 32, L = 500, Cout = 48, K = 5, pad = 2;
-  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const Cin = 32,
+    L = 500,
+    Cout = 48,
+    K = 5,
+    pad = 2;
+  const X = rand(Cin * L),
+    W = rand(Cout * Cin * K),
+    bias = rand(Cout);
   const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
   // conv1dGemm has no bias fold; add bias per-row on CPU for the check.
   const g = await ctx.download(ctx.conv1dGemm(ctx.upload(X, Cin, L), ctx.upload(W, Cout, Cin * K), Cout, K, { pad }));
@@ -158,8 +253,14 @@ for (const cfg of [
 
 // ---- conv1dFast (fused implicit GEMM, groups=1) matches direct conv ----
 {
-  const Cin = 48, L = 400, Cout = 64, K = 7, pad = 3;
-  const X = rand(Cin * L), W = rand(Cout * Cin * K), bias = rand(Cout);
+  const Cin = 48,
+    L = 400,
+    Cout = 64,
+    K = 7,
+    pad = 3;
+  const X = rand(Cin * L),
+    W = rand(Cout * Cin * K),
+    bias = rand(Cout);
   const ref = convRefCPU(X, W, bias, Cin, L, Cout, K, 1, pad, 1, 1);
   const out = await ctx.download(ctx.conv1dFast(ctx.upload(X, Cin, L), ctx.upload(W, Cout, Cin * K), Cout, K, { pad, bias: ctx.upload(bias, 1, Cout) }));
   report("conv1dFast (fused)", maxErr(out, ref), 1e-2);
@@ -167,11 +268,13 @@ for (const cfg of [
 
 // ---- gatherCols (length regulator) ----
 {
-  const C = 16, T = 8;
+  const C = 16,
+    T = 8;
   const X = rand(C * T);
   const idx = Uint32Array.from([0, 0, 0, 1, 2, 2, 3, 4, 4, 4, 4, 7]);
   const out = await ctx.download(ctx.gatherCols(ctx.upload(X, C, T), idx));
-  let e = 0; for (let r = 0; r < C; r++) for (let f = 0; f < idx.length; f++) e = Math.max(e, Math.abs(out[r * idx.length + f] - X[r * T + idx[f]]));
+  let e = 0;
+  for (let r = 0; r < C; r++) for (let f = 0; f < idx.length; f++) e = Math.max(e, Math.abs(out[r * idx.length + f] - X[r * T + idx[f]]));
   report("gatherCols (len-reg)", e, 0);
 }
 
@@ -179,9 +282,11 @@ for (const cfg of [
 function convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, dil, groups, outPad) {
   const Lout = (L - 1) * stride - 2 * pad + dil * (K - 1) + outPad + 1;
   const Y = new Float32Array(Cout * Lout);
-  const cinG = Cin / groups, coutG = Cout / groups;
+  const cinG = Cin / groups,
+    coutG = Cout / groups;
   for (let co = 0; co < Cout; co++) {
-    const g = Math.floor(co / coutG), coInG = co - g * coutG;
+    const g = Math.floor(co / coutG),
+      coInG = co - g * coutG;
     for (let lo = 0; lo < Lout; lo++) {
       let acc = bias ? bias[co] : 0;
       for (let ci = 0; ci < cinG; ci++) {
@@ -204,23 +309,42 @@ for (const cfg of [
   { name: "convT depthwise s2", Cin: 32, L: 40, Cout: 32, K: 3, stride: 2, pad: 1, groups: 32, outPad: 1 },
 ]) {
   const { Cin, L, Cout, K, stride, pad, groups, outPad } = cfg;
-  const X = rand(Cin * L), W = rand(Cin * (Cout / groups) * K), bias = rand(Cout);
+  const X = rand(Cin * L),
+    W = rand(Cin * (Cout / groups) * K),
+    bias = rand(Cout);
   const ref = convTRefCPU(X, W, bias, Cin, L, Cout, K, stride, pad, 1, groups, outPad);
-  const out = await ctx.download(ctx.convTranspose1d(ctx.upload(X, Cin, L), ctx.upload(W, 1, W.length),
-    { cout: Cout, k: K, bias: ctx.upload(bias, 1, Cout), stride, pad, groups, outputPadding: outPad }));
+  const out = await ctx.download(
+    ctx.convTranspose1d(ctx.upload(X, Cin, L), ctx.upload(W, 1, W.length), {
+      cout: Cout,
+      k: K,
+      bias: ctx.upload(bias, 1, Cout),
+      stride,
+      pad,
+      groups,
+      outputPadding: outPad,
+    }),
+  );
   report(cfg.name, maxErr(out, ref), 1e-2);
 }
 
 // ---- bidirectional LSTM (ONNX iofc semantics) ----
 {
-  const seq = 12, inp = 20, hid = 16;
+  const seq = 12,
+    inp = 20,
+    hid = 16;
   const sig = (x) => 1 / (1 + Math.exp(-x));
-  const X = rand(seq * inp), W = rand(2 * 4 * hid * inp), R = rand(2 * 4 * hid * hid), B = rand(2 * 8 * hid);
+  const X = rand(seq * inp),
+    W = rand(2 * 4 * hid * inp),
+    R = rand(2 * 4 * hid * hid),
+    B = rand(2 * 8 * hid);
   // CPU reference, gate order iofc, output [seq, 2*hid] = [fwd|bwd].
   const ref = new Float32Array(seq * 2 * hid);
   for (let dir = 0; dir < 2; dir++) {
-    const wB = dir * 4 * hid * inp, rB = dir * 4 * hid * hid, bB = dir * 8 * hid;
-    const h = new Float32Array(hid), c = new Float32Array(hid);
+    const wB = dir * 4 * hid * inp,
+      rB = dir * 4 * hid * hid,
+      bB = dir * 8 * hid;
+    const h = new Float32Array(hid),
+      c = new Float32Array(hid);
     for (let s = 0; s < seq; s++) {
       const t = dir === 1 ? seq - 1 - s : s;
       const hn = new Float32Array(hid);
@@ -231,9 +355,13 @@ for (const cfg of [
           for (let k = 0; k < hid; k++) acc += R[rB + (gi * hid + u) * hid + k] * h[k];
           return acc;
         };
-        const it = sig(gate(0)), ot = sig(gate(1)), ft = sig(gate(2)), ct = Math.tanh(gate(3));
+        const it = sig(gate(0)),
+          ot = sig(gate(1)),
+          ft = sig(gate(2)),
+          ct = Math.tanh(gate(3));
         const cn = ft * c[u] + it * ct;
-        c[u] = cn; hn[u] = ot * Math.tanh(cn);
+        c[u] = cn;
+        hn[u] = ot * Math.tanh(cn);
         ref[(t * 2 + dir) * hid + u] = hn[u];
       }
       h.set(hn);
@@ -245,12 +373,20 @@ for (const cfg of [
 
 // ---- AdaIN (instance-norm over time + per-channel affine) ----
 {
-  const C = 40, L = 300, eps = 1e-5;
-  const X = rand(C * L), sc = rand(C), sh = rand(C);
+  const C = 40,
+    L = 300,
+    eps = 1e-5;
+  const X = rand(C * L),
+    sc = rand(C),
+    sh = rand(C);
   const ref = new Float32Array(C * L);
   for (let ch = 0; ch < C; ch++) {
-    let mean = 0; for (let j = 0; j < L; j++) mean += X[ch * L + j]; mean /= L;
-    let v = 0; for (let j = 0; j < L; j++) v += (X[ch * L + j] - mean) ** 2; v /= L;
+    let mean = 0;
+    for (let j = 0; j < L; j++) mean += X[ch * L + j];
+    mean /= L;
+    let v = 0;
+    for (let j = 0; j < L; j++) v += (X[ch * L + j] - mean) ** 2;
+    v /= L;
     const inv = 1 / Math.sqrt(v + eps);
     for (let j = 0; j < L; j++) ref[ch * L + j] = (X[ch * L + j] - mean) * inv * sc[ch] + sh[ch];
   }
@@ -260,7 +396,8 @@ for (const cfg of [
 
 // ---- leaky relu ----
 {
-  const X = rand(4096), slope = 0.2;
+  const X = rand(4096),
+    slope = 0.2;
   const ref = X.map((v) => (v > 0 ? v : slope * v));
   const out = await ctx.download(ctx.leakyRelu(ctx.upload(X, 1, 4096), slope));
   report("leakyRelu", maxErr(out, ref), 1e-6);
@@ -268,72 +405,140 @@ for (const cfg of [
 
 // ---- transpose / sliceCols / setCols (attention plumbing) ----
 {
-  const R = 24, C = 768, W = 64, off = 128;
+  const R = 24,
+    C = 768,
+    W = 64,
+    off = 128;
   const X = rand(R * C);
   const tOut = await ctx.download(ctx.transpose(ctx.upload(X, R, C)));
-  let tErr = 0; for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) tErr = Math.max(tErr, Math.abs(tOut[c * R + r] - X[r * C + c]));
+  let tErr = 0;
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) tErr = Math.max(tErr, Math.abs(tOut[c * R + r] - X[r * C + c]));
   report("transpose", tErr, 0);
 
   const sl = await ctx.download(ctx.sliceCols(ctx.upload(X, R, C), off, W));
-  let sErr = 0; for (let r = 0; r < R; r++) for (let j = 0; j < W; j++) sErr = Math.max(sErr, Math.abs(sl[r * W + j] - X[r * C + off + j]));
+  let sErr = 0;
+  for (let r = 0; r < R; r++) for (let j = 0; j < W; j++) sErr = Math.max(sErr, Math.abs(sl[r * W + j] - X[r * C + off + j]));
   report("sliceCols", sErr, 0);
 
   const dst = ctx.upload(new Float32Array(R * C), R, C);
   const src = ctx.upload(rand(R * W), R, W);
   ctx.setCols(dst, src, off);
-  const dOut = await ctx.download(dst), sIn = await ctx.download(src);
-  let dErr = 0; for (let r = 0; r < R; r++) for (let j = 0; j < W; j++) dErr = Math.max(dErr, Math.abs(dOut[r * C + off + j] - sIn[r * W + j]));
+  const dOut = await ctx.download(dst),
+    sIn = await ctx.download(src);
+  let dErr = 0;
+  for (let r = 0; r < R; r++) for (let j = 0; j < W; j++) dErr = Math.max(dErr, Math.abs(dOut[r * C + off + j] - sIn[r * W + j]));
   report("setCols", dErr, 0);
 }
 
 // ---- conv2d (regular + depthwise) — FastConformer dw-striding subsampling ----
 function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, groups, relu) {
-  const Ho = Math.floor((H + 2 * padH - Kh) / sH) + 1, Wo = Math.floor((Wd + 2 * padW - Kw) / sW) + 1;
-  const Y = new Float32Array(Cout * Ho * Wo), cinG = Cin / groups, coutG = Cout / groups;
+  const Ho = Math.floor((H + 2 * padH - Kh) / sH) + 1,
+    Wo = Math.floor((Wd + 2 * padW - Kw) / sW) + 1;
+  const Y = new Float32Array(Cout * Ho * Wo),
+    cinG = Cin / groups,
+    coutG = Cout / groups;
   for (let co = 0; co < Cout; co++) {
     const g = Math.floor(co / coutG);
-    for (let ho = 0; ho < Ho; ho++) for (let wo = 0; wo < Wo; wo++) {
-      let acc = bias ? bias[co] : 0;
-      for (let ci = 0; ci < cinG; ci++) {
-        const rc = g * cinG + ci;
-        for (let kh = 0; kh < Kh; kh++) { const hi = ho * sH + kh - padH; if (hi < 0 || hi >= H) continue;
-          for (let kw = 0; kw < Kw; kw++) { const wi = wo * sW + kw - padW; if (wi < 0 || wi >= Wd) continue;
-            acc += X[rc * H * Wd + hi * Wd + wi] * W[((co * cinG + ci) * Kh + kh) * Kw + kw]; } }
+    for (let ho = 0; ho < Ho; ho++)
+      for (let wo = 0; wo < Wo; wo++) {
+        let acc = bias ? bias[co] : 0;
+        for (let ci = 0; ci < cinG; ci++) {
+          const rc = g * cinG + ci;
+          for (let kh = 0; kh < Kh; kh++) {
+            const hi = ho * sH + kh - padH;
+            if (hi < 0 || hi >= H) continue;
+            for (let kw = 0; kw < Kw; kw++) {
+              const wi = wo * sW + kw - padW;
+              if (wi < 0 || wi >= Wd) continue;
+              acc += X[rc * H * Wd + hi * Wd + wi] * W[((co * cinG + ci) * Kh + kh) * Kw + kw];
+            }
+          }
+        }
+        Y[co * Ho * Wo + ho * Wo + wo] = relu ? Math.max(acc, 0) : acc;
       }
-      Y[co * Ho * Wo + ho * Wo + wo] = relu ? Math.max(acc, 0) : acc;
-    }
   }
   return Y;
 }
 {
-  const Cin = 1, H = 20, Wd = 16, Cout = 8, K = 3;
-  const X = rand(Cin * H * Wd), W = rand(Cout * Cin * K * K), b = rand(Cout);
+  const Cin = 1,
+    H = 20,
+    Wd = 16,
+    Cout = 8,
+    K = 3;
+  const X = rand(Cin * H * Wd),
+    W = rand(Cout * Cin * K * K),
+    b = rand(Cout);
   const ref = conv2dRefCPU(X, W, b, Cin, H, Wd, Cout, K, K, 2, 2, 1, 1, 1, true);
-  const out = await ctx.download(ctx.conv2d(ctx.upload(X, Cin, H * Wd), ctx.upload(W, 1, W.length),
-    { cout: Cout, cin: Cin, h: H, w: Wd, kh: K, kw: K, bias: ctx.upload(b, 1, Cout), strideH: 2, strideW: 2, padH: 1, padW: 1, groups: 1, act: "relu" }));
+  const out = await ctx.download(
+    ctx.conv2d(ctx.upload(X, Cin, H * Wd), ctx.upload(W, 1, W.length), {
+      cout: Cout,
+      cin: Cin,
+      h: H,
+      w: Wd,
+      kh: K,
+      kw: K,
+      bias: ctx.upload(b, 1, Cout),
+      strideH: 2,
+      strideW: 2,
+      padH: 1,
+      padW: 1,
+      groups: 1,
+      act: "relu",
+    }),
+  );
   report("conv2d (regular)", maxErr(out, ref), 1e-2);
 }
 {
-  const C = 16, H = 10, Wd = 8, K = 3;
-  const X = rand(C * H * Wd), W = rand(C * K * K), b = rand(C);
+  const C = 16,
+    H = 10,
+    Wd = 8,
+    K = 3;
+  const X = rand(C * H * Wd),
+    W = rand(C * K * K),
+    b = rand(C);
   const ref = conv2dRefCPU(X, W, b, C, H, Wd, C, K, K, 2, 2, 1, 1, C, false);
-  const out = await ctx.download(ctx.conv2d(ctx.upload(X, C, H * Wd), ctx.upload(W, 1, W.length),
-    { cout: C, cin: C, h: H, w: Wd, kh: K, kw: K, bias: ctx.upload(b, 1, C), strideH: 2, strideW: 2, padH: 1, padW: 1, groups: C }));
+  const out = await ctx.download(
+    ctx.conv2d(ctx.upload(X, C, H * Wd), ctx.upload(W, 1, W.length), {
+      cout: C,
+      cin: C,
+      h: H,
+      w: Wd,
+      kh: K,
+      kw: K,
+      bias: ctx.upload(b, 1, C),
+      strideH: 2,
+      strideW: 2,
+      padH: 1,
+      padW: 1,
+      groups: C,
+    }),
+  );
   report("conv2d (depthwise)", maxErr(out, ref), 1e-2);
 }
 // ---- matmul + silu (FastConformer FF activation) ----
 {
-  const M = 32, K = 128, N = 64, A = rand(M * K), B = rand(K * N);
+  const M = 32,
+    K = 128,
+    N = 64,
+    A = rand(M * K),
+    B = rand(K * N);
   const silu = (x) => x / (1 + Math.exp(-x));
   const ref = new Float32Array(M * N);
-  for (let i = 0; i < M; i++) for (let j = 0; j < N; j++) { let s = 0; for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j]; ref[i * N + j] = silu(s); }
+  for (let i = 0; i < M; i++)
+    for (let j = 0; j < N; j++) {
+      let s = 0;
+      for (let k = 0; k < K; k++) s += A[i * K + k] * B[k * N + j];
+      ref[i * N + j] = silu(s);
+    }
   const out = await ctx.download(ctx.matmul(ctx.upload(A, M, K), ctx.upload(B, K, N), { act: "silu" }));
   report("matmul + silu", maxErr(out, ref), 1e-2);
 }
 
 // ---- glu over channels (conformer conv module) ----
 {
-  const C = 32, T = 20, X = rand(2 * C * T);
+  const C = 32,
+    T = 20,
+    X = rand(2 * C * T);
   const sig = (x) => 1 / (1 + Math.exp(-x));
   const ref = new Float32Array(C * T);
   for (let c = 0; c < C; c++) for (let t = 0; t < T; t++) ref[c * T + t] = X[c * T + t] * sig(X[(c + C) * T + t]);
@@ -343,7 +548,9 @@ function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, 
 
 // ---- rel_shift (relative-position attention) ----
 {
-  const t = 12, p = 2 * t - 1, X = rand(t * p);
+  const t = 12,
+    p = 2 * t - 1,
+    X = rand(t * p);
   // host reference (NeMo pad→reshape→slice)
   const xp = new Float32Array(t * 2 * t);
   for (let i = 0; i < t; i++) for (let c = 0; c < p; c++) xp[i * 2 * t + 1 + c] = X[i * p + c];
@@ -355,11 +562,27 @@ function conv2dRefCPU(X, W, bias, Cin, H, Wd, Cout, Kh, Kw, sH, sW, padH, padW, 
 
 // ---- matmulInt8 (in-shader dequant, per-column scale) ----
 {
-  const M = 40, K = 256, N = 128, A = rand(M * K), W = rand(K * N);
-  const q = new Int8Array(K * N), s = new Float32Array(N);
-  for (let n = 0; n < N; n++) { let mx = 0; for (let k = 0; k < K; k++) mx = Math.max(mx, Math.abs(W[k * N + n])); const sc = mx / 127 || 1; s[n] = sc; for (let k = 0; k < K; k++) q[k * N + n] = Math.max(-127, Math.min(127, Math.round(W[k * N + n] / sc))); }
+  const M = 40,
+    K = 256,
+    N = 128,
+    A = rand(M * K),
+    W = rand(K * N);
+  const q = new Int8Array(K * N),
+    s = new Float32Array(N);
+  for (let n = 0; n < N; n++) {
+    let mx = 0;
+    for (let k = 0; k < K; k++) mx = Math.max(mx, Math.abs(W[k * N + n]));
+    const sc = mx / 127 || 1;
+    s[n] = sc;
+    for (let k = 0; k < K; k++) q[k * N + n] = Math.max(-127, Math.min(127, Math.round(W[k * N + n] / sc)));
+  }
   const ref = new Float32Array(M * N);
-  for (let i = 0; i < M; i++) for (let n = 0; n < N; n++) { let acc = 0; for (let k = 0; k < K; k++) acc += A[i * K + k] * q[k * N + n]; ref[i * N + n] = acc * s[n]; }
+  for (let i = 0; i < M; i++)
+    for (let n = 0; n < N; n++) {
+      let acc = 0;
+      for (let k = 0; k < K; k++) acc += A[i * K + k] * q[k * N + n];
+      ref[i * N + n] = acc * s[n];
+    }
   const out = await ctx.download(ctx.matmulInt8(ctx.upload(A, M, K), ctx.uploadBytes(q), ctx.upload(s, 1, N), N, K));
   report("matmulInt8", maxErr(out, ref), 1e-2);
 }

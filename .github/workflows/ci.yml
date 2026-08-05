@@ -5,14 +5,71 @@ on:
   pull_request:
 
 jobs:
+  # Type-check + production bundle.
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       # --ignore-scripts: skip transitive `sharp` native build (unused; browser only)
       - run: npm ci --ignore-scripts
       - run: npm run build
+
+  # Prettier — style is enforced, not suggested.
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+
+  # Kernel unit tests: every WasmContext kernel vs CPU references (synthetic
+  # weights, no downloads, no GPU) + the Rust crates still build for wasm32.
+  kernels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run wasm:verify
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: rust crates build (wasm32 + simd128)
+        run: |
+          cd rust/wasm-kernels && RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown
+          cd ../parakeet-decoder && RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown
+
+  # Engine smokes: Parakeet v3, EOU, and Kokoro-EN run END TO END on the WASM
+  # backend (runners have no GPU; WebGPU==WASM is separately parity-gated) against
+  # the bundled sample.wav / a fixed phoneme string, asserting real transcripts
+  # and audio sanity. Weights (~1.2 GB) come from Hugging Face, cached by hash of
+  # the smoke scripts (bump scripts to invalidate).
+  engines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/cache@v4
+        with:
+          path: .ci-cache
+          key: hf-weights-${{ hashFiles('scripts/ci-smoke-*.mjs') }}
+          restore-keys: hf-weights-
+      - run: node scripts/ci-smoke-parakeet.mjs
+      - run: node scripts/ci-smoke-eou.mjs
+      - run: node scripts/ci-smoke-kokoro.mjs
