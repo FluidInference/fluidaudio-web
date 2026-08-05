@@ -11,12 +11,26 @@
 /** Build a weight accessor over the extracted Kokoro blob. */
 export function makeKokoro(ctx, weights, manifest, roles) {
   const cacheT = new Map();
+  // v1.0/en names tensors encoder./decoder.decoder.; v1.1-zh uses kmodel. for the
+  // same tensors — resolve by trying the zh spellings when the en name is absent.
+  const resolveName = (name) => {
+    if (manifest[name]) return name;
+    for (const alt of [
+      name.replace("decoder.decoder.", "kmodel.decoder."),
+      name.replace("encoder.", "kmodel."),
+    ]) {
+      if (manifest[alt]) return alt;
+    }
+    return null;
+  };
+  const has = (name) => resolveName(name) !== null;
   const raw = (name) => {
-    const m = manifest[name];
-    if (!m) throw new Error(`kokoro weight missing: ${name}`);
+    const rn = resolveName(name);
+    if (!rn) throw new Error(`kokoro weight missing: ${name}`);
+    const m = manifest[rn];
     return weights.subarray(m.offset, m.offset + m.len);
   };
-  const dims = (name) => manifest[name].dims;
+  const dims = (name) => manifest[resolveName(name) ?? name].dims;
   // upload a named initializer as a ctx tensor with a chosen [rows,cols] shape.
   const up = (name, rows, cols) => {
     const key = `${name}:${rows}x${cols}`;
@@ -25,14 +39,20 @@ export function makeKokoro(ctx, weights, manifest, roles) {
     cacheT.set(key, t);
     return t;
   };
-  // resolve a node suffix → its weight/bias initializer names.
+  // Resolve node suffix(es) → weight/bias initializer names. Candidates are tried
+  // in order; each first as an EXACT key, then as a suffix (exact-first matters for
+  // zh's flat paths, where "/lstm/LSTM" is a full key but also a suffix of
+  // "/text_encoder/lstm/LSTM").
   const roleKeys = Object.keys(roles);
-  const findRole = (suffix) => {
-    const k = roleKeys.find((rk) => rk.endsWith(suffix));
-    if (!k) throw new Error(`kokoro role missing: ${suffix}`);
-    return roles[k];
+  const findRole = (...suffixes) => {
+    for (const s of suffixes) {
+      if (roles[s]) return roles[s];
+      const k = roleKeys.find((rk) => rk.endsWith(s));
+      if (k) return roles[k];
+    }
+    throw new Error(`kokoro role missing: ${suffixes.join(" | ")}`);
   };
-  return { raw, dims, up, findRole, ctx, manifest };
+  return { raw, dims, up, findRole, has, ctx, manifest };
 }
 
 // ── host helpers (one-shot exotic ops) ───────────────────────────────────────
@@ -128,7 +148,9 @@ function style128T(ctx, style128) {
 export async function synth(K, dEn, ids, style) {
   const ctx = K.ctx;
   const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style);
-  const source = sineGen(K, F0);                       // [2T*300] source waveform
+  // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
+  const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
+  const source = sineGen(K, F0, { nsfNoise: zh, randPhase: zh }); // [2T*300]
   const spec = sourceSpec(source);                     // [22, ~frames]
   const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
   const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
@@ -146,7 +168,7 @@ export async function predictor(K, dEn, ids, style) {
   const sp = style.slice(128, 256); // prosodic style
   const spT = ctx.upload(sp.slice(), 128, 1);
   const spRow = ctx.upload(sp.slice(), 1, 128);
-  const lstmB = (x, sfx) => { const r = K.findRole(sfx); return ctx.lstm(x, K.up(r.w, 1, K.manifest[r.w].len), K.up(r.r, 1, K.manifest[r.r].len), K.up(r.b, 1, K.manifest[r.b].len), 256); };
+  const lstmB = (x, ...sfx) => { const r = K.findRole(...sfx); return ctx.lstm(x, K.up(r.w, 1, K.manifest[r.w].len), K.up(r.r, 1, K.manifest[r.r].len), K.up(r.b, 1, K.manifest[r.b].len), 256); };
   const gemm = (sfx) => { const r = K.findRole(sfx); const wd = K.dims(r.w); return { w: K.up(r.w, wd[0], wd[1]), b: r.b ? K.up(r.b, 1, wd[0]) : null, wd }; };
   // concat style (broadcast over seq) to x[seq,C] → [seq,C+128]
   const catStyle = async (x) => { const d = await ctx.download(x); const C = x.cols, out = new Float32Array(seq * (C + 128)); for (let i = 0; i < seq; i++) { out.set(d.subarray(i * C, i * C + C), i * (C + 128)); out.set(sp, i * (C + 128) + C); } return ctx.upload(out, seq, C + 128); };
@@ -161,11 +183,11 @@ export async function predictor(K, dEn, ids, style) {
   // ── Chain B: DurationEncoder → duration + alignment ──
   let x = dEn;
   for (const [li, ai] of [[0, 1], [2, 3], [4, 5]]) {
-    x = lstmB(await catStyle(x), `predictor/text_encoder/lstms.${li}/LSTM`);
-    x = await adaLN(x, `predictor/text_encoder/lstms.${ai}`);
+    x = lstmB(await catStyle(x), `predictor/text_encoder/lstms.${li}/LSTM`, `text_encoder/lstms.${li}/LSTM`);
+    x = await adaLN(x, `text_encoder/lstms.${ai}`);
   }
   const durEncOut = x; // [seq,512]
-  const xp = lstmB(await catStyle(x), "predictor/lstm/LSTM"); // [seq,512]
+  const xp = lstmB(await catStyle(x), "predictor/lstm/LSTM", "/lstm/LSTM"); // [seq,512] (zh: flat /lstm/LSTM, exact-match)
   const dp = gemm("duration_proj/linear_layer/MatMul");
   const dprojBias = K.manifest["encoder.predictor.duration_proj.linear_layer.bias"];
   const durLogits = await ctx.download(ctx.matmul(xp, dp.w)); // [seq,50]
@@ -197,7 +219,7 @@ export async function predictor(K, dEn, ids, style) {
     te = lnChan(K, te, c);
     te = ctx.leakyRelu(te, 0.2);
   }
-  const teL = lstmB(ctx.upload(transposeHost(await ctx.download(te), 512, seq), seq, 512), "encoder/text_encoder/lstm/LSTM"); // [seq,512]
+  const teL = lstmB(ctx.upload(transposeHost(await ctx.download(te), 512, seq), seq, 512), "encoder/text_encoder/lstm/LSTM", "/text_encoder/lstm/LSTM"); // [seq,512]
   // asr = teL^T @ A  → [512,T]
   const teLd = await ctx.download(teL); const asr = new Float32Array(512 * T);
   { let f = 0; for (let i = 0; i < seq; i++) { for (let dd = 0; dd < predDur[i]; dd++) { for (let c = 0; c < 512; c++) asr[c * T + (f + dd)] = teLd[i * 512 + c]; } f += predDur[i]; } }
@@ -252,27 +274,42 @@ async function predResBlocks(K, prosody, which, spT) {
 // SineGen (m_source) → source waveform (host, deterministic; corr 1.0 vs ORT).
 // F0:[1,frames] → per-frame harmonic phase (cumsum×300)×2π → LINEAR upsample ×300 →
 // sin×0.1×uv(F0>10) → l_linear[9,1]+bias → tanh. Port of kokoro-predictor-ref.py.
-export function sineGen(K, F0) {
+export function sineGen(K, F0, { nsfNoise = false, randPhase = false } = {}) {
   const frames = F0.cols, sr = 24000, up = 300, L = frames * up;
   const lw = K.raw(K.findRole("m_source/l_linear/MatMul").w); // [9,1]
   const lb = K.raw("decoder.decoder.generator.m_source.l_linear.bias")[0];
   const F0d = F0.data;
+  // Gaussian noise (Box-Muller) for the NSF noise branch (zh keeps it; en baked it out).
+  const randn = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
   // per-harmonic cumulative phase at frame rate, then LINEAR (half_pixel) upsample.
-  const src = new Float32Array(L);
+  // sines[j] = Σ_h sin(phase_h)·0.1·lw[h]  (the l_linear fold; bias added at tanh).
+  const sines = new Float32Array(L);
   for (let h = 0; h < 9; h++) {
-    const ph = new Float32Array(frames); let acc = 0;
+    // NSF random initial phase per harmonic (fundamental keeps 0); zh-only.
+    const ini = randPhase && h > 0 ? Math.random() : 0;
+    const ph = new Float32Array(frames); let acc = ini * up;
     for (let f = 0; f < frames; f++) {
       const rad = (F0d[f] * (h + 1)) / sr; acc += (rad - Math.floor(rad)) * up; ph[f] = acc * 2 * Math.PI;
     }
     for (let j = 0; j < L; j++) {
       const pos = (j + 0.5) / up - 0.5; let lo = Math.floor(pos); const w = pos - lo;
       lo = Math.max(0, Math.min(frames - 1, lo)); const hi = Math.max(0, Math.min(frames - 1, lo + 1));
-      src[j] += Math.sin(ph[lo] * (1 - w) + ph[hi] * w) * 0.1 * lw[h];
+      sines[j] += Math.sin(ph[lo] * (1 - w) + ph[hi] * w) * 0.1 * lw[h];
     }
   }
+  const src = new Float32Array(L);
   for (let j = 0; j < L; j++) {
     const uv = F0d[Math.min(frames - 1, Math.floor(j / up))] > 10 ? 1 : 0;
-    src[j] = Math.tanh(src[j] * uv + lb);
+    let v = sines[j] * uv;
+    if (nsfNoise) {
+      // noise folded through l_linear: Σ_h lw[h] ≈ per-channel noise sum; the ONNX
+      // graph adds per-harmonic noise BEFORE l_linear — approximate with the folded
+      // weight sum (audibly equivalent aspiration noise).
+      const amp = uv * 0.003 + (1 - uv) * (0.1 / 3);
+      let lwSum = 0; for (let h = 0; h < 9; h++) lwSum += lw[h];
+      v += randn() * amp * lwSum;
+    }
+    src[j] = Math.tanh(v + lb);
   }
   return src;
 }
@@ -381,7 +418,10 @@ export async function decoder(K, xConcat, asr, F0, N, style128, onStage) {
   return x; // decode3 [512, T]
 }
 
-// STFT recombine + iSTFT overlap-add (host, one-shot). Port of kfinal.py tail.
+// STFT recombine + iSTFT overlap-add (host, one-shot). Two export variants:
+// v1.0/en: inverse_basis[22,1,20] ConvT ÷ window_sum ×6 (kfinal.py recipe).
+// v1.1-zh: weight_backward_{real,imag}[11,1,20] ConvTs, waveform = real − imag,
+// trim [10:-10] (window norm baked into the backward weights).
 async function istft(K, convPostT) {
   const ctx = K.ctx;
   const cp = await ctx.download(convPostT); // [22, T]
@@ -393,9 +433,25 @@ async function istft(K, convPostT) {
     recomb[f * T + t] = mag * Math.cos(p);
     recomb[(f + half) * T + t] = mag * Math.sin(p);
   }
+  const hop = 5, nfft = 20, Lo = (T - 1) * hop + nfft;
+  if (!K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis")) {
+    // zh path: two backward-basis ConvTransposes, subtract, trim nfft/2 each side.
+    const wr = K.raw("decoder.decoder.generator.stft.weight_backward_real"); // [11,1,20]
+    const wi = K.raw("decoder.decoder.generator.stft.weight_backward_imag");
+    const wav = new Float32Array(Lo);
+    for (let t = 0; t < T; t++) {
+      for (let k = 0; k < nfft; k++) {
+        let acc = 0;
+        for (let c = 0; c < half; c++) {
+          acc += wr[c * nfft + k] * recomb[c * T + t] - wi[c * nfft + k] * recomb[(c + half) * T + t];
+        }
+        wav[t * hop + k] += acc;
+      }
+    }
+    return wav.slice(nfft / 2, Lo - nfft / 2);
+  }
   const ib = K.raw("decoder.decoder.generator.stft.istft.stft.inverse_basis"); // [22,1,20]
   const ws = K.raw("decoder.decoder.generator.stft.istft.stft.window_sum");     // [20]
-  const hop = 5, nfft = 20, Lo = (T - 1) * hop + nfft;
   const wav = new Float32Array(Lo), wsum = new Float32Array(Lo);
   for (let t = 0; t < T; t++) {
     for (let k = 0; k < nfft; k++) {

@@ -4,17 +4,19 @@
 // src/gpu/kokoro-synth.js (parity vs the ONNX model: waveform corr ~0.97, source
 // spec exact, decode3 5e-5). Weights: FluidInference/fluidaudio-web/kokoro{,-zh}.
 //
-// G2P (text → IPA phonemes): English via the Misaki lexicon (lexicon.js); Chinese
-// via pinyin-pro → IPA (chinese-g2p.js). Both onnx-free. Out-of-lexicon English
-// currently has no espeak fallback (kokoro-js provided that) — a follow-up is
-// espeak-ng WASM; until then OOV words are skipped.
+// G2P (text → phonemes): English via the Misaki lexicon (lexicon.js, IPA); Chinese
+// via pinyin-pro → misaki[zh] v1.1 format (zh-frontend-v11.js, Bopomofo + tone
+// digits). Both onnx-free. Out-of-lexicon English currently has no espeak fallback
+// (kokoro-js provided that) — OOV words are skipped; the gold/silver lexicon tiers
+// carry coverage.
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
 import { EnglishLexicon } from "./lexicon.js";
-import { chineseToIpa } from "./chinese-g2p.js";
+import { chineseToZh11 } from "./zh-frontend-v11.js";
 import { loadKokoroBackend } from "./synth-backend.js";
 import vocabEn from "./vocab.json";
+import vocabZh from "./vocab-zh.json";
 
 export interface KokoroOptions {
   /** "en" (v1.0) or "zh" (v1.1-zh). */
@@ -35,13 +37,7 @@ export class KokoroTtsEngine implements TtsEngine {
   }
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    if (this.zh) {
-      // Kokoro v1.1-zh has a DIFFERENT architecture (443 vs 554 tensors, different
-      // bert namespace) than v1.0 — the raw port (src/gpu/kokoro-synth.js) is
-      // validated on v1.0/en only. zh needs its own extraction + validation.
-      throw new Error("Kokoro zh: ORT-free port pending (v1.1-zh has a different architecture from the ported v1.0).");
-    }
-    this.backend = await loadKokoroBackend(fetchCached as any, hfUrl, vocabEn as Record<string, number>, {
+    this.backend = await loadKokoroBackend(fetchCached as any, hfUrl, (this.zh ? vocabZh : vocabEn) as Record<string, number>, {
       modelDir: this.zh ? "kokoro-zh" : "kokoro",
       voiceRepo: this.zh ? "onnx-community/Kokoro-82M-v1.1-zh-ONNX" : "onnx-community/Kokoro-82M-v1.0-ONNX",
       onProgress,
@@ -61,7 +57,7 @@ export class KokoroTtsEngine implements TtsEngine {
 
     let phonemes = "";
     if (this.zh) {
-      phonemes = chineseToIpa(text).phonemes ?? "";
+      phonemes = chineseToZh11(text).phonemes ?? "";
     } else if (this.lexicon) {
       phonemes = this.lexicon.phonemize(text).phonemes ?? "";
     }
