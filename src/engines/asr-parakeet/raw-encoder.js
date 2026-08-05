@@ -79,6 +79,15 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   // linear2 biases fold the 0.5 macaron factor; q bias folds 1/sqrt(HD).
   const vecOpt = (k) => (man[k] ? vec(k) : null);
   const vecScaledOpt = (k, s) => (man[k] ? ctx.upload(scaled(k, s), 1, man[k].count ?? man[k].len) : null);
+  // Pointwise conv weights as TRANSPOSED matrices [cin, cout]: the conv module
+  // runs them as X@Wt GEMMs (weights on the B side → f16 path, fused bias),
+  // valid for any window length. k=1 ⇒ [cout, cin] row-major in the manifest.
+  const pwT = (k, cout, cin) => {
+    const w = raw(k);
+    const t = new Float32Array(cin * cout);
+    for (let co = 0; co < cout; co++) for (let ci = 0; ci < cin; ci++) t[ci * cout + co] = w[co * cin + ci];
+    return upW(t, cin, cout);
+  };
   for (let L = 0; L < cfg.layers; L++) {
     const g = (s) => `L${L}_${s}`;
     // pos_bias_u/v uploaded ONCE as per-head GPU tensors [1,HD].
@@ -92,7 +101,7 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
       pbuAll: ctx.upload(pbuS.slice(), 1, cfg.H * HD),
       pbvAll: ctx.upload(pbvS.slice(), 1, cfg.H * HD),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
-      pw1: vec(g("pw1")), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2: vec(g("pw2")),
+      pw1T: pwT(g("pw1"), 2 * cfg.D, cfg.D), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2T: pwT(g("pw2"), cfg.D, cfg.D),
       pw1b: vecOpt(g("pw1b")), pw2b: vecOpt(g("pw2b")), // pointwise conv biases (Sortformer)
       bn: man[g("bnw")] ? [vec(g("bnw")), vec(g("bnb"))] : null, // conv-module norm (EOU)
       lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))], ff2w1: mat(g("ff2w1")), ff2w2: matScaled(g("ff2w2"), 0.5),
@@ -210,8 +219,10 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
     const probs = ctx.softmax(sc);                                             // rows = W*H*T
     const outc = ctx.bmmPV(probs, v, H, HD, W);                                // [W*T, H*HD]
     x = ctx.add(x, ctx.matmul(outc, w.out, { bias: w.outb }));
-    const hT = ctx.transpose(ln(x, w.lnconv));               // [D, W*T]
-    const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1, bias: w.pw1b })); // pointwise: window-safe
+    // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
+    // B side (f16 path, fused bias) — shape-valid for any window length.
+    const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [W*T, 2D]
+    const glu = ctx.glu(ctx.transpose(pre1)); // [D, W*T]
     // Depthwise conv is over TIME → per-window (a batched run would leak across
     // window seams). Pointwise convs (k=1) and channel ops act per-timestep.
     const dwConv = (input, opts) => {
@@ -231,7 +242,7 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
       // Parakeet: BatchNorm folded into depthwise, SiLU fused.
       dwo = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
     }
-    x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1, bias: w.pw2b })));
+    x = ctx.add(x, ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b }));
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
     x = ln(x, w.lnout);
   }
