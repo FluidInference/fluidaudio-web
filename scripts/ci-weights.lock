@@ -1,0 +1,4 @@
+# Bump this version when engine weights change on Hugging Face — it is the ONLY
+# input to the CI weight-cache key (scripts hashing would never invalidate the
+# cache: hfGet reuses any existing file).
+weights-v1

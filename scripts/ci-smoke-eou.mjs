@@ -9,7 +9,7 @@ import { makeEouTokenizer } from "../src/engines/eou-parakeet/eou-decode.js";
 import { JsPreprocessor } from "../src/engines/asr-nemotron/nemotron-mel.js";
 
 const W = "FluidInference/fluidaudio-web";
-const EOU_CFG = { melBins: 128, subPad: { t: 2, b: 1, l: 2, r: 1 }, convCausal: true, attChunk: 2, attLeft: 70 };
+import { EOU_CFG } from "../src/engines/eou-parakeet/config.js";
 const ctx = await createWasmContext(readFileSync(fileURLToPath(new URL("../src/gpu/wasm-kernels.wasm", import.meta.url))));
 const enc = loadParakeetEncoder(ctx, await hfGet(W, "eou/encoder-fp16.bin"), await hfJson(W, "eou/encoder-fp16.manifest.json"), EOU_CFG);
 const decBinU8 = await hfGet(W, "eou/decoder-fp32.bin");

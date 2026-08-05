@@ -1,24 +1,42 @@
 // Shared helpers for the CI engine smokes: HF weight download with a disk cache
 // (.ci-cache/, restored by actions/cache) and a 16-bit mono WAV reader.
-import { createWriteStream, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync } from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const CACHE = new URL("../../.ci-cache/", import.meta.url).pathname;
+const CACHE = fileURLToPath(new URL("../../.ci-cache/", import.meta.url));
 
-/** Download (or reuse cached) HF file → Uint8Array. */
+/** Download (or reuse cached) HF file → Uint8Array. Retries transient failures
+ * (HF 429/5xx from shared runner IPs) and verifies Content-Length when given, so
+ * a truncated/HTML body can't poison the cache. */
 export async function hfGet(repo, path) {
   const dest = join(CACHE, repo, path);
   if (!existsSync(dest) || statSync(dest).size === 0) {
     mkdirSync(dirname(dest), { recursive: true });
     const url = `https://huggingface.co/${repo}/resolve/main/${path}`;
     console.log(`  fetching ${repo}/${path} ...`);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HF fetch ${url} → ${res.status}`);
-    await pipeline(Readable.fromWeb(res.body), createWriteStream(dest + ".part"));
-    const { renameSync } = await import("node:fs");
-    renameSync(dest + ".part", dest);
+    let lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HF fetch ${url} → ${res.status}`);
+        const expect = Number(res.headers.get("content-length") || 0);
+        await pipeline(Readable.fromWeb(res.body), createWriteStream(dest + ".part"));
+        const got = statSync(dest + ".part").size;
+        if (expect && got !== expect) throw new Error(`short read ${got}/${expect} for ${path}`);
+        renameSync(dest + ".part", dest);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        rmSync(dest + ".part", { force: true });
+        console.warn(`  retry ${attempt + 1}/3: ${e.message}`);
+      }
+    }
+    if (lastErr) throw lastErr;
   }
   return new Uint8Array(readFileSync(dest));
 }
