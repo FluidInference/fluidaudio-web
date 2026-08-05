@@ -106,7 +106,10 @@ function lstmStep(x, h, c, W, R, B) {
     let zo = B[H + g] + B[4 * H + H + g];
     let zf = B[2 * H + g] + B[4 * H + 2 * H + g];
     let zc = B[3 * H + g] + B[4 * H + 3 * H + g];
-    const wi = g * H, wo = (H + g) * H, wf = (2 * H + g) * H, wcc = (3 * H + g) * H;
+    const wi = g * H,
+      wo = (H + g) * H,
+      wf = (2 * H + g) * H,
+      wcc = (3 * H + g) * H;
     for (let j = 0; j < H; j++) {
       const xj = x[j];
       zi += W[wi + j] * xj;
@@ -140,10 +143,14 @@ function lstmStep(x, h, c, W, R, B) {
 export function sileroForward(x, state, W) {
   const xp = reflectPadEnd(x, 64);
   const { mag, T } = stftMag(xp, W.stftBasis);
-  let cur = mag, Cin = 129, L = T;
+  let cur = mag,
+    Cin = 129,
+    L = T;
   for (const e of W.enc) {
     const r = conv1d(cur, Cin, L, e.w, e.b, e.cout, e.k, e.stride, 1, true);
-    cur = r.y; L = r.Lout; Cin = e.cout;
+    cur = r.y;
+    L = r.Lout;
+    Cin = e.cout;
   }
   // encoder output [128, L]; Silero uses the last time frame into the LSTM.
   const feat = new Float32Array(HID);

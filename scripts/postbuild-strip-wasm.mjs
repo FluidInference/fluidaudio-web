@@ -6,7 +6,8 @@ import { readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 
 const dir = "dist/assets";
-let removed = 0, freed = 0;
+let removed = 0,
+  freed = 0;
 for (const f of readdirSync(dir)) {
   if (f.startsWith("ort-") && f.endsWith(".wasm")) {
     const p = join(dir, f);

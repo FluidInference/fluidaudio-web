@@ -12,7 +12,12 @@ function byteDecoder() {
   for (let i = 174; i <= 255; i++) bs.push(i);
   const cs = bs.slice();
   let n = 0;
-  for (let b = 0; b < 256; b++) if (!bs.includes(b)) { bs.push(b); cs.push(256 + n); n++; }
+  for (let b = 0; b < 256; b++)
+    if (!bs.includes(b)) {
+      bs.push(b);
+      cs.push(256 + n);
+      n++;
+    }
   const dec = new Map();
   for (let i = 0; i < bs.length; i++) dec.set(String.fromCodePoint(cs[i]), bs[i]);
   return dec;
@@ -31,7 +36,10 @@ export function makeWhisperTokenizer(vocab) {
         if (id >= EOT) continue; // specials
         const tok = id2tok[id];
         if (tok === undefined) continue;
-        for (const ch of tok) { const b = bdec.get(ch); if (b !== undefined) bytes.push(b); }
+        for (const ch of tok) {
+          const b = bdec.get(ch);
+          if (b !== undefined) bytes.push(b);
+        }
       }
       return new TextDecoder("utf-8").decode(new Uint8Array(bytes));
     },

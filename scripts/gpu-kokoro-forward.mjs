@@ -20,19 +20,34 @@ const done = () => dev.queue.onSubmittedWorkDone();
 const ZEROS = new Uint8Array(1 << 23); // 8 MB of zeros (dtype-agnostic)
 function zeroInit(t, bytes) {
   let off = 0;
-  while (off < bytes) { const len = Math.min(ZEROS.length, bytes - off); dev.queue.writeBuffer(t.buf, off, ZEROS, 0, len); off += len; }
+  while (off < bytes) {
+    const len = Math.min(ZEROS.length, bytes - off);
+    dev.queue.writeBuffer(t.buf, off, ZEROS, 0, len);
+    off += len;
+  }
 }
 const origAlloc = ctx.alloc.bind(ctx);
-ctx.alloc = (r, c) => { const t = origAlloc(r, c); zeroInit(t, r * c * 4); return t; };
+ctx.alloc = (r, c) => {
+  const t = origAlloc(r, c);
+  zeroInit(t, r * c * 4);
+  return t;
+};
 const origAllocF16 = ctx.allocF16.bind(ctx);
-ctx.allocF16 = (r, c) => { const t = origAllocF16(r, c); zeroInit(t, Math.ceil(r * c * 2 / 4) * 4); return t; };
+ctx.allocF16 = (r, c) => {
+  const t = origAllocF16(r, c);
+  zeroInit(t, Math.ceil((r * c * 2) / 4) * 4);
+  return t;
+};
 const last2 = (a) => a.slice(-2);
 const prod = (a) => a.reduce((x, y) => x * (y || 1), 1);
 
 function runOp(o) {
   try {
     if (o.op === "Conv") {
-      const [, Cin, L] = o.in[0]; const w = o.in[1]; const Cout = o.out[0][1]; const K = w[2];
+      const [, Cin, L] = o.in[0];
+      const w = o.in[1];
+      const Cout = o.out[0][1];
+      const K = w[2];
       const groups = Math.max(1, Math.round(Cin / w[1]));
       if (groups === 1 && F16) return ctx.conv1dFastF16(ctx.allocF16(Cin, L), ctx.allocF16(Cout, Cin * K), Cout, K, { pad: (K - 1) >> 1 });
       const x = ctx.alloc(Cin, L);
@@ -40,24 +55,32 @@ function runOp(o) {
       return ctx.conv1d(x, ctx.alloc(1, Cout * (Cin / groups) * K), { cout: Cout, k: K, pad: (K - 1) >> 1, groups });
     }
     if (o.op === "ConvTranspose") {
-      const [, Cin, L] = o.in[0]; const Cout = o.out[0][1]; const Lout = o.out[0][2]; const K = o.in[1][2];
+      const [, Cin, L] = o.in[0];
+      const Cout = o.out[0][1];
+      const Lout = o.out[0][2];
+      const K = o.in[1][2];
       const stride = Math.max(1, Math.round(Lout / L));
       return ctx.convTranspose1d(ctx.alloc(Cin, L), ctx.alloc(1, Cin * Cout * K), { cout: Cout, k: K, stride });
     }
     if (o.op === "MatMul" || o.op === "Gemm") {
-      const a = o.in[0]; const out = o.out[0] || [];
+      const a = o.in[0];
+      const out = o.out[0] || [];
       if (!a || a.length < 2) return null;
-      const [M0, K] = last2(a); const M = prod(a.slice(0, -2)) * M0;
-      const N = out.length ? out[out.length - 1] : (o.in[1] ? o.in[1][o.in[1].length - 1] : 0);
+      const [M0, K] = last2(a);
+      const M = prod(a.slice(0, -2)) * M0;
+      const N = out.length ? out[out.length - 1] : o.in[1] ? o.in[1][o.in[1].length - 1] : 0;
       if (!M || !K || !N) return null;
       if (F16) return ctx.matmulF16(ctx.allocF16(M, K), ctx.allocF16(K, N));
       return ctx.matmul(ctx.alloc(M, K), ctx.alloc(K, N));
     }
     if (o.op === "LSTM") {
-      const [seq, , inp] = o.in[0]; const H = Math.round(o.in[1][1] / 4);
+      const [seq, , inp] = o.in[0];
+      const H = Math.round(o.in[1][1] / 4);
       return ctx.lstm(ctx.alloc(seq, inp), ctx.alloc(1, 2 * 4 * H * inp), ctx.alloc(1, 2 * 4 * H * H), ctx.alloc(1, 2 * 8 * H), H);
     }
-  } catch { return null; }
+  } catch {
+    return null;
+  }
   return null;
 }
 
@@ -70,7 +93,9 @@ await done();
 // isolates pure GPU compute, excluding CPU-side alloc/record overhead.
 let ran = 0;
 ctx.beginBatch();
-for (const o of ops) { if (runOp(o)) ran++; }
+for (const o of ops) {
+  if (runOp(o)) ran++;
+}
 await done(); // flush the zero-init writes before timing the dispatches
 const t0 = performance.now();
 ctx.endBatch();

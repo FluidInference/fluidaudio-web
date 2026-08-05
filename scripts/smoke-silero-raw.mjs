@@ -16,12 +16,19 @@ const dir = process.argv[4] || "/tmp/silero-raw";
 function readWav(p, maxSec) {
   const b = readFileSync(p);
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12, dO = -1, dL = 0, sr = 16000;
+  let o = 12,
+    dO = -1,
+    dL = 0,
+    sr = 16000;
   while (o + 8 <= b.length) {
     const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
     const s = dv.getUint32(o + 4, true);
     if (id === "fmt ") sr = dv.getUint32(o + 12, true);
-    if (id === "data") { dO = o + 8; dL = s; break; }
+    if (id === "data") {
+      dO = o + 8;
+      dL = s;
+      break;
+    }
     o += 8 + s + (s & 1);
   }
   let n = dL / 2;
@@ -39,7 +46,8 @@ const s = await ort.InferenceSession.create(onnx);
 
 let ortState = new Float32Array(256);
 let rawState = new Float32Array(256);
-let maxD = 0, n = 0;
+let maxD = 0,
+  n = 0;
 for (let i = 0; i + 512 <= audio.length; i += 512) {
   const chunk = audio.subarray(i, i + 512);
   const oo = await s.run({
@@ -54,5 +62,8 @@ for (let i = 0; i + 512 <= audio.length; i += 512) {
   n++;
 }
 console.log(`chunks=${n}  max prob |Δ| vs ORT = ${maxD.toExponential(2)}`);
-if (maxD > 1e-4) { console.error("PARITY FAIL"); process.exit(1); }
+if (maxD > 1e-4) {
+  console.error("PARITY FAIL");
+  process.exit(1);
+}
 console.log("PARITY OK");

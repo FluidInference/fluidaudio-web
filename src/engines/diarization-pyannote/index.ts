@@ -26,9 +26,7 @@ export class PyannoteDiarizationEngine implements DiarizationEngine {
     //   this.sherpa = await createModule();
     // then configure SherpaOnnxOfflineSpeakerDiarizationConfig with the
     // segmentation + embedding model paths (preloaded into the module FS).
-    throw new Error(
-      "PyannoteDiarizationEngine.load: vendor the sherpa-onnx diarization WASM bundle first — see docs/ARCHITECTURE.md"
-    );
+    throw new Error("PyannoteDiarizationEngine.load: vendor the sherpa-onnx diarization WASM bundle first — see docs/ARCHITECTURE.md");
   }
 
   async diarize(_audio: AudioData, _opts?: { numSpeakers?: number }): Promise<DiarSegment[]> {

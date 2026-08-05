@@ -23,7 +23,10 @@ function cpuLayerNorm(x, rows, cols, g, b, eps) {
     for (let j = 0; j < cols; j++) mean += x[base + j];
     mean /= cols;
     let v = 0;
-    for (let j = 0; j < cols; j++) { const d = x[base + j] - mean; v += d * d; }
+    for (let j = 0; j < cols; j++) {
+      const d = x[base + j] - mean;
+      v += d * d;
+    }
     const inv = 1 / Math.sqrt(v / cols + eps);
     for (let j = 0; j < cols; j++) y[base + j] = (x[base + j] - mean) * inv * g[j] + b[j];
   }
@@ -38,7 +41,8 @@ export function embed(ids, w) {
   const seq = ids.length;
   const e = new Float32Array(seq * EMBED);
   for (let t = 0; t < seq; t++) {
-    const wOff = ids[t] * EMBED, pOff = t * EMBED;
+    const wOff = ids[t] * EMBED,
+      pOff = t * EMBED;
     for (let j = 0; j < EMBED; j++) {
       e[t * EMBED + j] = w.word_emb[wOff + j] + w.pos_emb[pOff + j] + w.tok_emb[j];
     }

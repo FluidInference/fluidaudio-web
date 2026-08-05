@@ -21,15 +21,36 @@ export class GpuContext {
   /** C = act(A[M,K] @ B[K,N] + bias[1,N]). */
   matmul(a: GpuTensor, b: GpuTensor, opts?: { bias?: GpuTensor | null; act?: Activation }): GpuTensor;
   /** 1-D conv. x:[Cin,L], w = Cout*(Cin/groups)*K f32, bias?:[1,Cout] -> [Cout,Lout]. */
-  conv1d(x: GpuTensor, w: GpuTensor, opts: {
-    cout: number; k: number; bias?: GpuTensor | null;
-    stride?: number; pad?: number; dilation?: number; groups?: number; act?: Activation;
-  }): GpuTensor;
+  conv1d(
+    x: GpuTensor,
+    w: GpuTensor,
+    opts: {
+      cout: number;
+      k: number;
+      bias?: GpuTensor | null;
+      stride?: number;
+      pad?: number;
+      dilation?: number;
+      groups?: number;
+      act?: Activation;
+    },
+  ): GpuTensor;
   /** 1-D transposed conv. x:[Cin,L], w = Cin*(Cout/groups)*K f32 -> [Cout,Lout]. */
-  convTranspose1d(x: GpuTensor, w: GpuTensor, opts: {
-    cout: number; k: number; bias?: GpuTensor | null; stride?: number; pad?: number;
-    dilation?: number; groups?: number; outputPadding?: number; act?: Activation;
-  }): GpuTensor;
+  convTranspose1d(
+    x: GpuTensor,
+    w: GpuTensor,
+    opts: {
+      cout: number;
+      k: number;
+      bias?: GpuTensor | null;
+      stride?: number;
+      pad?: number;
+      dilation?: number;
+      groups?: number;
+      outputPadding?: number;
+      act?: Activation;
+    },
+  ): GpuTensor;
   /** Bidirectional LSTM (ONNX iofc, batch 1). w/r/b flat: W[2,4H,inp] R[2,4H,H] B[2,8H]. -> [seq, 2*hid]. H<=256. */
   lstm(x: GpuTensor, w: GpuTensor, r: GpuTensor, b: GpuTensor, hid: number): GpuTensor;
   /** im2col: x[Cin,L] -> [Cin*K, Lout]. */
@@ -37,7 +58,13 @@ export class GpuContext {
   /** conv1d via im2col + tiled GEMM (groups=1). wRows = weight as [Cout, Cin*K]. -> [Cout, Lout]. */
   conv1dGemm(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
   /** Fused conv1d via implicit GEMM (groups=1), no im2col materialization. wRows=[Cout,Cin*K]. */
-  conv1dFast(x: GpuTensor, wRows: GpuTensor, cout: number, k: number, opts?: { bias?: GpuTensor | null; stride?: number; pad?: number; dilation?: number; act?: Activation }): GpuTensor;
+  conv1dFast(
+    x: GpuTensor,
+    wRows: GpuTensor,
+    cout: number,
+    k: number,
+    opts?: { bias?: GpuTensor | null; stride?: number; pad?: number; dilation?: number; act?: Activation },
+  ): GpuTensor;
   /** Length regulator: expand x[C,T] to [C, idxMap.length] by column gather. */
   gatherCols(x: GpuTensor, idxMap: Uint32Array): GpuTensor;
   /** Upload raw packed bytes (int4 weights / zero-points) to a storage buffer. */

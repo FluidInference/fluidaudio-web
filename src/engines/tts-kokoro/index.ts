@@ -53,7 +53,8 @@ export class KokoroTtsEngine implements TtsEngine {
     if (!this.backend) throw new Error("KokoroTtsEngine.load() not called");
     const voice = opts?.voice ?? (this.zh ? "zf_001" : "af_heart");
 
-    let phonemes = "", coverage = 1;
+    let phonemes = "",
+      coverage = 1;
     if (this.zh) {
       ({ phonemes, coverage } = chineseToZh11(text));
     } else if (this.lexicon) {

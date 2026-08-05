@@ -19,6 +19,6 @@ for (const text of texts) {
   const ms = performance.now() - t0;
   const dur = audio.audio.length / audio.sampling_rate;
   console.log(
-    `${String(text.length).padStart(5)}   ${ms.toFixed(0).padStart(6)}   ${dur.toFixed(2).padStart(7)}   ${(dur / (ms / 1000)).toFixed(2).padStart(5)}   ${(text.length / (ms / 1000)).toFixed(0).padStart(6)}`
+    `${String(text.length).padStart(5)}   ${ms.toFixed(0).padStart(6)}   ${dur.toFixed(2).padStart(7)}   ${(dur / (ms / 1000)).toFixed(2).padStart(5)}   ${(text.length / (ms / 1000)).toFixed(0).padStart(6)}`,
   );
 }

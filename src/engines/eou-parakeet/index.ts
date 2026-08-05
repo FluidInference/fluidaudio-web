@@ -22,13 +22,13 @@ import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder
 import { loadEouDecoder, eouDecode } from "../asr-parakeet/raw-decoder-eou.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
 import { makeEouTokenizer } from "./eou-decode.js";
+import { EOU_CFG } from "./config.js";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const VOCAB_REPO = "ysdede/parakeet-realtime-eou-120m-v1-onnx";
 const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
 // EOU streaming FastConformer config (see raw-encoder.js): causal subsampling pad,
 // causal depthwise conv, chunked-causal attention (chunk 2, left context 70).
-const EOU_CFG = { melBins: 128, subPad: { t: 2, b: 1, l: 2, r: 1 }, convCausal: true, attChunk: 2, attLeft: 70 };
 
 export class ParakeetEouEngine implements AsrEngine {
   readonly id = "eou-parakeet";
@@ -41,8 +41,7 @@ export class ParakeetEouEngine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[eou-parakeet] backend: ${b}`) });
-    const json = async (path: string) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
+    const json = async (path: string) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("eou/encoder-fp16.manifest.json");

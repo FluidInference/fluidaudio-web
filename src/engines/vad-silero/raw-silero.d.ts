@@ -14,8 +14,4 @@ export interface SileroManifest {
 
 export function makeSileroWeights(bin: Float32Array, manifest: SileroManifest): SileroWeights;
 
-export function sileroForward(
-  x: Float32Array,
-  state: Float32Array,
-  w: SileroWeights
-): { prob: number; state: Float32Array };
+export function sileroForward(x: Float32Array, state: Float32Array, w: SileroWeights): { prob: number; state: Float32Array };

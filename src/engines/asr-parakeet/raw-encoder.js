@@ -15,7 +15,9 @@ function f16lut() {
   if (_f16lut) return _f16lut;
   const t = new Float32Array(65536);
   for (let h = 0; h < 65536; h++) {
-    const s = h & 0x8000 ? -1 : 1, e = (h & 0x7c00) >> 10, f = h & 0x03ff;
+    const s = h & 0x8000 ? -1 : 1,
+      e = (h & 0x7c00) >> 10,
+      f = h & 0x03ff;
     if (e === 0) t[h] = s * Math.pow(2, -14) * (f / 1024);
     else if (e === 0x1f) t[h] = f ? NaN : s * Infinity;
     else t[h] = s * Math.pow(2, e - 15) * (1 + f / 1024);
@@ -41,21 +43,42 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   const int8 = Object.values(man).some((m) => m.dtype === "i8");
   const f16 = !int8 && Object.values(man).some((m) => m.dtype === "f16");
   let f32v, i8v, u16v, lut;
-  if (int8) { const ab = bin.buffer instanceof ArrayBuffer ? bin.buffer : bin; f32v = new Float32Array(ab); i8v = new Int8Array(ab); }
-  if (f16) { u16v = new Uint16Array(bin.buffer, bin.byteOffset, bin.byteLength >> 1); lut = f16lut(); }
+  if (int8) {
+    const ab = bin.buffer instanceof ArrayBuffer ? bin.buffer : bin;
+    f32v = new Float32Array(ab);
+    i8v = new Int8Array(ab);
+  }
+  if (f16) {
+    u16v = new Uint16Array(bin.buffer, bin.byteOffset, bin.byteLength >> 1);
+    lut = f16lut();
+  }
   const raw = (k) => {
     const m = man[k];
-    if (f16) { const q = u16v.subarray(m.offset, m.offset + m.count), out = new Float32Array(m.count); for (let i = 0; i < m.count; i++) out[i] = lut[q[i]]; return out; }
+    if (f16) {
+      const q = u16v.subarray(m.offset, m.offset + m.count),
+        out = new Float32Array(m.count);
+      for (let i = 0; i < m.count; i++) out[i] = lut[q[i]];
+      return out;
+    }
     if (!int8) return bin.subarray(m.offset, m.offset + m.len);
     if (m.dtype !== "i8") return f32v.subarray(m.offset, m.offset + m.count);
     const q = i8v.subarray(m.i8ByteOffset, m.i8ByteOffset + m.count);
     const sc = f32v.subarray(m.scaleOffset, m.scaleOffset + m.scaleCount);
     const out = new Float32Array(m.count);
-    if (m.quant === "col") { const o = m.dims[1]; for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[i % o]; }
-    else { const rest = m.count / m.dims[0]; for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[(i / rest) | 0]; }
+    if (m.quant === "col") {
+      const o = m.dims[1];
+      for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[i % o];
+    } else {
+      const rest = m.count / m.dims[0];
+      for (let i = 0; i < m.count; i++) out[i] = q[i] * sc[(i / rest) | 0];
+    }
     return out;
   };
-  const scaled = (k, s) => { const a = raw(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return a; };
+  const scaled = (k, s) => {
+    const a = raw(k).slice();
+    for (let i = 0; i < a.length; i++) a[i] *= s;
+    return a;
+  };
   const mat = (k) => ctx.upload(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
   const matScaled = (k, s) => ctx.upload(scaled(k, s), man[k].dims[0], man[k].dims[1]);
@@ -66,7 +89,8 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   const xs = cfg.xscale ? Math.sqrt(cfg.D) : 1;
   const sub = {
     conv: [0, 1, 2, 3, 4].map((i) => ({ w: vec(`c${i}w`), b: vec(`c${i}b`) })),
-    linw: xs === 1 ? mat("linw") : matScaled("linw", xs), linb: xs === 1 ? vec("linb") : ctx.upload(scaled("linb", xs), 1, man["linb"].count ?? man["linb"].len),
+    linw: xs === 1 ? mat("linw") : matScaled("linw", xs),
+    linb: xs === 1 ? vec("linb") : ctx.upload(scaled("linb", xs), 1, man["linb"].count ?? man["linb"].len),
   };
   const layers = [];
   // Optional per-layer linear biases: Sortformer's conformer FF/attn linears have
@@ -77,21 +101,39 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   for (let L = 0; L < cfg.layers; L++) {
     const g = (s) => `L${L}_${s}`;
     // pos_bias_u/v uploaded ONCE as per-head GPU tensors [1,HD].
-    const pbuS = scaled(g("pbu"), INV), pbvS = scaled(g("pbv"), INV);
+    const pbuS = scaled(g("pbu"), INV),
+      pbvS = scaled(g("pbv"), INV);
     layers.push({
-      lnff1: [vec(g("lnff1_w")), vec(g("lnff1_b"))], ff1w1: mat(g("ff1w1")), ff1w2: matScaled(g("ff1w2"), 0.5),
-      ff1b1: vecOpt(g("ff1b1")), ff1b2: vecScaledOpt(g("ff1b2"), 0.5),
+      lnff1: [vec(g("lnff1_w")), vec(g("lnff1_b"))],
+      ff1w1: mat(g("ff1w1")),
+      ff1w2: matScaled(g("ff1w2"), 0.5),
+      ff1b1: vecOpt(g("ff1b1")),
+      ff1b2: vecScaledOpt(g("ff1b2"), 0.5),
       lnatt: [vec(g("lnatt_w")), vec(g("lnatt_b"))],
-      q: matScaled(g("q"), INV), k: mat(g("k")), v: mat(g("v")), pos: mat(g("pos")), out: mat(g("out")),
-      qb: vecScaledOpt(g("qb"), INV), kb: vecOpt(g("kb")), vb: vecOpt(g("vb")), outb: vecOpt(g("outb")),
+      q: matScaled(g("q"), INV),
+      k: mat(g("k")),
+      v: mat(g("v")),
+      pos: mat(g("pos")),
+      out: mat(g("out")),
+      qb: vecScaledOpt(g("qb"), INV),
+      kb: vecOpt(g("kb")),
+      vb: vecOpt(g("vb")),
+      outb: vecOpt(g("outb")),
       pbuAll: ctx.upload(pbuS.slice(), 1, cfg.H * HD),
       pbvAll: ctx.upload(pbvS.slice(), 1, cfg.H * HD),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
-      pw1: vec(g("pw1")), dw: vec(g("dw")), dwb: vec(g("dwb")), pw2: vec(g("pw2")),
-      pw1b: vecOpt(g("pw1b")), pw2b: vecOpt(g("pw2b")), // pointwise conv biases (Sortformer)
+      pw1: vec(g("pw1")),
+      dw: vec(g("dw")),
+      dwb: vec(g("dwb")),
+      pw2: vec(g("pw2")),
+      pw1b: vecOpt(g("pw1b")),
+      pw2b: vecOpt(g("pw2b")), // pointwise conv biases (Sortformer)
       bn: man[g("bnw")] ? [vec(g("bnw")), vec(g("bnb"))] : null, // conv-module norm (EOU)
-      lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))], ff2w1: mat(g("ff2w1")), ff2w2: matScaled(g("ff2w2"), 0.5),
-      ff2b1: vecOpt(g("ff2b1")), ff2b2: vecScaledOpt(g("ff2b2"), 0.5),
+      lnff2: [vec(g("lnff2_w")), vec(g("lnff2_b"))],
+      ff2w1: mat(g("ff2w1")),
+      ff2w2: matScaled(g("ff2w2"), 0.5),
+      ff2b1: vecOpt(g("ff2b1")),
+      ff2b2: vecScaledOpt(g("ff2b2"), 0.5),
       lnout: [vec(g("lnout_w")), vec(g("lnout_b"))],
     });
   }
@@ -102,8 +144,11 @@ function posEncoding(Tsub, D) {
   const pe = new Float32Array((2 * Tsub - 1) * D);
   const dv = (i) => Math.exp(i * -(Math.log(10000) / D));
   for (let pi = 0; pi < 2 * Tsub - 1; pi++) {
-    const pos = (Tsub - 1) - pi;
-    for (let i = 0; i < D; i += 2) { pe[pi * D + i] = Math.sin(pos * dv(i)); pe[pi * D + i + 1] = Math.cos(pos * dv(i)); }
+    const pos = Tsub - 1 - pi;
+    for (let i = 0; i < D; i += 2) {
+      pe[pi * D + i] = Math.sin(pos * dv(i));
+      pe[pi * D + i + 1] = Math.cos(pos * dv(i));
+    }
   }
   return pe;
 }
@@ -115,17 +160,42 @@ function preEncode(ctx, enc, mel) {
   const Tfull = mel.length / melBins;
   const x0 = new Float32Array(Tfull * melBins);
   for (let t = 0; t < Tfull; t++) for (let c = 0; c < melBins; c++) x0[t * melBins + c] = mel[c * Tfull + t];
-  let s = ctx.upload(x0, 1, Tfull * melBins), Hh = Tfull, Wd = melBins;
+  let s = ctx.upload(x0, 1, Tfull * melBins),
+    Hh = Tfull,
+    Wd = melBins;
   // [cout, cin, k, stride, groups, act, isStride2]
   const conv = [
-    [Csub, 1, 3, 2, 1, "relu", true], [Csub, Csub, 3, 2, Csub, "none", true], [Csub, Csub, 1, 1, 1, "relu", false],
-    [Csub, Csub, 3, 2, Csub, "none", true], [Csub, Csub, 1, 1, 1, "relu", false],
+    [Csub, 1, 3, 2, 1, "relu", true],
+    [Csub, Csub, 3, 2, Csub, "none", true],
+    [Csub, Csub, 1, 1, 1, "relu", false],
+    [Csub, Csub, 3, 2, Csub, "none", true],
+    [Csub, Csub, 1, 1, 1, "relu", false],
   ];
   for (let i = 0; i < 5; i++) {
     const [cout, cin, k, st, gr, act, s2] = conv[i];
-    const pt = s2 ? sp.t : 0, pb = s2 ? sp.b : 0, pl = s2 ? sp.l : 0, pr = s2 ? sp.r : 0;
-    s = ctx.conv2d(s, enc.sub.conv[i].w, { cout, cin, h: Hh, w: Wd, kh: k, kw: k, bias: enc.sub.conv[i].b, strideH: st, strideW: st, padTop: pt, padBottom: pb, padLeft: pl, padRight: pr, groups: gr, act });
-    Hh = Math.floor((Hh + pt + pb - k) / st) + 1; Wd = Math.floor((Wd + pl + pr - k) / st) + 1;
+    const pt = s2 ? sp.t : 0,
+      pb = s2 ? sp.b : 0,
+      pl = s2 ? sp.l : 0,
+      pr = s2 ? sp.r : 0;
+    s = ctx.conv2d(s, enc.sub.conv[i].w, {
+      cout,
+      cin,
+      h: Hh,
+      w: Wd,
+      kh: k,
+      kw: k,
+      bias: enc.sub.conv[i].b,
+      strideH: st,
+      strideW: st,
+      padTop: pt,
+      padBottom: pb,
+      padLeft: pl,
+      padRight: pr,
+      groups: gr,
+      act,
+    });
+    Hh = Math.floor((Hh + pt + pb - k) / st) + 1;
+    Wd = Math.floor((Wd + pl + pr - k) / st) + 1;
   }
   const flat = ctx.subReshape(s, Csub, Hh, Wd);
   return { x: ctx.matmul(flat, enc.sub.linw, { bias: enc.sub.linb }), Tsub: Hh };
@@ -153,7 +223,10 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
 
   enc._pe = enc._pe || new Map();
   let peT = enc._pe.get(Tsub);
-  if (!peT) { peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D); enc._pe.set(Tsub, peT); }
+  if (!peT) {
+    peT = ctx.upload(posEncoding(Tsub, D), 2 * Tsub - 1, D);
+    enc._pe.set(Tsub, peT);
+  }
   // Cache-aware streaming attention mask: chunk-limited on BOTH sides. With
   // chunkStart = chunk*floor(i/chunk), query i attends keys j in
   // [max(0, chunkStart-left), min(Tsub-1, chunkStart+chunk-1+right)]; -10000
@@ -164,16 +237,21 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     enc._mask = enc._mask || new Map();
     maskT = enc._mask.get(`${Tsub}|${W}`);
     if (!maskT) {
-      const C = enc.cfg.attChunk, LEFT = enc.cfg.attLeft ?? 70, RIGHT = enc.cfg.attRight ?? 0, mk = new Float32Array(Tsub * Tsub);
+      const C = enc.cfg.attChunk,
+        LEFT = enc.cfg.attLeft ?? 70,
+        RIGHT = enc.cfg.attRight ?? 0,
+        mk = new Float32Array(Tsub * Tsub);
       for (let i = 0; i < Tsub; i++) {
         const cs = C * Math.floor(i / C);
-        const lo = Math.max(0, cs - LEFT), hi = Math.min(Tsub - 1, cs + C - 1 + RIGHT);
+        const lo = Math.max(0, cs - LEFT),
+          hi = Math.min(Tsub - 1, cs + C - 1 + RIGHT);
         for (let j = 0; j < Tsub; j++) mk[i * Tsub + j] = j >= lo && j <= hi ? 0 : -10000;
       }
       // tiled per (window, head) block [W*H*T, T] to match the batched scores layout
       const mkH = new Float32Array(W * H * Tsub * Tsub);
       for (let b = 0; b < W * H; b++) mkH.set(mk, b * Tsub * Tsub);
-      maskT = ctx.upload(mkH, W * H * Tsub, Tsub); enc._mask.set(`${Tsub}|${W}`, maskT);
+      maskT = ctx.upload(mkH, W * H * Tsub, Tsub);
+      enc._mask.set(`${Tsub}|${W}`, maskT);
     }
   }
   // Depthwise conv module pad: symmetric (Parakeet) or causal (EOU streaming: all
@@ -190,17 +268,19 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     const w = enc.layers[L];
     x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
     const xln = ln(x, w.lnatt);
-    const q = ctx.matmul(xln, w.q, { bias: w.qb }), k = ctx.matmul(xln, w.k, { bias: w.kb }), v = ctx.matmul(xln, w.v, { bias: w.vb });
+    const q = ctx.matmul(xln, w.q, { bias: w.qb }),
+      k = ctx.matmul(xln, w.k, { bias: w.kb }),
+      v = ctx.matmul(xln, w.v, { bias: w.vb });
     const p = ctx.matmul(peT, w.pos);
     // Batched over windows × heads (pos-emb rows shared across windows).
-    const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W);                           // [W*H*T, T]
+    const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
     const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
     let sc = ctx.add(ac, bd);
     if (maskT) sc = ctx.add(sc, maskT);
-    const probs = ctx.softmax(sc);                                             // rows = W*H*T
-    const outc = ctx.bmmPV(probs, v, H, HD, W);                                // [W*T, H*HD]
+    const probs = ctx.softmax(sc); // rows = W*H*T
+    const outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
     x = ctx.add(x, ctx.matmul(outc, w.out, { bias: w.outb }));
-    const hT = ctx.transpose(ln(x, w.lnconv));               // [D, W*T]
+    const hT = ctx.transpose(ln(x, w.lnconv)); // [D, W*T]
     const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1, bias: w.pw1b })); // pointwise: window-safe
     // Depthwise conv is over TIME → per-window (a batched run would leak across
     // window seams). Pointwise convs (k=1) and channel ops act per-timestep.

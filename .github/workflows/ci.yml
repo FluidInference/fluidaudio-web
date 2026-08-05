@@ -4,15 +4,87 @@ on:
     branches: [main]
   pull_request:
 
+# Rapid successive pushes to one ref cancel in-flight runs (the engines job is
+# the expensive one).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Type-check + production bundle.
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       # --ignore-scripts: skip transitive `sharp` native build (unused; browser only)
       - run: npm ci --ignore-scripts
       - run: npm run build
+
+  # Prettier — style is enforced, not suggested.
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+
+  # Kernel unit tests: every WasmContext kernel vs CPU references (synthetic
+  # weights, no downloads, no GPU) + the Rust crates still build for wasm32.
+  kernels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run wasm:verify
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: rust crates build (wasm32 + simd128)
+        run: |
+          cd rust/wasm-kernels && RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown
+          cd ../parakeet-decoder && RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown
+
+  # Engine smokes: Parakeet v3, EOU, and Kokoro-EN run END TO END on the WASM
+  # backend (runners have no GPU; WebGPU==WASM is separately parity-gated) against
+  # the bundled sample.wav / a fixed phoneme string, asserting real transcripts
+  # and audio sanity. Weights (~1.2 GB) come from Hugging Face, cached by hash of
+  # the smoke scripts (bump scripts to invalidate).
+  engines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # The cache key comes from ci-weights.lock ONLY: bump the lock when weights
+      # change on HF → clean refetch (no restore-keys: a stale cache would satisfy
+      # hfGet's existence check forever). Save runs even when a smoke fails so a
+      # red assert doesn't discard the 1.2 GB download.
+      - uses: actions/cache/restore@v4
+        id: weights
+        with:
+          path: .ci-cache
+          key: hf-weights-${{ hashFiles('scripts/ci-weights.lock') }}
+      - run: node scripts/ci-smoke-parakeet.mjs
+      - run: node scripts/ci-smoke-eou.mjs
+      - run: node scripts/ci-smoke-kokoro.mjs
+      - uses: actions/cache/save@v4
+        if: always() && steps.weights.outputs.cache-hit != 'true'
+        with:
+          path: .ci-cache
+          key: hf-weights-${{ hashFiles('scripts/ci-weights.lock') }}

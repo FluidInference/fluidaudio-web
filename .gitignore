@@ -6,3 +6,4 @@ dist/
 # cached model weights if ever mirrored locally
 models-cache/
 rust/*/target/
+.ci-cache/

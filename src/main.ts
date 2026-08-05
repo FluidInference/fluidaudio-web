@@ -17,35 +17,43 @@ interface Entry {
 
 const ENTRIES: Record<string, Entry> = {
   "asr-parakeet": {
-    label: "Parakeet TDT v3 ✅", kind: "audio",
+    label: "Parakeet TDT v3 ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/asr-parakeet")).ParakeetV3Engine(),
   },
   "asr-whisper": {
-    label: "Whisper (99 langs) ✅", kind: "audio",
+    label: "Whisper (99 langs) ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/asr-whisper")).WhisperEngine(),
   },
   "tts-kokoro-en": {
-    label: "Kokoro TTS — English ✅", kind: "text",
+    label: "Kokoro TTS — English ✅",
+    kind: "text",
     make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "en" }),
   },
   "tts-kokoro-zh": {
-    label: "Kokoro TTS — Chinese ✅*", kind: "text",
+    label: "Kokoro TTS — Chinese ✅*",
+    kind: "text",
     make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "zh" }),
   },
   "vad-silero": {
-    label: "Silero VAD ✅", kind: "audio",
+    label: "Silero VAD ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/vad-silero")).SileroVadEngine(),
   },
   "asr-nemotron": {
-    label: "Nemotron 3.5 (40 langs) ✅", kind: "audio",
+    label: "Nemotron 3.5 (40 langs) ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
   },
   "diarization-sortformer": {
-    label: "Diarization (Sortformer) ✅", kind: "audio",
+    label: "Diarization (Sortformer) ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
   },
   "eou-parakeet": {
-    label: "Parakeet EOU 120M ✅", kind: "audio",
+    label: "Parakeet EOU 120M ✅",
+    kind: "audio",
     make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
   },
 };
@@ -68,7 +76,9 @@ for (const [id, e] of Object.entries(ENTRIES)) {
 }
 
 let engine: Engine | null = null;
-function currentEntry(): Entry { return ENTRIES[engineSel.value]; }
+function currentEntry(): Entry {
+  return ENTRIES[engineSel.value];
+}
 
 function syncInputs() {
   const kind = currentEntry().kind;
@@ -77,7 +87,10 @@ function syncInputs() {
   // TTS takes text → text box; ASR/VAD/diarization take audio → file picker.
   $("inputLabel").textContent = kind === "text" ? "Text to synthesize" : "Audio file";
 }
-engineSel.addEventListener("change", () => { syncInputs(); runBtn.disabled = true; });
+engineSel.addEventListener("change", () => {
+  syncInputs();
+  runBtn.disabled = true;
+});
 syncInputs();
 
 $("load").addEventListener("click", async () => {
@@ -122,14 +135,16 @@ runBtn.addEventListener("click", async () => {
         `⏱ ${ms.toFixed(0)}ms · RTFx ${(dur / (ms / 1000)).toFixed(1)}× · ${(text.length / (ms / 1000)).toFixed(0)} chars/s`;
     } else {
       const file = $<HTMLInputElement>("file").files?.[0];
-      if (!file) { output.textContent = "Choose an audio file first."; return; }
+      if (!file) {
+        output.textContent = "Choose an audio file first.";
+        return;
+      }
       const audio = await decodeToMono16k(await file.arrayBuffer());
       const dur = audio.samples.length / audio.sampleRate;
       const t0 = performance.now();
       const result = await runAudioEngine(engine, audio);
       const ms = performance.now() - t0;
-      output.textContent =
-        `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
+      output.textContent = `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
     }
   } catch (err) {
     output.textContent = String(err);
@@ -140,14 +155,11 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
   const any = eng as any;
   if (typeof any.detect === "function") {
     const ranges = await any.detect(audio);
-    return `${ranges.length} speech segments:\n` +
-      ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
+    return `${ranges.length} speech segments:\n` + ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
   }
   if (typeof any.transcribe === "function") {
     const r = await any.transcribe(audio);
-    const events = r.events?.length
-      ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}`
-      : "";
+    const events = r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : "";
     if (r.metrics) {
       const m = r.metrics;
       return `stages: mel ${m.melMs}ms · encode(WebGPU) ${m.encodeMs}ms · decode ${m.decodeMs}ms\n\n${r.text}${events}`;

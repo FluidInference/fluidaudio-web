@@ -16,8 +16,7 @@
  *          threshold?:number, minSpeechSec?:number, mergeGapSec?:number}} o
  * @returns {Promise<{speaker:number,start:number,end:number}[]>}
  */
-export async function diarizeSortformer({ ort, mel, sortformer, audio, sampleRate = 16000,
-  threshold = 0.5, minSpeechSec = 0.25, mergeGapSec = 0.25 }) {
+export async function diarizeSortformer({ ort, mel, sortformer, audio, sampleRate = 16000, threshold = 0.5, minSpeechSec = 0.25, mergeGapSec = 0.25 }) {
   if (!audio || audio.length < sampleRate * 0.05) return []; // <50ms: nothing to diarize
   // 1. mel [1,128,T] -> transpose to [1,T,128] (sortformer is T-major)
   const mo = await mel.run({
@@ -70,7 +69,10 @@ function mergeSegments(segs, mergeGapSec, minSpeechSec) {
     let cur = null;
     for (const s of list) {
       if (cur && s.start - cur.end <= mergeGapSec) cur.end = s.end;
-      else { if (cur) out.push(cur); cur = { ...s }; }
+      else {
+        if (cur) out.push(cur);
+        cur = { ...s };
+      }
     }
     if (cur) out.push(cur);
   }
