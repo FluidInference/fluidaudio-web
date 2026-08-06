@@ -68,16 +68,16 @@ export class ParakeetV3Engine implements AsrEngine {
     const t0 = now();
     // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
     // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
-    const ids = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
+    const { ids, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
       sampleRate: SAMPLE_RATE,
       windowSec: WINDOW_SEC,
       overlapSec: OVERLAP_SEC,
     });
-    // GPU encode and CPU decode are pipelined, so a per-stage split is meaningless;
-    // report the wall-clock total.
+    // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
+    // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
     return {
       text: this.tokenizer.decode(ids),
-      metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: +(now() - t0).toFixed(0) },
+      metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
     };
   }
 

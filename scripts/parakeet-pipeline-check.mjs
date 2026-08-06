@@ -37,8 +37,8 @@ const mel = new ParakeetMel(128);
 
 const run = async (pipelined) => {
   const t = performance.now();
-  const ids = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, { pipelined, wb: Number(process.env.WB || 6) });
-  return { ids, ms: performance.now() - t };
+  const { ids, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, { pipelined, wb: Number(process.env.WB || 6) });
+  return { ids, stats, ms: performance.now() - t };
 };
 
 await run(false); // warm (shader compile, wasm decoder init)
@@ -52,5 +52,6 @@ console.log(`tokens: serial ${serial.ids.length}, pipelined ${piped.ids.length} 
 const best = Math.min(piped.ms, piped2.ms);
 console.log(`serial    ${serial.ms.toFixed(0)}ms  RTFx ${(durS / (serial.ms / 1000)).toFixed(1)}`);
 console.log(`pipelined ${best.toFixed(0)}ms  RTFx ${(durS / (best / 1000)).toFixed(1)}  (${(serial.ms / best).toFixed(2)}× vs serial)`);
+console.log(`stages: mel ${piped.stats.melMs}ms · encWait ${piped.stats.encWaitMs}ms · decode ${piped.stats.decodeMs}ms`);
 if (!same) process.exit(1);
 process.exit(0);

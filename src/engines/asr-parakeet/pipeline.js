@@ -16,9 +16,15 @@ import { parakeetEncodeBatch } from "./raw-encoder.js";
 import { wasmDecodeProj } from "./raw-decoder-wasm.js";
 
 /**
- * @returns {Promise<number[]>} deduped token ids across all windows
+ * @returns {Promise<{ids: number[], stats: {melMs: number, encWaitMs: number, decodeMs: number, windows: number, groups: number}}>}
+ *   deduped token ids + a stage breakdown. Stages OVERLAP (that is the point of
+ *   the pipeline): encWaitMs is only the GPU wait NOT hidden behind CPU work,
+ *   so melMs + encWaitMs + decodeMs ≈ wall. A GPU-bound machine shows a large
+ *   encWaitMs; a CPU-bound one shows decodeMs dominating.
  */
 export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, samples, opts = {}) {
+  const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+  const stats = { melMs: 0, encWaitMs: 0, decodeMs: 0, windows: 0, groups: 0 };
   // wb=6 measured best on the 120s bench (M5): 130.3x vs 123.8x at wb=4 —
   // bigger GEMM M-dim + fewer group boundaries, while the uneven 6+3 split
   // still overlaps decode of the big group with encode of the small one.
@@ -50,12 +56,14 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   }
 
   const melsFor = (g) => {
+    const t0 = now();
     const mels = [];
     for (const i of groups[g]) {
       const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
       const { features, length } = mel.process(slice);
       if (length > 0) mels.push(features);
     }
+    stats.melMs += now() - t0;
     return mels;
   };
 
@@ -98,9 +106,13 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       w += groups[g].length;
       continue;
     }
+    const tw = now();
     const frames = await cur.framesP;
+    stats.encWaitMs += now() - tw;
+    stats.groups++;
     if (!pipelined) await advance();
 
+    const td = now();
     const Tenc = cur.Tsub;
     for (let wi = 0; wi < cur.n; wi++, w++) {
       const win = frames.subarray(wi * Tenc * D, (wi + 1) * Tenc * D);
@@ -124,6 +136,9 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       }
       for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
     }
+    stats.decodeMs += now() - td;
+    stats.windows += cur.n;
   }
-  return ids;
+  stats.melMs = Math.round(stats.melMs); stats.encWaitMs = Math.round(stats.encWaitMs); stats.decodeMs = Math.round(stats.decodeMs);
+  return { ids, stats };
 }
