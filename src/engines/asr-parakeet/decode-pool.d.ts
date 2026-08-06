@@ -1,6 +1,7 @@
 export interface DecodePool {
   size: number;
   decode(frames: Float32Array, Tenc: number): Promise<{ ids: number[]; idFrames: number[] }>;
+  failAll(err: unknown): void;
   terminate(): void;
 }
 export function createDecodePool(

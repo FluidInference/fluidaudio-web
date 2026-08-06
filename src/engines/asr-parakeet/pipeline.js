@@ -86,6 +86,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   };
 
   const ids = [];
+  if (!groups.length) return { ids, stats }; // empty / zero-length input
   let w = 0;
   let nextMels = melsFor(0);
   let pending = await submit(0, nextMels);
@@ -145,7 +146,15 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       for (let wi = 0; wi < cur.n; wi++, w++) {
         const win = frames.slice(wi * Tenc * D, (wi + 1) * Tenc * D); // copy: transferred to the worker
         const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-        decJobs.push({ windowIdx: w, sliceLen, Tenc, p: decodePool.decode(win, Tenc) });
+        const job = { windowIdx: w, sliceLen, Tenc, p: decodePool.decode(win, Tenc), r: null };
+        job.p = job.p.then((res) => { job.r = res; return res; });
+        decJobs.push(job);
+      }
+      // Opportunistic in-order drain: stitch already-finished leading jobs so
+      // results/buffers don't accumulate unboundedly on multi-hour files.
+      while (decJobs.length && decJobs[0].r) {
+        const j = decJobs.shift();
+        stitch(j.windowIdx, j.sliceLen, j.Tenc, j.r.ids, j.r.idFrames);
       }
     } else {
       const td = now();

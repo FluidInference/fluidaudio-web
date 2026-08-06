@@ -38,6 +38,7 @@ export class ParakeetV3Engine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
+    if (this.ctx.device) console.info(`[asr-parakeet] shader-f16: ${this.ctx.hasF16 ? "active" : "ABSENT (fp32 fallback, ~1.5x slower encode)"}`);
     const json = async (path: string, repo = WEIGHTS_REPO) =>
       JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
@@ -69,14 +70,22 @@ export class ParakeetV3Engine implements AsrEngine {
     if (typeof Worker !== "undefined") {
       const n = Math.min(4, Math.max(1, ((navigator as any).hardwareConcurrency || 4) - 2));
       if (n > 1) {
+        const raw: Worker[] = [];
         try {
-          const decBuf = decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
+          // Avoid an extra 72MB copy when the view already spans the whole buffer
+          // (structured clone copies per worker regardless).
+          const decBuf = decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
+            ? decBin.buffer
+            : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
           const workers = await Promise.all(
             Array.from({ length: n }, async () => {
               const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
+              raw.push(w);
               await new Promise<void>((resolve, reject) => {
-                w.onmessage = () => resolve();
-                w.onerror = (e) => reject(e);
+                // Init must reply {type:"ready"} — an {type:"err"} reply or a
+                // Worker error event rejects (never resolve-on-any-message).
+                w.onmessage = (e) => (e.data?.type === "ready" ? resolve() : reject(new Error(String(e.data?.error ?? "bad init reply"))));
+                w.onerror = (e) => reject(new Error(e.message || "worker error"));
                 w.postMessage({ type: "init", wasmBytes, decBuf, man: decMan });
               });
               return {
@@ -86,9 +95,13 @@ export class ParakeetV3Engine implements AsrEngine {
               };
             }),
           );
-          this.decodePool = createDecodePool(workers);
+          // Post-init transport errors reject all in-flight decodes instead of hanging.
+          const pool = createDecodePool(workers);
+          for (const w of raw) w.onerror = (e) => pool.failAll(new Error(e.message || "decode worker died"));
+          this.decodePool = pool;
           console.info(`[asr-parakeet] decode pool: ${n} workers`);
         } catch (e) {
+          for (const w of raw) w.terminate(); // don't leak partially-spawned workers (each holds a weight copy)
           console.warn("[asr-parakeet] decode pool unavailable, decoding on main thread:", e);
           this.decodePool = null;
         }

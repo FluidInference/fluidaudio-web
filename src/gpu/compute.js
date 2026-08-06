@@ -323,6 +323,7 @@ var<workgroup> As: array<f16, 2048>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 2048>; // [BK][BN]
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -404,6 +405,7 @@ var<workgroup> As: array<f16, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 1024>; // [BK][BN]
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -480,6 +482,7 @@ var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -925,6 +928,7 @@ var<workgroup> As: array<f32, 1024>;
 var<workgroup> Bs: array<f32, 1024>;
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -1016,6 +1020,7 @@ var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -1948,6 +1953,14 @@ export class GpuContext {
     return this._dummyBuf;
   }
 
+  /** Cached per-length zero bias for reroute epilogues (avoids per-call uploads). */
+  _zeroBias(n) {
+    this._zeroBiasCache = this._zeroBiasCache || new Map();
+    let t = this._zeroBiasCache.get(n);
+    if (!t) { t = this.upload(new Float32Array(n), 1, n); this._zeroBiasCache.set(n, t); }
+    return t;
+  }
+
   /**
    * Per-dispatch GPU profiling (timestamp-query): between startProfile()/endProfile()
    * every _run gets its own compute pass with begin/end timestamps, labeled by
@@ -2048,6 +2061,9 @@ export class GpuContext {
       const oB = this.matmulF16B(a, b, { bias, act });
       return add ? this.add(oB, add) : oB;
     }
+    // An f16-storage B must never reach the fp32 kernels below (they bind B as
+    // array<vec4<f32>> — silent garbage). Fail loudly instead.
+    if (b.f16) throw new Error(`matmul: f16 B requires K%4==0 && N%4==0 && supported act (got K=${K}, N=${N}, act=${act})`);
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
@@ -2149,9 +2165,10 @@ export class GpuContext {
     // k=1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin,L] (per-dispatch
     // timestamps showed the pointwise conv-module convs at ~14% of the encoder).
     // Per-row bias/act as an epilogue (matmul's fused bias is per-column).
-    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0) {
+    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0 &&
+        (act === "none" || act === "relu" || act === "silu")) { // rowBiasAct epilogue supports only these
       const out = this.matmul({ buf: w.buf, rows: cout, cols: x.rows }, x);
-      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this.upload(new Float32Array(cout), 1, cout), act);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this._zeroBias(cout), act);
       return out;
     }
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
@@ -2335,11 +2352,12 @@ export class GpuContext {
     // conv2d kernel was 24% of the encoder window (per-dispatch timestamps); the
     // tiled GEMM does it ~50-100× faster. Per-row bias/act applied as an epilogue.
     if (kh === 1 && kw === 1 && strideH === 1 && strideW === 1 && groups === 1 &&
-        padTop === 0 && padBottom === 0 && padLeft === 0 && padRight === 0) {
+        padTop === 0 && padBottom === 0 && padLeft === 0 && padRight === 0 &&
+        (act === "none" || act === "relu" || act === "silu")) { // rowBiasAct epilogue supports only these
       const wMat = { buf: w.buf, rows: cout, cols: cin };
       const xMat = { buf: x.buf, rows: cin, cols: h * W_ };
       const out = this.matmul(wMat, xMat);
-      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this.upload(new Float32Array(cout), 1, cout), act);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this._zeroBias(cout), act);
       return out;
     }
     const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
@@ -2617,16 +2635,7 @@ export class GpuContext {
 
   /** Copy a GPU tensor back to CPU. */
   async download(t) {
-    const size = t.rows * t.cols * 4;
-    const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    const enc = this.device.createCommandEncoder();
-    enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-    this.device.queue.submit([enc.finish()]);
-    await stg.mapAsync(GPUMapMode.READ);
-    const out = new Float32Array(stg.getMappedRange().slice(0));
-    stg.unmap();
-    stg.destroy();
-    return out;
+    return this.stageDownload(t).read();
   }
 
   /** Record a copy of t into a fresh MAP_READ staging buffer; read() maps it later.

@@ -207,12 +207,19 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
     x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
     const xln = ln(x, w.lnatt);
     const q = ctx.matmul(xln, w.q, { bias: w.qb }), k = ctx.matmul(xln, w.k, { bias: w.kb }), v = ctx.matmul(xln, w.v, { bias: w.vb });
-    // pos-emb projection is constant per (layer, Tsub) — cache across window groups
-    // (was recomputed 24×/group: ~2.5ms/win on long files).
-    enc._posProj = enc._posProj || new Map();
-    const pKey = `${L}|${Tsub}`;
-    let p = enc._posProj.get(pKey);
-    if (!p) { p = ctx.matmul(peT, w.pos); enc._posProj.set(pKey, p); }
+    // pos-emb projection is constant per (layer, Tsub) — cache across window
+    // groups (was recomputed 24×/group: ~2.5ms/win on long files). Only batched
+    // (W>1) full-window Tsubs are cached: W==1 covers tails, whose Tsub varies
+    // per file and would grow the cache without bound on long-lived engines.
+    let p;
+    if (W > 1) {
+      enc._posProj = enc._posProj || new Map();
+      const pKey = `${L}|${Tsub}`;
+      p = enc._posProj.get(pKey);
+      if (!p) { p = ctx.matmul(peT, w.pos); enc._posProj.set(pKey, p); }
+    } else {
+      p = ctx.matmul(peT, w.pos);
+    }
     // Batched over windows × heads (pos-emb rows shared across windows).
     const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W);                           // [W*H*T, T]
     const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
