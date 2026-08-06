@@ -298,6 +298,249 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// Mixed-precision GEMM: fp32 A (activations) x f16 B (weights) with the v4
+// 128x128/8x8 vec4 structure and f32 accumulation. Halves the dominant weight
+// traffic of the encoder GEMMs; activations stay fp32 (no requant error).
+// v4 structure, f16 COMPUTE: f16 shared tiles (half the LDS of v4 → better
+// occupancy) and f16 fma in the inner loop — 2× ALU rate on Apple GPUs. The f16
+// accumulator only ever holds one 8-deep K-tile (BK MACs) before being promoted
+// into the f32 accumulator, so rounding never compounds across K. Products are
+// f16 either way on the f16-weight path; the extra error vs F16B is A's f16
+// rounding (~2^-11 relative) — an order finer than the int8 weight quantization
+// the encoder already carries. Gated by token identity, not just maxΔ.
+// f16C with BK=16: half the barriers and half the f32-promote overhead per K.
+// LDS 2×(16×128) f16 = 8KB — same budget as the fp32 v4 kernel's 8KB.
+const GEMM_V4_F16C2_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<storage, read> Dt: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 16u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f16, 2048>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f16, 2048>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    // A tile: [128 rows][16 cols] = 512 vec4 → 2 per thread
+    for (var it = 0u; it < 2u; it++) {
+      let idx = tid + it * 256u;
+      let aRow = idx / 4u; let aC = idx % 4u;
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let ah = vec4<f16>(av);
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = ah.x; As[(aBase + 1u) * BM + aRow] = ah.y;
+      As[(aBase + 2u) * BM + aRow] = ah.z; As[(aBase + 3u) * BM + aRow] = ah.w;
+    }
+    // B tile: [16 rows][128 cols] = 512 vec4 → 2 per thread
+    for (var it = 0u; it < 2u; it++) {
+      let idx = tid + it * 256u;
+      let bRow = idx / 32u; let bC = idx % 32u;
+      var bv = vec4<f16>(0.0);
+      if (kk + bRow < m.K && blockCol + bC * 4u < m.N) { bv = B[(kk + bRow) * N4 + blockCol / 4u + bC]; }
+      let bBase = bRow * BN + 4u * bC;
+      Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    }
+    workgroupBarrier();
+    var acch: array<vec4<f16>, 16>;
+    for (var i = 0u; i < 16u; i++) { acch[i] = vec4<f16>(0.0); }
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f16, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f16>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f16>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acch[i * 2u] += aReg[i] * b0; acch[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    for (var i = 0u; i < 16u; i++) { acc[i] += vec4<f32>(acch[i]); }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          x = actf(x, m.act);
+          if (m.hasAdd == 1u) { x += Dt[r * m.N + c]; }
+          C[r * m.N + c] = x;
+        }
+      }
+    }
+  }
+}`;
+
+const GEMM_V4_F16C_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<storage, read> Dt: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f16, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f16, 1024>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;    // A [128][8] = 256 vec4
+  let bRow = tid / 32u; let bC = tid % 32u;  // B [8][128] = 256 vec4
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    {
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let ah = vec4<f16>(av);
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = ah.x; As[(aBase + 1u) * BM + aRow] = ah.y;
+      As[(aBase + 2u) * BM + aRow] = ah.z; As[(aBase + 3u) * BM + aRow] = ah.w;
+    }
+    {
+      var bv = vec4<f16>(0.0);
+      if (kk + bRow < m.K && blockCol + bC * 4u < m.N) { bv = B[(kk + bRow) * N4 + blockCol / 4u + bC]; }
+      let bBase = bRow * BN + 4u * bC;
+      Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    }
+    workgroupBarrier();
+    var acch: array<vec4<f16>, 16>;
+    for (var i = 0u; i < 16u; i++) { acch[i] = vec4<f16>(0.0); }
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f16, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f16>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f16>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acch[i * 2u] += aReg[i] * b0; acch[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    for (var i = 0u; i < 16u; i++) { acc[i] += vec4<f32>(acch[i]); }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          x = actf(x, m.act);
+          if (m.hasAdd == 1u) { x += Dt[r * m.N + c]; }
+          C[r * m.N + c] = x;
+        }
+      }
+    }
+  }
+}`;
+
+const GEMM_V4_F16B_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;    // A [128][8] = 256 vec4
+  let bRow = tid / 32u; let bC = tid % 32u;  // B [8][128] = 256 vec4
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    {
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+      As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    }
+    {
+      var bv = vec4<f32>(0.0);
+      if (kk + bRow < m.K && blockCol + bC * 4u < m.N) { bv = vec4<f32>(B[(kk + bRow) * N4 + blockCol / 4u + bC]); }
+      let bBase = bRow * BN + 4u * bC;
+      Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          C[r * m.N + c] = actf(x, m.act);
+        }
+      }
+    }
+  }
+}`;
+
 // Row-wise LayerNorm over the last dim: y = (x-mean)/sqrt(var+eps) * gamma + beta.
 // One workgroup per row; 64 lanes cooperatively reduce via shared memory.
 const LAYERNORM_WGSL = `
@@ -685,6 +928,7 @@ var<workgroup> As: array<f32, 1024>;
 var<workgroup> Bs: array<f32, 1024>;
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
   return x;
@@ -753,6 +997,102 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
         var v = acc[i * TN + j] * scale[c];
         if (m.hasBias == 1u) { v += bias[c]; }
         Y[r * m.N + c] = actf(v, m.act);
+      }
+    }
+  }
+}`;
+
+// int8 GEMM v3: the fp32-v4 structure (128x128 block, 8x8 micro-tile, 16 vec4
+// accumulators) with the packed int8 B dequanted in the tile load. Requires
+// K%4==0 and N%4==0; routed for M>=256 (window-batched encoder GEMMs), where
+// TRUE-GPU timing (timestamp-query) shows the 64-tile int8 kernel ~25-35%
+// behind fp32 v4 — this closes most of that gap.
+const MATMUL_INT8_V3_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> Wq: array<u32>;
+@group(0) @binding(2) var<storage, read> scale: array<f32>;
+@group(0) @binding(3) var<storage, read> bias: array<f32>;
+@group(0) @binding(4) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u;
+  let aRow = tid / 2u; let aC = tid % 2u;
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    {
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = av.x; As[(aBase + 1u) * BM + aRow] = av.y;
+      As[(aBase + 2u) * BM + aRow] = av.z; As[(aBase + 3u) * BM + aRow] = av.w;
+    }
+    {
+      let base = tid * 4u;
+      let bRow = base / BN;
+      let bCol = base % BN;
+      let gk = kk + bRow; let gn = blockCol + bCol;
+      if (gk < m.K && gn + 3u < m.N) {
+        let u = Wq[(gk * m.N + gn) >> 2u];
+        for (var j = 0u; j < 4u; j++) {
+          var q = i32((u >> (j * 8u)) & 255u);
+          if (q > 127) { q = q - 256; }
+          Bs[base + j] = f32(q);
+        }
+      } else {
+        for (var j = 0u; j < 4u; j++) {
+          var bv = 0.0;
+          if (gk < m.K && gn + j < m.N) {
+            let li = gk * m.N + gn + j;
+            let u2 = Wq[li >> 2u];
+            var q2 = i32((u2 >> ((li & 3u) * 8u)) & 255u);
+            if (q2 > 127) { q2 = q2 - 256; }
+            bv = f32(q2);
+          }
+          Bs[base + j] = bv;
+        }
+      }
+    }
+    workgroupBarrier();
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f32, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f32>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f32>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acc[i * 2u] += aReg[i] * b0; acc[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj] * scale[c];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          Y[r * m.N + c] = actf(x, m.act);
+        }
       }
     }
   }
@@ -848,6 +1188,87 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
 // 2-D convolution (batch 1) — FastConformer dw-striding subsampling. X:[Cin,H*W]
 // (rows=Cin), W:[Cout,Cin/groups,Kh,Kw] flat, bias?:[Cout] -> Y:[Cout,Ho*Wo]. One
 // thread per (Cout, Ho*Wo). Supports groups (depthwise) + fused bias/act.
+// Depthwise 3×3 stride-2: one thread computes 4 consecutive outputs of one
+// channel row with the 9 weights held in registers. act: 3=relu, 4=silu.
+const CONV2D_DW3X3S2_WGSL = `
+struct Meta { C:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBias:u32, act:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> Wt: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let WoQ = (m.Wo + 3u) / 4u;
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.C * m.Ho * WoQ) { return; }
+  let c = idx / (m.Ho * WoQ);
+  let ho = (idx / WoQ) % m.Ho;
+  let wo0 = (idx % WoQ) * 4u;
+  var wgt: array<f32, 9>;
+  for (var i = 0u; i < 9u; i++) { wgt[i] = Wt[c * 9u + i]; }
+  let xC = c * m.H * m.W;
+  var b = 0.0;
+  if (m.hasBias == 1u) { b = bias[c]; }
+  for (var j = 0u; j < 4u; j++) {
+    let wo = wo0 + j;
+    if (wo >= m.Wo) { break; }
+    var acc = 0.0;
+    for (var kh = 0u; kh < 3u; kh++) {
+      let hi = i32(ho * 2u + kh) - i32(m.padH);
+      if (hi < 0 || hi >= i32(m.H)) { continue; }
+      let rowB = xC + u32(hi) * m.W;
+      for (var kw = 0u; kw < 3u; kw++) {
+        let wi = i32(wo * 2u + kw) - i32(m.padW);
+        if (wi >= 0 && wi < i32(m.W)) { acc += X[rowB + u32(wi)] * wgt[kh * 3u + kw]; }
+      }
+    }
+    acc += b;
+    if (m.act == 3u) { acc = max(acc, 0.0); }
+    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    Y[c * m.Ho * m.Wo + ho * m.Wo + wo] = acc;
+  }
+}`;
+
+// cin=1 3×3 stride-2 (the mel-input conv): every output channel reads the SAME
+// 3×3 window, so one thread loads it once and computes 4 channels.
+const CONV2D_C1_3X3S2_WGSL = `
+struct Meta { Cout:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBias:u32, act:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> Wt: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let HW = m.Ho * m.Wo;
+  let CQ = m.Cout / 4u;
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= CQ * HW) { return; }
+  let co0 = (idx / HW) * 4u;
+  let ho = (idx % HW) / m.Wo;
+  let wo = (idx % HW) % m.Wo;
+  var xv: array<f32, 9>;
+  for (var kh = 0u; kh < 3u; kh++) {
+    let hi = i32(ho * 2u + kh) - i32(m.padH);
+    for (var kw = 0u; kw < 3u; kw++) {
+      let wi = i32(wo * 2u + kw) - i32(m.padW);
+      var v = 0.0;
+      if (hi >= 0 && hi < i32(m.H) && wi >= 0 && wi < i32(m.W)) { v = X[u32(hi) * m.W + u32(wi)]; }
+      xv[kh * 3u + kw] = v;
+    }
+  }
+  for (var jc = 0u; jc < 4u; jc++) {
+    let co = co0 + jc;
+    var acc = 0.0;
+    for (var i = 0u; i < 9u; i++) { acc += xv[i] * Wt[co * 9u + i]; }
+    if (m.hasBias == 1u) { acc += bias[co]; }
+    if (m.act == 3u) { acc = max(acc, 0.0); }
+    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    Y[co * HW + ho * m.Wo + wo] = acc;
+  }
+}`;
+
 const CONV2D_WGSL = `
 struct Meta { Cout:u32, Cin:u32, H:u32, W:u32, Ho:u32, Wo:u32, Kh:u32, Kw:u32,
               sH:u32, sW:u32, padH:u32, padW:u32, groups:u32, hasBias:u32, act:u32, _p:u32 };
@@ -1351,7 +1772,12 @@ export async function requestGpuDevice() {
   const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
   if (!adapter) throw new Error("no WebGPU adapter");
   const lim = adapter.limits;
+  // Optional features, taken only when the adapter has them: shader-f16 gates the
+  // f16-storage weight path (GpuContext falls back to fp32 without it),
+  // timestamp-query enables startProfile/endProfile in the browser.
+  const requiredFeatures = ["shader-f16", "timestamp-query"].filter((f) => adapter.features.has(f));
   return adapter.requestDevice({
+    requiredFeatures,
     requiredLimits: {
       maxBufferSize: lim.maxBufferSize,
       maxStorageBufferBindingSize: lim.maxStorageBufferBindingSize,
@@ -1364,6 +1790,13 @@ export class GpuContext {
   constructor(device) {
     this.device = device;
     this.pipelines = new Map();
+    // f16 storage needs the device feature AND Float16Array; without either,
+    // uploadF16 silently falls back to fp32 (kernels using `enable f16;` would
+    // otherwise fail validation asynchronously — no-op dispatches, zero outputs).
+    this.hasF16 = !!device.features?.has?.("shader-f16") && typeof Float16Array !== "undefined";
+    // Surface validation/OOM errors loudly: they are async in WebGPU and would
+    // otherwise show up only as silent garbage output.
+    device.addEventListener?.("uncapturederror", (e) => console.error("[gpu] uncaptured:", e.error?.message ?? e.error));
   }
 
   _pipeline(key, code, entry = "main") {
@@ -1371,6 +1804,7 @@ export class GpuContext {
     if (!p) {
       const module = this.device.createShaderModule({ code });
       p = this.device.createComputePipeline({ layout: "auto", compute: { module, entryPoint: entry } });
+      p.__label = key; // for the profiler
       this.pipelines.set(key, p);
     }
     return p;
@@ -1396,8 +1830,10 @@ export class GpuContext {
   }
 
   // ── f16 storage ──────────────────────────────────────────────────────────
-  /** Upload f32 data as an f16 tensor (half the bytes). */
+  /** Upload f32 data as an f16 tensor (half the bytes). Falls back to fp32 when
+   * the device lacks shader-f16 (e.g. browsers where the feature is absent). */
   uploadF16(data, rows, cols) {
+    if (!this.hasF16) return this.upload(data, rows, cols);
     const u16 = new Uint16Array(new Float16Array(data).buffer);
     const size = Math.max(4, Math.ceil(u16.byteLength / 4) * 4);
     const buf = this.device.createBuffer({ size, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
@@ -1532,6 +1968,59 @@ export class GpuContext {
     return this._dummyBuf;
   }
 
+  /** Cached per-length zero bias for reroute epilogues (avoids per-call uploads). */
+  _zeroBias(n) {
+    this._zeroBiasCache = this._zeroBiasCache || new Map();
+    let t = this._zeroBiasCache.get(n);
+    if (!t) {
+      t = this.upload(new Float32Array(n), 1, n);
+      this._zeroBiasCache.set(n, t);
+    }
+    return t;
+  }
+
+  /**
+   * Per-dispatch GPU profiling (timestamp-query): between startProfile()/endProfile()
+   * every _run gets its own compute pass with begin/end timestamps, labeled by
+   * pipeline. endProfile() resolves and returns [{label, ms, count}] sorted by ms.
+   * Works inside beginBatch/endBatch (passes share the batch encoder).
+   */
+  startProfile(maxOps = 2000) {
+    // querySet count limit is 4096 → ≤2048 ops
+    if (!this.device.features.has("timestamp-query")) throw new Error("timestamp-query not available");
+    this._prof = {
+      qs: this.device.createQuerySet({ type: "timestamp", count: maxOps * 2 }),
+      labels: [],
+      max: maxOps,
+    };
+  }
+  async endProfile() {
+    const prof = this._prof;
+    this._prof = null;
+    const n = prof.labels.length;
+    const qb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+    const rb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    const enc = this.device.createCommandEncoder();
+    enc.resolveQuerySet(prof.qs, 0, n * 2, qb, 0);
+    enc.copyBufferToBuffer(qb, 0, rb, 0, n * 16);
+    this.device.queue.submit([enc.finish()]);
+    await rb.mapAsync(GPUMapMode.READ);
+    const t = new BigUint64Array(rb.getMappedRange());
+    const agg = new Map();
+    for (let i = 0; i < n; i++) {
+      const ms = Number(t[2 * i + 1] - t[2 * i]) / 1e6;
+      const a2 = agg.get(prof.labels[i]) || { label: prof.labels[i], ms: 0, count: 0 };
+      a2.ms += ms;
+      a2.count++;
+      agg.set(prof.labels[i], a2);
+    }
+    rb.unmap();
+    qb.destroy();
+    rb.destroy();
+    prof.qs.destroy();
+    return [...agg.values()].sort((a2, b) => b.ms - a2.ms);
+  }
+
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
     this._enc = this.device.createCommandEncoder();
@@ -1555,15 +2044,29 @@ export class GpuContext {
     const entries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b } }));
     entries.push({ binding: buffers.length, resource: { buffer: uniform } });
     const bg = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries });
+    const prof = this._prof && this._prof.labels.length < this._prof.max ? this._prof : null;
+    const tw = prof ? { querySet: prof.qs, beginningOfPassWriteIndex: prof.labels.length * 2, endOfPassWriteIndex: prof.labels.length * 2 + 1 } : undefined;
+    if (prof) prof.labels.push(pipeline.__label || "op");
     if (this._pass) {
       // batched
+      if (prof) {
+        // own timestamped pass inside the batch encoder
+        this._pass.end();
+        const p = this._enc.beginComputePass({ timestampWrites: tw });
+        p.setPipeline(pipeline);
+        p.setBindGroup(0, bg);
+        p.dispatchWorkgroups(groupsX, groupsY, groupsZ);
+        p.end();
+        this._pass = this._enc.beginComputePass();
+        return;
+      }
       this._pass.setPipeline(pipeline);
       this._pass.setBindGroup(0, bg);
       this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
       return;
     }
     const enc = this.device.createCommandEncoder();
-    const pass = enc.beginComputePass();
+    const pass = enc.beginComputePass(prof ? { timestampWrites: tw } : undefined);
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
     pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
@@ -1572,22 +2075,35 @@ export class GpuContext {
   }
 
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
-  matmul(a, b, { bias = null, act = "none" } = {}) {
+  matmul(a, b, { bias = null, act = "none", add = null } = {}) {
     const M = a.rows,
       K = a.cols,
       N = b.cols;
+    // f16-storage B (weights): f16-COMPUTE v4 (2× ALU rate on Apple; measured
+    // 1.46× vs the f32-compute F16B variant, which stays available for A/Bs).
+    // `add` (residual [M,N]) fuses into the f16C epilogue; other routes compose
+    // with a separate elementwise add so semantics match on every path.
+    if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
+      if (!globalThis.__f16bforce) return this.matmulF16C(a, b, { bias, act, add });
+      const oB = this.matmulF16B(a, b, { bias, act });
+      return add ? this.add(oB, add) : oB;
+    }
+    // An f16-storage B must never reach the fp32 kernels below (they bind B as
+    // array<vec4<f32>> — silent garbage). Fail loudly instead.
+    if (b.f16) throw new Error(`matmul: f16 B requires K%4==0 && N%4==0 && supported act (got K=${K}, N=${N}, act=${act})`);
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
     if (M >= 256 && N >= 256 && K >= 256 && K % 8 === 0 && N % 4 === 0) {
-      return this.matmulV4(a, b, { bias, act });
+      const o4 = this.matmulV4(a, b, { bias, act });
+      return add ? this.add(o4, add) : o4;
     }
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemm", GEMM_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
-    return c;
+    return add ? this.add(c, add) : c;
   }
 
   matmulV2(a, b, { bias = null, act = "none" } = {}) {
@@ -1611,6 +2127,35 @@ export class GpuContext {
     const pipeline = this._pipeline("gemmV3", GEMM_V3_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
+    return c;
+  }
+
+  /** Mixed-precision GEMM: fp32 A × f16-storage B (v4 structure, f32 accumulate). */
+  matmulF16B(a, bF16, { bias = null, act = "none" } = {}) {
+    const M = a.rows,
+      K = a.cols,
+      N = bF16.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const pipeline = this._pipeline("gemmV4f16b", GEMM_V4_F16B_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
+    return c;
+  }
+
+  /** f16-COMPUTE v4: f16 tiles + f16 fma per K-tile, f32 accumulate across tiles.
+   * `add` fuses a residual [M,N] into the epilogue (post-act), saving a pass. */
+  matmulF16C(a, bF16, { bias = null, act = "none", add = null } = {}) {
+    const M = a.rows,
+      K = a.cols,
+      N = bF16.cols;
+    const c = this.alloc(M, N);
+    const biasBuf = bias ? bias.buf : this._dummy();
+    const addBuf = add ? add.buf : this._dummy();
+    const bk16 = !globalThis.__f16cbk8 && K % 16 === 0;
+    const pipeline = bk16 ? this._pipeline("gemmV4f16c2", GEMM_V4_F16C2_WGSL) : this._pipeline("gemmV4f16c", GEMM_V4_F16C_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));
+    this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf, addBuf], u, Math.ceil(N / 128), Math.ceil(M / 128));
     return c;
   }
 
@@ -1655,6 +2200,15 @@ export class GpuContext {
     // Asymmetric pad supported (padLeft/padRight) for causal convs; default symmetric pad.
     padLeft = padLeft ?? pad;
     padRight = padRight ?? pad;
+    // k=1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin,L] (per-dispatch
+    // timestamps showed the pointwise conv-module convs at ~14% of the encoder).
+    // Per-row bias/act as an epilogue (matmul's fused bias is per-column).
+    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0 && (act === "none" || act === "relu" || act === "silu")) {
+      // rowBiasAct epilogue supports only these
+      const out = this.matmul({ buf: w.buf, rows: cout, cols: x.rows }, x);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this._zeroBias(cout), act);
+      return out;
+    }
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
     // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
     // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
@@ -1697,8 +2251,12 @@ export class GpuContext {
     const y = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const u = this._uniform(new Uint32Array([M, N, K, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+    if (M >= 256 && N % 4 === 0 && K % 4 === 0 && globalThis.__i8v2force !== true) {
+      const pipeline = this._pipeline("matmulI8v3", MATMUL_INT8_V3_WGSL);
+      this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
+      return y;
+    }
     if (N % 4 === 0) {
-      // tiled/register-blocked variant (~3× on encoder shapes)
       const pipeline = this._pipeline("matmulI8v2", MATMUL_INT8_V2_WGSL);
       this._run(pipeline, [a.buf, wq.buf, scale.buf, biasBuf, y.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
       return y;
@@ -1863,10 +2421,49 @@ export class GpuContext {
     padBottom = padBottom ?? padH;
     padLeft = padLeft ?? padW;
     padRight = padRight ?? padW;
+    // 1×1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin, H*W]. The naive
+    // conv2d kernel was 24% of the encoder window (per-dispatch timestamps); the
+    // tiled GEMM does it ~50-100× faster. Per-row bias/act applied as an epilogue.
+    if (
+      kh === 1 &&
+      kw === 1 &&
+      strideH === 1 &&
+      strideW === 1 &&
+      groups === 1 &&
+      padTop === 0 &&
+      padBottom === 0 &&
+      padLeft === 0 &&
+      padRight === 0 &&
+      (act === "none" || act === "relu" || act === "silu")
+    ) {
+      // rowBiasAct epilogue supports only these
+      const wMat = { buf: w.buf, rows: cout, cols: cin };
+      const xMat = { buf: x.buf, rows: cin, cols: h * W_ };
+      const out = this.matmul(wMat, xMat);
+      if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this._zeroBias(cout), act);
+      return out;
+    }
     const Ho = Math.floor((h + padTop + padBottom - kh) / strideH) + 1;
     const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
     const biasBuf = bias ? bias.buf : this._dummy();
+    // Specialized subsampling kernels (9 MACs/output → the generic gather kernel
+    // is all index math and launch overhead): depthwise 3×3 s2 keeps the 9
+    // weights in registers and computes 4 outputs/thread; cin=1 3×3 s2 computes
+    // 4 CHANNELS/thread off one shared 9-value input window.
+    if (kh === 3 && kw === 3 && strideH === 2 && strideW === 2) {
+      if (groups === cin && cout === cin) {
+        const u = this._uniform(new Uint32Array([cout, h, W_, Ho, Wo, padTop, padLeft, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+        const WoQ = Math.ceil(Wo / 4);
+        this._run(this._pipeline("conv2dDw33s2", CONV2D_DW3X3S2_WGSL), [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Ho * WoQ) / 64));
+        return y;
+      }
+      if (cin === 1 && groups === 1 && cout % 4 === 0) {
+        const u = this._uniform(new Uint32Array([cout, h, W_, Ho, Wo, padTop, padLeft, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+        this._run(this._pipeline("conv2dC133s2", CONV2D_C1_3X3S2_WGSL), [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil(((cout / 4) * Ho * Wo) / 64));
+        return y;
+      }
+    }
     const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
     // kernel Meta padH/padW slots = the "before" (top/left) offset.
     const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padTop, padLeft, groups, bias ? 1 : 0, ACT[act], 0]));
@@ -1977,6 +2574,33 @@ export class GpuContext {
     const pipeline = this._pipeline("conv1dImplicit", CONV1D_IMPLICIT_WGSL);
     const u = this._uniform(new Uint32Array([cout, Lout, CinK, Cin, L, k, stride, pad, dilation, bias ? 1 : 0, ACT[act], 0]));
     this._run(pipeline, [wRows.buf, x.buf, biasBuf, y.buf], u, Math.ceil(Lout / 64), Math.ceil(cout / 64));
+    return y;
+  }
+
+  /** y = act(x + bias[row]) — per-ROW bias epilogue (for 1×1 convs routed to matmul,
+   * whose bias is per output CHANNEL = row, unlike matmul's per-column bias). */
+  rowBiasAct(x, bias, act = "none") {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline(
+      "rowbias",
+      `
+      struct Meta { rows:u32, cols:u32, act:u32, _p:u32 };
+      @group(0) @binding(0) var<storage, read> X: array<f32>;
+      @group(0) @binding(1) var<storage, read> B: array<f32>;
+      @group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+      @group(0) @binding(3) var<uniform> m: Meta;
+      @compute @workgroup_size(64)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+        let i = gid.y * (nwg.x * 64u) + gid.x;
+        if (i >= m.rows * m.cols) { return; }
+        var v = X[i] + B[i / m.cols];
+        if (m.act == 3u) { v = max(v, 0.0); }
+        else if (m.act == 4u) { v = v / (1.0 + exp(-clamp(v, -30.0, 30.0))); }
+        Y[i] = v;
+      }`,
+    );
+    const u = this._uniform(new Uint32Array([x.rows, x.cols, ACT[act], 0]));
+    this._run(pipeline, [x.buf, bias.buf, y.buf], u, Math.ceil((x.rows * x.cols) / 64));
     return y;
   }
 
@@ -2108,15 +2732,34 @@ export class GpuContext {
 
   /** Copy a GPU tensor back to CPU. */
   async download(t) {
+    return this.stageDownload(t).read();
+  }
+
+  /** Record a copy of t into a fresh MAP_READ staging buffer; read() maps it later.
+   * Batch-aware: inside beginBatch/endBatch the copy rides the SAME submit as the
+   * kernels that produce t (pass paused/reopened like copyRows), so the bytes are
+   * mappable the instant that submit drains — no extra submit or GPU round trip.
+   * Call read() only after the producing batch has been submitted. */
+  stageDownload(t) {
     const size = t.rows * t.cols * 4;
     const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    const enc = this.device.createCommandEncoder();
-    enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-    this.device.queue.submit([enc.finish()]);
-    await stg.mapAsync(GPUMapMode.READ);
-    const out = new Float32Array(stg.getMappedRange().slice(0));
-    stg.unmap();
-    stg.destroy();
-    return out;
+    if (this._enc && this._pass) {
+      this._pass.end();
+      this._enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this._pass = this._enc.beginComputePass();
+    } else {
+      const enc = this.device.createCommandEncoder();
+      enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this.device.queue.submit([enc.finish()]);
+    }
+    return {
+      read: async () => {
+        await stg.mapAsync(GPUMapMode.READ);
+        const out = new Float32Array(stg.getMappedRange().slice(0));
+        stg.unmap();
+        stg.destroy();
+        return out;
+      },
+    };
   }
 }

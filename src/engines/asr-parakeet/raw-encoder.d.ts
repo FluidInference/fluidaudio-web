@@ -12,4 +12,5 @@ export function parakeetEncodeBatch(
   enc: any,
   mels: Float32Array[],
   wantData?: boolean,
-): Promise<{ framesGpu: any; Tsub: number; W: number; D: number; dims: number[]; data?: Float32Array }>;
+  post?: ((x: any) => any) | null,
+): Promise<{ framesGpu: any; Tsub: number; W: number; D: number; dims: number[]; data?: Float32Array; staged?: any }>;

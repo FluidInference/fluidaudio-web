@@ -172,25 +172,9 @@ unsafe fn compute_predproj() {
     }
 }
 
-// joint for encoder frame `frame_ptr`: enc_proj + pred_proj → relu → OUT[8198].
-// The out matmul (640→8198) is the hot loop; SIMD over the logits dimension.
-unsafe fn joint(frame: *const f32) {
-    let ew = WT.enc_w; let eb = WT.enc_b;
-    for n in 0..HID { ENCPROJ[n] = *eb.add(n); }
-    let n4 = HID & !3;
-    for k in 0..ENC_D {
-        let fk = *frame.add(k);
-        if fk == 0.0 { continue; }
-        let fv = f32x4_splat(fk);
-        let row = ew.add(k * HID);
-        let mut n = 0;
-        while n < n4 {
-            let p = ENCPROJ.as_mut_ptr().add(n);
-            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(fv, v128_load(row.add(n) as *const v128))));
-            n += 4;
-        }
-        while n < HID { ENCPROJ[n] += fk * *row.add(n); n += 1; }
-    }
+// joint from a PRE-PROJECTED encoder row [HID] (the 1024→640 projection now runs
+// on the GPU before download — smaller readback, no per-frame GEMV here).
+unsafe fn joint_tail() {
     for n in 0..HID { let v = ENCPROJ[n] + PREDPROJ[n]; J[n] = if v > 0.0 { v } else { 0.0 }; }
     // OUT[m] = outB[m] + Σ_n J[n] * outW[n*LOGITS+m] — axpy over m (v128 x4).
     let ob = WT.out_b;
@@ -242,6 +226,33 @@ unsafe fn joint(frame: *const f32) {
     }
 }
 
+unsafe fn joint_pre(proj: *const f32) {
+    for n in 0..HID { ENCPROJ[n] = *proj.add(n); }
+    joint_tail();
+}
+
+// joint for encoder frame `frame_ptr`: enc_proj + pred_proj → relu → OUT[8198].
+// The out matmul (640→8198) is the hot loop; SIMD over the logits dimension.
+unsafe fn joint(frame: *const f32) {
+    let ew = WT.enc_w; let eb = WT.enc_b;
+    for n in 0..HID { ENCPROJ[n] = *eb.add(n); }
+    let n4 = HID & !3;
+    for k in 0..ENC_D {
+        let fk = *frame.add(k);
+        if fk == 0.0 { continue; }
+        let fv = f32x4_splat(fk);
+        let row = ew.add(k * HID);
+        let mut n = 0;
+        while n < n4 {
+            let p = ENCPROJ.as_mut_ptr().add(n);
+            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(fv, v128_load(row.add(n) as *const v128))));
+            n += 4;
+        }
+        while n < HID { ENCPROJ[n] += fk * *row.add(n); n += 1; }
+    }
+    joint_tail();
+}
+
 /// Greedy TDT decode. frames:[Tenc,1024] row-major. Writes token ids to `out`,
 /// returns count. Resets state internally.
 #[no_mangle]
@@ -256,6 +267,38 @@ pub extern "C" fn decode(frames: *const f32, tenc: u32, out_ids: *mut i32, out_f
         let mut emitted = 0i32;
         while t < tenc {
             joint(frames.add(t * ENC_D));
+            // argmax token over [0,VOCAB), duration over [VOCAB,LOGITS)
+            let mut max_id = 0usize; let mut max_v = f32::NEG_INFINITY;
+            for i in 0..VOCAB { if OUT[i] > max_v { max_v = OUT[i]; max_id = i; } }
+            let mut step = 0usize; let mut dv = f32::NEG_INFINITY;
+            for i in VOCAB..LOGITS { if OUT[i] > dv { dv = OUT[i]; step = i - VOCAB; } }
+            if max_id != BLANK {
+                commit_state(); last_tok = max_id;
+                *out_ids.add(n_out as usize) = max_id as i32;
+                *out_frames.add(n_out as usize) = t as i32;
+                n_out += 1; emitted += 1;
+                predict(last_tok); compute_predproj();
+            }
+            if step > 0 { t += step; emitted = 0; }
+            else if max_id == BLANK || emitted >= MAX_SYMBOLS { t += 1; emitted = 0; }
+        }
+        n_out
+    }
+}
+
+/// Greedy TDT decode from PRE-PROJECTED frames [Tenc, HID].
+#[no_mangle]
+pub extern "C" fn decode_proj(frames: *const f32, tenc: u32, out_ids: *mut i32, out_frames: *mut i32) -> i32 {
+    unsafe {
+        H = [[0.0; HID]; 2]; C = [[0.0; HID]; 2];
+        let tenc = tenc as usize;
+        let mut n_out = 0i32;
+        let mut last_tok = BLANK;
+        predict(last_tok); compute_predproj();
+        let mut t = 0usize;
+        let mut emitted = 0i32;
+        while t < tenc {
+            joint_pre(frames.add(t * HID));
             // argmax token over [0,VOCAB), duration over [VOCAB,LOGITS)
             let mut max_id = 0usize; let mut max_v = f32::NEG_INFINITY;
             for i in 0..VOCAB { if OUT[i] > max_v { max_v = OUT[i]; max_id = i; } }

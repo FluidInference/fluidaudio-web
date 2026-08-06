@@ -79,9 +79,14 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
     for (let i = 0; i < a.length; i++) a[i] *= s;
     return a;
   };
-  const mat = (k) => ctx.upload(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // Weight matrices upload as f16 storage when the backend supports it: the
+  // mixed-precision v4 kernel reads them at half the traffic and half the GPU
+  // memory (~2.3GB → 1.17GB for the fp32-dequantized encoder). Activations and
+  // biases stay fp32.
+  const upW = (data, r, c) => (ctx.uploadF16 ? ctx.uploadF16(data, r, c) : ctx.upload(data, r, c)); // context owns the f16-or-f32 decision
+  const mat = (k) => upW(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
-  const matScaled = (k, s) => ctx.upload(scaled(k, s), man[k].dims[0], man[k].dims[1]);
+  const matScaled = (k, s) => upW(scaled(k, s), man[k].dims[0], man[k].dims[1]);
 
   // NeMo RelPositionalEncoding xscaling (x *= sqrt(d_model) after subsampling): fold
   // sqrt(D) into the pre_encode linear. Some exports (Parakeet) bake it in already;
@@ -98,6 +103,15 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   // linear2 biases fold the 0.5 macaron factor; q bias folds 1/sqrt(HD).
   const vecOpt = (k) => (man[k] ? vec(k) : null);
   const vecScaledOpt = (k, s) => (man[k] ? ctx.upload(scaled(k, s), 1, man[k].count ?? man[k].len) : null);
+  // Pointwise conv weights as TRANSPOSED matrices [cin, cout]: the conv module
+  // runs them as X@Wt GEMMs (weights on the B side → f16 path, fused bias),
+  // valid for any window length. k=1 ⇒ [cout, cin] row-major in the manifest.
+  const pwT = (k, cout, cin) => {
+    const w = raw(k);
+    const t = new Float32Array(cin * cout);
+    for (let co = 0; co < cout; co++) for (let ci = 0; ci < cin; ci++) t[ci * cout + co] = w[co * cin + ci];
+    return upW(t, cin, cout);
+  };
   for (let L = 0; L < cfg.layers; L++) {
     const g = (s) => `L${L}_${s}`;
     // pos_bias_u/v uploaded ONCE as per-head GPU tensors [1,HD].
@@ -122,10 +136,10 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
       pbuAll: ctx.upload(pbuS.slice(), 1, cfg.H * HD),
       pbvAll: ctx.upload(pbvS.slice(), 1, cfg.H * HD),
       lnconv: [vec(g("lnconv_w")), vec(g("lnconv_b"))],
-      pw1: vec(g("pw1")),
+      pw1T: pwT(g("pw1"), 2 * cfg.D, cfg.D),
       dw: vec(g("dw")),
       dwb: vec(g("dwb")),
-      pw2: vec(g("pw2")),
+      pw2T: pwT(g("pw2"), cfg.D, cfg.D),
       pw1b: vecOpt(g("pw1b")),
       pw2b: vecOpt(g("pw2b")), // pointwise conv biases (Sortformer)
       bn: man[g("bnw")] ? [vec(g("bnw")), vec(g("bnb"))] : null, // conv-module norm (EOU)
@@ -212,7 +226,7 @@ export async function parakeetEncode(ctx, enc, mel, T, wantData = false) {
  * FF/projection GEMMs see M = W·Tsub (the thin-GEMM occupancy fix); attention and
  * the depthwise conv stay per-window. Returns framesGpu [W·Tsub, D].
  */
-export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
+export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post = null) {
   const { D, H, HD, layers: LAYERS, dwK, Csub, melBins } = enc.cfg;
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
   const W = mels.length;
@@ -259,7 +273,9 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
   const dwPadL = enc.cfg.convCausal ? dwK - 1 : (dwK - 1) >> 1;
   const dwPadR = enc.cfg.convCausal ? 0 : (dwK - 1) >> 1;
   // b1 (pre-SiLU) and b2 (on linear2) are null unless the model has FF linear biases.
-  const ff = (x, lp, w1, w2, b1, b2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2 }));
+  // Residual adds ride the GEMM epilogue ({add}) — one less full pass over
+  // [W*T,D] per add and 4 fewer dispatches per layer.
+  const ff = (x, lp, w1, w2, b1, b2) => ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2, add: x });
 
   // One command-buffer submit for the whole conformer stack (ops are recorded
   // into a single compute pass; per-op submits dominate otherwise).
@@ -271,7 +287,22 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     const q = ctx.matmul(xln, w.q, { bias: w.qb }),
       k = ctx.matmul(xln, w.k, { bias: w.kb }),
       v = ctx.matmul(xln, w.v, { bias: w.vb });
-    const p = ctx.matmul(peT, w.pos);
+    // pos-emb projection is constant per (layer, Tsub) — cache across window
+    // groups (was recomputed 24×/group: ~2.5ms/win on long files). Only batched
+    // (W>1) full-window Tsubs are cached: W==1 covers tails, whose Tsub varies
+    // per file and would grow the cache without bound on long-lived engines.
+    let p;
+    if (W > 1) {
+      enc._posProj = enc._posProj || new Map();
+      const pKey = `${L}|${Tsub}`;
+      p = enc._posProj.get(pKey);
+      if (!p) {
+        p = ctx.matmul(peT, w.pos);
+        enc._posProj.set(pKey, p);
+      }
+    } else {
+      p = ctx.matmul(peT, w.pos);
+    }
     // Batched over windows × heads (pos-emb rows shared across windows).
     const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
     const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
@@ -279,9 +310,11 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
     if (maskT) sc = ctx.add(sc, maskT);
     const probs = ctx.softmax(sc); // rows = W*H*T
     const outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
-    x = ctx.add(x, ctx.matmul(outc, w.out, { bias: w.outb }));
-    const hT = ctx.transpose(ln(x, w.lnconv)); // [D, W*T]
-    const glu = ctx.glu(ctx.conv1d(hT, w.pw1, { cout: 2 * D, k: 1, bias: w.pw1b })); // pointwise: window-safe
+    x = ctx.matmul(outc, w.out, { bias: w.outb, add: x });
+    // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
+    // B side (f16 path, fused bias) — shape-valid for any window length.
+    const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [W*T, 2D]
+    const glu = ctx.glu(ctx.transpose(pre1)); // [D, W*T]
     // Depthwise conv is over TIME → per-window (a batched run would leak across
     // window seams). Pointwise convs (k=1) and channel ops act per-timestep.
     const dwConv = (input, opts) => {
@@ -301,12 +334,16 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false) {
       // Parakeet: BatchNorm folded into depthwise, SiLU fused.
       dwo = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
     }
-    x = ctx.add(x, ctx.transpose(ctx.conv1d(dwo, w.pw2, { cout: D, k: 1, bias: w.pw2b })));
+    x = ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b, add: x });
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
     x = ln(x, w.lnout);
   }
+  // Optional post hook (e.g. the joint's encoder projection + staging copy)
+  // recorded INSIDE the same batch: its work rides this submit, so the readback
+  // is mappable the instant the encode drains — no extra CPU→GPU round trip.
+  const staged = post ? post(x) : null;
   if (ctx.endBatch) ctx.endBatch();
-  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D };
+  const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D, staged };
   if (wantData) out.data = await ctx.download(ctx.transpose(x));
   return out;
 }

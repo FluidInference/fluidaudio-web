@@ -56,13 +56,27 @@ export async function loadWasmDecoder(wasmBytes, decBin, decMan, { int8 = true }
  * Decode encoder frames [Tenc*1024] (row-major, frames[t*1024+d]).
  * @returns {{ids:number[], idFrames:number[]}}
  */
+/** Decode from PRE-PROJECTED frames [Tenc*640] (encoder projection done on GPU). */
+export function wasmDecodeProj(dec, proj, Tenc) {
+  const { ex } = dec;
+  ex.reset_to(dec.mark);
+  const fp = ex.alloc(proj.byteLength);
+  new Float32Array(ex.memory.buffer, fp, proj.length).set(proj);
+  // TDT can emit up to MAX_SYMBOLS(10) tokens per frame without advancing t —
+  // size the output buffers to the true worst case, not Tenc.
+  const idp = ex.alloc(Tenc * 10 * 4);
+  const frp = ex.alloc(Tenc * 10 * 4);
+  const n = ex.decode_proj(fp, Tenc, idp, frp);
+  return { ids: Array.from(new Int32Array(ex.memory.buffer, idp, n)), idFrames: Array.from(new Int32Array(ex.memory.buffer, frp, n)) };
+}
+
 export function wasmDecode(dec, frames, Tenc) {
   const { ex } = dec;
   ex.reset_to(dec.mark); // reclaim previous window's scratch
   const fp = ex.alloc(frames.byteLength);
   new Float32Array(ex.memory.buffer, fp, frames.length).set(frames);
-  const idp = ex.alloc(Tenc * 4);
-  const frp = ex.alloc(Tenc * 4);
+  const idp = ex.alloc(Tenc * 10 * 4); // MAX_SYMBOLS=10 tokens/frame worst case
+  const frp = ex.alloc(Tenc * 10 * 4);
   const n = ex.decode(fp, Tenc, idp, frp);
   const ids = Array.from(new Int32Array(ex.memory.buffer, idp, n));
   const idFrames = Array.from(new Int32Array(ex.memory.buffer, frp, n));

@@ -88,8 +88,8 @@ export class WasmContext {
   }
 
   // ── HOT kernels (wasm32 + SIMD) ───────────────────────────────────────────
-  /** C = act(A@B + bias). bias:[1,N] per-column. */
-  matmul(a, b, { bias = null, act = "none" } = {}) {
+  /** C = act(A@B + bias) [+ add]. bias:[1,N] per-column; add:[M,N] residual. */
+  matmul(a, b, { bias = null, act = "none", add = null } = {}) {
     const M = a.rows,
       K = a.cols,
       N = b.cols;
@@ -105,6 +105,10 @@ export class WasmContext {
     f = this._f32();
     const out = f.slice(cPtr >> 2, (cPtr >> 2) + M * N);
     this._biasActColumns(out, M, N, bias, act);
+    if (add) {
+      const d = add.data;
+      for (let i = 0; i < out.length; i++) out[i] += d[i];
+    }
     return { data: out, rows: M, cols: N };
   }
   matmulV2(a, b, o) {

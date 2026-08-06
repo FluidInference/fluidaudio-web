@@ -10,8 +10,10 @@
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
 import { createContext } from "../../gpu/context.js";
-import { loadParakeetEncoder, parakeetEncodeBatch } from "./raw-encoder.js";
-import { loadWasmDecoder, wasmDecode } from "./raw-decoder-wasm.js";
+import { loadParakeetEncoder } from "./raw-encoder.js";
+import { loadWasmDecoder } from "./raw-decoder-wasm.js";
+import { transcribeWindowed } from "./pipeline.js";
+import { createDecodePool } from "./decode-pool.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import wasmUrl from "./parakeet-decoder.wasm?url";
@@ -29,10 +31,14 @@ export class ParakeetV3Engine implements AsrEngine {
   private enc: any = null;
   private dec: any = null;
   private mel: ParakeetMel | null = null;
+  private encProjW: any = null;
+  private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
+  private decodePool: any = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
+    if (this.ctx.device) console.info(`[asr-parakeet] shader-f16: ${this.ctx.hasF16 ? "active" : "ABSENT (fp32 fallback, ~1.5x slower encode)"}`);
     const json = async (path: string, repo = WEIGHTS_REPO) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
@@ -44,116 +50,91 @@ export class ParakeetV3Engine implements AsrEngine {
     const wasmBytes = await (await fetch(wasmUrl)).arrayBuffer();
 
     this.enc = loadParakeetEncoder(this.ctx, encBin, encMan);
-    this.dec = await loadWasmDecoder(wasmBytes, new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    const decF32 = new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4);
+    this.dec = await loadWasmDecoder(wasmBytes, decF32, decMan);
+    // The joint's encoder projection (1024→640) runs on the GPU before download:
+    // 37% smaller readback and no per-frame GEMV in the wasm decoder.
+    {
+      const g = (k: string) => decF32.subarray(decMan[k].offset, decMan[k].offset + decMan[k].len);
+      this.encProjW = this.ctx.upload(g("encW").slice(), 1024, 640);
+      this.encProjB = this.ctx.upload(g("encB").slice(), 1, 640);
+    }
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
+
+    // Decoder worker pool: windows decode independently, and on machines where
+    // WASM decode dominates the wall (measured: decode 1821ms vs encode 355ms)
+    // parallel workers cut the decode term ~pool-size×. Each worker gets its own
+    // copy of the decoder weights (no SharedArrayBuffer without COOP/COEP).
+    if (typeof Worker !== "undefined") {
+      const n = Math.min(4, Math.max(1, ((navigator as any).hardwareConcurrency || 4) - 2));
+      if (n > 1) {
+        const raw: Worker[] = [];
+        try {
+          // Avoid an extra 72MB copy when the view already spans the whole buffer
+          // (structured clone copies per worker regardless).
+          const decBuf =
+            decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
+              ? decBin.buffer
+              : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
+          const workers = await Promise.all(
+            Array.from({ length: n }, async () => {
+              const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
+              raw.push(w);
+              await new Promise<void>((resolve, reject) => {
+                // Init must reply {type:"ready"} — an {type:"err"} reply or a
+                // Worker error event rejects (never resolve-on-any-message).
+                w.onmessage = (e) => (e.data?.type === "ready" ? resolve() : reject(new Error(String(e.data?.error ?? "bad init reply"))));
+                w.onerror = (e) => reject(new Error(e.message || "worker error"));
+                w.postMessage({ type: "init", wasmBytes, decBuf, man: decMan });
+              });
+              return {
+                postMessage: (m: any, t?: any[]) => w.postMessage(m, t ?? []),
+                setHandler: (f: (m: any) => void) => {
+                  w.onmessage = (e) => f(e.data);
+                },
+                terminate: () => w.terminate(),
+              };
+            }),
+          );
+          // Post-init transport errors reject all in-flight decodes instead of hanging.
+          const pool = createDecodePool(workers);
+          for (const w of raw) w.onerror = (e) => pool.failAll(new Error(e.message || "decode worker died"));
+          this.decodePool = pool;
+          console.info(`[asr-parakeet] decode pool: ${n} workers`);
+        } catch (e) {
+          for (const w of raw) w.terminate(); // don't leak partially-spawned workers (each holds a weight copy)
+          console.warn("[asr-parakeet] decode pool unavailable, decoding on main thread:", e);
+          this.decodePool = null;
+        }
+      }
+    }
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetV3Engine.load() not called");
-    const samples = audio.samples;
-    const winSamples = WINDOW_SEC * SAMPLE_RATE;
-    const overlapSamples = OVERLAP_SEC * SAMPLE_RATE;
-    const hop = winSamples - overlapSamples;
-    const single = samples.length <= winSamples;
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-
-    // Window start offsets.
-    const starts: number[] = [];
-    for (let s = 0; s < samples.length; s += hop) {
-      starts.push(s);
-      if (single) break;
-    }
-
-    // Encode windows in GROUPS of up to WB (equal-length windows batched through the
-    // encoder: bigger GEMMs + one readback per group instead of per window), and
-    // pipeline: encode group g+1 on the GPU while the CPU (WASM) decodes group g.
-    const WB = 4;
-    const groups: number[][] = [];
-    {
-      let cur: number[] = [];
-      for (let i = 0; i < starts.length; i++) {
-        const len = Math.min(starts[i] + winSamples, samples.length) - starts[i];
-        if (cur.length && (len !== winSamples || cur.length >= WB)) {
-          groups.push(cur);
-          cur = [];
-        }
-        cur.push(i);
-        if (len !== winSamples) {
-          groups.push(cur);
-          cur = [];
-        } // short tail encodes alone
-      }
-      if (cur.length) groups.push(cur);
-    }
-    const beginGroup = (g: number): Promise<{ frames: Float32Array; Tenc: number; D: number; n: number } | null> => {
-      const mels: Float32Array[] = [];
-      for (const i of groups[g]) {
-        const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
-        const { features, length } = this.mel!.process(slice);
-        if (length > 0) mels.push(features);
-      }
-      if (!mels.length) return Promise.resolve(null);
-      return parakeetEncodeBatch(this.ctx, this.enc, mels).then(async (r: any) => ({
-        frames: await this.ctx.download(r.framesGpu),
-        Tenc: r.Tsub,
-        D: r.D,
-        n: mels.length,
-      }));
-    };
-
-    const ids: number[] = [];
-    let w = 0;
-    let pendingG = beginGroup(0);
-    for (let g = 0; g < groups.length; g++) {
-      const grp = await pendingG;
-      if (g + 1 < groups.length) pendingG = beginGroup(g + 1); // queue next GPU encode now
-      if (!grp) {
-        w += groups[g].length;
-        continue;
-      }
-      for (let wi = 0; wi < grp.n; wi++, w++) {
-        const Tenc = grp.Tenc;
-        const frames = grp.frames.subarray(wi * Tenc * grp.D, (wi + 1) * Tenc * grp.D);
-        const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-        const { ids: wids, idFrames } = wasmDecode(this.dec, frames, Tenc);
-
-        // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
-        let skip = 0;
-        if (w > 0 && wids.length) {
-          const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
-          let frameSkip = 0;
-          while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
-          const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
-          let matched = 0;
-          for (let L = maxL; L >= 2; L--) {
-            let ok = true;
-            for (let i = 0; i < L; i++)
-              if (ids[ids.length - L + i] !== wids[i]) {
-                ok = false;
-                break;
-              }
-            if (ok) {
-              matched = L;
-              break;
-            }
-          }
-          skip = Math.max(matched, frameSkip);
-        }
-        for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
-      }
-    }
-    // GPU encode and CPU decode are pipelined, so a per-stage split is meaningless;
-    // report the wall-clock total.
+    // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
+    // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
+    const { ids, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
+      sampleRate: SAMPLE_RATE,
+      windowSec: WINDOW_SEC,
+      overlapSec: OVERLAP_SEC,
+      decodePool: this.decodePool,
+    });
+    // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
+    // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
     return {
       text: this.tokenizer.decode(ids),
-      metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: +(now() - t0).toFixed(0) },
+      metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
     };
   }
 
   async dispose(): Promise<void> {
+    this.decodePool?.terminate?.();
+    this.decodePool = null;
     this.ctx?.device?.destroy?.();
     this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
