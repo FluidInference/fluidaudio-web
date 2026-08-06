@@ -57,6 +57,7 @@ const newMs = performance.now() - t0;
 const same = oldToks.length === newToks.length && oldToks.every((v, i) => v === newToks[i]);
 console.log(`old: ${oldToks.length - 4} tokens in ${oldMs.toFixed(0)}ms   cached: ${newToks.length - 4} tokens in ${newMs.toFixed(0)}ms`);
 console.log(`sequences identical: ${same}`);
+console.log("tokens:", JSON.stringify(newToks));
 if (!same) {
   console.log("old:", oldToks.slice(4, 20));
   console.log("new:", newToks.slice(4, 20));

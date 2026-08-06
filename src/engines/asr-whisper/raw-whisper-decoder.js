@@ -12,11 +12,14 @@ const SCALE = 1 / Math.sqrt(HD);
 
 export function loadWhisperDecoder(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
-  const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // Weight matrices as f16 storage where supported: the per-token decode is
+  // BANDWIDTH-bound (M=1 GEMVs over the full weight set), so halving weight
+  // bytes ≈ halving step time. Falls back to fp32 automatically.
+  const mat = (k) => ctx.uploadF16(g(k).slice(), man[k].dims[0], man[k].dims[1]);
   const matSc = (k, s) => {
     const a = g(k).slice();
     for (let i = 0; i < a.length; i++) a[i] *= s;
-    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+    return ctx.uploadF16(a, man[k].dims[0], man[k].dims[1]);
   };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
   const vecSc = (k, s) => {
@@ -52,9 +55,16 @@ export function loadWhisperDecoder(ctx, bin, man) {
       f2b: vec(t("f2b")),
     });
   }
-  // embed on CPU (row-gather per token); embedT[D,VOCAB] on GPU for the tied vocab proj.
+  // embed on CPU (row-gather per token); embedT[D,VOCABP] on GPU for the tied
+  // vocab proj. The vocab column dim is padded to %4 (51865 → 51868, zero cols)
+  // so the 106MB matrix qualifies for f16 storage — it is the single biggest
+  // per-token read; halving it halves the logits GEMV. Logit consumers slice
+  // back to VOCAB (pad columns produce logit 0.0, which must never reach argmax).
   const embed = g("embed").slice(); // [51865,512]
-  const embedT = ctx.transpose(ctx.upload(embed.slice(), VOCAB, D)); // [512,51865]
+  const VOCABP = Math.ceil(VOCAB / 4) * 4;
+  const embedTP = new Float32Array(D * VOCABP);
+  for (let v = 0; v < VOCAB; v++) for (let d = 0; d < D; d++) embedTP[d * VOCABP + v] = embed[v * D + d];
+  const embedT = ctx.uploadF16(embedTP, D, VOCABP);
   return { layers, embed, embedT, pos: g("pos").slice(), lnf: [vec("lnf_w"), vec("lnf_b")] };
 }
 
@@ -89,30 +99,38 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
   for (let d = 0; d < D; d++) emb[d] = dec.embed[token * D + d] + dec.pos[n * D + d];
   let x = ctx.upload(emb, 1, D);
   if (ctx.beginBatch) ctx.beginBatch(); // one submit for the whole step
-  for (let li = 0; li < dec.layers.length; li++) {
-    const w = dec.layers[li];
-    // causal self-attn against the cache (only past+current exist -> no mask)
-    let h = ln(x, w.ln1);
-    const q = ctx.matmul(h, w.sqw, { bias: w.sqb });
-    ctx.copyRows(st.selfK[li], ctx.matmul(h, w.skw), n);
-    ctx.copyRows(st.selfV[li], ctx.matmul(h, w.svw, { bias: w.svb }), n);
-    const K = rowsView(st.selfK[li], n + 1),
-      V = rowsView(st.selfV[li], n + 1);
-    const probs = ctx.softmax(ctx.bmmQK(q, K, null, NH, HD)); // [NH, n+1]
-    x = ctx.add(x, ctx.matmul(ctx.bmmPV(probs, V, NH, HD), w.sow, { bias: w.sob }));
-    // cross-attn (K/V precomputed once from the encoder)
-    h = ln(x, w.ln2);
-    const cq = ctx.matmul(h, w.cqw, { bias: w.cqb });
-    const cprobs = ctx.softmax(ctx.bmmQK(cq, kv[li].k, null, NH, HD)); // [NH, Tenc]
-    x = ctx.add(x, ctx.matmul(ctx.bmmPV(cprobs, kv[li].v, NH, HD), w.cow, { bias: w.cob }));
-    // FFN
-    h = ln(x, w.ln3);
-    x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
+  try {
+    for (let li = 0; li < dec.layers.length; li++) {
+      const w = dec.layers[li];
+      // causal self-attn against the cache (only past+current exist -> no mask)
+      let h = ln(x, w.ln1);
+      const q = ctx.matmul(h, w.sqw, { bias: w.sqb });
+      ctx.copyRows(st.selfK[li], ctx.matmul(h, w.skw), n);
+      ctx.copyRows(st.selfV[li], ctx.matmul(h, w.svw, { bias: w.svb }), n);
+      const K = rowsView(st.selfK[li], n + 1),
+        V = rowsView(st.selfV[li], n + 1);
+      const probs = ctx.softmax(ctx.bmmQK(q, K, null, NH, HD)); // [NH, n+1]
+      x = ctx.add(x, ctx.matmul(ctx.bmmPV(probs, V, NH, HD), w.sow, { bias: w.sob }));
+      // cross-attn (K/V precomputed once from the encoder)
+      h = ln(x, w.ln2);
+      const cq = ctx.matmul(h, w.cqw, { bias: w.cqb });
+      const cprobs = ctx.softmax(ctx.bmmQK(cq, kv[li].k, null, NH, HD)); // [NH, Tenc]
+      x = ctx.add(x, ctx.matmul(ctx.bmmPV(cprobs, kv[li].v, NH, HD), w.cow, { bias: w.cob }));
+      // FFN
+      h = ln(x, w.ln3);
+      x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
+    }
+    st.n = n + 1;
+    const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
+    // Staging copy rides the step's own submit (one submit + one map per token,
+    // instead of a second submit for the readback).
+    const staged = ctx.stageDownload ? ctx.stageDownload(logits) : null;
+    if (ctx.endBatch) ctx.endBatch();
+    const full = staged ? await staged.read() : await ctx.download(logits);
+    return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
+  } finally {
+    if (ctx._pass) ctx.endBatch?.(); // close the batch if we threw mid-step
   }
-  st.n = n + 1;
-  const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCAB]
-  if (ctx.endBatch) ctx.endBatch();
-  return await ctx.download(logits);
 }
 
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */
@@ -164,6 +182,8 @@ export async function whisperDecodeStep(ctx, dec, kv, tokens) {
     x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
   }
   x = ln(x, dec.lnf);
-  const all = await ctx.download(ctx.matmul(x, dec.embedT)); // [n, VOCAB]
-  return all.slice((n - 1) * VOCAB, n * VOCAB); // last-position logits
+  const lg = ctx.matmul(x, dec.embedT); // [n, VOCABP] (embedT may be %4-padded)
+  const stride = lg.cols;
+  const all = await ctx.download(lg);
+  return all.slice((n - 1) * stride, (n - 1) * stride + VOCAB); // last-position logits, pad cols dropped (copy: standalone array)
 }

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- No Referer: HF 404s some hosts (e.g. *.workers.dev) by Referer, which
+         reads as a CORS error on model fetches. See index.html. -->
+    <meta name="referrer" content="no-referrer" />
+    <title>FluidAudio Web — Verify</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, monospace; }
+      body { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-family: system-ui, sans-serif; font-size: 1.3rem; }
+      #status { font-family: system-ui, sans-serif; margin: .5rem 0; opacity: .85; }
+      #log, #json { white-space: pre-wrap; background: color-mix(in srgb, Canvas 92%, CanvasText);
+        padding: .75rem; border-radius: 6px; font-size: .8rem; max-height: 40vh; overflow: auto; }
+      a#download { display: inline-block; margin: .5rem 0; font-family: system-ui, sans-serif; }
+      #drop { font-family: system-ui, sans-serif; border: 2px dashed color-mix(in srgb, CanvasText 35%, Canvas);
+        border-radius: 8px; padding: 1.25rem; text-align: center; margin: 1rem 0; cursor: pointer; display: block; }
+      #drop.hover { border-color: color-mix(in srgb, CanvasText 70%, Canvas); background: color-mix(in srgb, Canvas 95%, CanvasText); }
+      #drop input { display: none; }
+      #sampleBtn { font-family: system-ui, sans-serif; font-size: .85rem; margin-top: .5rem;
+        background: none; border: none; text-decoration: underline; cursor: pointer; color: inherit; opacity: .8; }
+    </style>
+  </head>
+  <body>
+    <h1>FluidAudio Web — Verify</h1>
+    <nav style="font-family: system-ui, sans-serif; font-size: .85rem; margin: .25rem 0;"><a href="./">← Playground (try a single model)</a></nav>
+    <p style="font-family: system-ui, sans-serif; font-size: .9rem;">
+      Pick an audio file and the selected engines run on it — VAD, both ASRs, diarization
+      (TTS engines synthesize a fixed sentence, since they consume text). All engines run
+      by default; untick to skip. Results download as JSON. First run downloads model
+      weights (cached after). <code>?engines=asr-parakeet,vad-silero</code> preselects.
+    </p>
+    <fieldset id="engines" style="font-family: system-ui, sans-serif; font-size: .85rem; border: 1px solid color-mix(in srgb, CanvasText 25%, Canvas); border-radius: 8px; padding: .5rem .75rem;">
+      <legend style="padding: 0 .35rem;">Engines to run</legend>
+      <!-- checkboxes rendered by verify.ts -->
+    </fieldset>
+    <label id="drop">
+      <strong>Drop an audio file here</strong> or click to choose (wav / mp3 / mp4 / m4a / ogg — anything the browser can decode)
+      <input id="file" type="file" accept="audio/*,video/*,.wav,.mp3,.mp4,.m4a,.ogg,.flac,.webm" />
+      <div><button id="sampleBtn" type="button">…or run on the bundled 12s sample</button></div>
+    </label>
+    <div id="status">Waiting for a file.</div>
+    <a id="download" href="#" download="fluidaudio-web-verify.json" hidden>⬇ Download results JSON</a>
+    <div id="log"></div>
+    <h2 style="font-family: system-ui, sans-serif; font-size: 1rem;">Results</h2>
+    <div id="json"></div>
+    <script type="module" src="/src/verify.ts"></script>
+  </body>
+</html>

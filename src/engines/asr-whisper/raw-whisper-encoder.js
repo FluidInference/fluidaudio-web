@@ -12,11 +12,13 @@ const SCALE = 1 / Math.sqrt(HD);
 
 export function loadWhisperEncoder(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
-  const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // f16 weight storage (M=1500 GEMMs take the f16-compute kernel); the context
+  // owns the f16-or-fp32 decision (uploadF16 self-falls-back on both backends).
+  const mat = (k) => ctx.uploadF16(g(k).slice(), man[k].dims[0], man[k].dims[1]);
   const matSc = (k, s) => {
     const a = g(k).slice();
     for (let i = 0; i < a.length; i++) a[i] *= s;
-    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+    return ctx.uploadF16(a, man[k].dims[0], man[k].dims[1]);
   };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
   const vecSc = (k, s) => {
@@ -67,22 +69,28 @@ export function whisperEncode(ctx, enc, mel) {
   let c = ctx.conv1d(melG, w1, { cout: 512, k: 3, pad: 1, bias: b1, act: "gelu_erf" }); // [512,3000]
   c = ctx.conv1d(c, w2, { cout: 512, k: 3, stride: 2, pad: 1, bias: b2, act: "gelu_erf" }); // [512,1500]
   let x = ctx.add(ctx.transpose(c), enc.posw);
-  for (const w of enc.layers) {
-    const h = ln(x, w.ln1);
-    const q = ctx.matmul(h, w.qw, { bias: w.qb }),
-      k = ctx.matmul(h, w.kw),
-      v = ctx.matmul(h, w.vw, { bias: w.vb });
-    const outc = ctx.alloc(TENC, D);
-    for (let hd = 0; hd < NH; hd++) {
-      const qh = ctx.sliceCols(q, hd * HD, HD),
-        kh = ctx.sliceCols(k, hd * HD, HD),
-        vh = ctx.sliceCols(v, hd * HD, HD);
-      const probs = ctx.softmax(ctx.matmul(qh, ctx.transpose(kh))); // scale folded into qw
-      ctx.setCols(outc, ctx.matmul(probs, vh), hd * HD);
+  // One submit for the whole transformer stack (per-op submits dominate otherwise).
+  if (ctx.beginBatch) ctx.beginBatch();
+  try {
+    for (const w of enc.layers) {
+      const h = ln(x, w.ln1);
+      const q = ctx.matmul(h, w.qw, { bias: w.qb }),
+        k = ctx.matmul(h, w.kw),
+        v = ctx.matmul(h, w.vw, { bias: w.vb });
+      const outc = ctx.alloc(TENC, D);
+      for (let hd = 0; hd < NH; hd++) {
+        const qh = ctx.sliceCols(q, hd * HD, HD),
+          kh = ctx.sliceCols(k, hd * HD, HD),
+          vh = ctx.sliceCols(v, hd * HD, HD);
+        const probs = ctx.softmax(ctx.matmul(qh, ctx.transpose(kh))); // scale folded into qw
+        ctx.setCols(outc, ctx.matmul(probs, vh), hd * HD);
+      }
+      x = ctx.add(x, ctx.matmul(outc, w.ow, { bias: w.ob }));
+      const h2 = ln(x, w.ln2);
+      x = ctx.add(x, ctx.matmul(ctx.matmul(h2, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
     }
-    x = ctx.add(x, ctx.matmul(outc, w.ow, { bias: w.ob }));
-    const h2 = ln(x, w.ln2);
-    x = ctx.add(x, ctx.matmul(ctx.matmul(h2, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
+    return ln(x, enc.lnf);
+  } finally {
+    if (ctx.endBatch) ctx.endBatch();
   }
-  return ln(x, enc.lnf);
 }
