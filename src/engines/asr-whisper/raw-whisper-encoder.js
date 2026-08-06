@@ -12,11 +12,13 @@ const SCALE = 1 / Math.sqrt(HD);
 
 export function loadWhisperEncoder(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
-  const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // f16 weight storage where supported (M=1500 GEMMs take the f16-compute kernel).
+  const upW = (data, r, c) => (ctx.uploadF16 ? ctx.uploadF16(data, r, c) : ctx.upload(data, r, c));
+  const mat = (k) => upW(g(k).slice(), man[k].dims[0], man[k].dims[1]);
   const matSc = (k, s) => {
     const a = g(k).slice();
     for (let i = 0; i < a.length; i++) a[i] *= s;
-    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+    return upW(a, man[k].dims[0], man[k].dims[1]);
   };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
   const vecSc = (k, s) => {
@@ -67,6 +69,8 @@ export function whisperEncode(ctx, enc, mel) {
   let c = ctx.conv1d(melG, w1, { cout: 512, k: 3, pad: 1, bias: b1, act: "gelu_erf" }); // [512,3000]
   c = ctx.conv1d(c, w2, { cout: 512, k: 3, stride: 2, pad: 1, bias: b2, act: "gelu_erf" }); // [512,1500]
   let x = ctx.add(ctx.transpose(c), enc.posw);
+  // One submit for the whole transformer stack (per-op submits dominate otherwise).
+  if (ctx.beginBatch) ctx.beginBatch();
   for (const w of enc.layers) {
     const h = ln(x, w.ln1);
     const q = ctx.matmul(h, w.qw, { bias: w.qb }),
@@ -84,5 +88,7 @@ export function whisperEncode(ctx, enc, mel) {
     const h2 = ln(x, w.ln2);
     x = ctx.add(x, ctx.matmul(ctx.matmul(h2, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
   }
-  return ln(x, enc.lnf);
+  const out = ln(x, enc.lnf);
+  if (ctx.endBatch) ctx.endBatch();
+  return out;
 }

@@ -321,11 +321,17 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p
 const BM = 128u; const BN = 128u; const BK = 16u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f16, 2048>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 2048>; // [BK][BN]
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
   if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -403,11 +409,17 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f16, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 1024>; // [BK][BN]
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
   if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -480,11 +492,17 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
   if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -926,11 +944,17 @@ struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 
 const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
 var<workgroup> As: array<f32, 1024>;
 var<workgroup> Bs: array<f32, 1024>;
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
   if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -1018,11 +1042,17 @@ struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
   if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
   if (a == 3u) { return max(x, 0.0); }
   if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -2083,7 +2113,13 @@ export class GpuContext {
     // 1.46× vs the f32-compute F16B variant, which stays available for A/Bs).
     // `add` (residual [M,N]) fuses into the f16C epilogue; other routes compose
     // with a separate elementwise add so semantics match on every path.
-    if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
+    if (
+      b.f16 &&
+      this.hasF16 &&
+      K % 4 === 0 &&
+      N % 4 === 0 &&
+      (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu" || act === "gelu_erf")
+    ) {
       if (!globalThis.__f16bforce) return this.matmulF16C(a, b, { bias, act, add });
       const oB = this.matmulF16B(a, b, { bias, act });
       return add ? this.add(oB, add) : oB;
@@ -2730,8 +2766,19 @@ export class GpuContext {
     return dst;
   }
 
-  /** Copy a GPU tensor back to CPU. */
+  /** Copy a GPU tensor back to CPU. Inside an open batch the staging copy is
+   * recorded INTO the batch, which is then flushed (submitted) and reopened —
+   * so callers may interleave downloads with batched work freely: one submit
+   * per stretch between downloads instead of one per op. */
   async download(t) {
+    if (this._enc && this._pass) {
+      const staged = this.stageDownload(t);
+      this._pass.end();
+      this.device.queue.submit([this._enc.finish()]);
+      this._enc = this._pass = null;
+      this.beginBatch();
+      return staged.read();
+    }
     return this.stageDownload(t).read();
   }
 

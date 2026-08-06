@@ -12,11 +12,15 @@ const SCALE = 1 / Math.sqrt(HD);
 
 export function loadWhisperDecoder(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
-  const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
+  // Weight matrices as f16 storage where supported: the per-token decode is
+  // BANDWIDTH-bound (M=1 GEMVs over the full weight set), so halving weight
+  // bytes ≈ halving step time. Falls back to fp32 automatically.
+  const upW = (data, r, c) => (ctx.uploadF16 ? ctx.uploadF16(data, r, c) : ctx.upload(data, r, c));
+  const mat = (k) => upW(g(k).slice(), man[k].dims[0], man[k].dims[1]);
   const matSc = (k, s) => {
     const a = g(k).slice();
     for (let i = 0; i < a.length; i++) a[i] *= s;
-    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+    return upW(a, man[k].dims[0], man[k].dims[1]);
   };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
   const vecSc = (k, s) => {
@@ -52,9 +56,16 @@ export function loadWhisperDecoder(ctx, bin, man) {
       f2b: vec(t("f2b")),
     });
   }
-  // embed on CPU (row-gather per token); embedT[D,VOCAB] on GPU for the tied vocab proj.
+  // embed on CPU (row-gather per token); embedT[D,VOCABP] on GPU for the tied
+  // vocab proj. The vocab column dim is padded to %4 (51865 → 51868, zero cols)
+  // so the 106MB matrix qualifies for f16 storage — it is the single biggest
+  // per-token read; halving it halves the logits GEMV. Logit consumers slice
+  // back to VOCAB (pad columns produce logit 0.0, which must never reach argmax).
   const embed = g("embed").slice(); // [51865,512]
-  const embedT = ctx.transpose(ctx.upload(embed.slice(), VOCAB, D)); // [512,51865]
+  const VOCABP = Math.ceil(VOCAB / 4) * 4;
+  const embedTP = new Float32Array(D * VOCABP);
+  for (let v = 0; v < VOCAB; v++) for (let d = 0; d < D; d++) embedTP[d * VOCABP + v] = embed[v * D + d];
+  const embedT = upW(embedTP, D, VOCABP);
   return { layers, embed, embedT, pos: g("pos").slice(), lnf: [vec("lnf_w"), vec("lnf_b")] };
 }
 
@@ -110,9 +121,13 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
   }
   st.n = n + 1;
-  const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCAB]
+  const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
+  // Staging copy rides the step's own submit (one submit + one map per token,
+  // instead of a second submit for the readback).
+  const staged = ctx.stageDownload ? ctx.stageDownload(logits) : null;
   if (ctx.endBatch) ctx.endBatch();
-  return await ctx.download(logits);
+  const full = staged ? await staged.read() : await ctx.download(logits);
+  return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
 }
 
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */
@@ -164,6 +179,8 @@ export async function whisperDecodeStep(ctx, dec, kv, tokens) {
     x = ctx.add(x, ctx.matmul(ctx.matmul(h, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
   }
   x = ln(x, dec.lnf);
-  const all = await ctx.download(ctx.matmul(x, dec.embedT)); // [n, VOCAB]
-  return all.slice((n - 1) * VOCAB, n * VOCAB); // last-position logits
+  const lg = ctx.matmul(x, dec.embedT); // [n, VOCABP] (embedT may be %4-padded)
+  const stride = lg.cols;
+  const all = await ctx.download(lg);
+  return all.subarray((n - 1) * stride, (n - 1) * stride + VOCAB); // last-position logits, pad cols dropped
 }
