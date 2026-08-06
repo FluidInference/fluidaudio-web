@@ -14,8 +14,8 @@
 //   • Decoder+joint: 2-layer LSTM RNNT (raw-decoder-nemotron.js), plain JS.
 // Full offline int8 path == coherent transcript matching the ORT streaming reference.
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadNemotronDecoder, nemotronDecode, loadPromptKernel, applyPromptKernel } from "./raw-decoder-nemotron.js";

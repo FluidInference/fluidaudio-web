@@ -7,8 +7,8 @@
 // (ParakeetMel). Full raw pipeline == ORT preds (maxΔ 1.79e-7; int8 2.3e-3).
 // Long-audio streaming (spkcache/fifo threading) is a follow-up.
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadSortformerHead, sortformerHead, predsToSegments, mergeWindowPreds } from "./raw-sortformer-head.js";

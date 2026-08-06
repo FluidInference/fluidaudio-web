@@ -6,11 +6,11 @@
 // Parity vs the original ORT model: ~1e-6 on the per-window speech probability
 // across a full streaming sequence (scripts/smoke-silero-raw.mjs).
 
-import type { AudioData, ProgressCb, SpeechRange, VadEngine } from "../../core/types";
+import type { AudioData, ProgressCb, SpeechRange, VadEngine } from "../../core/types.js";
 import { makeSileroWeights, type SileroWeights } from "./raw-silero.js";
 import { sileroDetect } from "./silero.js";
 import manifest from "./silero-weights.manifest.json";
-import weightsUrl from "./silero-weights.bin?url";
+const weightsUrl = new URL("./silero-weights.bin", import.meta.url); // cross-bundler asset URL
 
 export class SileroVadEngine implements VadEngine {
   readonly id = "vad-silero";

@@ -25,6 +25,10 @@ async function handle(msg, post) {
 if (typeof self !== "undefined" && typeof self.postMessage === "function") {
   self.onmessage = (e) => handle(e.data, (m) => self.postMessage(m));
 } else {
-  const { parentPort } = await import("node:worker_threads");
-  parentPort.on("message", (d) => handle(d, (m) => parentPort.postMessage(m)));
+  // node (gates). No top-level await: consumer bundlers compile SDK workers to
+  // iife by default, which rejects TLA. worker_threads queues messages until a
+  // listener attaches, so the async import loses nothing.
+  import("node:worker_threads").then(({ parentPort }) => {
+    parentPort.on("message", (d) => handle(d, (m) => parentPort.postMessage(m)));
+  });
 }

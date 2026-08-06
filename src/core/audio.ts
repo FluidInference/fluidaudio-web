@@ -1,7 +1,7 @@
 // Audio I/O: decode a File/ArrayBuffer to 16 kHz mono float, and capture mic.
 // All engines expect 16 kHz mono (the ASR/diar sample rate).
 
-import type { AudioData } from "./types";
+import type { AudioData } from "./types.js";
 
 export const TARGET_SR = 16000;
 

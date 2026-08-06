@@ -11,9 +11,9 @@ async function loadWasmBytes() {
     const { fileURLToPath } = await import("node:url");
     return readFileSync(fileURLToPath(new URL("./wasm-kernels.wasm", import.meta.url)));
   }
-  // Browser / worker: Vite bundles the asset via ?url.
-  const wasmUrl = (await import("./wasm-kernels.wasm?url")).default;
-  return (await fetch(wasmUrl)).arrayBuffer();
+  // Browser / worker: standard asset-URL pattern — resolved by Vite, webpack 5,
+  // Rollup, AND bundler-less browsers (SDK consumers bring their own bundler).
+  return (await fetch(new URL("./wasm-kernels.wasm", import.meta.url))).arrayBuffer();
 }
 
 /**

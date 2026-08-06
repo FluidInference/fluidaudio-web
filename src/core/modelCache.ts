@@ -2,7 +2,7 @@
 // (often hundreds of MB) weights are downloaded once per browser. Reports byte
 // progress for the UI.
 
-import type { ProgressCb } from "./types";
+import type { ProgressCb } from "./types.js";
 
 const CACHE_NAME = "fluidaudio-web-models-v1";
 const HF_BASE = "https://huggingface.co";
