@@ -172,8 +172,7 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
   const ctx = K.ctx;
   // Whole synth inside one batch: ~970 per-op submits collapse to one submit
   // per stretch between downloads (download() flushes + reopens the batch).
-  if (ctx.beginBatch) ctx.beginBatch();
-  try {
+  return ctx.withBatch(async () => {
     const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style, speed);
     // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
     const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
@@ -183,9 +182,7 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
     const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
     const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
     return await generator(K, decode3, spec, style.slice(0, 128));
-  } finally {
-    if (ctx.endBatch) ctx.endBatch();
-  }
+  });
 }
 
 /**

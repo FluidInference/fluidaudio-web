@@ -43,3 +43,41 @@ export function createDecodePool(workers) {
     },
   };
 }
+
+// ── worker shims: single-sourced protocol adapters for both runtimes ─────────
+// (previously hand-rolled in index.ts AND the node gate, with subtle
+// differences — transfer lists, removeAllListeners — that could drift.)
+
+/** Browser Worker → pool shim. */
+export function browserWorkerShim(w) {
+  return {
+    postMessage: (m, t) => w.postMessage(m, t ?? []),
+    setHandler: (f) => {
+      w.onmessage = (e) => f(e.data);
+    },
+    terminate: () => w.terminate(),
+  };
+}
+
+/** node worker_threads Worker → pool shim. */
+export function nodeWorkerShim(w) {
+  return {
+    postMessage: (m, t) => w.postMessage(m, t ?? []),
+    setHandler: (f) => {
+      w.removeAllListeners("message");
+      w.on("message", f);
+    },
+    terminate: () => w.terminate(),
+  };
+}
+
+/** Init handshake: send weights, resolve on {type:"ready"}, reject otherwise. */
+export function initDecodeWorker(post, once, payload) {
+  return new Promise((resolve, reject) => {
+    once(
+      (m) => (m?.type === "ready" ? resolve() : reject(new Error(String(m?.error ?? "bad init reply")))),
+      (err) => reject(err instanceof Error ? err : new Error(String(err))),
+    );
+    post({ type: "init", ...payload });
+  });
+}

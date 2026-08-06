@@ -3,34 +3,13 @@
 // scheduling differs), and the pipelined wall should approach max(enc, mel+dec).
 //   node scripts/parakeet-pipeline-check.mjs [/tmp/pk_120s.wav]
 import { readFileSync } from "node:fs";
+import { readWav } from "./lib/wav.mjs";
 import { getDevice } from "./gpu-globals.mjs";
 import { GpuContext } from "../src/gpu/compute.js";
 import { loadParakeetEncoder } from "../src/engines/asr-parakeet/raw-encoder.js";
 import { loadWasmDecoder } from "../src/engines/asr-parakeet/raw-decoder-wasm.js";
 import { ParakeetMel } from "../src/engines/asr-parakeet/parakeet-mel.js";
 import { transcribeWindowed } from "../src/engines/asr-parakeet/pipeline.js";
-
-function readWav(p) {
-  const b = readFileSync(p);
-  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12,
-    dO = -1,
-    dL = 0;
-  while (o + 8 <= b.length) {
-    const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
-    const s = dv.getUint32(o + 4, true);
-    if (id === "data") {
-      dO = o + 8;
-      dL = s;
-      break;
-    }
-    o += 8 + s + (s & 1);
-  }
-  const n = dL / 2,
-    out = new Float32Array(n);
-  for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
-  return out;
-}
 
 const wav = readWav(process.argv[2] || "/tmp/pk_120s.wav");
 const durS = wav.length / 16000;
@@ -53,31 +32,21 @@ let pool = null;
 const POOL = Number(process.env.POOL || 0);
 if (POOL > 1) {
   const { Worker } = await import("node:worker_threads");
-  const { createDecodePool } = await import("../src/engines/asr-parakeet/decode-pool.js");
+  const { createDecodePool, nodeWorkerShim, initDecodeWorker } = await import("../src/engines/asr-parakeet/decode-pool.js");
   const wasmBytes = readFileSync("src/engines/asr-parakeet/parakeet-decoder.wasm");
   const decBuf = decU8.buffer.slice(decU8.byteOffset, decU8.byteOffset + decU8.byteLength);
   const workers = await Promise.all(
     Array.from({ length: POOL }, async () => {
       const w = new Worker(new URL("../src/engines/asr-parakeet/decoder-worker.js", import.meta.url), { type: "module" });
-      const shim = {
-        postMessage: (m, t) => w.postMessage(m, t ?? []),
-        setHandler: (f) => {
-          w.removeAllListeners("message");
-          w.on("message", f);
+      await initDecodeWorker(
+        (m) => w.postMessage(m),
+        (ok, err) => {
+          w.once("message", ok);
+          w.once("error", err);
         },
-        terminate: () => w.terminate(),
-      };
-      await new Promise((resolve, reject) => {
-        w.once("message", resolve);
-        w.once("error", reject);
-        w.postMessage({
-          type: "init",
-          wasmBytes: wasmBytes.buffer.slice(wasmBytes.byteOffset, wasmBytes.byteOffset + wasmBytes.byteLength),
-          decBuf,
-          man: decMan,
-        });
-      });
-      return shim;
+        { wasmBytes: wasmBytes.buffer.slice(wasmBytes.byteOffset, wasmBytes.byteOffset + wasmBytes.byteLength), decBuf, man: decMan },
+      );
+      return nodeWorkerShim(w);
     }),
   );
   pool = createDecodePool(workers);

@@ -7,3 +7,12 @@ export interface DecodePool {
 export function createDecodePool(
   workers: Array<{ postMessage(m: any, t?: any[]): void; setHandler(f: (m: any) => void): void; terminate(): void }>,
 ): DecodePool;
+
+type Shim = { postMessage(m: any, t?: any[]): void; setHandler(f: (m: any) => void): void; terminate(): void };
+export function browserWorkerShim(w: Worker): Shim;
+export function nodeWorkerShim(w: any): Shim;
+export function initDecodeWorker(
+  post: (m: any) => void,
+  once: (ok: (m: any) => void, err: (e: any) => void) => void,
+  payload: Record<string, any>,
+): Promise<void>;

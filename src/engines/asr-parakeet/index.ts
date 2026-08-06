@@ -13,7 +13,7 @@ import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
 import { transcribeWindowed } from "./pipeline.js";
-import { createDecodePool } from "./decode-pool.js";
+import { createDecodePool, browserWorkerShim, initDecodeWorker } from "./decode-pool.js";
 import { loadTextNorm, itn } from "../../core/textnorm";
 import { createVocabularyRescorer } from "./vocab-rescorer.js";
 import { ParakeetMel } from "./parakeet-mel.js";
@@ -92,20 +92,15 @@ export class ParakeetV3Engine implements AsrEngine {
             Array.from({ length: n }, async () => {
               const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
               raw.push(w);
-              await new Promise<void>((resolve, reject) => {
-                // Init must reply {type:"ready"} — an {type:"err"} reply or a
-                // Worker error event rejects (never resolve-on-any-message).
-                w.onmessage = (e) => (e.data?.type === "ready" ? resolve() : reject(new Error(String(e.data?.error ?? "bad init reply"))));
-                w.onerror = (e) => reject(new Error(e.message || "worker error"));
-                w.postMessage({ type: "init", wasmBytes, decBuf, man: decMan });
-              });
-              return {
-                postMessage: (m: any, t?: any[]) => w.postMessage(m, t ?? []),
-                setHandler: (f: (m: any) => void) => {
-                  w.onmessage = (e) => f(e.data);
+              await initDecodeWorker(
+                (m: any) => w.postMessage(m),
+                (ok: (m: any) => void, err: (e: any) => void) => {
+                  w.onmessage = (e) => ok(e.data);
+                  w.onerror = (e) => err(new Error(e.message || "worker error"));
                 },
-                terminate: () => w.terminate(),
-              };
+                { wasmBytes, decBuf, man: decMan },
+              );
+              return browserWorkerShim(w);
             }),
           );
           // Post-init transport errors reject all in-flight decodes instead of hanging.

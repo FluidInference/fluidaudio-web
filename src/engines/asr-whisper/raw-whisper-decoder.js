@@ -98,8 +98,9 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
   const emb = new Float32Array(D);
   for (let d = 0; d < D; d++) emb[d] = dec.embed[token * D + d] + dec.pos[n * D + d];
   let x = ctx.upload(emb, 1, D);
-  if (ctx.beginBatch) ctx.beginBatch(); // one submit for the whole step
-  try {
+  // One submit for the whole step; the staging copy rides it (one submit +
+  // one map per token). The batch is closed by withBatchSync before read().
+  const staged = ctx.withBatchSync(() => {
     for (let li = 0; li < dec.layers.length; li++) {
       const w = dec.layers[li];
       // causal self-attn against the cache (only past+current exist -> no mask)
@@ -122,15 +123,10 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     }
     st.n = n + 1;
     const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
-    // Staging copy rides the step's own submit (one submit + one map per token,
-    // instead of a second submit for the readback).
-    const staged = ctx.stageDownload ? ctx.stageDownload(logits) : null;
-    if (ctx.endBatch) ctx.endBatch();
-    const full = staged ? await staged.read() : await ctx.download(logits);
-    return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
-  } finally {
-    if (ctx._pass) ctx.endBatch?.(); // close the batch if we threw mid-step
-  }
+    return ctx.stageDownload ? ctx.stageDownload(logits) : { read: async () => ctx.download(logits) };
+  });
+  const full = await staged.read();
+  return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
 }
 
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */

@@ -40,7 +40,7 @@ export interface AsrSegment {
 
 export interface AsrStageMetrics {
   melMs: number;
-  encodeMs: number;
+  encodeMs: number; // NOTE: pipelined engines (Parakeet) report the UNHIDDEN GPU wait, not total encode time — see engines/asr-parakeet/pipeline.js
   decodeMs: number;
   totalMs: number;
 }
