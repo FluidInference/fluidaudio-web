@@ -160,6 +160,7 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
     return `${ranges.length} speech segments:\n` + ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
   }
   if (typeof any.transcribe === "function") {
+    if (typeof any.setItn === "function") any.setItn(($("itn") as HTMLInputElement)?.checked ?? false);
     if (typeof any.setVocabulary === "function") {
       const raw = ($("vocab") as HTMLInputElement).value.trim();
       any.setVocabulary(

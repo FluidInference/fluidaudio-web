@@ -8,6 +8,8 @@
 // en ITN (de/fr sentence TN drops surrounding context upstream, zh TN mangles
 // CJK input — retested before widening).
 
+import { tnBySentence } from "./textnorm-split.js";
+
 let mod: any = null;
 let loading: Promise<any> | null = null;
 
@@ -40,12 +42,29 @@ export async function loadTextNorm(): Promise<any | null> {
   }
 }
 
-/** Written → spoken (TTS input), English. Pass-through if wasm unavailable. */
+/** Written → spoken (TTS input), English, sentence punctuation preserved.
+ * Pass-through if the wasm is unavailable OR throws (fail-open contract). */
 export function tnEnglish(m: any | null, text: string): string {
-  return m ? m.tnNormalizeSentenceLang(text, "en") : text;
+  if (!m) return text;
+  try {
+    return tnBySentence((s) => m.tnNormalizeSentenceLang(s, "en"), text);
+  } catch (e) {
+    console.warn("[textnorm] TN failed, passing text through:", e);
+    return text;
+  }
 }
 
-/** Spoken → written (ASR output), English rules; near no-op on other languages. */
+/** Spoken → written (ASR output), English rules. OPT-IN at the engine level:
+ * on everyday speech it also rewrites things people write as words
+ * ("no one" → "no 1", "one second" → "1 2nd") and on non-English text it can
+ * DELETE words (fr "il y a six" → "il y 6") — verified, which is why it is
+ * not applied by default. Fail-open on throw. */
 export function itn(m: any | null, text: string): string {
-  return m ? m.normalizeSentence(text) : text;
+  if (!m) return text;
+  try {
+    return m.normalizeSentence(text);
+  } catch (e) {
+    console.warn("[textnorm] ITN failed, passing text through:", e);
+    return text;
+  }
 }

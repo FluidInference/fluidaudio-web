@@ -38,7 +38,15 @@ export class ParakeetV3Engine implements AsrEngine {
   private tokenizer: ParakeetTokenizer | null = null;
   private decodePool: any = null;
   private itnMod: any | null = null;
+  private itnEnabled = false;
   private rescorer: ReturnType<typeof createVocabularyRescorer> | null = null;
+
+  /** OPT-IN inverse text normalization ("twenty one dollars" → "$21").
+   * Off by default: on everyday speech it also rewrites words people write out
+   * ("no one" → "no 1") and can delete words in non-English transcripts. */
+  setItn(enabled: boolean): void {
+    this.itnEnabled = enabled;
+  }
 
   /** Custom vocabulary (domain terms, names): fuzzy-matched against the
    * transcript and replaced with canonical spellings ("invidia" → "NVIDIA",
@@ -120,10 +128,7 @@ export class ParakeetV3Engine implements AsrEngine {
         }
       }
     }
-    // ITN (spoken → written: "twenty one dollars" → "$21") for transcripts.
-    // Parakeet emits spoken-form English; the wasm normalizer fixes numbers,
-    // currency, dates. English rules — near no-op on other languages. Optional
-    // (null = raw transcript).
+    // ITN module loaded up front; APPLIED only when setItn(true) (see setItn).
     this.itnMod = await loadTextNorm();
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
@@ -142,8 +147,11 @@ export class ParakeetV3Engine implements AsrEngine {
     });
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
-    let text = itn(this.itnMod, this.tokenizer.decode(ids));
+    // Vocabulary rescoring runs on the RAW spoken-form transcript, BEFORE any
+    // ITN — spoken-form aliases ("gpt four") can never match post-ITN text.
+    let text = this.tokenizer.decode(ids);
     if (this.rescorer) text = this.rescorer.rescore(text);
+    if (this.itnEnabled) text = itn(this.itnMod, text);
     return {
       text,
       metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
