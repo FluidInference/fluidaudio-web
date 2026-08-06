@@ -1183,6 +1183,87 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
 // 2-D convolution (batch 1) — FastConformer dw-striding subsampling. X:[Cin,H*W]
 // (rows=Cin), W:[Cout,Cin/groups,Kh,Kw] flat, bias?:[Cout] -> Y:[Cout,Ho*Wo]. One
 // thread per (Cout, Ho*Wo). Supports groups (depthwise) + fused bias/act.
+// Depthwise 3×3 stride-2: one thread computes 4 consecutive outputs of one
+// channel row with the 9 weights held in registers. act: 3=relu, 4=silu.
+const CONV2D_DW3X3S2_WGSL = `
+struct Meta { C:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBias:u32, act:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> Wt: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let WoQ = (m.Wo + 3u) / 4u;
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.C * m.Ho * WoQ) { return; }
+  let c = idx / (m.Ho * WoQ);
+  let ho = (idx / WoQ) % m.Ho;
+  let wo0 = (idx % WoQ) * 4u;
+  var wgt: array<f32, 9>;
+  for (var i = 0u; i < 9u; i++) { wgt[i] = Wt[c * 9u + i]; }
+  let xC = c * m.H * m.W;
+  var b = 0.0;
+  if (m.hasBias == 1u) { b = bias[c]; }
+  for (var j = 0u; j < 4u; j++) {
+    let wo = wo0 + j;
+    if (wo >= m.Wo) { break; }
+    var acc = 0.0;
+    for (var kh = 0u; kh < 3u; kh++) {
+      let hi = i32(ho * 2u + kh) - i32(m.padH);
+      if (hi < 0 || hi >= i32(m.H)) { continue; }
+      let rowB = xC + u32(hi) * m.W;
+      for (var kw = 0u; kw < 3u; kw++) {
+        let wi = i32(wo * 2u + kw) - i32(m.padW);
+        if (wi >= 0 && wi < i32(m.W)) { acc += X[rowB + u32(wi)] * wgt[kh * 3u + kw]; }
+      }
+    }
+    acc += b;
+    if (m.act == 3u) { acc = max(acc, 0.0); }
+    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    Y[c * m.Ho * m.Wo + ho * m.Wo + wo] = acc;
+  }
+}`;
+
+// cin=1 3×3 stride-2 (the mel-input conv): every output channel reads the SAME
+// 3×3 window, so one thread loads it once and computes 4 channels.
+const CONV2D_C1_3X3S2_WGSL = `
+struct Meta { Cout:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBias:u32, act:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> Wt: array<f32>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let HW = m.Ho * m.Wo;
+  let CQ = m.Cout / 4u;
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= CQ * HW) { return; }
+  let co0 = (idx / HW) * 4u;
+  let ho = (idx % HW) / m.Wo;
+  let wo = (idx % HW) % m.Wo;
+  var xv: array<f32, 9>;
+  for (var kh = 0u; kh < 3u; kh++) {
+    let hi = i32(ho * 2u + kh) - i32(m.padH);
+    for (var kw = 0u; kw < 3u; kw++) {
+      let wi = i32(wo * 2u + kw) - i32(m.padW);
+      var v = 0.0;
+      if (hi >= 0 && hi < i32(m.H) && wi >= 0 && wi < i32(m.W)) { v = X[u32(hi) * m.W + u32(wi)]; }
+      xv[kh * 3u + kw] = v;
+    }
+  }
+  for (var jc = 0u; jc < 4u; jc++) {
+    let co = co0 + jc;
+    var acc = 0.0;
+    for (var i = 0u; i < 9u; i++) { acc += xv[i] * Wt[co * 9u + i]; }
+    if (m.hasBias == 1u) { acc += bias[co]; }
+    if (m.act == 3u) { acc = max(acc, 0.0); }
+    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    Y[co * HW + ho * m.Wo + wo] = acc;
+  }
+}`;
+
 const CONV2D_WGSL = `
 struct Meta { Cout:u32, Cin:u32, H:u32, W:u32, Ho:u32, Wo:u32, Kh:u32, Kw:u32,
               sH:u32, sW:u32, padH:u32, padW:u32, groups:u32, hasBias:u32, act:u32, _p:u32 };
@@ -2265,6 +2346,23 @@ export class GpuContext {
     const Wo = Math.floor((W_ + padLeft + padRight - kw) / strideW) + 1;
     const y = this.alloc(cout, Ho * Wo);
     const biasBuf = bias ? bias.buf : this._dummy();
+    // Specialized subsampling kernels (9 MACs/output → the generic gather kernel
+    // is all index math and launch overhead): depthwise 3×3 s2 keeps the 9
+    // weights in registers and computes 4 outputs/thread; cin=1 3×3 s2 computes
+    // 4 CHANNELS/thread off one shared 9-value input window.
+    if (kh === 3 && kw === 3 && strideH === 2 && strideW === 2) {
+      if (groups === cin && cout === cin) {
+        const u = this._uniform(new Uint32Array([cout, h, W_, Ho, Wo, padTop, padLeft, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+        const WoQ = Math.ceil(Wo / 4);
+        this._run(this._pipeline("conv2dDw33s2", CONV2D_DW3X3S2_WGSL), [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil((cout * Ho * WoQ) / 64));
+        return y;
+      }
+      if (cin === 1 && groups === 1 && cout % 4 === 0) {
+        const u = this._uniform(new Uint32Array([cout, h, W_, Ho, Wo, padTop, padLeft, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+        this._run(this._pipeline("conv2dC133s2", CONV2D_C1_3X3S2_WGSL), [x.buf, w.buf, biasBuf, y.buf], u, Math.ceil(((cout / 4) * Ho * Wo) / 64));
+        return y;
+      }
+    }
     const pipeline = this._pipeline("conv2d", CONV2D_WGSL);
     // kernel Meta padH/padW slots = the "before" (top/left) offset.
     const u = this._uniform(new Uint32Array([cout, cin, h, W_, Ho, Wo, kh, kw, strideH, strideW, padTop, padLeft, groups, bias ? 1 : 0, ACT[act], 0]));
