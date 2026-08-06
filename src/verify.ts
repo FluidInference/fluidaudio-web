@@ -136,8 +136,8 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
     for (const c of cases) {
       log(`\n▶ ${c.label} (${c.id})`);
       const rec: any = { id: c.id, label: c.label, kind: c.kind };
+      let engine: Engine | null = null;
       try {
-        let engine: Engine;
         const tLoad = performance.now();
         engine = await c.make();
         await engine.load((p) => {
@@ -153,20 +153,29 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
         if (c.kind === "audio") {
           rec.inputSec = +audioSec.toFixed(2);
           rec.rtfx = +(audioSec / (rec.runMs / 1000)).toFixed(1);
+          rec.rtfxBasis = "input"; // audio-seconds processed per wall-second
         } else {
           const outSec = out.samples.length / out.sampleRate;
           rec.outputSec = +outSec.toFixed(2);
           rec.rtfx = +(outSec / (rec.runMs / 1000)).toFixed(2);
+          rec.rtfxBasis = "output"; // TTS: audio-seconds GENERATED per wall-second — not comparable to ASR rtfx
         }
         if (out?.metrics) rec.stages = out.metrics; // Parakeet per-stage timings
         rec.output = c.summarize(out).slice(0, 200);
         rec.ok = true;
         log(`  ✓ load ${rec.loadMs}ms · run ${rec.runMs}ms · RTFx ${rec.rtfx}× · ${rec.output}`);
-        await engine.dispose();
       } catch (err) {
         rec.ok = false;
         rec.error = String(err).slice(0, 300);
         log(`  ✗ ${rec.error}`);
+      } finally {
+        // Dispose even on failure — a leaked GPUDevice + weights would cascade
+        // OOM into the remaining engines' runs.
+        try {
+          await engine?.dispose();
+        } catch {
+          /* device may already be lost */
+        }
       }
       results.engines.push(rec);
       $("json").textContent = JSON.stringify(results, null, 2);
@@ -176,6 +185,7 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
     const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = $("download") as HTMLAnchorElement;
+    if (a.href.startsWith("blob:")) URL.revokeObjectURL(a.href); // don't leak the previous run's blob
     a.href = url;
     a.hidden = false;
     if (!params.has("noauto")) {

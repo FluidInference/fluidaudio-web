@@ -83,7 +83,7 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   // mixed-precision v4 kernel reads them at half the traffic and half the GPU
   // memory (~2.3GB → 1.17GB for the fp32-dequantized encoder). Activations and
   // biases stay fp32.
-  const upW = (data, r, c) => (ctx.uploadF16 ? ctx.uploadF16(data, r, c) : ctx.upload(data, r, c)); // context owns the f16-or-f32 decision
+  const upW = (data, r, c) => ctx.uploadF16(data, r, c); // context owns the f16-or-fp32 decision (self-falls-back)
   const mat = (k) => upW(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
   const matScaled = (k, s) => upW(scaled(k, s), man[k].dims[0], man[k].dims[1]);

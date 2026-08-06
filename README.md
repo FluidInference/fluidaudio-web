@@ -47,9 +47,10 @@ npm run dev      # http://localhost:5173  (cross-origin isolated for threaded WA
 npm run build
 ```
 
-### Auto-benchmark
+### Verify (run every engine on one file)
 
-Open **`/bench.html`** — it runs each engine on a bundled 12s sample and downloads
+Open **`/verify.html`** — pick an audio file and every selected engine runs on it
+(all engines on by default); results download
 a results JSON (load/run ms, RTFx, per-stage timings, output, per-engine errors).
 This is where you get the real WebGPU numbers. First run downloads model weights
 (cached after). Params: `?full=1` (add the heavy engines — Kokoro-zh, Nemotron,
@@ -58,7 +59,7 @@ Parakeet EOU), `?engines=a,b` (pick), `?noauto=1` (don't auto-download).
 ## Deploy
 
 **Live demo:** https://fluidinference.github.io/fluidaudio-web/ (and
-`/bench.html?full=1` for the auto-benchmark). Auto-deploys from `main` via
+`/verify.html` to run every engine on one file). Auto-deploys from `main` via
 `.github/workflows/deploy.yml` (one-time: repo **Settings → Pages → Source: GitHub
 Actions**).
 

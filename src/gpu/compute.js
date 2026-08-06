@@ -1424,10 +1424,17 @@ fn gelu(x: f32) -> f32 {
   let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
   return 0.5 * x * (1.0 + tanh(t));
 }
+fn erf_a(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
 fn actf(x: f32, a: u32) -> f32 {
   if (a == 1u) { return gelu(x); }
   if (a == 2u) { return tanh(x); }
   if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
   return x;
 }
 @compute @workgroup_size(256)
@@ -1881,9 +1888,19 @@ export class GpuContext {
     const n = t.rows * t.cols;
     const size = Math.ceil((n * 2) / 4) * 4;
     const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    const enc = this.device.createCommandEncoder();
-    enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-    this.device.queue.submit([enc.finish()]);
+    // Batch-aware like download(): inside an open batch the copy rides the
+    // batch submit (then flush + reopen) so it sees the producing kernels.
+    if (this._enc && this._pass) {
+      this._pass.end();
+      this._enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this.device.queue.submit([this._enc.finish()]);
+      this._enc = this._pass = null;
+      this.beginBatch();
+    } else {
+      const enc = this.device.createCommandEncoder();
+      enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
+      this.device.queue.submit([enc.finish()]);
+    }
     await stg.mapAsync(GPUMapMode.READ);
     const h = new Float16Array(stg.getMappedRange().slice(0, n * 2));
     const out = Float32Array.from(h);
@@ -1891,6 +1908,7 @@ export class GpuContext {
     stg.destroy();
     return out;
   }
+
   /** f16 matmul: C = act(A@B + bias). a/b/bias/out all f16 tensors. */
   matmulF16(a, b, { bias = null, act = "none" } = {}) {
     const M = a.rows,
@@ -2053,11 +2071,15 @@ export class GpuContext {
 
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
+    // Non-reentrant by design: nesting would silently discard the outer
+    // encoder's recorded-but-unsubmitted work. Fail loudly instead.
+    if (this._enc) throw new Error("beginBatch: a batch is already open");
     this._enc = this.device.createCommandEncoder();
     this._pass = this._enc.beginComputePass();
     this._batchUniforms = 0;
   }
   endBatch() {
+    if (!this._pass) throw new Error("endBatch without beginBatch");
     this._pass.end();
     this.device.queue.submit([this._enc.finish()]);
     this._enc = this._pass = null;
@@ -2248,7 +2270,11 @@ export class GpuContext {
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
     // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
     // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
-    if (groups === 1 && padLeft === padRight && (act === "none" || act === "gelu" || act === "tanh" || act === "relu")) {
+    if (
+      groups === 1 &&
+      padLeft === padRight &&
+      (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu" || act === "gelu_erf")
+    ) {
       return this.conv1dFast(x, w, cout, k, { bias, stride, pad: padLeft, dilation, act });
     }
     const Cin = x.rows,
