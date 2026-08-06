@@ -10,9 +10,9 @@
 // (kokoro-js provided that) — OOV words are skipped; the gold/silver lexicon tiers
 // carry coverage.
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
-import { loadTextNorm, tnEnglish } from "../../core/textnorm";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AudioData, ProgressCb, TtsEngine } from "../../core/types.js";
+import { loadTextNorm, tnEnglish } from "../../core/textnorm.js";
 import { EnglishLexicon } from "./lexicon.js";
 import { chineseToZh11 } from "./zh-frontend-v11.js";
 import { loadKokoroBackend } from "./synth-backend.js";

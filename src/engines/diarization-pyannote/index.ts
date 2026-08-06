@@ -12,7 +12,7 @@
 // `public/sherpa/` and load it here. (It's an Emscripten Module, not an npm dep,
 // which is why it isn't in package.json.)
 
-import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types";
+import type { AudioData, DiarizationEngine, DiarSegment, ProgressCb } from "../../core/types.js";
 
 export class PyannoteDiarizationEngine implements DiarizationEngine {
   readonly id = "diarization-pyannote";

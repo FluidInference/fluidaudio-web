@@ -7,3 +7,5 @@ dist/
 models-cache/
 rust/*/target/
 .ci-cache/
+dist-sdk/
+*.tgz

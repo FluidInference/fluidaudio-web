@@ -7,10 +7,10 @@
 // skip. ?engines=asr-parakeet,vad-silero preselects (only those checked);
 // ?noauto=1 skips the JSON auto-download (still shown on page).
 
-import { decodeToMono16k } from "./core/audio";
-import { webgpuAvailable } from "./core/webgpu";
-import { ENGINES } from "./engines/registry";
-import type { Engine } from "./core/types";
+import { decodeToMono16k } from "./core/audio.js";
+import { webgpuAvailable } from "./core/webgpu.js";
+import { ENGINES } from "./engines/registry.js";
+import type { Engine } from "./core/types.js";
 
 const TTS_TEXT: Record<string, string> = {
   "tts-kokoro-en": "The quick brown fox jumps over the lazy dog.",

@@ -7,18 +7,18 @@
 // because it's autoregressive — one result per token — so a GPU decoder pays a
 // round-trip per token (the ~20× wall). WASM-SIMD decodes on CPU with no GPU sync.
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
 import { transcribeWindowed } from "./pipeline.js";
 import { createDecodePool, browserWorkerShim, initDecodeWorker } from "./decode-pool.js";
-import { loadTextNorm, itn } from "../../core/textnorm";
+import { loadTextNorm, itn } from "../../core/textnorm.js";
 import { createVocabularyRescorer } from "./vocab-rescorer.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
-import wasmUrl from "./parakeet-decoder.wasm?url";
+const wasmUrl = new URL("./parakeet-decoder.wasm", import.meta.url); // cross-bundler asset URL
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const VOCAB_REPO = "ysdede/parakeet-tdt-0.6b-v3-onnx";

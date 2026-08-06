@@ -2,10 +2,10 @@
 // so the UI treats them uniformly: pick → load → run. Audio engines take a file;
 // TTS takes text.
 
-import { decodeToMono16k, pcmToWav } from "./core/audio";
-import { webgpuAvailable } from "./core/webgpu";
-import { ENGINES, type EngineEntry } from "./engines/registry";
-import type { Engine, LoadProgress } from "./core/types";
+import { decodeToMono16k, pcmToWav } from "./core/audio.js";
+import { webgpuAvailable } from "./core/webgpu.js";
+import { ENGINES, type EngineEntry } from "./engines/registry.js";
+import type { Engine, LoadProgress } from "./core/types.js";
 
 // Engine catalog lives in engines/registry.ts (shared with the verify page) —
 // a new engine registered there appears in both UIs automatically.

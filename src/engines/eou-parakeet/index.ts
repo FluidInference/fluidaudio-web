@@ -15,8 +15,8 @@
 //     The exported joint prepends a zero SOS timestep per call (2-step LSTM).
 // Full raw path == ORT reference transcript; encoder maxΔ 4.4e-2 (fp16) vs ORT.
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
 import { loadEouDecoder, eouDecode } from "../asr-parakeet/raw-decoder-eou.js";

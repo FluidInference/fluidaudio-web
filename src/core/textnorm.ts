@@ -23,8 +23,7 @@ async function init(): Promise<any> {
     const { fileURLToPath } = await import("node:url");
     await m.default({ module_or_path: readFileSync(fileURLToPath(new URL("../vendor/text-processing/text_processing_rs_bg.wasm", import.meta.url))) });
   } else {
-    const url = (await import("../vendor/text-processing/text_processing_rs_bg.wasm?url")).default;
-    await m.default({ module_or_path: url });
+    await m.default({ module_or_path: new URL("../vendor/text-processing/text_processing_rs_bg.wasm", import.meta.url) });
   }
   return m;
 }

@@ -1,4 +1,4 @@
-import type { GpuContext, GpuTensor } from "./compute";
+import type { GpuContext, GpuTensor } from "./compute.js";
 
 /** input_ids → ALBERT → bert_encoder (768→512) → d_en [seq,512]. */
 export function textEncoding(

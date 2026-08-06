@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist-sdk",
+    "rootDir": "src",
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src/index.ts", "src/core/**/*.ts", "src/engines/**/*.ts"],
+  "exclude": ["src/main.ts", "src/verify.ts"]
+}

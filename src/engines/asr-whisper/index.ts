@@ -8,14 +8,14 @@
 // Full raw pipeline == the transformers.js transcript. Single 30s window (long-audio
 // chunking is a follow-up). Weights from FluidInference/fluidaudio-web (fp32).
 
-import { fetchCached, hfUrl } from "../../core/modelCache";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadWhisperEncoder, whisperEncode } from "./raw-whisper-encoder.js";
 import { loadWhisperDecoder, whisperCrossKV, whisperDecodeInit, whisperDecodeNext } from "./raw-whisper-decoder.js";
 import { makeWhisperTokenizer } from "./whisper-tokenizer.js";
 import { WhisperMel } from "./whisper-mel.js";
-import melFiltersUrl from "./whisper-mel-filters.bin?url";
+const melFiltersUrl = new URL("./whisper-mel-filters.bin", import.meta.url); // cross-bundler asset URL
 import suppressTokens from "./whisper-suppress.json";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
