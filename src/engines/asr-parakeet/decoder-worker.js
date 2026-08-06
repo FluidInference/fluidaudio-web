@@ -28,7 +28,15 @@ if (typeof self !== "undefined" && typeof self.postMessage === "function") {
   // node (gates). No top-level await: consumer bundlers compile SDK workers to
   // iife by default, which rejects TLA. worker_threads queues messages until a
   // listener attaches, so the async import loses nothing.
-  import("node:worker_threads").then(({ parentPort }) => {
-    parentPort.on("message", (d) => handle(d, (m) => parentPort.postMessage(m)));
-  });
+  import("node:worker_threads").then(
+    ({ parentPort }) => {
+      parentPort.on("message", (d) => handle(d, (m) => parentPort.postMessage(m)));
+    },
+    (e) => {
+      // Deterministic failure instead of a silent no-op worker (e.g. a bundler
+      // stubbing node: builtins): surfaces as a worker 'error' → init rejects.
+      console.error("[decoder-worker] worker_threads unavailable:", e);
+      throw e;
+    },
+  );
 }

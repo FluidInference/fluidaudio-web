@@ -1,6 +1,6 @@
 {
   "name": "@fluidinference/fluidaudio-web",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "In-browser inference for FluidAudio's core models via WebGPU + WASM",
   "type": "module",
@@ -52,7 +52,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,js}\" \"scripts/**/*.mjs\" \"*.ts\"",
     "ci:smoke": "node scripts/ci-smoke-parakeet.mjs && node scripts/ci-smoke-eou.mjs && node scripts/ci-smoke-kokoro.mjs",
     "sdk:build": "node scripts/build-sdk.mjs",
-    "sdk:pack": "node scripts/build-sdk.mjs && cd dist-sdk && npm pack"
+    "sdk:pack": "node scripts/build-sdk.mjs && cd dist-sdk && npm pack --pack-destination .."
   },
   "dependencies": {
     "pinyin-pro": "^3.28.2"

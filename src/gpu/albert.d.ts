@@ -1,4 +1,4 @@
-import type { GpuContext, GpuTensor } from "./compute";
+import type { GpuContext, GpuTensor } from "./compute.js";
 
 /** CPU embeddings: word[ids] + pos + tok[0], then LayerNorm(128) -> [seq,128]. */
 export function embed(ids: Int32Array | number[], weights: Record<string, Float32Array>): Float32Array;
