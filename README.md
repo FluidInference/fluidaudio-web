@@ -1,138 +1,153 @@
 # FluidAudio Web
 
-In-browser inference for FluidAudio's core models via **WebGPU + WebAssembly** —
-no server, no upload, everything runs client-side. This is the browser sibling
-of the Swift/CoreML [FluidAudio](https://github.com/FluidInference/FluidAudio)
-framework and the Rust/WASM [FluidVad](https://github.com/FluidInference/FluidVad).
+Local speech AI in the browser — ASR, TTS, VAD, and speaker diarization on
+**hand-written WebGPU (WGSL) + WASM-SIMD kernels**. No onnxruntime-web, no
+transformers.js, no server: model weights stream from Hugging Face on first
+use, cache client-side, and everything runs on the visitor's machine. This is
+the browser sibling of the Swift/CoreML
+[FluidAudio](https://github.com/FluidInference/FluidAudio) framework.
 
-> **Why a separate repo?** CoreML (`.mlmodelc`) cannot run in a browser — it is
-> an Apple-only runtime. The browser runs the **ONNX** source of the same models
-> through `onnxruntime-web` (WebGPU EP, WASM fallback), `transformers.js`, and
-> `kokoro-js`. So this repo tracks the ONNX exports, not the CoreML bundles.
+**Live:** https://fluidaudio-web.hanweng9.workers.dev — playground (one engine
+at a time) and [`/verify`](https://fluidaudio-web.hanweng9.workers.dev/verify)
+(drop one file, every engine runs on it, results export as JSON).
 
-**Every engine is verified on real data** — no scaffolds. Parakeet v3 = **2.15% WER**
-on full LibriSpeech test-clean (matches native FluidAudio ~2.14%). Measured
-in-browser on WebGPU (Chrome/macOS, warm/steady-state): VAD **139×**, Sortformer
-**128×**, EOU **91×**, Parakeet v3 **47×**, Whisper **33×**, Kokoro **~10×**,
-Nemotron **4.1×** — **all 8 engines correct + real-time-plus**, on WebGPU/WASM via
-ONNX. (Nemotron uses the soniqo **fp16** export — built to run on ORT-WebGPU, since
-the int4 export can't.) First (cold) run is several× slower — WebGPU compiles
-shaders. See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+> **Why hand-written kernels?** The first iteration of this repo ran the same
+> models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
+> WASM-SIMD (see [`docs/ORT_REMOVAL.md`](docs/ORT_REMOVAL.md) and
+> [`docs/RAW_WEBGPU.md`](docs/RAW_WEBGPU.md)) took Parakeet from 33× to **100×+
+> real-time in-browser** — batched-window encoding, f16 weight storage *and*
+> f16 compute (2× ALU on Apple GPUs), a 3-stage GPU/CPU pipeline, and parallel
+> RNNT decode on a Web Worker pool. Every optimization is gated on
+> token-identical output.
 
-## Model matrix
+## SDK
 
-| Engine | Model | Runtime | Backend | Status |
-|---|---|---|---|---|
-| `asr-parakeet` | Parakeet TDT 0.6B **v3** | `onnxruntime-web` | **fp16** enc WebGPU + WASM dec | ✅ **2.15% WER**, **46×** (warm); fp16 encoder 1.24 GB (fp32 exceeded the 2 GB buffer cap) |
-| `asr-whisper` | Whisper (99 langs) | transformers.js | **WebGPU** / WASM | ✅ **24×** |
-| `tts-kokoro` | Kokoro 82M (en + **zh** g2pW) | `kokoro-js` | **WebGPU** / WASM | ✅ **10×** en / **10×** zh (warm) |
-| `diarization-sortformer` | NVIDIA Sortformer 4-spk | `onnxruntime-web` | WebGPU / WASM | ✅ **82×** short-audio; long-audio needs streaming loop |
-| `asr-nemotron` | Nemotron 3.5 streaming (multilingual) | `onnxruntime-web` | **fp16 enc WebGPU** + WASM dec | ✅ **4.1×**, correct — soniqo fp16 export (built for ORT-WebGPU; int4 can't run there) |
-| `vad-silero` | Silero VAD v5 | `onnxruntime-web` | WASM | ✅ **132×** (direct ORT, no `vad-web`) |
-| `eou-parakeet` | Parakeet EOU 120M | `onnxruntime-web` | WebGPU / WASM | ✅ **86×** (transcript + `<EOU>`/`<EOB>`) |
+```bash
+npm install @fluidinference/fluidaudio-web
+```
 
-✅ = correctness checked (WER / RTFx / output) on real data. Numbers in
-[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+```ts
+import { ParakeetV3Engine } from "@fluidinference/fluidaudio-web/asr-parakeet";
+import { decodeToMono16k } from "@fluidinference/fluidaudio-web";
 
-Per-engine deep dives: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) (integration +
-WebGPU-vs-WASM tradeoffs), [`NEMOTRON.md`](docs/NEMOTRON.md) (cache-aware streaming
-RNNT), [`EOU.md`](docs/EOU.md) (end-of-utterance detection + the NA-mel gotcha),
-[`KOKORO_ZH.md`](docs/KOKORO_ZH.md) (Chinese G2P frontend).
+const asr = new ParakeetV3Engine();
+await asr.load((p) => console.log(p.file, p.fraction));
+asr.setVocabulary(["NVIDIA", "Newrez"]); // optional: fuzzy-correct domain terms
+asr.setItn(true);                        // optional: "twenty one" → "21"
+const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer));
+await asr.dispose();
+```
 
-## Quick start
+One tree-shakeable subpath per engine — `/asr-parakeet`, `/asr-whisper`,
+`/asr-nemotron`, `/tts-kokoro` (`{ lang: "en" | "zh" }`), `/vad-silero`,
+`/diarization-sortformer`, `/eou-parakeet` — plus `/registry` (enumerate
+engines, instantiate via `entry.make()`), `/textnorm`, and `/vocab-rescorer`.
+Requires a bundler with `new URL(..., import.meta.url)` asset + module-worker
+support (Vite, webpack 5 work out of the box). The demo site consumes the
+identical source, so every site gate doubles as SDK regression coverage.
+
+Release flow: bump `version` in the root `package.json` → `npm run sdk:pack` →
+`cd dist-sdk && npm publish --access public`.
+
+## Engines
+
+Measured in-browser (Chrome/macOS, WebGPU, warm) on a real 284.5s recording via
+`/verify` — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
+audio *generated* per wall-second; not comparable to ASR).
+
+| Engine | Model | RTFx | Notes |
+|---|---|---|---|
+| `asr-whisper` | Whisper (99 langs) | **114×** | KV-cached decode; f16 weights halve the per-token GEMV (incl. the 106 MB logits matrix) |
+| `asr-parakeet` | Parakeet TDT 0.6B v3 | **107–120×** | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary |
+| `vad-silero` | Silero VAD v5 | 79× | WASM-SIMD (tiny sequential model by design) |
+| `diarization-sortformer` | NVIDIA Sortformer 4-spk | 79× | windowed with 24-permutation overlap stitching |
+| `tts-kokoro` | Kokoro 82M (en + zh) | 2.4× | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped) |
+| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | realtime+ | cache-aware streaming RNNT |
+| `eou-parakeet` | Parakeet EOU 120M | realtime+ | transcript + end-of-utterance events |
+
+First (cold) run is several× slower — WebGPU compiles pipelines and weights
+download once. WebGPU is optional: every engine falls back to the same math on
+WASM-SIMD (slower on the big encoders, identical outputs — cross-backend
+parity is CI-gated). History and methodology: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+
+## Text processing (WASM)
+
+[`text-processing-rs`](https://github.com/FluidInference/text-processing-rs)
+vendored as a 1 MB wasm module (pure Rust, no network):
+
+- **TN** (written → spoken) runs automatically on English Kokoro input:
+  numbers/currency/times aren't in the G2P lexicon and used to be silently
+  dropped from the audio.
+- **ITN** (spoken → written, `"i paid four dollars and fifty cents"` →
+  `"i paid $4.50"`) is **opt-in** (`setItn(true)` / the playground checkbox) —
+  on everyday speech it also rewrites phrases like "no one" → "no 1".
+
+## Quick start (repo)
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173  (cross-origin isolated for threaded WASM)
-npm run build
+npm run dev        # http://localhost:5173 — playground; /verify.html for all-engine runs
+npm run build      # static site → dist/
+npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
 ```
 
-### Verify (run every engine on one file)
-
-Open **`/verify.html`** — pick an audio file and every selected engine runs on it
-(all engines on by default); results download
-a results JSON (load/run ms, RTFx, per-stage timings, output, per-engine errors).
-This is where you get the real WebGPU numbers. First run downloads model weights
-(cached after). Params: `?full=1` (add the heavy engines — Kokoro-zh, Nemotron,
-Parakeet EOU), `?engines=a,b` (pick), `?noauto=1` (don't auto-download).
+`/verify.html` params: `?engines=asr-parakeet,vad-silero` preselects the
+checkboxes (all engines run by default), `?noauto=1` skips the JSON
+auto-download. "Keep models loaded between runs" makes repeat file drops
+instant at the cost of GPU memory.
 
 ## Deploy
 
-**Live demo:** https://fluidinference.github.io/fluidaudio-web/ (and
-`/verify.html` to run every engine on one file). Auto-deploys from `main` via
-`.github/workflows/deploy.yml` (one-time: repo **Settings → Pages → Source: GitHub
-Actions**).
+`main` auto-deploys to **Cloudflare Workers** (static assets, see
+`wrangler.jsonc`) via the connected Workers Builds integration — merge and it's
+live. Manual: `npm run build && npx wrangler deploy`.
 
-Static site — `npm run build` outputs `dist/`. Model weights stream from Hugging
-Face and cache client-side — no backend.
-
-### Cloudflare Pages (for threaded WASM)
-
-GitHub Pages can't send headers, so WASM runs single-threaded there (WebGPU engines
-are unaffected). For **multi-threaded WASM** (`SharedArrayBuffer` — speeds up the
-WASM-bound work like Nemotron's decode), deploy to Cloudflare Pages, which serves the
-`public/_headers` file that sets COOP/COEP. One-time dashboard setup:
-
-1. **Workers & Pages → Create → Pages → Connect to Git** → pick `FluidInference/fluidaudio-web`.
-2. Build settings: **Framework preset** = None (or Vite), **Build command** = `npm run build`, **Build output directory** = `dist`.
-3. **Environment variables** → add `NPM_FLAGS = --ignore-scripts` (skips the unused `sharp`/native postinstalls so the install doesn't fail).
-4. Deploy. CF sets `CF_PAGES=1`, so Vite uses base `/` (root of the `*.pages.dev` domain), and `public/_headers` turns on cross-origin isolation.
-
-COOP/COEP note: `_headers` uses `require-corp`. The HF model fetches are CORS
-(`fetch()` with `access-control-allow-origin: *`), which satisfies COEP — but if a
-download is ever blocked, switch the header to `Cross-Origin-Embedder-Policy:
-credentialless`. Netlify uses the same `_headers`; Vercel needs `vercel.json`; nginx
-`add_header`.
-
-> **First-load weight:** the default `asr-parakeet` uses a ~1.24 GB fp16 encoder — fine
-> once cached, heavy on first visit. For a light demo use `?engines=tts-kokoro-en,
-> diarization-sortformer,vad-silero` (≈ tens of MB).
-
-WebGPU (Chrome/Edge 121+, Safari 26+) is **optional** — it accelerates the heavy
-encoders (Parakeet, Kokoro). Everything else, and every engine's fallback path,
-runs on WASM: Silero VAD is WASM-only by design (tiny model), and engines
-downgrade automatically where WebGPU op coverage is incomplete. A WASM-only
-browser still runs the full matrix, just slower on the big encoders.
+Deliberately **no COOP/COEP**: cross-origin isolation would break the
+cross-origin Hugging Face weight fetches, and nothing here needs
+`SharedArrayBuffer` — parallelism comes from WebGPU and the decode worker pool
+(each worker gets its own weight copy).
 
 ## Layout
 
 ```
 src/
-  core/         shared runtime: ORT session factory, model cache, audio I/O, registry
-  engines/      one folder per model, all implement a common interface (core/types.ts)
-  main.ts       demo UI wiring
-docs/           architecture + per-engine notes
+  gpu/          the kernel library: WGSL GEMM/conv/attention/LSTM (compute.js),
+                WASM-SIMD twin (wasm-context.js) — one interface, two backends
+  engines/      one folder per model on those kernels; registry.ts is the catalog
+  core/         audio I/O, model cache, text normalization, shared types
+  index.ts      SDK root (engines are subpath exports)
+  main.ts / verify.ts   the two demo pages (thin consumers of the registry)
+scripts/        node gates: token-identity, kernel parity, per-engine smokes
+rust/           parakeet RNNT decoder + kernel lib sources (wasm32+simd128)
+docs/           architecture, benchmarks, per-engine notes, the ORT removal story
 ```
 
 ## Hard-won lessons (things that cost real debugging)
 
-- **WebGPU has no int8/int4 kernels → use fp16 for the browser.** ORT-web's WebGPU EP
-  can't run quantized weights: Parakeet's int8 encoder *collapses to all-blank* and
-  Nemotron's int4 returns *empty*. The fix for both was the same — an **fp16 encoder**
-  (Parakeet 1.24 GB; Nemotron via soniqo's fp16 export, purpose-built for ORT-WebGPU),
-  which runs correctly and fast on the GPU. (Check an encoder's output std before
-  blaming the decoder.)
-- **Task inputs matter more than precision.** Nemotron returned empty *also* because
-  `lang_id=0` = Bulgarian; en-US is ordinal **24**. Always verify language/prompt ids.
-- **Models vary wildly in size.** Parakeet fp16 encoder ≈ 1.24 GB, Nemotron fp16
-  ≈ 1.24 GB, EOU fp32 ≈ 480 MB, Kokoro ≈ 90 MB, Silero VAD ≈ 2 MB. Fetched from
-  Hugging Face once, persisted via the Cache API.
-- **G2P is the TTS long pole.** The acoustic model is easy; Chinese uses a
-  precomputed misaki-exact pinyin→IPA table + `pinyin-pro` (`docs/KOKORO_ZH.md`).
-- **onnxruntime-web + Vite:** keep ORT out of `optimizeDeps` (Vite rewrites its
-  `jsep.mjs` import and breaks it), and don't pin `wasmPaths` to a mismatched
-  version — let ORT self-resolve.
-- **Don't fight `@ricky0123/vad-web`.** It's CJS and does a dynamic
-  `require("onnxruntime-web/wasm")` that Vite can't resolve once ORT is excluded
-  from `optimizeDeps`. Silero's ONNX interface is trivial (512-sample windows +
-  a 2×1×128 state), so `vad-silero` drives `silero_vad.onnx` directly through
-  `core/ort` and drops the dependency.
-- **EOU wants a different mel.** `parakeet-realtime-eou` is a NeMo streaming RNNT
-  and expects **NA (un-normalized) log-mel** — the Nemotron frontend, *not*
-  Parakeet's per-feature CMVN. Feed it the wrong normalization and the encoder
-  emits content-free frames (flat per-frame RMS) while the joint predicts blank
-  on every step — looks like a decode bug, is actually the frontend.
+- **Wall-clock lies under dawn/node; only `timestamp-query` tells the truth.**
+  Every kernel "benchmark" read ~2 ms/op until per-dispatch GPU timestamps
+  showed the real distribution — several optimization verdicts flipped.
+- **WebGPU errors are async and silent.** A missing `shader-f16` feature
+  request turned every f16 GEMM into a no-op: empty transcripts at a
+  fake-fast RTFx. Feature-gate every `enable` directive and log
+  `uncapturederror`.
+- **Synchronous WASM starves microtasks.** A `.then()` holding a GPU readback
+  couldn't fire while a 190 ms decode blocked the thread — the GPU idled after
+  every batch. Staging copies must ride the producing submit.
+- **Measure on the target machine.** The dev box was CPU-bound where user
+  machines were GPU-bound and vice versa; the per-stage split in the metrics
+  (`mel / encode / decode`) exists because RTFx alone misdiagnosed both.
+- **f16 storage ≠ f16 compute.** Halving weight bytes did nothing on a
+  compute-bound GPU; switching the inner loop to f16 fma (f32 accumulate per
+  8-deep K-tile) bought 1.46× with token-identical output.
+- **ITN is not a free win.** English inverse normalization rewrites "no one" →
+  "no 1" and deletes words in other languages — it shipped opt-in only because
+  a review pass ran the wasm on realistic sentences.
+- **Gate on tokens, not maxΔ.** Every perf change here ships with a
+  token-identity / parity gate; two of them caught real kernel breakage that
+  numeric thresholds would have argued about.
 
 ## License
 
-MIT (code). Model licenses follow their upstream repos (see registry).
+MIT (code). Model weights follow their upstream licenses (see the registry and
+Hugging Face model cards).
