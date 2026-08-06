@@ -1,12 +1,11 @@
-// Benchmark: pick (or drop) ONE audio file and every engine runs on it — VAD,
+// Verify: pick (or drop) ONE audio file and every engine runs on it — VAD,
 // both ASRs, diarization; TTS engines synthesize a fixed sentence (they consume
 // text, not audio). Records load/run timings + RTFx + a short output per engine
 // and downloads the results as JSON. This is where you get real WebGPU numbers.
 //
-// URL params:
-//   ?full=1   also run the heavy engines (Kokoro-zh, Nemotron, Parakeet EOU)
-//   ?engines=asr-parakeet,vad-silero   run only these
-//   ?noauto=1 don't auto-download the JSON (still shown on page)
+// Engine selection: a checkbox per engine, ALL checked by default — untick to
+// skip. ?engines=asr-parakeet,vad-silero preselects (only those checked);
+// ?noauto=1 skips the JSON auto-download (still shown on page).
 
 import { decodeToMono16k } from "./core/audio";
 import { webgpuAvailable } from "./core/webgpu";
@@ -115,12 +114,11 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
   ($("download") as HTMLAnchorElement).hidden = true;
   try {
     const params = new URLSearchParams(location.search);
-    const only = params
-      .get("engines")
-      ?.split(",")
-      .map((s) => s.trim());
-    const full = params.has("full");
-    const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
+    const cases = CASES.filter((c) => ($(`ck-${c.id}`) as HTMLInputElement)?.checked);
+    if (!cases.length) {
+      $("status").textContent = "No engines selected — tick at least one.";
+      return;
+    }
 
     $("status").textContent = `Decoding ${sourceName}…`;
     const audio = await decodeToMono16k(audioBuf);
@@ -183,12 +181,32 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
     if (!params.has("noauto")) {
       a.click(); // best-effort auto-download (may need a click if the browser blocks it)
     }
-    console.log("[bench] results:", results);
+    console.log("[verify] results:", results);
   } catch (e) {
-    $("status").textContent = "Benchmark failed";
+    $("status").textContent = "Verify run failed";
     log(String(e));
   } finally {
     running = false;
+  }
+}
+
+// ── engine toggles: one checkbox per engine, all checked by default ──────────
+{
+  const only = new URLSearchParams(location.search)
+    .get("engines")
+    ?.split(",")
+    .map((s) => s.trim());
+  const fs = $("engines");
+  for (const c of CASES) {
+    const lbl = document.createElement("label");
+    lbl.style.cssText = "display:inline-flex;align-items:center;gap:.3rem;margin:.15rem .9rem .15rem 0;cursor:pointer;";
+    const ck = document.createElement("input");
+    ck.type = "checkbox";
+    ck.id = `ck-${c.id}`;
+    ck.checked = only ? only.includes(c.id) : true; // default: ALL engines run
+    lbl.appendChild(ck);
+    lbl.appendChild(document.createTextNode(`${c.label}${c.kind === "text" ? " (text)" : ""}${c.heavy ? " (heavy)" : ""}`));
+    fs.appendChild(lbl);
   }
 }
 
