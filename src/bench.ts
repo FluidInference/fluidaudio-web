@@ -1,9 +1,10 @@
-// Auto-benchmark: on open, runs each engine on a bundled sample, records
-// load/run timings + RTFx + a short output, then downloads results as JSON
-// (and shows them on the page). This is where you get the real WebGPU numbers.
+// Benchmark: pick (or drop) ONE audio file and every engine runs on it — VAD,
+// both ASRs, diarization; TTS engines synthesize a fixed sentence (they consume
+// text, not audio). Records load/run timings + RTFx + a short output per engine
+// and downloads the results as JSON. This is where you get real WebGPU numbers.
 //
 // URL params:
-//   ?full=1   also run the heavy engines (Kokoro-zh, Nemotron)
+//   ?full=1   also run the heavy engines (Kokoro-zh, Nemotron, Parakeet EOU)
 //   ?engines=asr-parakeet,vad-silero   run only these
 //   ?noauto=1 don't auto-download the JSON (still shown on page)
 
@@ -104,79 +105,117 @@ function log(msg: string) {
   el.scrollTop = el.scrollHeight;
 }
 
-async function main() {
-  const params = new URLSearchParams(location.search);
-  const only = params
-    .get("engines")
-    ?.split(",")
-    .map((s) => s.trim());
-  const full = params.has("full");
-  const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
+let running = false;
 
-  const audioBuf = await (await fetch("./sample.wav")).arrayBuffer();
-  const audio = await decodeToMono16k(audioBuf);
-  const audioSec = audio.samples.length / audio.sampleRate;
+async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
+  if (running) return;
+  running = true;
+  $("log").textContent = "";
+  $("json").textContent = "";
+  ($("download") as HTMLAnchorElement).hidden = true;
+  try {
+    const params = new URLSearchParams(location.search);
+    const only = params
+      .get("engines")
+      ?.split(",")
+      .map((s) => s.trim());
+    const full = params.has("full");
+    const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
 
-  const results: any = {
-    generatedAt: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    webgpu: webgpuAvailable(),
-    sample: { seconds: +audioSec.toFixed(2), sampleRate: audio.sampleRate },
-    engines: [],
-  };
+    $("status").textContent = `Decoding ${sourceName}…`;
+    const audio = await decodeToMono16k(audioBuf);
+    const audioSec = audio.samples.length / audio.sampleRate;
+    log(`input: ${sourceName} · ${audioSec.toFixed(1)}s @ ${audio.sampleRate}Hz`);
 
-  for (const c of cases) {
-    log(`\n▶ ${c.label} (${c.id})`);
-    const rec: any = { id: c.id, label: c.label, kind: c.kind };
-    try {
-      let engine: Engine;
-      const tLoad = performance.now();
-      engine = await c.make();
-      await engine.load((p) => {
-        $("status").textContent = `${c.label}: loading ${p.file} ${Math.round((p.fraction || 0) * 100)}%`;
-      });
-      rec.loadMs = +(performance.now() - tLoad).toFixed(0);
+    const results: any = {
+      generatedAt: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      webgpu: webgpuAvailable(),
+      input: { name: sourceName, seconds: +audioSec.toFixed(2), sampleRate: audio.sampleRate },
+      engines: [],
+    };
 
-      $("status").textContent = `${c.label}: running…`;
-      const tRun = performance.now();
-      const out = await c.run(engine, audio);
-      rec.runMs = +(performance.now() - tRun).toFixed(0);
+    for (const c of cases) {
+      log(`\n▶ ${c.label} (${c.id})`);
+      const rec: any = { id: c.id, label: c.label, kind: c.kind };
+      try {
+        let engine: Engine;
+        const tLoad = performance.now();
+        engine = await c.make();
+        await engine.load((p) => {
+          $("status").textContent = `${c.label}: loading ${p.file} ${Math.round((p.fraction || 0) * 100)}%`;
+        });
+        rec.loadMs = +(performance.now() - tLoad).toFixed(0);
 
-      if (c.kind === "audio") {
-        rec.inputSec = +audioSec.toFixed(2);
-        rec.rtfx = +(audioSec / (rec.runMs / 1000)).toFixed(1);
-      } else {
-        const outSec = out.samples.length / out.sampleRate;
-        rec.outputSec = +outSec.toFixed(2);
-        rec.rtfx = +(outSec / (rec.runMs / 1000)).toFixed(2);
+        $("status").textContent = `${c.label}: running…`;
+        const tRun = performance.now();
+        const out = await c.run(engine, audio);
+        rec.runMs = +(performance.now() - tRun).toFixed(0);
+
+        if (c.kind === "audio") {
+          rec.inputSec = +audioSec.toFixed(2);
+          rec.rtfx = +(audioSec / (rec.runMs / 1000)).toFixed(1);
+        } else {
+          const outSec = out.samples.length / out.sampleRate;
+          rec.outputSec = +outSec.toFixed(2);
+          rec.rtfx = +(outSec / (rec.runMs / 1000)).toFixed(2);
+        }
+        if (out?.metrics) rec.stages = out.metrics; // Parakeet per-stage timings
+        rec.output = c.summarize(out).slice(0, 200);
+        rec.ok = true;
+        log(`  ✓ load ${rec.loadMs}ms · run ${rec.runMs}ms · RTFx ${rec.rtfx}× · ${rec.output}`);
+        await engine.dispose();
+      } catch (err) {
+        rec.ok = false;
+        rec.error = String(err).slice(0, 300);
+        log(`  ✗ ${rec.error}`);
       }
-      if (out?.metrics) rec.stages = out.metrics; // Parakeet per-stage timings
-      rec.output = c.summarize(out).slice(0, 200);
-      rec.ok = true;
-      log(`  ✓ load ${rec.loadMs}ms · run ${rec.runMs}ms · RTFx ${rec.rtfx}× · ${rec.output}`);
-      await engine.dispose();
-    } catch (err) {
-      rec.ok = false;
-      rec.error = String(err).slice(0, 300);
-      log(`  ✗ ${rec.error}`);
+      results.engines.push(rec);
+      $("json").textContent = JSON.stringify(results, null, 2);
     }
-    results.engines.push(rec);
-    $("json").textContent = JSON.stringify(results, null, 2);
-  }
 
-  $("status").textContent = "Done.";
-  const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = $("download") as HTMLAnchorElement;
-  a.href = url;
-  a.hidden = false;
-  if (!params.has("noauto")) {
-    a.click(); // best-effort auto-download (may need a click if the browser blocks it)
+    $("status").textContent = "Done — drop another file to run again.";
+    const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = $("download") as HTMLAnchorElement;
+    a.href = url;
+    a.hidden = false;
+    if (!params.has("noauto")) {
+      a.click(); // best-effort auto-download (may need a click if the browser blocks it)
+    }
+    console.log("[bench] results:", results);
+  } catch (e) {
+    $("status").textContent = "Benchmark failed";
+    log(String(e));
+  } finally {
+    running = false;
   }
-  console.log("[bench] results:", results);
 }
 
-main().catch((e) => {
-  $("status").textContent = "Benchmark failed";
-  log(String(e));
+// ── file plumbing: input, drag & drop, bundled-sample fallback ───────────────
+const fileInput = $("file") as HTMLInputElement;
+const drop = $("drop");
+
+fileInput.addEventListener("change", async () => {
+  const f = fileInput.files?.[0];
+  if (f) runAll(await f.arrayBuffer(), f.name);
+  fileInput.value = ""; // allow re-selecting the same file
+});
+
+drop.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  drop.classList.add("hover");
+});
+drop.addEventListener("dragleave", () => drop.classList.remove("hover"));
+drop.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  drop.classList.remove("hover");
+  const f = e.dataTransfer?.files?.[0];
+  if (f) runAll(await f.arrayBuffer(), f.name);
+});
+
+$("sampleBtn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  e.stopPropagation(); // don't trigger the surrounding <label>'s file picker
+  runAll(await (await fetch("./sample.wav")).arrayBuffer(), "sample.wav (bundled 12s)");
 });
