@@ -28,7 +28,10 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // wb=6 measured best on the 120s bench (M5): 130.3x vs 123.8x at wb=4 —
   // bigger GEMM M-dim + fewer group boundaries, while the uneven 6+3 split
   // still overlaps decode of the big group with encode of the small one.
-  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true } = opts;
+  // decodePool (decode-pool.js): windows decode in parallel on worker threads;
+  // browsers where decode dominates the wall (encode 355ms vs decode 1821ms on
+  // one measured machine) gain ~pool-size× on the decode term.
+  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null } = opts;
   const winSamples = windowSec * sampleRate;
   const overlapSamples = overlapSec * sampleRate;
   const hop = winSamples - overlapSamples;
@@ -88,6 +91,28 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   let pending = await submit(0, nextMels);
   nextMels = groups.length > 1 ? melsFor(1) : null;
 
+  // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
+  // MUST run in window order (it matches against the tail of `ids`).
+  const stitch = (windowIdx, sliceLen, Tenc, wids, idFrames) => {
+    let skip = 0;
+    if (windowIdx > 0 && wids.length) {
+      const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
+      let frameSkip = 0;
+      while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
+      const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
+      let matched = 0;
+      for (let L = maxL; L >= 2; L--) {
+        let ok = true;
+        for (let i = 0; i < L; i++) if (ids[ids.length - L + i] !== wids[i]) { ok = false; break; }
+        if (ok) { matched = L; break; }
+      }
+      skip = Math.max(matched, frameSkip);
+    }
+    for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
+  };
+
+  const decJobs = []; // pool mode: in-window-order pending decodes
+
   for (let g = 0; g < groups.length; g++) {
     const cur = pending;
     const advance = async () => {
@@ -112,32 +137,35 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     stats.groups++;
     if (!pipelined) await advance();
 
-    const td = now();
     const Tenc = cur.Tsub;
-    for (let wi = 0; wi < cur.n; wi++, w++) {
-      const win = frames.subarray(wi * Tenc * D, (wi + 1) * Tenc * D);
-      const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-      const { ids: wids, idFrames } = wasmDecodeProj(dec, win, Tenc);
-
-      // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
-      let skip = 0;
-      if (w > 0 && wids.length) {
-        const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
-        let frameSkip = 0;
-        while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
-        const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
-        let matched = 0;
-        for (let L = maxL; L >= 2; L--) {
-          let ok = true;
-          for (let i = 0; i < L; i++) if (ids[ids.length - L + i] !== wids[i]) { ok = false; break; }
-          if (ok) { matched = L; break; }
-        }
-        skip = Math.max(matched, frameSkip);
+    if (decodePool) {
+      // Fan windows out to the worker pool as soon as their frames land; the
+      // GPU keeps encoding and workers decode concurrently. Stitching happens
+      // at the end, in window order.
+      for (let wi = 0; wi < cur.n; wi++, w++) {
+        const win = frames.slice(wi * Tenc * D, (wi + 1) * Tenc * D); // copy: transferred to the worker
+        const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
+        decJobs.push({ windowIdx: w, sliceLen, Tenc, p: decodePool.decode(win, Tenc) });
       }
-      for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
+    } else {
+      const td = now();
+      for (let wi = 0; wi < cur.n; wi++, w++) {
+        const win = frames.subarray(wi * Tenc * D, (wi + 1) * Tenc * D);
+        const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
+        const { ids: wids, idFrames } = wasmDecodeProj(dec, win, Tenc);
+        stitch(w, sliceLen, Tenc, wids, idFrames);
+      }
+      stats.decodeMs += now() - td;
+    }
+    stats.windows += cur.n;
+  }
+  if (decJobs.length) {
+    const td = now();
+    for (const j of decJobs) {
+      const { ids: wids, idFrames } = await j.p;
+      stitch(j.windowIdx, j.sliceLen, j.Tenc, wids, idFrames);
     }
     stats.decodeMs += now() - td;
-    stats.windows += cur.n;
   }
   stats.melMs = Math.round(stats.melMs); stats.encWaitMs = Math.round(stats.encWaitMs); stats.decodeMs = Math.round(stats.decodeMs);
   return { ids, stats };

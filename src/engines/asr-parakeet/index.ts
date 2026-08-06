@@ -13,6 +13,7 @@ import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
 import { transcribeWindowed } from "./pipeline.js";
+import { createDecodePool } from "./decode-pool.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import wasmUrl from "./parakeet-decoder.wasm?url";
@@ -33,6 +34,7 @@ export class ParakeetV3Engine implements AsrEngine {
   private encProjW: any = null;
   private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
+  private decodePool: any = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
@@ -59,6 +61,39 @@ export class ParakeetV3Engine implements AsrEngine {
     }
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
+
+    // Decoder worker pool: windows decode independently, and on machines where
+    // WASM decode dominates the wall (measured: decode 1821ms vs encode 355ms)
+    // parallel workers cut the decode term ~pool-size×. Each worker gets its own
+    // copy of the decoder weights (no SharedArrayBuffer without COOP/COEP).
+    if (typeof Worker !== "undefined") {
+      const n = Math.min(4, Math.max(1, ((navigator as any).hardwareConcurrency || 4) - 2));
+      if (n > 1) {
+        try {
+          const decBuf = decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
+          const workers = await Promise.all(
+            Array.from({ length: n }, async () => {
+              const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
+              await new Promise<void>((resolve, reject) => {
+                w.onmessage = () => resolve();
+                w.onerror = (e) => reject(e);
+                w.postMessage({ type: "init", wasmBytes, decBuf, man: decMan });
+              });
+              return {
+                postMessage: (m: any, t?: any[]) => w.postMessage(m, t ?? []),
+                setHandler: (f: (m: any) => void) => { w.onmessage = (e) => f(e.data); },
+                terminate: () => w.terminate(),
+              };
+            }),
+          );
+          this.decodePool = createDecodePool(workers);
+          console.info(`[asr-parakeet] decode pool: ${n} workers`);
+        } catch (e) {
+          console.warn("[asr-parakeet] decode pool unavailable, decoding on main thread:", e);
+          this.decodePool = null;
+        }
+      }
+    }
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
@@ -72,6 +107,7 @@ export class ParakeetV3Engine implements AsrEngine {
       sampleRate: SAMPLE_RATE,
       windowSec: WINDOW_SEC,
       overlapSec: OVERLAP_SEC,
+      decodePool: this.decodePool,
     });
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
@@ -82,6 +118,8 @@ export class ParakeetV3Engine implements AsrEngine {
   }
 
   async dispose(): Promise<void> {
+    this.decodePool?.terminate?.();
+    this.decodePool = null;
     this.ctx?.device?.destroy?.();
     this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
