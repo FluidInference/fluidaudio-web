@@ -84,6 +84,8 @@ function syncInputs() {
   const kind = currentEntry().kind;
   $("audioInput").hidden = kind !== "audio";
   $("textInput").hidden = kind !== "text";
+  // Custom-vocabulary box: Parakeet only (BK-tree rescorer).
+  $("vocabInput").hidden = engineSel.value !== "asr-parakeet";
   // TTS takes text → text box; ASR/VAD/diarization take audio → file picker.
   $("inputLabel").textContent = kind === "text" ? "Text to synthesize" : "Audio file";
 }
@@ -158,6 +160,17 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
     return `${ranges.length} speech segments:\n` + ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
   }
   if (typeof any.transcribe === "function") {
+    if (typeof any.setVocabulary === "function") {
+      const raw = ($("vocab") as HTMLInputElement).value.trim();
+      any.setVocabulary(
+        raw
+          ? raw
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
+      );
+    }
     const r = await any.transcribe(audio);
     const events = r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : "";
     if (r.metrics) {

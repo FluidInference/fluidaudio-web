@@ -45,6 +45,9 @@
     <div class="row" id="audioInput">
       <input type="file" id="file" accept="audio/*,video/*" />
     </div>
+    <div class="row" id="vocabInput" hidden>
+      <input id="vocab" style="width: 100%" placeholder="Custom vocabulary, comma-separated (e.g. NVIDIA, Newrez, Bank of America) — fuzzy-corrects the transcript" />
+    </div>
     <div class="row" id="textInput" hidden>
       <textarea id="text" placeholder="Text to synthesize…">Hello from FluidAudio, running entirely in your browser.</textarea>
     </div>
