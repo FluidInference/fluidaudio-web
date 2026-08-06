@@ -78,6 +78,12 @@ export class WasmContext {
   }
   beginBatch() {}
   endBatch() {}
+  async withBatch(fn) {
+    return fn();
+  }
+  withBatchSync(fn) {
+    return fn();
+  }
 
   // ── wasm staging helpers ──────────────────────────────────────────────────
   _f32() {

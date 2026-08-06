@@ -70,8 +70,7 @@ export function whisperEncode(ctx, enc, mel) {
   c = ctx.conv1d(c, w2, { cout: 512, k: 3, stride: 2, pad: 1, bias: b2, act: "gelu_erf" }); // [512,1500]
   let x = ctx.add(ctx.transpose(c), enc.posw);
   // One submit for the whole transformer stack (per-op submits dominate otherwise).
-  if (ctx.beginBatch) ctx.beginBatch();
-  try {
+  return ctx.withBatchSync(() => {
     for (const w of enc.layers) {
       const h = ln(x, w.ln1);
       const q = ctx.matmul(h, w.qw, { bias: w.qb }),
@@ -90,7 +89,5 @@ export function whisperEncode(ctx, enc, mel) {
       x = ctx.add(x, ctx.matmul(ctx.matmul(h2, w.f1w, { bias: w.f1b, act: "gelu_erf" }), w.f2w, { bias: w.f2b }));
     }
     return ln(x, enc.lnf);
-  } finally {
-    if (ctx.endBatch) ctx.endBatch();
-  }
+  });
 }

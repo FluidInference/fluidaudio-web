@@ -18,6 +18,29 @@
 // computes a 64×64 output block; each thread a 4×4 micro-tile from registers, with
 // 64×16 / 16×64 shared-memory staging. ~5× the naive tiled kernel by amortizing
 // shared-memory reads over 16 MACs each. bias per-N, act: 0 none/1 gelu/2 tanh/3 relu.
+// Shared activation table for all GEMM/conv kernels (interpolated into the
+// WGSL template strings). ONE copy: adding an act here reaches every kernel;
+// there are no per-route act allowlists to keep in sync.
+// 1=gelu(tanh) 2=tanh 3=relu 4=silu 5=gelu_erf; unknown -> identity.
+const WGSL_ACTF = `
+fn actf_gelu(x: f32) -> f32 {
+  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
+  return 0.5 * x * (1.0 + tanh(t));
+}
+fn actf_erf(x: f32) -> f32 {
+  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
+  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
+  return select(-y, y, x >= 0.0);
+}
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return actf_gelu(x); }
+  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  if (a == 5u) { return 0.5 * x * (1.0 + actf_erf(x * 0.70710678118654752)); }
+  return x;
+}`;
+
 const GEMM_WGSL = `
 struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
 @group(0) @binding(0) var<storage, read> A: array<f32>;
@@ -28,25 +51,8 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
 var<workgroup> As: array<f32, 1024>; // BM*BK
 var<workgroup> Bs: array<f32, 1024>; // BK*BN
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
 
-fn actf(x: f32) -> f32 {
-  if (m.act == 1u) { return gelu(x); }
-  if (m.act == 2u) { return tanh(x); }
-  if (m.act == 3u) { return max(x, 0.0); }
-  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (m.act == 5u) { return gelu_erf(x); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM;
@@ -86,7 +92,7 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
       if (r < m.M && c < m.N) {
         var v = acc[i * TN + j];
         if (m.hasBias == 1u) { v += bias[c]; }
-        C[r * m.N + c] = actf(v);
+        C[r * m.N + c] = actf(v, m.act);
       }
     }
   }
@@ -106,24 +112,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-fn actf(x: f32) -> f32 {
-  if (m.act == 1u) { return gelu(x); }
-  if (m.act == 2u) { return tanh(x); }
-  if (m.act == 3u) { return max(x, 0.0); }
-  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (m.act == 5u) { return gelu_erf(x); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM;
@@ -162,7 +151,7 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
       if (c < m.N) {
         var x = v[j];
         if (m.hasBias == 1u) { x += bias[c]; }
-        C[r * m.N + c] = actf(x);
+        C[r * m.N + c] = actf(x, m.act);
       }
     }
   }
@@ -236,24 +225,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-fn actf(x: f32) -> f32 {
-  if (m.act == 1u) { return gelu(x); }
-  if (m.act == 2u) { return tanh(x); }
-  if (m.act == 3u) { return max(x, 0.0); }
-  if (m.act == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (m.act == 5u) { return gelu_erf(x); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; let blockCol = wg.x * BN;
@@ -292,7 +264,7 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
       let v = acc[i * 2u + jb];
       for (var jj = 0u; jj < 4u; jj++) {
         let c = blockCol + threadCol + jb * 4u + jj;
-        if (c < m.N) { var x = v[jj]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = actf(x); }
+        if (c < m.N) { var x = v[jj]; if (m.hasBias == 1u) { x += bias[c]; } C[r * m.N + c] = actf(x, m.act); }
       }
     }
   }
@@ -321,19 +293,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p
 const BM = 128u; const BN = 128u; const BK = 16u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f16, 2048>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 2048>; // [BK][BN]
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
-  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; let blockCol = wg.x * BN;
@@ -409,19 +369,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f16, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 1024>; // [BK][BN]
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
-  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; let blockCol = wg.x * BN;
@@ -492,19 +440,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
-  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; let blockCol = wg.x * BN;
@@ -622,17 +558,8 @@ struct Meta { Cout:u32, Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, di
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn gelu_erf(x: f32) -> f32 { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
 
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -655,11 +582,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     }
   }
   if (m.hasBias == 1u) { acc += bias[co]; }
-  if (m.act == 1u) { acc = gelu(acc); }
-  else if (m.act == 2u) { acc = tanh(acc); }
-  else if (m.act == 3u) { acc = max(acc, 0.0); }
-  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
-  else if (m.act == 5u) { acc = gelu_erf(acc); }
+  acc = actf(acc, m.act);
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -746,6 +669,7 @@ struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 
 @group(0) @binding(3) var<storage, read> bias: array<f32>;
 @group(0) @binding(4) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(5) var<uniform> m: Meta;
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -764,9 +688,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   }
   acc = acc * scale[col];
   if (m.hasBias == 1u) { acc += bias[col]; }
-  if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
-  else if (m.act == 3u) { acc = max(acc, 0.0); }
-  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  acc = actf(acc, m.act);
   Y[idx] = acc;
 }`;
 
@@ -944,19 +866,7 @@ struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 
 const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
 var<workgroup> As: array<f32, 1024>;
 var<workgroup> Bs: array<f32, 1024>;
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
-  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM;
@@ -1042,19 +952,7 @@ struct Meta { M:u32, N:u32, K:u32, hasBias:u32, act:u32, _a:u32, _b:u32, _c:u32 
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f32, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f32, 1024>; // [BK][BN]
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
-  if (a == 2u) { return tanh(clamp(x, -20.0, 20.0)); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; let blockCol = wg.x * BN;
@@ -1227,6 +1125,7 @@ struct Meta { C:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBias:u
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let WoQ = (m.Wo + 3u) / 4u;
@@ -1254,8 +1153,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
       }
     }
     acc += b;
-    if (m.act == 3u) { acc = max(acc, 0.0); }
-    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    acc = actf(acc, m.act);
     Y[c * m.Ho * m.Wo + ho * m.Wo + wo] = acc;
   }
 }`;
@@ -1269,6 +1167,7 @@ struct Meta { Cout:u32, H:u32, W:u32, Ho:u32, Wo:u32, padH:u32, padW:u32, hasBia
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let HW = m.Ho * m.Wo;
@@ -1293,8 +1192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     var acc = 0.0;
     for (var i = 0u; i < 9u; i++) { acc += xv[i] * Wt[co * 9u + i]; }
     if (m.hasBias == 1u) { acc += bias[co]; }
-    if (m.act == 3u) { acc = max(acc, 0.0); }
-    else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+    acc = actf(acc, m.act);
     Y[co * HW + ho * m.Wo + wo] = acc;
   }
 }`;
@@ -1307,6 +1205,7 @@ struct Meta { Cout:u32, Cin:u32, H:u32, W:u32, Ho:u32, Wo:u32, Kh:u32, Kw:u32,
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -1335,8 +1234,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     }
   }
   if (m.hasBias == 1u) { acc += bias[co]; }
-  if (m.act == 3u) { acc = max(acc, 0.0); }
-  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  acc = actf(acc, m.act);
   Y[co * HW + ho * m.Wo + wo] = acc;
 }`;
 
@@ -1352,6 +1250,7 @@ struct Meta { Cout:u32, Cin:u32, L:u32, Lout:u32, K:u32, stride:u32, pad:u32, di
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> Y: array<f32>;
 @group(0) @binding(4) var<uniform> m: Meta;
+${WGSL_ACTF}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
   let idx = gid.y * (nwg.x * 64u) + gid.x;
@@ -1378,10 +1277,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     }
   }
   if (m.hasBias == 1u) { acc += bias[co]; }
-  if (m.act == 1u) { acc = 0.5 * acc * (1.0 + tanh(clamp(0.7978845608028654 * (acc + 0.044715 * acc * acc * acc), -20.0, 20.0))); }
-  else if (m.act == 2u) { acc = tanh(acc); }
-  else if (m.act == 3u) { acc = max(acc, 0.0); }
-  else if (m.act == 4u) { acc = acc / (1.0 + exp(-clamp(acc, -30.0, 30.0))); }
+  acc = actf(acc, m.act);
   Y[co * m.Lout + lo] = acc;
 }`;
 
@@ -1420,23 +1316,7 @@ struct Meta { Cout:u32, Lout:u32, CinK:u32, Cin:u32, L:u32, K:u32, stride:u32, p
 const BM = 64u; const BN = 64u; const BK = 16u; const TM = 4u; const TN = 4u;
 var<workgroup> As: array<f32, 1024>;
 var<workgroup> Bs: array<f32, 1024>;
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn erf_a(x: f32) -> f32 {
-  let t = 1.0 / (1.0 + 0.3275911 * abs(x));
-  let y = 1.0 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*exp(-x*x);
-  return select(-y, y, x >= 0.0);
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a == 1u) { return gelu(x); }
-  if (a == 2u) { return tanh(x); }
-  if (a == 3u) { return max(x, 0.0); }
-  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
-  if (a == 5u) { return 0.5 * x * (1.0 + erf_a(x * 0.70710678118654752)); }
-  return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
   let blockRow = wg.y * BM; // over Cout
@@ -1698,13 +1578,7 @@ struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u
 @group(0) @binding(4) var<uniform> m: Meta;
 const BM=64u; const BN=64u; const BK=16u; const TM=4u; const TN=4u;
 var<workgroup> As: array<f16,1024>; var<workgroup> Bs: array<f16,1024>;
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a==1u){return gelu(x);} if (a==2u){return tanh(x);} if (a==3u){return max(x,0.0);} return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg:vec3<u32>, @builtin(local_invocation_index) tid:u32){
   let br=wg.y*BM; let bc=wg.x*BN;
@@ -1736,13 +1610,7 @@ struct Meta { Cout:u32, Lout:u32, CinK:u32, Cin:u32, L:u32, K:u32, stride:u32, p
 @group(0) @binding(4) var<uniform> m: Meta;
 const BM=64u; const BN=64u; const BK=16u; const TM=4u; const TN=4u;
 var<workgroup> As: array<f16,1024>; var<workgroup> Bs: array<f16,1024>;
-fn gelu(x: f32) -> f32 {
-  let t = clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0);
-  return 0.5 * x * (1.0 + tanh(t));
-}
-fn actf(x: f32, a: u32) -> f32 {
-  if (a==1u){return gelu(x);} if (a==2u){return tanh(x);} if (a==3u){return max(x,0.0);} return x;
-}
+${WGSL_ACTF}
 @compute @workgroup_size(256)
 fn main(@builtin(workgroup_id) wg:vec3<u32>, @builtin(local_invocation_index) tid:u32){
   let br=wg.y*BM; let bc=wg.x*BN;
@@ -2078,6 +1946,27 @@ export class GpuContext {
     this._pass = this._enc.beginComputePass();
     this._batchUniforms = 0;
   }
+  /** Sync batch wrapper for record-only sections (no awaits inside fn). */
+  withBatchSync(fn) {
+    this.beginBatch();
+    try {
+      return fn();
+    } finally {
+      if (this._pass) this.endBatch();
+    }
+  }
+
+  /** Run fn inside a batch, guaranteed closed on exit (throw included).
+   * download() may flush+reopen inside; the finally still sees an open batch. */
+  async withBatch(fn) {
+    this.beginBatch();
+    try {
+      return await fn();
+    } finally {
+      if (this._pass) this.endBatch();
+    }
+  }
+
   endBatch() {
     if (!this._pass) throw new Error("endBatch without beginBatch");
     this._pass.end();
@@ -2135,13 +2024,7 @@ export class GpuContext {
     // 1.46× vs the f32-compute F16B variant, which stays available for A/Bs).
     // `add` (residual [M,N]) fuses into the f16C epilogue; other routes compose
     // with a separate elementwise add so semantics match on every path.
-    if (
-      b.f16 &&
-      this.hasF16 &&
-      K % 4 === 0 &&
-      N % 4 === 0 &&
-      (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu" || act === "gelu_erf")
-    ) {
+    if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0) {
       if (!globalThis.__f16bforce) return this.matmulF16C(a, b, { bias, act, add });
       const oB = this.matmulF16B(a, b, { bias, act });
       return add ? this.add(oB, add) : oB;
@@ -2261,8 +2144,7 @@ export class GpuContext {
     // k=1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin,L] (per-dispatch
     // timestamps showed the pointwise conv-module convs at ~14% of the encoder).
     // Per-row bias/act as an epilogue (matmul's fused bias is per-column).
-    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0 && (act === "none" || act === "relu" || act === "silu")) {
-      // rowBiasAct epilogue supports only these
+    if (k === 1 && groups === 1 && stride === 1 && padLeft === 0 && padRight === 0) {
       const out = this.matmul({ buf: w.buf, rows: cout, cols: x.rows }, x);
       if (bias || act !== "none") return this.rowBiasAct(out, bias ?? this._zeroBias(cout), act);
       return out;
@@ -2270,11 +2152,7 @@ export class GpuContext {
     // groups==1 symmetric-pad convs route to the fused implicit-GEMM kernel
     // (~7× the direct kernel on the big vocoder convs; same flat weight layout).
     // Asymmetric-pad and grouped/depthwise convs stay on the direct kernel.
-    if (
-      groups === 1 &&
-      padLeft === padRight &&
-      (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu" || act === "gelu_erf")
-    ) {
+    if (groups === 1 && padLeft === padRight) {
       return this.conv1dFast(x, w, cout, k, { bias, stride, pad: padLeft, dilation, act });
     }
     const Cin = x.rows,
@@ -2486,19 +2364,7 @@ export class GpuContext {
     // 1×1 stride-1 unpadded conv IS a matmul: W[Cout,Cin] @ X[Cin, H*W]. The naive
     // conv2d kernel was 24% of the encoder window (per-dispatch timestamps); the
     // tiled GEMM does it ~50-100× faster. Per-row bias/act applied as an epilogue.
-    if (
-      kh === 1 &&
-      kw === 1 &&
-      strideH === 1 &&
-      strideW === 1 &&
-      groups === 1 &&
-      padTop === 0 &&
-      padBottom === 0 &&
-      padLeft === 0 &&
-      padRight === 0 &&
-      (act === "none" || act === "relu" || act === "silu")
-    ) {
-      // rowBiasAct epilogue supports only these
+    if (kh === 1 && kw === 1 && strideH === 1 && strideW === 1 && groups === 1 && padTop === 0 && padBottom === 0 && padLeft === 0 && padRight === 0) {
       const wMat = { buf: w.buf, rows: cout, cols: cin };
       const xMat = { buf: x.buf, rows: cin, cols: h * W_ };
       const out = this.matmul(wMat, xMat);
@@ -2651,14 +2517,12 @@ export class GpuContext {
       @group(0) @binding(1) var<storage, read> B: array<f32>;
       @group(0) @binding(2) var<storage, read_write> Y: array<f32>;
       @group(0) @binding(3) var<uniform> m: Meta;
+      ${WGSL_ACTF}
       @compute @workgroup_size(64)
       fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
         let i = gid.y * (nwg.x * 64u) + gid.x;
         if (i >= m.rows * m.cols) { return; }
-        var v = X[i] + B[i / m.cols];
-        if (m.act == 3u) { v = max(v, 0.0); }
-        else if (m.act == 4u) { v = v / (1.0 + exp(-clamp(v, -30.0, 30.0))); }
-        Y[i] = v;
+        Y[i] = actf(X[i] + B[i / m.cols], m.act);
       }`,
     );
     const u = this._uniform(new Uint32Array([x.rows, x.cols, ACT[act], 0]));

@@ -4,59 +4,12 @@
 
 import { decodeToMono16k, pcmToWav } from "./core/audio";
 import { webgpuAvailable } from "./core/webgpu";
+import { ENGINES, type EngineEntry } from "./engines/registry";
 import type { Engine, LoadProgress } from "./core/types";
 
-type Kind = "audio" | "text";
-interface Entry {
-  label: string;
-  kind: Kind;
-  // Lazy: each engine's module (and its deps) loads only when selected, so a
-  // broken engine can't take down the whole app at page load.
-  make: () => Promise<Engine>;
-}
-
-const ENTRIES: Record<string, Entry> = {
-  "asr-parakeet": {
-    label: "Parakeet TDT v3 ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/asr-parakeet")).ParakeetV3Engine(),
-  },
-  "asr-whisper": {
-    label: "Whisper (99 langs) ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/asr-whisper")).WhisperEngine(),
-  },
-  "tts-kokoro-en": {
-    label: "Kokoro TTS — English ✅",
-    kind: "text",
-    make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "en" }),
-  },
-  "tts-kokoro-zh": {
-    label: "Kokoro TTS — Chinese ✅*",
-    kind: "text",
-    make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "zh" }),
-  },
-  "vad-silero": {
-    label: "Silero VAD ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/vad-silero")).SileroVadEngine(),
-  },
-  "asr-nemotron": {
-    label: "Nemotron 3.5 (40 langs) ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
-  },
-  "diarization-sortformer": {
-    label: "Diarization (Sortformer) ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
-  },
-  "eou-parakeet": {
-    label: "Parakeet EOU 120M ✅",
-    kind: "audio",
-    make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
-  },
-};
+// Engine catalog lives in engines/registry.ts (shared with the verify page) —
+// a new engine registered there appears in both UIs automatically.
+const ENTRIES: Record<string, EngineEntry> = Object.fromEntries(ENGINES.map((e) => [e.id, { ...e, label: `${e.label} ✅` }]));
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const engineSel = $<HTMLSelectElement>("engine");
@@ -75,8 +28,10 @@ for (const [id, e] of Object.entries(ENTRIES)) {
   engineSel.appendChild(o);
 }
 
+engineSel.value = "asr-parakeet"; // landing default: the ASR demo, not the first registry entry (VAD)
+
 let engine: Engine | null = null;
-function currentEntry(): Entry {
+function currentEntry(): EngineEntry {
   return ENTRIES[engineSel.value];
 }
 
@@ -101,9 +56,10 @@ $("load").addEventListener("click", async () => {
   progress.hidden = false;
   runBtn.disabled = true;
   try {
-    engine = await entry.make();
+    const eng = await entry.make();
+    engine = eng;
     status.textContent = `Loading ${entry.label}…`;
-    await engine.load((p: LoadProgress) => {
+    await eng.load((p: LoadProgress) => {
       progress.value = p.fraction || 0;
       status.textContent = `Loading ${p.file} — ${Math.round((p.fraction || 0) * 100)}%`;
     });

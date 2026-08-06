@@ -1,33 +1,13 @@
 // Gate: GPU-projected decode path (decode_proj) must produce IDENTICAL tokens to
 // the classic path on the 120s file, and report timing deltas.
 import { readFileSync } from "node:fs";
+import { readWav } from "./lib/wav.mjs";
 import { fileURLToPath } from "node:url";
 import { getDevice } from "./gpu-globals.mjs";
 import { GpuContext } from "../src/gpu/compute.js";
 import { loadParakeetEncoder, parakeetEncodeBatch } from "../src/engines/asr-parakeet/raw-encoder.js";
 import { loadWasmDecoder, wasmDecode, wasmDecodeProj } from "../src/engines/asr-parakeet/raw-decoder-wasm.js";
 import { ParakeetMel } from "../src/engines/asr-parakeet/parakeet-mel.js";
-function readWav(p) {
-  const b = readFileSync(p);
-  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12,
-    dO = -1,
-    dL = 0;
-  while (o + 8 <= b.length) {
-    const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
-    const sz = dv.getUint32(o + 4, true);
-    if (id === "data") {
-      dO = o + 8;
-      dL = sz;
-      break;
-    }
-    o += 8 + sz + (sz & 1);
-  }
-  const n = dL / 2,
-    out = new Float32Array(n);
-  for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
-  return out;
-}
 
 const wav = readWav("/tmp/pk_120s.wav");
 const ctx = new GpuContext(await getDevice());
