@@ -53,6 +53,10 @@ export interface AsrResult {
 }
 
 export interface AsrEngine extends Engine {
+  /** Optional: custom-vocabulary fuzzy correction (Parakeet). */
+  setVocabulary?(terms: Array<string | { text: string; aliases?: string[]; minSimilarity?: number }>): void;
+  /** Optional: opt-in inverse text normalization on transcripts (Parakeet). */
+  setItn?(enabled: boolean): void;
   transcribe(audio: AudioData): Promise<AsrResult>;
 }
 

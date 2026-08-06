@@ -14,6 +14,8 @@ import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
 import { transcribeWindowed } from "./pipeline.js";
 import { createDecodePool } from "./decode-pool.js";
+import { loadTextNorm, itn } from "../../core/textnorm";
+import { createVocabularyRescorer } from "./vocab-rescorer.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import wasmUrl from "./parakeet-decoder.wasm?url";
@@ -35,6 +37,23 @@ export class ParakeetV3Engine implements AsrEngine {
   private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
   private decodePool: any = null;
+  private itnMod: any | null = null;
+  private itnEnabled = false;
+  private rescorer: ReturnType<typeof createVocabularyRescorer> | null = null;
+
+  /** OPT-IN inverse text normalization ("twenty one dollars" → "$21").
+   * Off by default: on everyday speech it also rewrites words people write out
+   * ("no one" → "no 1") and can delete words in non-English transcripts. */
+  setItn(enabled: boolean): void {
+    this.itnEnabled = enabled;
+  }
+
+  /** Custom vocabulary (domain terms, names): fuzzy-matched against the
+   * transcript and replaced with canonical spellings ("invidia" → "NVIDIA",
+   * "new res" → "Newrez"). Pass [] to clear. */
+  setVocabulary(terms: Array<string | { text: string; aliases?: string[]; minSimilarity?: number }>): void {
+    this.rescorer = terms.length ? createVocabularyRescorer(terms) : null;
+  }
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
@@ -109,6 +128,8 @@ export class ParakeetV3Engine implements AsrEngine {
         }
       }
     }
+    // ITN module loaded up front; APPLIED only when setItn(true) (see setItn).
+    this.itnMod = await loadTextNorm();
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
@@ -126,8 +147,13 @@ export class ParakeetV3Engine implements AsrEngine {
     });
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
+    // Vocabulary rescoring runs on the RAW spoken-form transcript, BEFORE any
+    // ITN — spoken-form aliases ("gpt four") can never match post-ITN text.
+    let text = this.tokenizer.decode(ids);
+    if (this.rescorer) text = this.rescorer.rescore(text);
+    if (this.itnEnabled) text = itn(this.itnMod, text);
     return {
-      text: this.tokenizer.decode(ids),
+      text,
       metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
     };
   }

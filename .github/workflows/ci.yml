@@ -88,3 +88,5 @@ jobs:
         with:
           path: .ci-cache
           key: hf-weights-${{ hashFiles('scripts/ci-weights.lock') }}
+      - run: node scripts/textnorm-check.mjs
+      - run: node scripts/vocab-rescorer-check.mjs
