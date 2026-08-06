@@ -62,7 +62,7 @@ writeFileSync(
       version: VERSION,
       description:
         "Local speech AI for the browser — ASR (Parakeet, Whisper, Nemotron), TTS (Kokoro), VAD (Silero), speaker diarization (Sortformer) on hand-written WebGPU + WASM-SIMD kernels. No onnxruntime; model weights stream from Hugging Face and cache locally.",
-      license: "Apache-2.0",
+      license: "MIT",
       repository: { type: "git", url: "git+https://github.com/FluidInference/fluidaudio-web.git" },
       type: "module",
       sideEffects: false,
