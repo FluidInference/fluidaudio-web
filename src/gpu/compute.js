@@ -308,13 +308,97 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 // f16 either way on the f16-weight path; the extra error vs F16B is A's f16
 // rounding (~2^-11 relative) — an order finer than the int8 weight quantization
 // the encoder already carries. Gated by token identity, not just maxΔ.
-const GEMM_V4_F16C_WGSL = `enable f16;
-struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+// f16C with BK=16: half the barriers and half the f32-promote overhead per K.
+// LDS 2×(16×128) f16 = 8KB — same budget as the fp32 v4 kernel's 8KB.
+const GEMM_V4_F16C2_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
 @group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
 @group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
 @group(0) @binding(2) var<storage, read> bias: array<f32>;
 @group(0) @binding(3) var<storage, read_write> C: array<f32>;
-@group(0) @binding(4) var<uniform> m: Meta;
+@group(0) @binding(4) var<storage, read> Dt: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+const BM = 128u; const BN = 128u; const BK = 16u; const TM = 8u; const TN = 8u;
+var<workgroup> As: array<f16, 2048>; // TRANSPOSED [BK][BM]
+var<workgroup> Bs: array<f16, 2048>; // [BK][BN]
+fn actf(x: f32, a: u32) -> f32 {
+  if (a == 1u) { return 0.5 * x * (1.0 + tanh(clamp(0.7978845608028654 * (x + 0.044715 * x * x * x), -20.0, 20.0))); }
+  if (a == 3u) { return max(x, 0.0); }
+  if (a == 4u) { return x / (1.0 + exp(-clamp(x, -30.0, 30.0))); }
+  return x;
+}
+@compute @workgroup_size(256)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) tid: u32) {
+  let blockRow = wg.y * BM; let blockCol = wg.x * BN;
+  let threadRow = (tid / (BN / TN)) * TM;
+  let threadCol = (tid % (BN / TN)) * TN;
+  let K4 = m.K / 4u; let N4 = m.N / 4u;
+  var acc: array<vec4<f32>, 16>;
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f32>(0.0); }
+  let nT = (m.K + BK - 1u) / BK;
+  for (var t = 0u; t < nT; t++) {
+    let kk = t * BK;
+    // A tile: [128 rows][16 cols] = 512 vec4 → 2 per thread
+    for (var it = 0u; it < 2u; it++) {
+      let idx = tid + it * 256u;
+      let aRow = idx / 4u; let aC = idx % 4u;
+      var av = vec4<f32>(0.0);
+      if (blockRow + aRow < m.M && kk + aC * 4u < m.K) { av = A[(blockRow + aRow) * K4 + kk / 4u + aC]; }
+      let ah = vec4<f16>(av);
+      let aBase = 4u * aC;
+      As[(aBase + 0u) * BM + aRow] = ah.x; As[(aBase + 1u) * BM + aRow] = ah.y;
+      As[(aBase + 2u) * BM + aRow] = ah.z; As[(aBase + 3u) * BM + aRow] = ah.w;
+    }
+    // B tile: [16 rows][128 cols] = 512 vec4 → 2 per thread
+    for (var it = 0u; it < 2u; it++) {
+      let idx = tid + it * 256u;
+      let bRow = idx / 32u; let bC = idx % 32u;
+      var bv = vec4<f16>(0.0);
+      if (kk + bRow < m.K && blockCol + bC * 4u < m.N) { bv = B[(kk + bRow) * N4 + blockCol / 4u + bC]; }
+      let bBase = bRow * BN + 4u * bC;
+      Bs[bBase] = bv.x; Bs[bBase + 1u] = bv.y; Bs[bBase + 2u] = bv.z; Bs[bBase + 3u] = bv.w;
+    }
+    workgroupBarrier();
+    var acch: array<vec4<f16>, 16>;
+    for (var i = 0u; i < 16u; i++) { acch[i] = vec4<f16>(0.0); }
+    for (var k = 0u; k < BK; k++) {
+      let ab = k * BM + threadRow;
+      var aReg: array<f16, 8>;
+      for (var i = 0u; i < 8u; i++) { aReg[i] = As[ab + i]; }
+      let bb = k * BN + threadCol;
+      let b0 = vec4<f16>(Bs[bb], Bs[bb + 1u], Bs[bb + 2u], Bs[bb + 3u]);
+      let b1 = vec4<f16>(Bs[bb + 4u], Bs[bb + 5u], Bs[bb + 6u], Bs[bb + 7u]);
+      for (var i = 0u; i < 8u; i++) { acch[i * 2u] += aReg[i] * b0; acch[i * 2u + 1u] += aReg[i] * b1; }
+    }
+    for (var i = 0u; i < 16u; i++) { acc[i] += vec4<f32>(acch[i]); }
+    workgroupBarrier();
+  }
+  for (var i = 0u; i < TM; i++) {
+    let r = blockRow + threadRow + i; if (r >= m.M) { continue; }
+    for (var jb = 0u; jb < 2u; jb++) {
+      let v = acc[i * 2u + jb];
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = blockCol + threadCol + jb * 4u + jj;
+        if (c < m.N) {
+          var x = v[jj];
+          if (m.hasBias == 1u) { x += bias[c]; }
+          x = actf(x, m.act);
+          if (m.hasAdd == 1u) { x += Dt[r * m.N + c]; }
+          C[r * m.N + c] = x;
+        }
+      }
+    }
+  }
+}`;
+
+const GEMM_V4_F16C_WGSL = `enable f16;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<storage, read> Dt: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
 const BM = 128u; const BN = 128u; const BK = 8u; const TM = 8u; const TN = 8u;
 var<workgroup> As: array<f16, 1024>; // TRANSPOSED [BK][BM]
 var<workgroup> Bs: array<f16, 1024>; // [BK][BN]
@@ -375,7 +459,9 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
         if (c < m.N) {
           var x = v[jj];
           if (m.hasBias == 1u) { x += bias[c]; }
-          C[r * m.N + c] = actf(x, m.act);
+          x = actf(x, m.act);
+          if (m.hasAdd == 1u) { x += Dt[r * m.N + c]; }
+          C[r * m.N + c] = x;
         }
       }
     }
@@ -1870,25 +1956,30 @@ export class GpuContext {
   }
 
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
-  matmul(a, b, { bias = null, act = "none" } = {}) {
+  matmul(a, b, { bias = null, act = "none", add = null } = {}) {
     const M = a.rows, K = a.cols, N = b.cols;
     // f16-storage B (weights): f16-COMPUTE v4 (2× ALU rate on Apple; measured
     // 1.46× vs the f32-compute F16B variant, which stays available for A/Bs).
+    // `add` (residual [M,N]) fuses into the f16C epilogue; other routes compose
+    // with a separate elementwise add so semantics match on every path.
     if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0 && (act === "none" || act === "gelu" || act === "tanh" || act === "relu" || act === "silu")) {
-      return globalThis.__f16bforce ? this.matmulF16B(a, b, { bias, act }) : this.matmulF16C(a, b, { bias, act });
+      if (!globalThis.__f16bforce) return this.matmulF16C(a, b, { bias, act, add });
+      const oB = this.matmulF16B(a, b, { bias, act });
+      return add ? this.add(oB, add) : oB;
     }
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
     if (M >= 256 && N >= 256 && K >= 256 && K % 8 === 0 && N % 4 === 0) {
-      return this.matmulV4(a, b, { bias, act });
+      const o4 = this.matmulV4(a, b, { bias, act });
+      return add ? this.add(o4, add) : o4;
     }
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("gemm", GEMM_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
-    return c;
+    return add ? this.add(c, add) : c;
   }
 
   matmulV2(a, b, { bias = null, act = "none" } = {}) {
@@ -1922,14 +2013,17 @@ export class GpuContext {
     return c;
   }
 
-  /** f16-COMPUTE v4: f16 tiles + f16 fma per K-tile, f32 accumulate across tiles. */
-  matmulF16C(a, bF16, { bias = null, act = "none" } = {}) {
+  /** f16-COMPUTE v4: f16 tiles + f16 fma per K-tile, f32 accumulate across tiles.
+   * `add` fuses a residual [M,N] into the epilogue (post-act), saving a pass. */
+  matmulF16C(a, bF16, { bias = null, act = "none", add = null } = {}) {
     const M = a.rows, K = a.cols, N = bF16.cols;
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
-    const pipeline = this._pipeline("gemmV4f16c", GEMM_V4_F16C_WGSL);
-    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
-    this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf], u, Math.ceil(N / 128), Math.ceil(M / 128));
+    const addBuf = add ? add.buf : this._dummy();
+    const bk16 = !globalThis.__f16cbk8 && K % 16 === 0;
+    const pipeline = bk16 ? this._pipeline("gemmV4f16c2", GEMM_V4_F16C2_WGSL) : this._pipeline("gemmV4f16c", GEMM_V4_F16C_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));
+    this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf, addBuf], u, Math.ceil(N / 128), Math.ceil(M / 128));
     return c;
   }
 

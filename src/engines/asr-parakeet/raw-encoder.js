@@ -195,7 +195,9 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
   const dwPadL = enc.cfg.convCausal ? dwK - 1 : (dwK - 1) >> 1;
   const dwPadR = enc.cfg.convCausal ? 0 : (dwK - 1) >> 1;
   // b1 (pre-SiLU) and b2 (on linear2) are null unless the model has FF linear biases.
-  const ff = (x, lp, w1, w2, b1, b2) => ctx.add(x, ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2 }));
+  // Residual adds ride the GEMM epilogue ({add}) — one less full pass over
+  // [W*T,D] per add and 4 fewer dispatches per layer.
+  const ff = (x, lp, w1, w2, b1, b2) => ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2, add: x });
 
   // One command-buffer submit for the whole conformer stack (ops are recorded
   // into a single compute pass; per-op submits dominate otherwise).
@@ -218,7 +220,7 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
     if (maskT) sc = ctx.add(sc, maskT);
     const probs = ctx.softmax(sc);                                             // rows = W*H*T
     const outc = ctx.bmmPV(probs, v, H, HD, W);                                // [W*T, H*HD]
-    x = ctx.add(x, ctx.matmul(outc, w.out, { bias: w.outb }));
+    x = ctx.matmul(outc, w.out, { bias: w.outb, add: x });
     // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
     // B side (f16 path, fused bias) — shape-valid for any window length.
     const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [W*T, 2D]
@@ -242,7 +244,7 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
       // Parakeet: BatchNorm folded into depthwise, SiLU fused.
       dwo = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
     }
-    x = ctx.add(x, ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b }));
+    x = ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b, add: x });
     x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
     x = ln(x, w.lnout);
   }
