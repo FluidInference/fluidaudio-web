@@ -13,11 +13,7 @@ export function hfUrl(repo: string, path: string, revision = "main"): string {
 }
 
 /** Fetch a single URL as bytes, using the Cache API and streaming progress. */
-export async function fetchCached(
-  url: string,
-  onProgress?: ProgressCb,
-  label = url
-): Promise<Uint8Array> {
+export async function fetchCached(url: string, onProgress?: ProgressCb, label = url): Promise<Uint8Array> {
   // Cache API is best-effort: opening/matching/putting can throw (quota, or the
   // per-entry size limit — a 600 MB weight file exceeds it in Chrome), and that
   // must never fail the load.
@@ -63,24 +59,25 @@ export async function fetchCached(
 }
 
 /** Fetch many files, aggregating progress across the set. */
-export async function fetchAll(
-  files: { repo: string; path: string; revision?: string }[],
-  onProgress?: ProgressCb
-): Promise<Map<string, Uint8Array>> {
+export async function fetchAll(files: { repo: string; path: string; revision?: string }[], onProgress?: ProgressCb): Promise<Map<string, Uint8Array>> {
   const out = new Map<string, Uint8Array>();
   let doneBytes = 0;
   // Rough overall fraction: weight each file equally in count, refine by bytes.
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     const url = hfUrl(f.repo, f.path, f.revision);
-    const bytes = await fetchCached(url, (p) => {
-      onProgress?.({
-        file: f.path,
-        loaded: doneBytes + p.loaded,
-        total: 0,
-        fraction: (i + p.fraction) / files.length,
-      });
-    }, f.path);
+    const bytes = await fetchCached(
+      url,
+      (p) => {
+        onProgress?.({
+          file: f.path,
+          loaded: doneBytes + p.loaded,
+          total: 0,
+          fraction: (i + p.fraction) / files.length,
+        });
+      },
+      f.path,
+    );
     doneBytes += bytes.byteLength;
     out.set(f.path, bytes);
   }

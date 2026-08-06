@@ -26,37 +26,50 @@ interface Case {
 
 const CASES: Case[] = [
   {
-    id: "vad-silero", label: "Silero VAD", kind: "audio",
+    id: "vad-silero",
+    label: "Silero VAD",
+    kind: "audio",
     make: async () => new (await import("./engines/vad-silero")).SileroVadEngine(),
     run: (e, a) => e.detect(a),
     summarize: (o) => `${o.length} speech segments`,
   },
   {
-    id: "asr-parakeet", label: "Parakeet TDT v3", kind: "audio",
+    id: "asr-parakeet",
+    label: "Parakeet TDT v3",
+    kind: "audio",
     make: async () => new (await import("./engines/asr-parakeet")).ParakeetV3Engine(),
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text,
   },
   {
-    id: "asr-whisper", label: "Whisper (99 langs)", kind: "audio",
+    id: "asr-whisper",
+    label: "Whisper (99 langs)",
+    kind: "audio",
     make: async () => new (await import("./engines/asr-whisper")).WhisperEngine(),
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text,
   },
   {
-    id: "diarization-sortformer", label: "Sortformer diarization", kind: "audio",
+    id: "diarization-sortformer",
+    label: "Sortformer diarization",
+    kind: "audio",
     make: async () => new (await import("./engines/diarization-sortformer")).SortformerDiarizationEngine(),
     run: (e, a) => e.diarize(a),
     summarize: (o) => `${new Set(o.map((s: any) => s.speaker)).size} speakers, ${o.length} segments`,
   },
   {
-    id: "tts-kokoro-en", label: "Kokoro TTS (English)", kind: "text",
+    id: "tts-kokoro-en",
+    label: "Kokoro TTS (English)",
+    kind: "text",
     make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "en" }),
     run: (e) => e.synthesize(TTS_EN),
     summarize: (o) => `${(o.samples.length / o.sampleRate).toFixed(2)}s audio`,
   },
   {
-    id: "tts-kokoro-zh", label: "Kokoro TTS (Chinese)", kind: "text", heavy: true,
+    id: "tts-kokoro-zh",
+    label: "Kokoro TTS (Chinese)",
+    kind: "text",
+    heavy: true,
     make: async () => new (await import("./engines/tts-kokoro")).KokoroTtsEngine({ lang: "zh" }),
     run: (e) => e.synthesize(TTS_ZH),
     summarize: (o) => `${(o.samples.length / o.sampleRate).toFixed(2)}s audio`,
@@ -64,17 +77,22 @@ const CASES: Case[] = [
   {
     // soniqo FP16 export: encoder on WebGPU (purpose-built for it), LSTM decoder +
     // joint on WASM. Correct + fast in-browser (int4 export couldn't run on WebGPU).
-    id: "asr-nemotron", label: "Nemotron 3.5 (fp16, WebGPU)", kind: "audio", heavy: true,
+    id: "asr-nemotron",
+    label: "Nemotron 3.5 (fp16, WebGPU)",
+    kind: "audio",
+    heavy: true,
     make: async () => new (await import("./engines/asr-nemotron")).NemotronEngine(),
     run: (e, a) => e.transcribe(a),
     summarize: (o) => o.text || "(empty)",
   },
   {
-    id: "eou-parakeet", label: "Parakeet EOU 120M", kind: "audio", heavy: true,
+    id: "eou-parakeet",
+    label: "Parakeet EOU 120M",
+    kind: "audio",
+    heavy: true,
     make: async () => new (await import("./engines/eou-parakeet")).ParakeetEouEngine(),
     run: (e, a) => e.transcribe(a),
-    summarize: (o) =>
-      `${o.text || "(no speech)"}${o.events?.length ? ` · ${o.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`,
+    summarize: (o) => `${o.text || "(no speech)"}${o.events?.length ? ` · ${o.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`,
   },
 ];
 
@@ -88,7 +106,10 @@ function log(msg: string) {
 
 async function main() {
   const params = new URLSearchParams(location.search);
-  const only = params.get("engines")?.split(",").map((s) => s.trim());
+  const only = params
+    .get("engines")
+    ?.split(",")
+    .map((s) => s.trim());
   const full = params.has("full");
   const cases = CASES.filter((c) => (only ? only.includes(c.id) : full || !c.heavy));
 

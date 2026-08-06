@@ -11,11 +11,24 @@ import { ParakeetMel } from "../src/engines/asr-parakeet/parakeet-mel.js";
 import { transcribeWindowed } from "../src/engines/asr-parakeet/pipeline.js";
 
 function readWav(p) {
-  const b = readFileSync(p); const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12, dO = -1, dL = 0;
-  while (o + 8 <= b.length) { const id = String.fromCharCode(b[o], b[o+1], b[o+2], b[o+3]); const s = dv.getUint32(o+4, true); if (id === "data") { dO = o+8; dL = s; break; } o += 8 + s + (s & 1); }
-  const n = dL/2, out = new Float32Array(n);
-  for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i*2, true) / 32768;
+  const b = readFileSync(p);
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let o = 12,
+    dO = -1,
+    dL = 0;
+  while (o + 8 <= b.length) {
+    const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    const s = dv.getUint32(o + 4, true);
+    if (id === "data") {
+      dO = o + 8;
+      dL = s;
+      break;
+    }
+    o += 8 + s + (s & 1);
+  }
+  const n = dL / 2,
+    out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
   return out;
 }
 
@@ -43,23 +56,41 @@ if (POOL > 1) {
   const { createDecodePool } = await import("../src/engines/asr-parakeet/decode-pool.js");
   const wasmBytes = readFileSync("src/engines/asr-parakeet/parakeet-decoder.wasm");
   const decBuf = decU8.buffer.slice(decU8.byteOffset, decU8.byteOffset + decU8.byteLength);
-  const workers = await Promise.all(Array.from({ length: POOL }, async () => {
-    const w = new Worker(new URL("../src/engines/asr-parakeet/decoder-worker.js", import.meta.url), { type: "module" });
-    const shim = {
-      postMessage: (m, t) => w.postMessage(m, t ?? []),
-      setHandler: (f) => { w.removeAllListeners("message"); w.on("message", f); },
-      terminate: () => w.terminate(),
-    };
-    await new Promise((resolve, reject) => { w.once("message", resolve); w.once("error", reject); w.postMessage({ type: "init", wasmBytes: wasmBytes.buffer.slice(wasmBytes.byteOffset, wasmBytes.byteOffset + wasmBytes.byteLength), decBuf, man: decMan }); });
-    return shim;
-  }));
+  const workers = await Promise.all(
+    Array.from({ length: POOL }, async () => {
+      const w = new Worker(new URL("../src/engines/asr-parakeet/decoder-worker.js", import.meta.url), { type: "module" });
+      const shim = {
+        postMessage: (m, t) => w.postMessage(m, t ?? []),
+        setHandler: (f) => {
+          w.removeAllListeners("message");
+          w.on("message", f);
+        },
+        terminate: () => w.terminate(),
+      };
+      await new Promise((resolve, reject) => {
+        w.once("message", resolve);
+        w.once("error", reject);
+        w.postMessage({
+          type: "init",
+          wasmBytes: wasmBytes.buffer.slice(wasmBytes.byteOffset, wasmBytes.byteOffset + wasmBytes.byteLength),
+          decBuf,
+          man: decMan,
+        });
+      });
+      return shim;
+    }),
+  );
   pool = createDecodePool(workers);
   console.log(`decode pool: ${POOL} workers`);
 }
 
 const run = async (pipelined, usePool = true) => {
   const t = performance.now();
-  const { ids, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, { pipelined, wb: Number(process.env.WB || 6), decodePool: usePool ? pool : null });
+  const { ids, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, {
+    pipelined,
+    wb: Number(process.env.WB || 6),
+    decodePool: usePool ? pool : null,
+  });
   return { ids, stats, ms: performance.now() - t };
 };
 
@@ -68,8 +99,11 @@ const serial = await run(false, false);
 const piped = await run(true);
 const piped2 = await run(true);
 
-const same = serial.ids.length === piped.ids.length && serial.ids.every((v, i) => v === piped.ids[i])
-  && piped2.ids.length === piped.ids.length && piped2.ids.every((v, i) => v === piped.ids[i]);
+const same =
+  serial.ids.length === piped.ids.length &&
+  serial.ids.every((v, i) => v === piped.ids[i]) &&
+  piped2.ids.length === piped.ids.length &&
+  piped2.ids.every((v, i) => v === piped.ids[i]);
 console.log(`tokens: serial ${serial.ids.length}, pipelined ${piped.ids.length} → ${same ? "IDENTICAL" : "DIVERGED"}`);
 const best = Math.min(piped.ms, piped2.ms);
 console.log(`serial    ${serial.ms.toFixed(0)}ms  RTFx ${(durS / (serial.ms / 1000)).toFixed(1)}`);

@@ -24,7 +24,7 @@ import { embed, albertForward } from "./albert.js";
  */
 export function textEncoding(ctx, ids, albertW, beW, beB) {
   const seq = ids.length;
-  const emb = embed(ids, albertW);                 // CPU gather + LN → [seq,128]
+  const emb = embed(ids, albertW); // CPU gather + LN → [seq,128]
   const embT = ctx.upload(emb, seq, albertW.EMBED ?? 128);
   const albertOut = albertForward(ctx, embT, albertW, seq); // [seq,768]
   return ctx.matmul(albertOut, beW, { bias: beB }); // [seq,512]

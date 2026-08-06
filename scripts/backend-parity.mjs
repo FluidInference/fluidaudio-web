@@ -11,12 +11,24 @@ import { createWasmContext } from "../src/gpu/wasm-context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../src/engines/asr-parakeet/raw-encoder.js";
 
 function readBig(path) {
-  const fd = openSync(path, "r"), size = fstatSync(fd).size, u8 = new Uint8Array(size);
-  let off = 0; const CH = 1 << 30;
-  while (off < size) { const n = readSync(fd, u8, off, Math.min(CH, size - off), off); if (n <= 0) break; off += n; }
-  closeSync(fd); return u8;
+  const fd = openSync(path, "r"),
+    size = fstatSync(fd).size,
+    u8 = new Uint8Array(size);
+  let off = 0;
+  const CH = 1 << 30;
+  while (off < size) {
+    const n = readSync(fd, u8, off, Math.min(CH, size - off), off);
+    if (n <= 0) break;
+    off += n;
+  }
+  closeSync(fd);
+  return u8;
 }
-const maxErr = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
+const maxErr = (a, b) => {
+  let m = 0;
+  for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i]));
+  return m;
+};
 
 const dir = process.argv[2] || "/tmp/pk-raw";
 const encDir = `${dir}/enc-int8`;

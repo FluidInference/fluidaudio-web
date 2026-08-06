@@ -51,9 +51,15 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     let cur = [];
     for (let i = 0; i < starts.length; i++) {
       const len = Math.min(starts[i] + winSamples, samples.length) - starts[i];
-      if (cur.length && (len !== winSamples || cur.length >= wb)) { groups.push(cur); cur = []; }
+      if (cur.length && (len !== winSamples || cur.length >= wb)) {
+        groups.push(cur);
+        cur = [];
+      }
       cur.push(i);
-      if (len !== winSamples) { groups.push(cur); cur = []; }
+      if (len !== winSamples) {
+        groups.push(cur);
+        cur = [];
+      }
     }
     if (cur.length) groups.push(cur);
   }
@@ -104,8 +110,15 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       let matched = 0;
       for (let L = maxL; L >= 2; L--) {
         let ok = true;
-        for (let i = 0; i < L; i++) if (ids[ids.length - L + i] !== wids[i]) { ok = false; break; }
-        if (ok) { matched = L; break; }
+        for (let i = 0; i < L; i++)
+          if (ids[ids.length - L + i] !== wids[i]) {
+            ok = false;
+            break;
+          }
+        if (ok) {
+          matched = L;
+          break;
+        }
       }
       skip = Math.max(matched, frameSkip);
     }
@@ -147,7 +160,10 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
         const win = frames.slice(wi * Tenc * D, (wi + 1) * Tenc * D); // copy: transferred to the worker
         const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
         const job = { windowIdx: w, sliceLen, Tenc, p: decodePool.decode(win, Tenc), r: null };
-        job.p = job.p.then((res) => { job.r = res; return res; });
+        job.p = job.p.then((res) => {
+          job.r = res;
+          return res;
+        });
         decJobs.push(job);
       }
       // Opportunistic in-order drain: stitch already-finished leading jobs so
@@ -176,6 +192,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     }
     stats.decodeMs += now() - td;
   }
-  stats.melMs = Math.round(stats.melMs); stats.encWaitMs = Math.round(stats.encWaitMs); stats.decodeMs = Math.round(stats.decodeMs);
+  stats.melMs = Math.round(stats.melMs);
+  stats.encWaitMs = Math.round(stats.encWaitMs);
+  stats.decodeMs = Math.round(stats.decodeMs);
   return { ids, stats };
 }

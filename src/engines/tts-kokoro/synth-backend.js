@@ -18,7 +18,12 @@ const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
  * modelDir: "kokoro" (en, v1.0) or "kokoro-zh" (v1.1-zh). voiceRepo: the Kokoro HF
  * repo to pull voice packs from.
  */
-export async function loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir = "kokoro", voiceRepo = "onnx-community/Kokoro-82M-v1.0-ONNX", onProgress } = {}) {
+export async function loadKokoroBackend(
+  fetchCached,
+  hfUrl,
+  vocab,
+  { modelDir = "kokoro", voiceRepo = "onnx-community/Kokoro-82M-v1.0-ONNX", onProgress } = {},
+) {
   const ctx = await createContext();
   const f32 = (u8) => new Float32Array(u8.buffer, u8.byteOffset, u8.byteLength / 4);
   const json = async (path) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
@@ -37,12 +42,30 @@ export async function loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir = 
   const up2 = (n) => ctx.upload(cpu[n], aman[n][0], aman[n][1]);
   const up1 = (n) => ctx.upload(cpu[n], 1, cpu[n].length);
   const albertW = {
-    EMBED: ALBERT_DIMS.EMBED, map_w: up2("map_w"), map_b: up1("map_b"),
-    q_w: up2("q_w"), q_b: up1("q_b"), k_w: up2("k_w"), k_b: up1("k_b"), v_w: up2("v_w"), v_b: up1("v_b"),
-    dense_w: up2("dense_w"), dense_b: up1("dense_b"), ffn_w: up2("ffn_w"), ffn_b: up1("ffn_b"),
-    ffn_out_w: up2("ffn_out_w"), ffn_out_b: up1("ffn_out_b"), attn_ln_w: up1("attn_ln_w"), attn_ln_b: up1("attn_ln_b"),
-    full_ln_w: up1("full_ln_w"), full_ln_b: up1("full_ln_b"), word_emb: cpu.word_emb, pos_emb: cpu.pos_emb,
-    tok_emb: cpu.tok_emb, emb_ln_w: cpu.emb_ln_w, emb_ln_b: cpu.emb_ln_b,
+    EMBED: ALBERT_DIMS.EMBED,
+    map_w: up2("map_w"),
+    map_b: up1("map_b"),
+    q_w: up2("q_w"),
+    q_b: up1("q_b"),
+    k_w: up2("k_w"),
+    k_b: up1("k_b"),
+    v_w: up2("v_w"),
+    v_b: up1("v_b"),
+    dense_w: up2("dense_w"),
+    dense_b: up1("dense_b"),
+    ffn_w: up2("ffn_w"),
+    ffn_b: up1("ffn_b"),
+    ffn_out_w: up2("ffn_out_w"),
+    ffn_out_b: up1("ffn_out_b"),
+    attn_ln_w: up1("attn_ln_w"),
+    attn_ln_b: up1("attn_ln_b"),
+    full_ln_w: up1("full_ln_w"),
+    full_ln_b: up1("full_ln_b"),
+    word_emb: cpu.word_emb,
+    pos_emb: cpu.pos_emb,
+    tok_emb: cpu.tok_emb,
+    emb_ln_w: cpu.emb_ln_w,
+    emb_ln_b: cpu.emb_ln_b,
   };
   const fref = await json(`${modelDir}/ref.json`);
   const beW = ctx.upload(f32(await bytes(`${modelDir}/be_w.bin`)), fref.be_in, fref.be_out);
@@ -59,11 +82,17 @@ export async function loadKokoroBackend(fetchCached, hfUrl, vocab, { modelDir = 
     /** phonemes (IPA string) → 24 kHz Float32Array. */
     async synthFromPhonemes(phonemes, voice = "af_heart", speed = 1) {
       const ids = [0]; // $ BOS
-      for (const ch of phonemes) { const id = vocab[ch]; if (id !== undefined) ids.push(id); }
+      for (const ch of phonemes) {
+        const id = vocab[ch];
+        if (id !== undefined) ids.push(id);
+      }
       // ALBERT's positional table is 512 rows — cap at 510 phonemes + BOS/EOS
       // (kokoro-js tokenized with truncation:true; without this, longer input
       // reads past pos_emb → NaN audio).
-      if (ids.length > 511) { console.warn(`[kokoro] input truncated: ${ids.length - 1} phonemes > 510`); ids.length = 511; }
+      if (ids.length > 511) {
+        console.warn(`[kokoro] input truncated: ${ids.length - 1} phonemes > 510`);
+        ids.length = 511;
+      }
       ids.push(0); // $ EOS
       const idArr = Int32Array.from(ids);
       const pack = await getVoice(voice);

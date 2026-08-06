@@ -12,14 +12,21 @@ import { eouTranscribe, makeEouTokenizer } from "../src/engines/eou-parakeet/eou
 function readWav(p) {
   const b = readFileSync(p);
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let o = 12, dO = -1, dL = 0;
+  let o = 12,
+    dO = -1,
+    dL = 0;
   while (o + 8 <= b.length) {
     const id = String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
     const s = dv.getUint32(o + 4, true);
-    if (id === "data") { dO = o + 8; dL = s; break; }
+    if (id === "data") {
+      dO = o + 8;
+      dL = s;
+      break;
+    }
     o += 8 + s + (s & 1);
   }
-  const n = dL / 2, out = new Float32Array(n);
+  const n = dL / 2,
+    out = new Float32Array(n);
   for (let i = 0; i < n; i++) out[i] = dv.getInt16(dO + i * 2, true) / 32768;
   return out;
 }
@@ -32,9 +39,12 @@ const tokenizer = makeEouTokenizer(readFileSync(`${D}/vocab.txt`, "utf8"));
 const audio = readWav(wav);
 const t0 = Date.now();
 const r = await eouTranscribe({
-  ort, encoder, decoder,
+  ort,
+  encoder,
+  decoder,
   preprocessor: new JsPreprocessor({ nMels: 128 }),
-  tokenizer, audio,
+  tokenizer,
+  audio,
 });
 console.log(`${((Date.now() - t0) / 1000).toFixed(1)}s  ${r.tokenIds.length} tokens  ${r.frames} frames`);
 console.log("TEXT :", JSON.stringify(r.text));

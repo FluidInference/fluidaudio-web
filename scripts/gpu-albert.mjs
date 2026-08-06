@@ -12,7 +12,10 @@ const D = "/tmp/kokoro/albert";
 const manifest = JSON.parse(readFileSync(`${D}/manifest.json`, "utf8"));
 const ref = JSON.parse(readFileSync(`${D}/ref.json`, "utf8"));
 // Node's Buffer is a view into a shared pool — copy out the exact byte range.
-const readBin = (path) => { const b = readFileSync(path); return Uint8Array.from(b); };
+const readBin = (path) => {
+  const b = readFileSync(path);
+  return Uint8Array.from(b);
+};
 const f32 = (name) => new Float32Array(readBin(`${D}/${name}.bin`).buffer);
 const cpu = {};
 for (const k of Object.keys(manifest)) cpu[k] = f32(k);
@@ -35,25 +38,47 @@ const rc = (name) => manifest[name];
 const up2 = (name) => ctx.upload(cpu[name], rc(name)[0], rc(name)[1]);
 const up1 = (name) => ctx.upload(cpu[name], 1, cpu[name].length);
 const w = {
-  map_w: up2("map_w"), map_b: up1("map_b"),
-  q_w: up2("q_w"), q_b: up1("q_b"), k_w: up2("k_w"), k_b: up1("k_b"),
-  v_w: up2("v_w"), v_b: up1("v_b"), dense_w: up2("dense_w"), dense_b: up1("dense_b"),
-  ffn_w: up2("ffn_w"), ffn_b: up1("ffn_b"), ffn_out_w: up2("ffn_out_w"), ffn_out_b: up1("ffn_out_b"),
-  attn_ln_w: up1("attn_ln_w"), attn_ln_b: up1("attn_ln_b"),
-  full_ln_w: up1("full_ln_w"), full_ln_b: up1("full_ln_b"),
+  map_w: up2("map_w"),
+  map_b: up1("map_b"),
+  q_w: up2("q_w"),
+  q_b: up1("q_b"),
+  k_w: up2("k_w"),
+  k_b: up1("k_b"),
+  v_w: up2("v_w"),
+  v_b: up1("v_b"),
+  dense_w: up2("dense_w"),
+  dense_b: up1("dense_b"),
+  ffn_w: up2("ffn_w"),
+  ffn_b: up1("ffn_b"),
+  ffn_out_w: up2("ffn_out_w"),
+  ffn_out_b: up1("ffn_out_b"),
+  attn_ln_w: up1("attn_ln_w"),
+  attn_ln_b: up1("attn_ln_b"),
+  full_ln_w: up1("full_ln_w"),
+  full_ln_b: up1("full_ln_b"),
   // CPU-side embedding tables
-  word_emb: cpu.word_emb, pos_emb: cpu.pos_emb, tok_emb: cpu.tok_emb,
-  emb_ln_w: cpu.emb_ln_w, emb_ln_b: cpu.emb_ln_b,
+  word_emb: cpu.word_emb,
+  pos_emb: cpu.pos_emb,
+  tok_emb: cpu.tok_emb,
+  emb_ln_w: cpu.emb_ln_w,
+  emb_ln_b: cpu.emb_ln_b,
 };
 
 const stats = (a, b) => {
-  let mx = 0, se = 0, sr = 0;
-  for (let i = 0; i < a.length; i++) { const d = Math.abs(a[i] - b[i]); mx = Math.max(mx, d); se += d * d; sr += b[i] * b[i]; }
+  let mx = 0,
+    se = 0,
+    sr = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = Math.abs(a[i] - b[i]);
+    mx = Math.max(mx, d);
+    se += d * d;
+    sr += b[i] * b[i];
+  }
   return { max: mx, rms: Math.sqrt(se / a.length), rel: Math.sqrt(se / sr) };
 };
 
 // Embeddings (CPU) + 128->768 mapping (GPU) — check against ALBERT input.
-const emb = embed(ids, w);                       // [seq,128]
+const emb = embed(ids, w); // [seq,128]
 const embT = ctx.upload(emb, seq, ALBERT_DIMS.EMBED);
 const mapped = await ctx.download(ctx.matmul(embT, w.map_w, { bias: w.map_b }));
 const sIn = stats(mapped, refIn);

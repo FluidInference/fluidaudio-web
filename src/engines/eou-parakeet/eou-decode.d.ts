@@ -13,7 +13,10 @@ export function eouTranscribe(o: {
   ort: any;
   encoder: any;
   decoder: any;
-  preprocessor: { nMels: number; process(audio: Float32Array): Promise<{ features: Float32Array; length: number }> | { features: Float32Array; length: number } };
+  preprocessor: {
+    nMels: number;
+    process(audio: Float32Array): Promise<{ features: Float32Array; length: number }> | { features: Float32Array; length: number };
+  };
   tokenizer: EouTokenizer;
   audio: Float32Array;
 }): Promise<{

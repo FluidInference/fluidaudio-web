@@ -30,8 +30,7 @@ export class SortformerDiarizationEngine implements DiarizationEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[diarization-sortformer] backend: ${b}`) });
-    const json = async (path: string) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
+    const json = async (path: string) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("sortformer/encoder-int8.manifest.json");
@@ -55,7 +54,9 @@ export class SortformerDiarizationEngine implements DiarizationEngine {
     // spec floor is 128MB → ~35s windows; typical adapters allow the full 90s).
     const capBytes = this.ctx?.device?.limits?.maxStorageBufferBindingSize ?? Infinity;
     const winSec = Math.max(30, Math.min(90, Math.floor((capBytes * 0.85) / (3.28 * 1024 * 1024))));
-    const WIN = winSec * sr, OVL = Math.min(15, Math.floor(winSec / 4)) * sr, hop = WIN - OVL;
+    const WIN = winSec * sr,
+      OVL = Math.min(15, Math.floor(winSec / 4)) * sr,
+      hop = WIN - OVL;
     const runWindow = async (samples: Float32Array) => {
       const { features, length } = this.mel.process(samples);
       if (length === 0) return null;

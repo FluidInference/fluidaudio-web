@@ -59,15 +59,11 @@ const MIN_LOG_MEL = MIN_LOG_HZ / F_SP; // = 15.0
 const LOG_STEP = Math.log(6.4) / 27.0; // step size in log region
 
 function hzToMel(freq) {
-  return freq >= MIN_LOG_HZ
-    ? MIN_LOG_MEL + Math.log(freq / MIN_LOG_HZ) / LOG_STEP
-    : freq / F_SP;
+  return freq >= MIN_LOG_HZ ? MIN_LOG_MEL + Math.log(freq / MIN_LOG_HZ) / LOG_STEP : freq / F_SP;
 }
 
 function melToHz(mel) {
-  return mel >= MIN_LOG_MEL
-    ? MIN_LOG_HZ * Math.exp(LOG_STEP * (mel - MIN_LOG_MEL))
-    : mel * F_SP;
+  return mel >= MIN_LOG_MEL ? MIN_LOG_HZ * Math.exp(LOG_STEP * (mel - MIN_LOG_MEL)) : mel * F_SP;
 }
 
 /**
@@ -148,8 +144,7 @@ function createPaddedHannWindow() {
 
   for (let n = 0; n < WIN_LENGTH; n++) {
     // Symmetric Hann: 0.5 * (1 - cos(2πn / (N-1)))
-    window[padLeft + n] =
-      0.5 * (1 - Math.cos((2 * Math.PI * n) / (WIN_LENGTH - 1)));
+    window[padLeft + n] = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (WIN_LENGTH - 1)));
   }
 
   return window;
@@ -176,7 +171,7 @@ function precomputeTwiddles(N) {
   if (cached) return cached;
 
   const bits = Math.log2(N);
-  if ((1 << bits) !== N) {
+  if (1 << bits !== N) {
     throw new Error(`FFT size must be power-of-two. Received: ${N}`);
   }
 
@@ -405,14 +400,16 @@ export class JsPreprocessor {
     this.fbBounds = new Int32Array(this.nMels * 2);
     for (let m = 0; m < this.nMels; m++) {
       const fbOff = m * N_FREQ_BINS;
-      let start = -1, end = -1;
+      let start = -1,
+        end = -1;
       for (let k = 0; k < N_FREQ_BINS; k++) {
         if (this.melFilterbank[fbOff + k] > 0) {
           if (start === -1) start = k;
           end = k;
         }
       }
-      if (start === -1) { // Should not happen for valid mel filters
+      if (start === -1) {
+        // Should not happen for valid mel filters
         start = 0;
         end = -1;
       }
@@ -620,10 +617,7 @@ export class JsPreprocessor {
         const d = rawMel[srcBase + t] - mean;
         varSum += d * d;
       }
-      const invStd =
-        featuresLen > 1
-          ? 1.0 / (Math.sqrt(varSum / (featuresLen - 1)) + 1e-5)
-          : 0;
+      const invStd = featuresLen > 1 ? 1.0 / (Math.sqrt(varSum / (featuresLen - 1)) + 1e-5) : 0;
 
       for (let t = 0; t < featuresLen; t++) {
         features[dstBase + t] = (rawMel[srcBase + t] - mean) * invStd;
@@ -707,10 +701,7 @@ export class IncrementalMelProcessor {
     }
 
     // Check if we can reuse cached prefix
-    const canReuse =
-      prefixSamples > 0 &&
-      this._cachedRawMel !== null &&
-      prefixSamples <= this._cachedAudioLen;
+    const canReuse = prefixSamples > 0 && this._cachedRawMel !== null && prefixSamples <= this._cachedAudioLen;
 
     // Calculate required size for raw mel buffer
     // nFrames = floor((N + 512 - 512) / 160) + 1 = floor(N / 160) + 1
@@ -742,16 +733,10 @@ export class IncrementalMelProcessor {
     if (!canReuse) {
       // Full computation
       // Pass currentRawBuf to reuse it.
-      const { rawMel, nFrames, featuresLen } =
-        this.preprocessor.computeRawMel(audio, 0, currentRawBuf);
+      const { rawMel, nFrames, featuresLen } = this.preprocessor.computeRawMel(audio, 0, currentRawBuf);
 
       // Pass featuresBuffer to reuse it.
-      const features = this.preprocessor.normalizeFeatures(
-        rawMel,
-        nFrames,
-        featuresLen,
-        this._featuresBuffer
-      );
+      const features = this.preprocessor.normalizeFeatures(rawMel, nFrames, featuresLen, this._featuresBuffer);
 
       // Cache raw mel for next call (view into currentRawBuf)
       this._cachedRawMel = rawMel;
@@ -773,14 +758,10 @@ export class IncrementalMelProcessor {
 
     // ── Incremental path ──────────────────────────────────────────────
     const prefixFrames = Math.floor(prefixSamples / HOP_LENGTH);
-    const safeFrames = Math.max(
-      0,
-      Math.min(prefixFrames - this.boundaryFrames, this._cachedFeaturesLen)
-    );
+    const safeFrames = Math.max(0, Math.min(prefixFrames - this.boundaryFrames, this._cachedFeaturesLen));
 
     // Compute mel, writing into currentRawBuf
-    const { rawMel, nFrames, featuresLen } =
-      this.preprocessor.computeRawMel(audio, safeFrames, currentRawBuf);
+    const { rawMel, nFrames, featuresLen } = this.preprocessor.computeRawMel(audio, safeFrames, currentRawBuf);
 
     // Copy cached prefix from previous buffer (this._cachedRawMel) to current buffer (rawMel)
     // _cachedRawMel is a view into the *other* buffer (since we flipped _bufIdx last time).
@@ -799,12 +780,7 @@ export class IncrementalMelProcessor {
     }
 
     // Normalize
-    const features = this.preprocessor.normalizeFeatures(
-      rawMel,
-      nFrames,
-      featuresLen,
-      this._featuresBuffer
-    );
+    const features = this.preprocessor.normalizeFeatures(rawMel, nFrames, featuresLen, this._featuresBuffer);
 
     // Update cache
     this._cachedRawMel = rawMel;

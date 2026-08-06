@@ -21,7 +21,9 @@ import suppressTokens from "./whisper-suppress.json";
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const VOCAB_REPO = "onnx-community/whisper-base";
 // Forced decoder prefix: <|startoftranscript|> <|en|> <|transcribe|> <|notimestamps|>.
-const PREFIX = [50258, 50259, 50359, 50363], EOT = 50257, MAX_NEW = 220;
+const PREFIX = [50258, 50259, 50359, 50363],
+  EOT = 50257,
+  MAX_NEW = 220;
 
 export class WhisperEngine implements AsrEngine {
   readonly id = "asr-whisper";
@@ -35,8 +37,7 @@ export class WhisperEngine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-whisper] backend: ${b}`) });
-    const json = async (path: string, repo = WEIGHTS_REPO) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
+    const json = async (path: string, repo = WEIGHTS_REPO) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("whisper/encoder-fp32.manifest.json");
@@ -71,9 +72,17 @@ export class WhisperEngine implements AsrEngine {
     for (let step = 0; step < MAX_NEW; step++) {
       const lg = logits!;
       for (const t of this.suppress) lg[t] = -Infinity;
-      if (step === 0) { lg[220] = -Infinity; lg[EOT] = -Infinity; } // begin_suppress
-      let maxId = 0, maxV = -Infinity;
-      for (let i = 0; i < lg.length; i++) if (lg[i] > maxV) { maxV = lg[i]; maxId = i; }
+      if (step === 0) {
+        lg[220] = -Infinity;
+        lg[EOT] = -Infinity;
+      } // begin_suppress
+      let maxId = 0,
+        maxV = -Infinity;
+      for (let i = 0; i < lg.length; i++)
+        if (lg[i] > maxV) {
+          maxV = lg[i];
+          maxId = i;
+        }
       if (maxId === EOT) break;
       tokens.push(maxId);
       logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);

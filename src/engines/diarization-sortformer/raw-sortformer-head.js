@@ -5,30 +5,55 @@
 // → sigmoid → per-frame 4-speaker probs. Validated exact (maxΔ 0.0) vs ORT.
 // Weights are anonymous ONNX MatMuls traced via their named biases at extract time.
 
-const D = 192, NH = 8, HD = 24, SPK = 4;
+const D = 192,
+  NH = 8,
+  HD = 24,
+  SPK = 4;
 const SCALE = 1 / Math.sqrt(HD);
 
 export function loadSortformerHead(ctx, bin, man) {
   const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
   const mat = (k) => ctx.upload(g(k).slice(), man[k].dims[0], man[k].dims[1]);
   // fold the 1/sqrt(head_dim) attention scale into the query weight (like the encoder).
-  const matScaled = (k, s) => { const a = g(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return ctx.upload(a, man[k].dims[0], man[k].dims[1]); };
+  const matScaled = (k, s) => {
+    const a = g(k).slice();
+    for (let i = 0; i < a.length; i++) a[i] *= s;
+    return ctx.upload(a, man[k].dims[0], man[k].dims[1]);
+  };
   const vec = (k) => ctx.upload(g(k).slice(), 1, man[k].len);
-  const vecScaled = (k, s) => { const a = g(k).slice(); for (let i = 0; i < a.length; i++) a[i] *= s; return ctx.upload(a, 1, man[k].len); };
+  const vecScaled = (k, s) => {
+    const a = g(k).slice();
+    for (let i = 0; i < a.length; i++) a[i] *= s;
+    return ctx.upload(a, 1, man[k].len);
+  };
   const layers = [];
   const nl = Object.keys(man).filter((k) => /^T\d+_qw$/.test(k)).length;
   for (let L = 0; L < nl; L++) {
     const t = (s) => `T${L}_${s}`;
     layers.push({
-      qw: matScaled(t("qw"), SCALE), qb: vecScaled(t("qb"), SCALE), kw: mat(t("kw")), kb: vec(t("kb")), vw: mat(t("vw")), vb: vec(t("vb")),
-      ow: mat(t("ow")), ob: vec(t("ob")),
-      ln1: [vec(t("ln1w")), vec(t("ln1b"))], ln2: [vec(t("ln2w")), vec(t("ln2b"))],
-      dinw: mat(t("dinw")), dinb: vec(t("dinb")), doutw: mat(t("doutw")), doutb: vec(t("doutb")),
+      qw: matScaled(t("qw"), SCALE),
+      qb: vecScaled(t("qb"), SCALE),
+      kw: mat(t("kw")),
+      kb: vec(t("kb")),
+      vw: mat(t("vw")),
+      vb: vec(t("vb")),
+      ow: mat(t("ow")),
+      ob: vec(t("ob")),
+      ln1: [vec(t("ln1w")), vec(t("ln1b"))],
+      ln2: [vec(t("ln2w")), vec(t("ln2b"))],
+      dinw: mat(t("dinw")),
+      dinb: vec(t("dinb")),
+      doutw: mat(t("doutw")),
+      doutb: vec(t("doutb")),
     });
   }
   return {
-    projw: mat("encoder_proj_w"), projb: vec("encoder_proj_b"),
-    fhhw: mat("fhh_w"), fhhb: vec("fhh_b"), spksw: mat("spks_w"), spksb: vec("spks_b"),
+    projw: mat("encoder_proj_w"),
+    projb: vec("encoder_proj_b"),
+    fhhw: mat("fhh_w"),
+    fhhb: vec("fhh_b"),
+    spksw: mat("spks_w"),
+    spksb: vec("spks_b"),
     layers,
   };
 }
@@ -39,10 +64,12 @@ export async function sortformerHead(ctx, head, framesGpu, Tsub) {
   let x = ctx.matmul(framesGpu, head.projw, { bias: head.projb }); // [Tsub,192]
   for (const w of head.layers) {
     // POST-LN block: sub-layers read x directly (no pre-LN); LN applied to residual+sublayer.
-    const q = ctx.matmul(x, w.qw, { bias: w.qb }), k = ctx.matmul(x, w.kw, { bias: w.kb }), v = ctx.matmul(x, w.vw, { bias: w.vb });
+    const q = ctx.matmul(x, w.qw, { bias: w.qb }),
+      k = ctx.matmul(x, w.kw, { bias: w.kb }),
+      v = ctx.matmul(x, w.vw, { bias: w.vb });
     // batched over all heads (tiled bmm kernels; scale folded into qw)
     const probs = ctx.softmax(ctx.bmmQK(q, k, null, NH, HD)); // [NH*T, T]
-    const outc = ctx.bmmPV(probs, v, NH, HD);                  // [T, NH*HD]
+    const outc = ctx.bmmPV(probs, v, NH, HD); // [T, NH*HD]
     x = ln(ctx.add(x, ctx.matmul(outc, w.ow, { bias: w.ob })), w.ln1);
     const ffn = ctx.matmul(ctx.matmul(x, w.dinw, { bias: w.dinb, act: "relu" }), w.doutw, { bias: w.doutb });
     x = ln(ctx.add(x, ffn), w.ln2);
@@ -62,7 +89,10 @@ export function predsToSegments(preds, frames, frameSec, { threshold = 0.5, minS
     for (let t = 0; t <= frames; t++) {
       const on = t < frames && preds[t * SPK + s] >= threshold;
       if (on && start < 0) start = t;
-      if (!on && start >= 0) { segments.push({ speaker: s, start: start * frameSec, end: t * frameSec }); start = -1; }
+      if (!on && start >= 0) {
+        segments.push({ speaker: s, start: start * frameSec, end: t * frameSec });
+        start = -1;
+      }
     }
   }
   const bySpk = new Map();
@@ -73,7 +103,10 @@ export function predsToSegments(preds, frames, frameSec, { threshold = 0.5, minS
     let cur = null;
     for (const seg of list) {
       if (cur && seg.start - cur.end <= mergeGapSec) cur.end = seg.end;
-      else { if (cur) out.push(cur); cur = { ...seg }; }
+      else {
+        if (cur) out.push(cur);
+        cur = { ...seg };
+      }
     }
     if (cur) out.push(cur);
   }
@@ -87,7 +120,14 @@ export function predsToSegments(preds, frames, frameSec, { threshold = 0.5, minS
 // permutation that best agrees with the previous window on the OVERLAP frames.
 const PERMS4 = (() => {
   const out = [];
-  const rec = (cur, rest) => { if (!rest.length) out.push(cur.slice()); for (let i = 0; i < rest.length; i++) { cur.push(rest[i]); rec(cur, rest.slice(0, i).concat(rest.slice(i + 1))); cur.pop(); } };
+  const rec = (cur, rest) => {
+    if (!rest.length) out.push(cur.slice());
+    for (let i = 0; i < rest.length; i++) {
+      cur.push(rest[i]);
+      rec(cur, rest.slice(0, i).concat(rest.slice(i + 1)));
+      cur.pop();
+    }
+  };
   rec([], [0, 1, 2, 3]);
   return out;
 })();
@@ -112,14 +152,19 @@ export function mergeWindowPreds(windows, ovlFrames) {
       for (const p of PERMS4) {
         let sc = 0;
         for (let t = 0; t < ovl; t++) {
-          const ar = (accFrames - ovl + t) * SPK, br = t * SPK;
+          const ar = (accFrames - ovl + t) * SPK,
+            br = t * SPK;
           for (let k = 0; k < SPK; k++) sc += out[ar + k] * preds[br + p[k]];
         }
-        if (sc > best) { best = sc; perm = p; }
+        if (sc > best) {
+          best = sc;
+          perm = p;
+        }
       }
     }
     for (let t = skip; t < frames; t++) {
-      const dst = (accFrames + t - skip) * SPK, src = t * SPK;
+      const dst = (accFrames + t - skip) * SPK,
+        src = t * SPK;
       for (let k = 0; k < SPK; k++) out[dst + k] = preds[src + perm[k]];
     }
     accFrames += frames - skip;

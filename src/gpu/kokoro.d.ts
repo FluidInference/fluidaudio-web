@@ -6,5 +6,5 @@ export function textEncoding(
   ids: Int32Array | number[],
   albertW: Record<string, GpuTensor | Float32Array | number>,
   beW: GpuTensor,
-  beB: GpuTensor
+  beB: GpuTensor,
 ): GpuTensor;

@@ -14,7 +14,7 @@ export async function getDevice() {
   const adapter = await gpu.requestAdapter();
   if (!adapter) throw new Error("no WebGPU adapter (dawn)");
   const feats = [];
-  for (const f of (process.env.NO_F16 ? ["timestamp-query"] : ["shader-f16", "timestamp-query", "subgroups"])) {
+  for (const f of process.env.NO_F16 ? ["timestamp-query"] : ["shader-f16", "timestamp-query", "subgroups"]) {
     if (adapter.features && adapter.features.has && adapter.features.has(f)) feats.push(f);
   }
   // lift the 256MB default buffer caps to the adapter's real limits (the browser

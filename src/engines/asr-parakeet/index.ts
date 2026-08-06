@@ -39,8 +39,7 @@ export class ParakeetV3Engine implements AsrEngine {
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
     if (this.ctx.device) console.info(`[asr-parakeet] shader-f16: ${this.ctx.hasF16 ? "active" : "ABSENT (fp32 fallback, ~1.5x slower encode)"}`);
-    const json = async (path: string, repo = WEIGHTS_REPO) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
+    const json = async (path: string, repo = WEIGHTS_REPO) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(repo, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("parakeet/encoder-int8.manifest.json");
@@ -74,9 +73,10 @@ export class ParakeetV3Engine implements AsrEngine {
         try {
           // Avoid an extra 72MB copy when the view already spans the whole buffer
           // (structured clone copies per worker regardless).
-          const decBuf = decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
-            ? decBin.buffer
-            : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
+          const decBuf =
+            decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
+              ? decBin.buffer
+              : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
           const workers = await Promise.all(
             Array.from({ length: n }, async () => {
               const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
@@ -90,7 +90,9 @@ export class ParakeetV3Engine implements AsrEngine {
               });
               return {
                 postMessage: (m: any, t?: any[]) => w.postMessage(m, t ?? []),
-                setHandler: (f: (m: any) => void) => { w.onmessage = (e) => f(e.data); },
+                setHandler: (f: (m: any) => void) => {
+                  w.onmessage = (e) => f(e.data);
+                },
                 terminate: () => w.terminate(),
               };
             }),

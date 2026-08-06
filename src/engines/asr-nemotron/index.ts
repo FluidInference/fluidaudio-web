@@ -42,8 +42,7 @@ export class NemotronEngine implements AsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-nemotron] backend: ${b}`) });
-    const json = async (path: string) =>
-      JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
+    const json = async (path: string) => JSON.parse(new TextDecoder().decode(await fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path)));
     const bytes = (path: string) => fetchCached(hfUrl(WEIGHTS_REPO, path), onProgress, path);
 
     const encMan = await json("nemotron/encoder-int8.manifest.json");
@@ -76,7 +75,12 @@ export class NemotronEngine implements AsrEngine {
     const tEnc = now();
 
     const { ids } = nemotronDecode(this.dec, enc, r.Tsub);
-    const text = ids.map((i: number) => this.vocab![i] ?? "").filter((tk: string) => !tk.startsWith("<")).join("").replace(/▁/g, " ").trim();
+    const text = ids
+      .map((i: number) => this.vocab![i] ?? "")
+      .filter((tk: string) => !tk.startsWith("<"))
+      .join("")
+      .replace(/▁/g, " ")
+      .trim();
     const tDec = now();
 
     return {

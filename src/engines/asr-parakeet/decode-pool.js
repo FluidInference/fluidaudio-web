@@ -38,6 +38,8 @@ export function createDecodePool(workers) {
       for (const [, p] of waiting) p.reject(err instanceof Error ? err : new Error(String(err)));
       waiting.clear();
     },
-    terminate() { for (const w of workers) w.terminate(); },
+    terminate() {
+      for (const w of workers) w.terminate();
+    },
   };
 }

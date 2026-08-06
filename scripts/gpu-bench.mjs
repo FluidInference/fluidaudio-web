@@ -13,7 +13,8 @@ const rand = (n) => Float32Array.from({ length: n }, () => (Math.random() * 2 - 
 const done = () => dev.queue.onSubmittedWorkDone();
 
 async function timeGemm(M, K, N, iters) {
-  const a = ctx.upload(rand(M * K), M, K), b = ctx.upload(rand(K * N), K, N);
+  const a = ctx.upload(rand(M * K), M, K),
+    b = ctx.upload(rand(K * N), K, N);
   for (let w = 0; w < 5; w++) ctx.matmul(a, b);
   await done();
   const t0 = performance.now();
@@ -31,17 +32,22 @@ await timeGemm(200, 512, 512, 200);
 // GPU-resident transformer FFN block: y = layernorm(x + W2·gelu(W1·x + b1) + b2)
 // dims: seq tokens × d_model, FFN hidden d_ff. Nothing leaves the GPU until the
 // final download.
-const SEQ = 200, D = 512, DFF = 2048;
+const SEQ = 200,
+  D = 512,
+  DFF = 2048;
 const x = ctx.upload(rand(SEQ * D), SEQ, D);
-const W1 = ctx.upload(rand(D * DFF), D, DFF), b1 = ctx.upload(rand(DFF), 1, DFF);
-const W2 = ctx.upload(rand(DFF * D), DFF, D), b2 = ctx.upload(rand(D), 1, D);
-const g = ctx.upload(new Float32Array(D).fill(1), 1, D), be = ctx.upload(new Float32Array(D).fill(0), 1, D);
+const W1 = ctx.upload(rand(D * DFF), D, DFF),
+  b1 = ctx.upload(rand(DFF), 1, DFF);
+const W2 = ctx.upload(rand(DFF * D), DFF, D),
+  b2 = ctx.upload(rand(D), 1, D);
+const g = ctx.upload(new Float32Array(D).fill(1), 1, D),
+  be = ctx.upload(new Float32Array(D).fill(0), 1, D);
 
 function ffnBlock() {
   const h = ctx.matmul(x, W1, { bias: b1, act: "gelu" }); // [SEQ, DFF]  fused matmul+bias+gelu
-  const o = ctx.matmul(h, W2, { bias: b2 });              // [SEQ, D]
-  const res = ctx.add(o, x);                              // residual
-  return ctx.layernorm(res, g, be);                       // [SEQ, D]
+  const o = ctx.matmul(h, W2, { bias: b2 }); // [SEQ, D]
+  const res = ctx.add(o, x); // residual
+  return ctx.layernorm(res, g, be); // [SEQ, D]
 }
 
 for (let w = 0; w < 5; w++) ffnBlock();
