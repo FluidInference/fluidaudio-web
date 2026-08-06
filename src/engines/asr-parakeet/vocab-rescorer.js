@@ -211,7 +211,7 @@ export function createVocabularyRescorer(vocabulary, opts = {}) {
       // Exact vocab words pass through (already correct — but recase below via span 1 exact match).
       const adjacent = words.slice(i + 1, i + 4);
       const cands = norm ? findCandidates(norm, adjacent) : [];
-      const best = cands.find((c) => c.similarity >= requiredSimilarity(minSimilarity, c.spanLength));
+      const best = cands.find((c) => c.similarity >= requiredSimilarity(threshold(c.term), c.spanLength)); // per-term override honored end-to-end
       if (!best || (best.spanLength === 1 && best.similarity < 1 && exactForms.has(norm))) {
         // No match, or the word is itself a vocab form and the "match" is a
         // DIFFERENT term — leave it alone.
