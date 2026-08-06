@@ -27,14 +27,20 @@ function runEngine(e: any, audio: { samples: Float32Array; sampleRate: number },
   return e.transcribe(audio);
 }
 
-function summarize(out: any): string {
+function summarize(out: any, id: string): string {
   if (out?.samples && out?.sampleRate) return `${(out.samples.length / out.sampleRate).toFixed(2)}s audio`;
   if (Array.isArray(out)) {
-    const speakers = new Set(out.map((s: any) => s.speaker).filter((s: any) => s !== undefined));
-    return speakers.size ? `${speakers.size} speakers, ${out.length} segments` : `${out.length} speech segments`;
+    // Shape alone can't distinguish an EMPTY diarization result from VAD —
+    // key the phrasing on the engine id so a silent-diarization bug doesn't
+    // read like a VAD result in the persisted JSON.
+    if (id.startsWith("diarization")) {
+      const speakers = new Set(out.map((s: any) => s.speaker).filter((s: any) => s !== undefined));
+      return `${speakers.size} speakers, ${out.length} segments`;
+    }
+    return `${out.length} speech segments`;
   }
   const events = out?.events?.length ? ` · ${out.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : "";
-  return `${out?.text || "(empty)"}${events}`;
+  return `${out?.text || (id.startsWith("eou") ? "(no speech)" : "(empty)")}${events}`;
 }
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -79,11 +85,11 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
       engines: [],
     };
 
+    const keep = ($("keepLoaded") as HTMLInputElement)?.checked ?? false;
     for (const c of cases) {
       log(`\n▶ ${c.label} (${c.id})`);
       const rec: any = { id: c.id, label: c.label, kind: c.kind };
       let engine: Engine | null = null;
-      const keep = ($("keepLoaded") as HTMLInputElement)?.checked ?? false;
       try {
         const tLoad = performance.now();
         const cached = keep ? engineCache.get(c.id) : undefined;
@@ -115,7 +121,7 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
           rec.rtfxBasis = "output"; // TTS: audio-seconds GENERATED per wall-second — not comparable to ASR rtfx
         }
         if (out?.metrics) rec.stages = out.metrics; // Parakeet per-stage timings
-        rec.output = summarize(out).slice(0, 200);
+        rec.output = summarize(out, c.id).slice(0, 200);
         rec.ok = true;
         log(`  ✓ load ${rec.loadMs}ms · run ${rec.runMs}ms · RTFx ${rec.rtfx}× · ${rec.output}`);
       } catch (err) {
@@ -128,7 +134,15 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
           // Costs GPU memory per engine — that's why it is not the default.
           engineCache.set(c.id, engine);
         } else {
+          // Evicting a previously-cached engine must dispose it too — deleting
+          // the only reference would leak its GPUDevice + weights.
+          const stale = engineCache.get(c.id);
           engineCache.delete(c.id);
+          try {
+            if (stale && stale !== engine) await stale.dispose();
+          } catch {
+            /* device may already be lost */
+          }
           // Dispose even on failure — a leaked GPUDevice + weights would
           // cascade OOM into the remaining engines' runs.
           try {

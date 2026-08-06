@@ -28,6 +28,8 @@ for (const [id, e] of Object.entries(ENTRIES)) {
   engineSel.appendChild(o);
 }
 
+engineSel.value = "asr-parakeet"; // landing default: the ASR demo, not the first registry entry (VAD)
+
 let engine: Engine | null = null;
 function currentEntry(): EngineEntry {
   return ENTRIES[engineSel.value];
