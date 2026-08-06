@@ -12,6 +12,7 @@
 
 import { fetchCached, hfUrl } from "../../core/modelCache";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types";
+import { loadTextNorm, tnEnglish } from "../../core/textnorm";
 import { EnglishLexicon } from "./lexicon.js";
 import { chineseToZh11 } from "./zh-frontend-v11.js";
 import { loadKokoroBackend } from "./synth-backend.js";
@@ -29,6 +30,7 @@ export class KokoroTtsEngine implements TtsEngine {
   private readonly zh: boolean;
   private backend: Awaited<ReturnType<typeof loadKokoroBackend>> | null = null;
   private lexicon: EnglishLexicon | null = null;
+  private tn: any | null = null;
 
   constructor(opts: KokoroOptions = {}) {
     this.zh = opts.lang === "zh";
@@ -46,6 +48,10 @@ export class KokoroTtsEngine implements TtsEngine {
       // Fail loudly: with the espeak fallback gone, English synthesis is impossible
       // without the lexicon — swallowing this error would brick every synthesize().
       this.lexicon = await EnglishLexicon.load(fetchCached as any);
+      // Text normalization (written → spoken): "$4.50" → "four dollars fifty
+      // cents" BEFORE G2P — numbers/currency aren't in the lexicon, so without
+      // TN they were silently dropped from the audio. Optional (null = pass-through).
+      this.tn = await loadTextNorm();
     }
   }
 
@@ -58,7 +64,7 @@ export class KokoroTtsEngine implements TtsEngine {
     if (this.zh) {
       ({ phonemes, coverage } = chineseToZh11(text));
     } else if (this.lexicon) {
-      ({ phonemes, coverage } = this.lexicon.phonemize(text));
+      ({ phonemes, coverage } = this.lexicon.phonemize(tnEnglish(this.tn, text)));
     }
     if (!phonemes) throw new Error(`Kokoro: no phonemes for input (G2P coverage 0).`);
     // Words the G2P can't cover are omitted from the audio — surface it instead

@@ -14,6 +14,7 @@ import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
 import { transcribeWindowed } from "./pipeline.js";
 import { createDecodePool } from "./decode-pool.js";
+import { loadTextNorm, itn } from "../../core/textnorm";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
 import wasmUrl from "./parakeet-decoder.wasm?url";
@@ -35,6 +36,7 @@ export class ParakeetV3Engine implements AsrEngine {
   private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
   private decodePool: any = null;
+  private itnMod: any | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
@@ -109,6 +111,11 @@ export class ParakeetV3Engine implements AsrEngine {
         }
       }
     }
+    // ITN (spoken → written: "twenty one dollars" → "$21") for transcripts.
+    // Parakeet emits spoken-form English; the wasm normalizer fixes numbers,
+    // currency, dates. English rules — near no-op on other languages. Optional
+    // (null = raw transcript).
+    this.itnMod = await loadTextNorm();
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
@@ -127,7 +134,7 @@ export class ParakeetV3Engine implements AsrEngine {
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
     return {
-      text: this.tokenizer.decode(ids),
+      text: itn(this.itnMod, this.tokenizer.decode(ids)),
       metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
     };
   }
