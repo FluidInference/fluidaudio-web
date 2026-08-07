@@ -172,17 +172,23 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
   const ctx = K.ctx;
   // Whole synth inside one batch: ~970 per-op submits collapse to one submit
   // per stretch between downloads (download() flushes + reopens the batch).
-  return ctx.withBatch(async () => {
-    const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style, speed);
-    // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
-    const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
-    const F0cpu = { data: await ctx.download(F0), rows: 1, cols: F0.cols };
-    const source = sineGen(K, F0cpu, { nsfNoise: zh, randPhase: zh }); // [2T*300]
-    const spec = sourceSpec(source); // [22, ~frames]
-    const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
-    const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
-    return await generator(K, decode3, spec, style.slice(0, 128));
-  });
+  // Whole-synth arena: intermediates recycle after each synthesize call.
+  const arena = ctx.pushArena ? ctx.pushArena() : null;
+  try {
+    return await ctx.withBatch(async () => {
+      const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style, speed);
+      // zh (v1.1) keeps the NSF noise + random init phase; en (v1.0) baked them out.
+      const zh = !K.has("decoder.decoder.generator.stft.istft.stft.inverse_basis");
+      const F0cpu = { data: await ctx.download(F0), rows: 1, cols: F0.cols };
+      const source = sineGen(K, F0cpu, { nsfNoise: zh, randPhase: zh }); // [2T*300]
+      const spec = sourceSpec(source); // [22, ~frames]
+      const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
+      const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
+      return await generator(K, decode3, spec, style.slice(0, 128));
+    });
+  } finally {
+    if (arena) ctx.popArena(arena);
+  }
 }
 
 /**

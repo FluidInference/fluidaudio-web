@@ -37,6 +37,7 @@ export class ParakeetV3Engine implements AsrEngine {
   private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
   private decodePool: any = null;
+  private poolSrc: { wasmBytes: ArrayBuffer; decBin: any; decMan: any } | null = null;
   private itnMod: any | null = null;
   private itnEnabled = false;
   private rescorer: ReturnType<typeof createVocabularyRescorer> | null = null;
@@ -81,57 +82,59 @@ export class ParakeetV3Engine implements AsrEngine {
     this.mel = new ParakeetMel(128);
     this.tokenizer = ParakeetTokenizer.fromVocabText(vocab);
 
-    // Decoder worker pool: windows decode independently, and on machines where
-    // WASM decode dominates the wall (measured: decode 1821ms vs encode 355ms)
-    // parallel workers cut the decode term ~pool-size×. Each worker gets its own
-    // copy of the decoder weights (no SharedArrayBuffer without COOP/COEP).
-    if (typeof Worker !== "undefined") {
-      const n = Math.min(4, Math.max(1, ((navigator as any).hardwareConcurrency || 4) - 2));
-      if (n > 1) {
-        const raw: Worker[] = [];
-        try {
-          // Avoid an extra 72MB copy when the view already spans the whole buffer
-          // (structured clone copies per worker regardless).
-          const decBuf =
-            decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
-              ? decBin.buffer
-              : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
-          const workers = await Promise.all(
-            Array.from({ length: n }, async () => {
-              const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
-              raw.push(w);
-              await initDecodeWorker(
-                (m: any) => w.postMessage(m),
-                (ok: (m: any) => void, err: (e: any) => void) => {
-                  w.onmessage = (e) => ok(e.data);
-                  w.onerror = (e) => err(new Error(e.message || "worker error"));
-                },
-                { wasmBytes, decBuf, man: decMan },
-              );
-              return browserWorkerShim(w);
-            }),
-          );
-          // Post-init transport errors reject all in-flight decodes instead of hanging.
-          const pool = createDecodePool(workers);
-          for (const w of raw) w.onerror = (e) => pool.failAll(new Error(e.message || "decode worker died"));
-          this.decodePool = pool;
-          console.info(`[asr-parakeet] decode pool: ${n} workers`);
-        } catch (e) {
-          for (const w of raw) w.terminate(); // don't leak partially-spawned workers (each holds a weight copy)
-          console.warn("[asr-parakeet] decode pool unavailable, decoding on main thread:", e);
-          this.decodePool = null;
-        }
-      }
-    }
+    // Decoder worker pool is spawned LAZILY on the first multi-window
+    // transcribe (see ensurePool): each worker holds a full copy of the
+    // decoder weights (~72MB) — a 3-second clip should not pay ~290MB of RAM
+    // and 4 worker spawns for a single-window decode.
+    this.poolSrc = { wasmBytes, decBin, decMan };
     // ITN module loaded up front; APPLIED only when setItn(true) (see setItn).
     this.itnMod = await loadTextNorm();
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
+  }
+
+  private async ensurePool(): Promise<void> {
+    if (this.decodePool || !this.poolSrc || typeof Worker === "undefined") return;
+    const { wasmBytes, decBin, decMan } = this.poolSrc;
+    this.poolSrc = null; // one attempt; fall back to main-thread decode on failure
+    const n = Math.min(4, Math.max(1, ((navigator as any).hardwareConcurrency || 4) - 2));
+    if (n <= 1) return;
+    const raw: Worker[] = [];
+    try {
+      const decBuf =
+        decBin.byteOffset === 0 && decBin.byteLength === decBin.buffer.byteLength
+          ? decBin.buffer
+          : decBin.buffer.slice(decBin.byteOffset, decBin.byteOffset + decBin.byteLength);
+      const workers = await Promise.all(
+        Array.from({ length: n }, async () => {
+          const w = new Worker(new URL("./decoder-worker.js", import.meta.url), { type: "module" });
+          raw.push(w);
+          await initDecodeWorker(
+            (m: any) => w.postMessage(m),
+            (ok: (m: any) => void, err: (e: any) => void) => {
+              w.onmessage = (e) => ok(e.data);
+              w.onerror = (e) => err(new Error(e.message || "worker error"));
+            },
+            { wasmBytes, decBuf, man: decMan },
+          );
+          return browserWorkerShim(w);
+        }),
+      );
+      const pool = createDecodePool(workers);
+      for (const w of raw) w.onerror = (e) => pool.failAll(new Error(e.message || "decode worker died"));
+      this.decodePool = pool;
+      console.info(`[asr-parakeet] decode pool: ${n} workers`);
+    } catch (e) {
+      for (const w of raw) w.terminate();
+      console.warn("[asr-parakeet] decode pool unavailable, decoding on main thread:", e);
+      this.decodePool = null;
+    }
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetV3Engine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
+    if (audio.samples.length > 2 * WINDOW_SEC * SAMPLE_RATE) await this.ensurePool(); // multi-window → parallel decode pays
     // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
     // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
     const { ids, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {

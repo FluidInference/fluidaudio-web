@@ -87,8 +87,16 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // internal GPU wait), with the readback's mapAsync already in flight.
   const submit = async (g, mels) => {
     if (!mels.length) return null;
-    const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
-    return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length };
+    // Arena per group: every intermediate the encode allocates returns to the
+    // buffer pool the moment this group's frames land on the CPU.
+    const arena = ctx.pushArena ? ctx.pushArena() : null;
+    try {
+      const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
+      return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length, arena };
+    } catch (e) {
+      if (arena) ctx.popArena(arena);
+      throw e;
+    }
   };
 
   const ids = [];
@@ -147,6 +155,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     }
     const tw = now();
     const frames = await cur.framesP;
+    if (cur.arena) ctx.popArena(cur.arena); // group's GPU work is drained — recycle its buffers
     stats.encWaitMs += now() - tw;
     stats.groups++;
     if (!pipelined) await advance();

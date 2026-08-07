@@ -84,6 +84,13 @@ export class WasmContext {
   withBatchSync(fn) {
     return fn();
   }
+  pushArena() {
+    return null;
+  }
+  popArena() {}
+  pin(t) {
+    return t;
+  }
 
   // ── wasm staging helpers ──────────────────────────────────────────────────
   _f32() {

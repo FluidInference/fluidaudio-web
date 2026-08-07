@@ -283,6 +283,11 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
   // withBatchSync guarantees the batch closes even on a mid-stack throw.
   const staged = ctx.withBatchSync(() => {
     for (let L = 0; L < LAYERS; L++) {
+      // Per-layer arena: a layer's scratch (q/k/v, scores, FF intermediates —
+      // the bulk of transient GPU memory) recycles into layer L+2's recording.
+      // Same-submit reuse is ordered (earlier ops read before later ops write);
+      // only the residual stream x crosses layers → pinned to the group arena.
+      const layerArena = ctx.pushArena ? ctx.pushArena() : null;
       const w = enc.layers[L];
       x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
       const xln = ln(x, w.lnatt);
@@ -300,6 +305,7 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
         p = enc._posProj.get(pKey);
         if (!p) {
           p = ctx.matmul(peT, w.pos);
+          if (ctx.pin) ctx.pin(p); // cached across groups — exempt from the group arena
           enc._posProj.set(pKey, p);
         }
       } else {
@@ -339,6 +345,10 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
       x = ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b, add: x });
       x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
       x = ln(x, w.lnout);
+      if (layerArena) {
+        ctx.pin(x, true); // x feeds the next layer — promote to the group arena
+        ctx.popArena(layerArena);
+      }
     }
     return post ? post(x) : null;
   });
