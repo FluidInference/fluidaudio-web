@@ -78,6 +78,7 @@ export async function loadKokoroBackend(
   };
 
   return {
+    ctx, // exposed so the engine can destroy the GPUDevice on dispose
     backend: ctx.backend ?? "webgpu",
     /** phonemes (IPA string) → 24 kHz Float32Array. */
     async synthFromPhonemes(phonemes, voice = "af_heart", speed = 1) {

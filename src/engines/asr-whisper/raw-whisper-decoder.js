@@ -137,9 +137,12 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
     return ctx.stageDownload ? ctx.stageDownload(logits) : { read: async () => ctx.download(logits) };
   });
-  const full = await staged.read();
-  if (arena) ctx.popArena(arena); // step drained — recycle its buffers
-  return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
+  try {
+    const full = await staged.read();
+    return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
+  } finally {
+    if (arena) ctx.popArena(arena); // recycle even if the readback rejects
+  }
 }
 
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */

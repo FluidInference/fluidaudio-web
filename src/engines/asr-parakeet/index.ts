@@ -157,6 +157,7 @@ export class ParakeetV3Engine implements AsrEngine {
   }
 
   async dispose(): Promise<void> {
+    this.poolSrc = null; // release retained decoder bytes (~72MB) if the pool never spawned
     this.decodePool?.terminate?.();
     this.decodePool = null;
     this.ctx?.device?.destroy?.();

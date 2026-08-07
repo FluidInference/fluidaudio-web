@@ -188,6 +188,7 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
     });
   } finally {
     if (arena) ctx.popArena(arena);
+    ctx.trimPool?.(); // wav is on the CPU — queue drained, safe to evict
   }
 }
 

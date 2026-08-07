@@ -88,6 +88,7 @@ export class WasmContext {
     return null;
   }
   popArena() {}
+  trimPool() {}
   pin(t) {
     return t;
   }

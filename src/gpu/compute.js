@@ -1740,6 +1740,7 @@ export class GpuContext {
     const key = `${size}|${usage}`;
     const list = this._pool.get(key);
     if (list && list.length) {
+      this._pooledBytes -= size;
       this._memStats && (this._memStats.reused += 1);
       return list.pop();
     }
@@ -1750,11 +1751,44 @@ export class GpuContext {
     return this.device.createBuffer({ size, usage });
   }
   _poolPut(buf, size, usage) {
+    // NEVER destroy here: a popped arena's buffers may still be referenced by
+    // recorded-but-unsubmitted command buffers (per-layer arenas pop while the
+    // batch is still recording) — destroying one drops the whole submit with
+    // an async validation error. Eviction happens in trimPool(), which engines
+    // call at known-drained points (after the run's final readback).
+    this._pooledBytes = (this._pooledBytes || 0) + size;
     this._pool = this._pool || new Map();
     const key = `${size}|${usage}`;
     let list = this._pool.get(key);
     if (!list) this._pool.set(key, (list = []));
     list.push(buf);
+  }
+  /** Destroy pooled buffers down to the byte budget. Call ONLY when this
+   * context's GPU work is drained (end of a transcribe/synth, after the final
+   * readback resolved) — pooled buffers are unreferenced by definition then.
+   * Default budget 1GiB — measured knee: below it eviction hits the hot large
+   * buffers and warm runs churn hundreds of MB of re-creation; above it is
+   * pure idle retention. Consumers can lower ctx.poolBudgetBytes on
+   * memory-constrained targets (cost is re-creation time, not correctness). */
+  trimPool(budgetBytes) {
+    const budget = budgetBytes ?? this.poolBudgetBytes ?? 1 << 30;
+    if (!this._pool || (this._pooledBytes || 0) <= budget) return;
+    // Evict largest size-classes first (fewest destroys to get under budget).
+    const keys = [...this._pool.keys()].sort((a, b) => Number(b.split("|")[0]) - Number(a.split("|")[0]));
+    for (const key of keys) {
+      if (this._pooledBytes <= budget) break;
+      const size = Number(key.split("|")[0]);
+      const list = this._pool.get(key);
+      while (list.length && this._pooledBytes > budget) {
+        list.pop().destroy();
+        this._pooledBytes -= size;
+      }
+      if (!list.length) this._pool.delete(key);
+    }
+  }
+  /** Pool occupancy (for gates/telemetry). */
+  poolInfo() {
+    return { bytes: this._pooledBytes || 0 };
   }
   /** Open an allocation scope; allocs land in the NEWEST open scope. Returns a
    * handle — scopes may close out of order (the pipelined engines interleave
@@ -1772,7 +1806,9 @@ export class GpuContext {
     const i = this._arenas.indexOf(arena);
     if (i < 0) return;
     this._arenas.splice(i, 1);
-    for (const e of arena) if (!e.pinned) this._poolPut(e.buf, e.size, e.usage);
+    // Invariant: each live buf appears in at most one arena entry (alloc pushes
+    // once; pin() SPLICES entries out rather than marking them).
+    for (const e of arena) this._poolPut(e.buf, e.size, e.usage);
   }
   /** Exempt a tensor from its arena. Default: persistent (never pooled — for
    * caches). toParent: move it to the ENCLOSING arena instead (for tensors
@@ -1801,9 +1837,19 @@ export class GpuContext {
   }
 
   _allocRaw(size, usage) {
-    const buf = this._poolGet(size, usage);
     const top = this._arenas && this._arenas.length ? this._arenas[this._arenas.length - 1] : null;
-    if (top) top.push({ buf, size, usage });
+    // No open arena → legacy persistent alloc. It must NOT draw from the pool:
+    // it would never return the buffer (one-way drain — a no-arena caller like
+    // the sortformer head would steal the encoder's pooled scratch for good).
+    if (!top) {
+      if (this._memStats) {
+        this._memStats.created += 1;
+        this._memStats.createdBytes += size;
+      }
+      return this.device.createBuffer({ size, usage });
+    }
+    const buf = this._poolGet(size, usage);
+    top.push({ buf, size, usage });
     return buf;
   }
 

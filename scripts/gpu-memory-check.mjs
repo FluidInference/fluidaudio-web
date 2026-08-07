@@ -41,7 +41,13 @@ console.log(`tokens: ${r1.ids.length} vs ${r2.ids.length} → ${same ? "IDENTICA
 console.log(`cold: created ${cold.created} buffers (${(cold.createdBytes / 1e6).toFixed(0)} MB), reused ${cold.reused}`);
 console.log(`warm: created ${warm.created} buffers (${(warm.createdBytes / 1e6).toFixed(0)} MB), reused ${warm.reused}`);
 const coldRecycleOk = cold.reused > cold.created; // in-run group recycling
-const warmOk = warm.created < cold.created / 5; // cross-run pool reuse
+// Warm churn = re-creating what the budget evicted; assert it stays a
+// fraction of cold (the pool still serves the hot majority).
+const warmOk = warm.createdBytes < cold.createdBytes / 3;
+const pool = ctx.poolInfo();
+const budget = ctx.poolBudgetBytes ?? 1 << 30;
+const budgetOk = pool.bytes <= budget;
 console.log(`in-run recycling (cold reused > created): ${coldRecycleOk ? "OK" : "FAIL"}`);
-console.log(`cross-run reuse (warm created < cold/5): ${warmOk ? "OK" : "FAIL"}`);
-process.exit(same && coldRecycleOk && warmOk ? 0 : 1);
+console.log(`warm churn bytes < cold/3: ${warmOk ? "OK" : "FAIL"}`);
+console.log(`pool retention ${(pool.bytes / 1e6).toFixed(0)} MB ≤ budget ${(budget / 1e6).toFixed(0)} MB: ${budgetOk ? "OK" : "FAIL"}`);
+process.exit(same && coldRecycleOk && warmOk && budgetOk ? 0 : 1);

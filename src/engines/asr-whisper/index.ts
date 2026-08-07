@@ -87,6 +87,7 @@ export class WhisperEngine implements AsrEngine {
       tokens.push(maxId);
       logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);
     }
+    (this.ctx as any).trimPool?.(); // last step's logits are on the CPU — drained, evict to budget
     const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
     return { text, metrics: { melMs: +(tMel - t0).toFixed(0), encodeMs: 0, decodeMs: +(now() - tMel).toFixed(0), totalMs: +(now() - t0).toFixed(0) } };
   }
