@@ -81,7 +81,11 @@ export class KokoroTtsEngine implements TtsEngine {
   }
 
   async dispose(): Promise<void> {
+    // Destroy the GPUDevice: the buffer pool retains the synth working set on
+    // an idle engine — disposal must release GPU memory deterministically.
+    (this.backend as any)?.ctx?.device?.destroy?.();
     this.backend = null;
     this.lexicon = null;
+    this.tn = null;
   }
 }

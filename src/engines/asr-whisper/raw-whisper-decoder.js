@@ -68,9 +68,18 @@ export function loadWhisperDecoder(ctx, bin, man) {
   return { layers, embed, embedT, pos: g("pos").slice(), lnf: [vec("lnf_w"), vec("lnf_b")] };
 }
 
-/** Precompute per-layer cross-attn K/V from the encoder output (once per clip). */
+/** Precompute per-layer cross-attn K/V from the encoder output (once per clip).
+ * Pinned: they outlive any arena the caller has open (used by every step). */
 export function whisperCrossKV(ctx, dec, encGpu) {
-  return dec.layers.map((w) => ({ k: ctx.matmul(encGpu, w.ckw), v: ctx.matmul(encGpu, w.cvw, { bias: w.cvb }) }));
+  return dec.layers.map((w) => {
+    const k = ctx.matmul(encGpu, w.ckw);
+    const v = ctx.matmul(encGpu, w.cvw, { bias: w.cvb });
+    if (ctx.pin) {
+      ctx.pin(k);
+      ctx.pin(v);
+    }
+    return { k, v };
+  });
 }
 
 /**
@@ -80,11 +89,12 @@ export function whisperCrossKV(ctx, dec, encGpu) {
  * constant; cached is O(1) per step).
  */
 export function whisperDecodeInit(ctx, dec, maxLen = 448) {
+  const pinned = (t) => (ctx.pin ? ctx.pin(t) : t); // caches live across all steps
   return {
     n: 0,
     maxLen,
-    selfK: dec.layers.map(() => ctx.alloc(maxLen, D)),
-    selfV: dec.layers.map(() => ctx.alloc(maxLen, D)),
+    selfK: dec.layers.map(() => pinned(ctx.alloc(maxLen, D))),
+    selfV: dec.layers.map(() => pinned(ctx.alloc(maxLen, D))),
   };
 }
 
@@ -98,6 +108,8 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
   const emb = new Float32Array(D);
   for (let d = 0; d < D; d++) emb[d] = dec.embed[token * D + d] + dec.pos[n * D + d];
   let x = ctx.upload(emb, 1, D);
+  // Arena per step: the ~50 intermediates recycle once the logits land.
+  const arena = ctx.pushArena ? ctx.pushArena() : null;
   // One submit for the whole step; the staging copy rides it (one submit +
   // one map per token). The batch is closed by withBatchSync before read().
   const staged = ctx.withBatchSync(() => {
@@ -125,8 +137,12 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
     return ctx.stageDownload ? ctx.stageDownload(logits) : { read: async () => ctx.download(logits) };
   });
-  const full = await staged.read();
-  return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
+  try {
+    const full = await staged.read();
+    return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
+  } finally {
+    if (arena) ctx.popArena(arena); // recycle even if the readback rejects
+  }
 }
 
 /** One decoder forward over tokens[]; returns Float32Array logits for the LAST position. */

@@ -281,66 +281,82 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
   // into a single compute pass; per-op submits dominate otherwise). The post
   // hook (joint projection + staging copy) rides the same submit, and
   // withBatchSync guarantees the batch closes even on a mid-stack throw.
+  let layerArena = null;
   const staged = ctx.withBatchSync(() => {
-    for (let L = 0; L < LAYERS; L++) {
-      const w = enc.layers[L];
-      x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
-      const xln = ln(x, w.lnatt);
-      const q = ctx.matmul(xln, w.q, { bias: w.qb }),
-        k = ctx.matmul(xln, w.k, { bias: w.kb }),
-        v = ctx.matmul(xln, w.v, { bias: w.vb });
-      // pos-emb projection is constant per (layer, Tsub) — cache across window
-      // groups (was recomputed 24×/group: ~2.5ms/win on long files). Only batched
-      // (W>1) full-window Tsubs are cached: W==1 covers tails, whose Tsub varies
-      // per file and would grow the cache without bound on long-lived engines.
-      let p;
-      if (W > 1) {
-        enc._posProj = enc._posProj || new Map();
-        const pKey = `${L}|${Tsub}`;
-        p = enc._posProj.get(pKey);
-        if (!p) {
+    try {
+      for (let L = 0; L < LAYERS; L++) {
+        // Per-layer arena: a layer's scratch (q/k/v, scores, FF intermediates —
+        // the bulk of transient GPU memory) recycles into layer L+2's recording.
+        // Same-submit reuse is ordered (earlier ops read before later ops write);
+        // only the residual stream x crosses layers → pinned to the group arena.
+        layerArena = ctx.pushArena ? ctx.pushArena() : null;
+        const w = enc.layers[L];
+        x = ff(x, w.lnff1, w.ff1w1, w.ff1w2, w.ff1b1, w.ff1b2);
+        const xln = ln(x, w.lnatt);
+        const q = ctx.matmul(xln, w.q, { bias: w.qb }),
+          k = ctx.matmul(xln, w.k, { bias: w.kb }),
+          v = ctx.matmul(xln, w.v, { bias: w.vb });
+        // pos-emb projection is constant per (layer, Tsub) — cache across window
+        // groups (was recomputed 24×/group: ~2.5ms/win on long files). Only batched
+        // (W>1) full-window Tsubs are cached: W==1 covers tails, whose Tsub varies
+        // per file and would grow the cache without bound on long-lived engines.
+        let p;
+        if (W > 1) {
+          enc._posProj = enc._posProj || new Map();
+          const pKey = `${L}|${Tsub}`;
+          p = enc._posProj.get(pKey);
+          if (!p) {
+            p = ctx.matmul(peT, w.pos);
+            if (ctx.pin) ctx.pin(p); // cached across groups — exempt from the group arena
+            enc._posProj.set(pKey, p);
+          }
+        } else {
           p = ctx.matmul(peT, w.pos);
-          enc._posProj.set(pKey, p);
         }
-      } else {
-        p = ctx.matmul(peT, w.pos);
-      }
-      // Batched over windows × heads (pos-emb rows shared across windows).
-      const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
-      const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
-      let sc = ctx.add(ac, bd);
-      if (maskT) sc = ctx.add(sc, maskT);
-      const probs = ctx.softmax(sc); // rows = W*H*T
-      const outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
-      x = ctx.matmul(outc, w.out, { bias: w.outb, add: x });
-      // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
-      // B side (f16 path, fused bias) — shape-valid for any window length.
-      const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [W*T, 2D]
-      const glu = ctx.glu(ctx.transpose(pre1)); // [D, W*T]
-      // Depthwise conv is over TIME → per-window (a batched run would leak across
-      // window seams). Pointwise convs (k=1) and channel ops act per-timestep.
-      const dwConv = (input, opts) => {
-        if (W === 1) return ctx.conv1d(input, w.dw, opts);
-        const out2 = ctx.alloc(D, W * Tsub);
-        for (let wi = 0; wi < W; wi++) {
-          ctx.setCols(out2, ctx.conv1d(ctx.sliceCols(input, wi * Tsub, Tsub), w.dw, opts), wi * Tsub);
+        // Batched over windows × heads (pos-emb rows shared across windows).
+        const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
+        const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
+        let sc = ctx.add(ac, bd);
+        if (maskT) sc = ctx.add(sc, maskT);
+        const probs = ctx.softmax(sc); // rows = W*H*T
+        const outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
+        x = ctx.matmul(outc, w.out, { bias: w.outb, add: x });
+        // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
+        // B side (f16 path, fused bias) — shape-valid for any window length.
+        const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [W*T, 2D]
+        const glu = ctx.glu(ctx.transpose(pre1)); // [D, W*T]
+        // Depthwise conv is over TIME → per-window (a batched run would leak across
+        // window seams). Pointwise convs (k=1) and channel ops act per-timestep.
+        const dwConv = (input, opts) => {
+          if (W === 1) return ctx.conv1d(input, w.dw, opts);
+          const out2 = ctx.alloc(D, W * Tsub);
+          for (let wi = 0; wi < W; wi++) {
+            ctx.setCols(out2, ctx.conv1d(ctx.sliceCols(input, wi * Tsub, Tsub), w.dw, opts), wi * Tsub);
+          }
+          return out2;
+        };
+        let dwo;
+        if (w.bn) {
+          // EOU: depthwise (no act) → LayerNorm over channels → SiLU. [D,T]→[T,D]→LN→[D,T]
+          const d = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb });
+          dwo = ctx.transpose(ctx.silu(ln(ctx.transpose(d), w.bn)));
+        } else {
+          // Parakeet: BatchNorm folded into depthwise, SiLU fused.
+          dwo = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
         }
-        return out2;
-      };
-      let dwo;
-      if (w.bn) {
-        // EOU: depthwise (no act) → LayerNorm over channels → SiLU. [D,T]→[T,D]→LN→[D,T]
-        const d = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb });
-        dwo = ctx.transpose(ctx.silu(ln(ctx.transpose(d), w.bn)));
-      } else {
-        // Parakeet: BatchNorm folded into depthwise, SiLU fused.
-        dwo = dwConv(glu, { cout: D, k: dwK, groups: D, padLeft: dwPadL, padRight: dwPadR, bias: w.dwb, act: "silu" });
+        x = ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b, add: x });
+        x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
+        x = ln(x, w.lnout);
+        if (layerArena) {
+          ctx.pin(x, true); // x feeds the next layer — promote to the group arena
+          ctx.popArena(layerArena);
+          layerArena = null;
+        }
       }
-      x = ctx.matmul(ctx.transpose(dwo), w.pw2T, { bias: w.pw2b, add: x });
-      x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
-      x = ln(x, w.lnout);
+      return post ? post(x) : null;
+    } finally {
+      if (layerArena) ctx.popArena(layerArena); // a mid-layer throw must not orphan the scope
     }
-    return post ? post(x) : null;
   });
   const out = { dims: [1, D, W * Tsub], framesGpu: x, Tsub, W, D, staged };
   if (wantData) out.data = await ctx.download(ctx.transpose(x));
