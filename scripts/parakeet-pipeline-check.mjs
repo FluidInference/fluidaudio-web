@@ -29,6 +29,14 @@ const projW = ctx.upload(g("encW").slice(), 1024, 640);
 const projB = ctx.upload(g("encB").slice(), 1, 640);
 const mel = new ParakeetMel(128);
 
+// Optional GPU decoder (GPUDEC=1): whole TDT loop on the GPU, no frame readback.
+let gpuDecoder = null;
+if (process.env.GPUDEC) {
+  const { loadGpuDecoder, gpuDecodeBatch } = await import("../src/engines/asr-parakeet/gpu-decoder.js");
+  gpuDecoder = { gdec: loadGpuDecoder(ctx, decF32, decMan), gpuDecodeBatch };
+  console.log("gpu decoder: on");
+}
+
 // Optional decoder worker pool (same worker file the browser uses), node adapter.
 let pool = null;
 const POOL = Number(process.env.POOL || 0);
@@ -61,6 +69,7 @@ const run = async (pipelined, usePool = true) => {
     pipelined,
     wb: Number(process.env.WB || 6),
     decodePool: usePool ? pool : null,
+    gpuDecoder,
   });
   return { ids, stats, ms: performance.now() - t };
 };

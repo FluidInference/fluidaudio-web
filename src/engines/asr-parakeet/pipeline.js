@@ -31,7 +31,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // decodePool (decode-pool.js): windows decode in parallel on worker threads;
   // browsers where decode dominates the wall (encode 355ms vs decode 1821ms on
   // one measured machine) gain ~pool-size× on the decode term.
-  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null } = opts;
+  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null, gpuDecoder = null } = opts;
   const winSamples = windowSec * sampleRate;
   const overlapSamples = overlapSec * sampleRate;
   const hop = winSamples - overlapSamples;
@@ -80,6 +80,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // inside the encoder's batch. WASM backend has no stageDownload — plain download.
   const post = (x) => {
     const proj = ctx.matmul(x, projW, { bias: projB });
+    if (gpuDecoder) return { proj }; // GPU decode: no readback at all
     return ctx.stageDownload ? ctx.stageDownload(proj) : { read: async () => ctx.download(proj) };
   };
 
@@ -95,6 +96,12 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     if (arena) openArenas.add(arena);
     try {
       const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
+      if (gpuDecoder) {
+        // Decode on the GPU immediately (same queue, after the encode): all of
+        // this group's windows in one dispatch; only tokens come back.
+        const { gpuDecodeBatch } = gpuDecoder;
+        return { decP: gpuDecodeBatch(ctx, gpuDecoder.gdec, r.staged.proj, mels.length, r.Tsub), Tsub: r.Tsub, n: mels.length, arena };
+      }
       return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length, arena };
     } catch (e) {
       if (arena) {
@@ -161,6 +168,25 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
         continue;
       }
       const tw = now();
+      if (cur.decP) {
+        // GPU decoder path: tokens arrive directly; frames never left the GPU.
+        const perWindow = await cur.decP;
+        if (cur.arena) {
+          openArenas.delete(cur.arena);
+          ctx.popArena(cur.arena);
+        }
+        stats.encWaitMs += now() - tw;
+        stats.groups++;
+        if (!pipelined) await advance();
+        const td = now();
+        for (let wi = 0; wi < cur.n; wi++, w++) {
+          const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
+          stitch(w, sliceLen, cur.Tsub, perWindow[wi].ids, perWindow[wi].idFrames);
+        }
+        stats.decodeMs += now() - td;
+        stats.windows += cur.n;
+        continue;
+      }
       const frames = await cur.framesP;
       if (cur.arena) {
         openArenas.delete(cur.arena);

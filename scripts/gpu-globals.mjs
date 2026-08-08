@@ -23,5 +23,6 @@ export async function getDevice() {
   const requiredLimits = {};
   if (lim.maxBufferSize) requiredLimits.maxBufferSize = lim.maxBufferSize;
   if (lim.maxStorageBufferBindingSize) requiredLimits.maxStorageBufferBindingSize = lim.maxStorageBufferBindingSize;
+  if (lim.maxComputeWorkgroupStorageSize) requiredLimits.maxComputeWorkgroupStorageSize = lim.maxComputeWorkgroupStorageSize;
   return adapter.requestDevice({ requiredFeatures: feats, requiredLimits });
 }
