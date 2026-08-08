@@ -59,11 +59,12 @@ export class ParakeetV3Engine implements AsrEngine {
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-parakeet] backend: ${b}`) });
     if (this.ctx.device) console.info(`[asr-parakeet] shader-f16: ${this.ctx.hasF16 ? "active" : "ABSENT (fp32 fallback, ~1.5x slower encode)"}`);
-    if (this.ctx.device && typeof navigator !== "undefined" && navigator.gpu) {
+    const gpu = typeof navigator !== "undefined" ? (navigator as { gpu?: { requestAdapter(): Promise<{ features: Set<string> } | null> } }).gpu : undefined;
+    if (this.ctx.device && gpu) {
       // Capability report for the next optimization tier: cooperative-matrix
       // GEMM needs subgroup-matrix support. Probe the ADAPTER — the device
       // only carries features requested at creation.
-      const a = await navigator.gpu.requestAdapter();
+      const a = await gpu.requestAdapter();
       const has = (k: string) => (a?.features.has(k) ? "yes" : "no");
       console.info(`[asr-parakeet] adapter subgroups: ${has("subgroups")} · subgroup-matrix: ${has("chromium-experimental-subgroup-matrix")}`);
     }
