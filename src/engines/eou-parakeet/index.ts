@@ -42,7 +42,15 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   private dec: any = null;
   private mel: JsPreprocessor | null = null;
   private tokenizer: ReturnType<typeof makeEouTokenizer> | null = null;
-  private stream: { mel: StreamingMel; encSt: any; decSt: any; ids: number[]; events: { type: string; time: number }[]; subT: number } | null = null;
+  private stream: {
+    mel: StreamingMel;
+    encSt: any;
+    decSt: any;
+    ids: number[];
+    events: { type: string; time: number }[];
+    subT: number;
+    finished: boolean;
+  } | null = null;
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[eou-parakeet] backend: ${b}`) });
@@ -118,6 +126,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   /** Feed 16 kHz samples; returns the text emitted so far (plus buffered state). */
   async push(chunk: Float32Array): Promise<string> {
     if (!this.enc || !this.dec || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
+    if (this.stream?.finished) throw new Error("finish() already called — reset() to start a new stream");
     if (!this.stream) {
       this.stream = {
         mel: new StreamingMel(128),
@@ -126,6 +135,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
         ids: [],
         events: [],
         subT: 0,
+        finished: false,
       };
     }
     const s = this.stream;
@@ -141,8 +151,13 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   async finish(): Promise<string> {
     if (!this.stream || !this.tokenizer) return "";
     const s = this.stream;
+    if (s.finished) return this.tokenizer.decode(s.ids);
+    s.finished = true;
     const { data, count } = s.mel.flush();
-    if (data && count > 0) await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
+    if (data && count > 0) {
+      const out = await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
+      if (out) this.consume(out);
+    }
     const tail = await encodeStreamFlush(this.ctx, s.encSt);
     if (tail) this.consume(tail);
     return this.tokenizer.decode(s.ids);

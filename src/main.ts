@@ -139,8 +139,9 @@ async function liveTick() {
     const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
     if (isStreaming(engine)) {
       const { samples, total } = mic.since(livePos);
-      livePos = total;
       const text = await engine.push(samples);
+      livePos = total; // only after push resolves — a failed push must not skip audio
+      mic.dropBefore(livePos); // streaming never re-reads history; keep hours-long sessions bounded
       const ev = engine.streamEvents ?? [];
       output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
     } else {
@@ -172,9 +173,16 @@ async function startLive() {
   liveTimer = setInterval(() => void liveTick(), 1500);
 }
 
+let stopping = false;
+
 async function stopLive() {
+  if (stopping) return;
+  stopping = true;
   if (liveTimer) clearInterval(liveTimer);
   liveTimer = null;
+  // An in-flight tick may be mid-push: pushing/finishing/resetting concurrently
+  // would interleave on the same encoder caches. Let it settle first.
+  while (liveBusy) await new Promise((r) => setTimeout(r, 25));
   await mic.stop();
   micBtn.textContent = "🎤 Live";
   runBtn.disabled = false;
@@ -205,6 +213,7 @@ async function stopLive() {
       output.textContent = String(err);
     }
   }
+  stopping = false;
 }
 
 micBtn.addEventListener("click", () => {

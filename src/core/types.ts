@@ -64,8 +64,9 @@ export interface AsrEngine extends Engine {
 export interface StreamingAsrEngine extends Engine {
   /** Feed one chunk (engine-defined frame size). Returns text emitted so far. */
   push(chunk: Float32Array): Promise<string>;
-  /** Flush the tail (right-padded final frames) and return the final text. */
-  finish?(): Promise<string>;
+  /** Flush the tail (right-padded final frames) and return the final text.
+   * After finish(), push() throws until reset(). */
+  finish(): Promise<string>;
   /** Clears decoder + encoder caches for a new utterance. */
   reset(): void;
 }

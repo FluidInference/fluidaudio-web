@@ -57,6 +57,7 @@ export function createEncodeStream(ctx, enc) {
     // pos-emb projection per layer is constant for the life of the stream.
     posP: enc.layers.map((w) => ctx.matmul(pe, w.pos)),
     zeroCC: ctx.upload(new Float32Array(D * (dwK - 1)), D, dwK - 1),
+    flushed: false,
     disposed: false,
   };
 }
@@ -65,6 +66,7 @@ export function createEncodeStream(ctx, enc) {
  * many chunk passes as the FIFO allows; returns Float32Array [nNew, D] of new
  * encoder frames (row-major), or null. maxChunk bounds per-pass latency. */
 export async function encodeStreamPush(ctx, st, mel, count, { maxChunk = 64 } = {}) {
+  if (st.flushed) throw new Error("encodeStreamPush: stream already flushed — create a new stream");
   const { melBins } = st.enc.cfg;
   if (count > 0) {
     const old = st.fifo;
@@ -96,6 +98,8 @@ export async function encodeStreamPush(ctx, st, mel, count, { maxChunk = 64 } = 
 /** Encode the final partial chunk with the offline bottom pad (signal end).
  * Call once; the stream only accepts dispose() afterwards. */
 export async function encodeStreamFlush(ctx, st) {
+  if (st.flushed) throw new Error("encodeStreamFlush: stream already flushed");
+  st.flushed = true;
   const { melBins } = st.enc.cfg;
   const M = st.fifo.length / melBins;
   // Remaining output length = what the offline conv stack yields for the tail
@@ -157,11 +161,12 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
   const arena = ctx.pushArena ? ctx.pushArena() : null;
   const swaps = []; // [slot, layer, newTensor] applied after the batch closes
   let frames = null;
+  let melUp = null; // upload() is pool-exempt — return it explicitly below
   try {
     ctx.withBatchSync(() => {
       // Subsampling with continuation pads: time pads only at stream edges
       // (padTop first chunk, padBottom at flush); freq pads always.
-      let s = ctx.upload(melSlice.slice(0, m * melBins), 1, m * melBins);
+      let s = (melUp = ctx.upload(melSlice.slice(0, m * melBins), 1, m * melBins));
       let Hh = m,
         Wd = melBins;
       const conv = [
@@ -253,7 +258,8 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
   } finally {
     if (arena) ctx.popArena(arena);
   }
-  // Batch closed: swap caches, pool the replaced generation.
+  // Batch closed: pool the mel upload, swap caches, pool the replaced generation.
+  if (melUp) ctx.freeTensor(melUp);
   for (const [slot, L, t] of swaps) {
     const old = st[slot][L];
     if (old) ctx.freeTensor(old);
