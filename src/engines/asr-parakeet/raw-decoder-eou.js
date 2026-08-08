@@ -95,25 +95,27 @@ function joint(dec, encFrame, decOut, out) {
   }
 }
 
+/** Fresh decode state for streaming continuation (eouDecodeCont). */
+export function createEouStream(dec) {
+  return { pred: predict(dec, BLANK, new Float32Array(HID), new Float32Array(HID)) };
+}
+
 /**
- * RNNT greedy over frames[Tenc*512] (row-major, frames[t*512+d]). Returns
- * { ids, idFrames, events } — ids = text tokens (<1024), events = {type:'eou'|'eob', frame}.
+ * RNNT greedy over frames[Tenc*512], CONTINUING from `st` (LSTM state + last
+ * emission persist across calls — a chunk boundary is invisible to the
+ * decoder). frame indices in the result are offset by `frameOffset`.
  */
-export function eouDecode(dec, frames, Tenc, maxSymbols = 10) {
+export function eouDecodeCont(dec, st, frames, Tenc, frameOffset = 0, maxSymbols = 10) {
   const ids = [],
     idFrames = [],
     events = [];
-  let h = new Float32Array(HID),
-    c = new Float32Array(HID),
-    lastTok = BLANK;
-  let pred = predict(dec, lastTok, h, c);
   const enc = new Float32Array(ENC_D);
   const out = new Float32Array(LOGITS);
   let t = 0,
     emitted = 0;
   while (t < Tenc) {
     enc.set(frames.subarray(t * ENC_D, t * ENC_D + ENC_D));
-    joint(dec, enc, pred.decOut, out);
+    joint(dec, enc, st.pred.decOut, out);
     let maxId = 0,
       maxV = -Infinity;
     for (let i = 0; i < LOGITS; i++)
@@ -127,14 +129,21 @@ export function eouDecode(dec, frames, Tenc, maxSymbols = 10) {
       continue;
     }
     // non-blank emission
-    if (maxId === EOU || maxId === EOB) events.push({ type: maxId === EOU ? "eou" : "eob", frame: t });
+    if (maxId === EOU || maxId === EOB) events.push({ type: maxId === EOU ? "eou" : "eob", frame: frameOffset + t });
     else {
       ids.push(maxId);
-      idFrames.push(t);
+      idFrames.push(frameOffset + t);
     }
-    lastTok = maxId;
-    pred = predict(dec, lastTok, pred.h, pred.c);
+    st.pred = predict(dec, maxId, st.pred.h, st.pred.c);
     emitted++;
   }
   return { ids, idFrames, events };
+}
+
+/**
+ * RNNT greedy over frames[Tenc*512] (row-major, frames[t*512+d]). Returns
+ * { ids, idFrames, events } — ids = text tokens (<1024), events = {type:'eou'|'eob', frame}.
+ */
+export function eouDecode(dec, frames, Tenc, maxSymbols = 10) {
+  return eouDecodeCont(dec, createEouStream(dec), frames, Tenc, 0, maxSymbols);
 }

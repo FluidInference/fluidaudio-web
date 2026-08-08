@@ -27,6 +27,7 @@ export class MicCapture {
   private node: AudioWorkletNode | null = null;
   private chunks: Float32Array[] = [];
   private total = 0;
+  private baseIndex = 0; // absolute index of chunks[0][0] (advanced by dropBefore)
   private srcRate = TARGET_SR;
   /** Peak level of the most recent frame (0..1) — for a simple VU indicator. */
   level = 0;
@@ -84,6 +85,34 @@ export class MicCapture {
     return out;
   }
 
+  /** Release chunks fully consumed below absolute index `to` — true-streaming
+   * consumers never re-read history, so an hours-long session stays bounded.
+   * tail()/all() afterwards only cover retained samples (streaming stop paths
+   * don't use them). */
+  dropBefore(to: number): void {
+    while (this.chunks.length && this.baseIndex + this.chunks[0].length <= to) {
+      this.baseIndex += this.chunks[0].length;
+      this.chunks.shift();
+    }
+  }
+
+  /** Samples appended since absolute index `from` (must be ≥ any dropBefore
+   * watermark); returns them + new total. For incremental consumers
+   * (true-streaming engines): poll with the last returned total. */
+  since(from: number): { samples: Float32Array; total: number } {
+    const want = this.total - from;
+    if (want <= 0) return { samples: new Float32Array(0), total: this.total };
+    const out = new Float32Array(want);
+    let filled = want;
+    for (let i = this.chunks.length - 1; i >= 0 && filled > 0; i--) {
+      const c = this.chunks[i];
+      const take = Math.min(filled, c.length);
+      out.set(c.subarray(c.length - take), filled - take);
+      filled -= take;
+    }
+    return { samples: out, total: this.total };
+  }
+
   /** Full capture as one buffer. */
   all(): Float32Array {
     const out = new Float32Array(this.total);
@@ -107,6 +136,7 @@ export class MicCapture {
   clear(): void {
     this.chunks = [];
     this.total = 0;
+    this.baseIndex = 0;
     this.level = 0;
   }
 }

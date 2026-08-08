@@ -914,6 +914,26 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 }`;
 
 // Batched rel_shift: X [H*t, 2t-1] → Y [H*t, t], each head block shifted independently.
+const RELSHIFT_STREAM_WGSL = `
+struct Meta { H:i32, n:i32, Lk:i32, P:i32, dMax:i32, Lc:i32, subT:i32, C:i32, left:i32, right:i32, _a:i32, _b:i32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = i32(gid.y * (nwg.x * 64u) + gid.x);
+  if (idx >= m.H * m.n * m.Lk) { return; }
+  let j = idx % m.Lk;
+  let r = idx / m.Lk;
+  let i = r % m.n;
+  let q = m.subT + i;
+  let k = m.subT - m.Lc + j;
+  let cs = m.C * (q / m.C);
+  if (k < cs - m.left || k > cs + m.C - 1 + m.right) { Y[idx] = -10000.0; return; }
+  let pi = clamp(m.dMax - (q - k), 0, m.P - 1);
+  Y[idx] = X[r * m.P + pi];
+}`;
+
 const RELSHIFT_B_WGSL = `
 struct Meta { t:u32, H:u32, _a:u32, _b:u32 };
 @group(0) @binding(0) var<storage, read> X: array<f32>;
@@ -2541,6 +2561,22 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     return y;
   }
 
+  /**
+   * Streaming rel_shift + chunked-causal mask, rectangular. x[H*n, P] is the
+   * bd term of n new queries against a TRUNCATED pos table (row pi ↔ relative
+   * distance dMax−pi). Output [H*n, Lk] gathers y[h·n+i, j] = x[h·n+i, dMax−(q−k)]
+   * where q = subT+i and k = subT−Lc+j are ABSOLUTE positions — the chunk grid
+   * therefore matches the offline mask exactly. Disallowed pairs get −1e4
+   * (offline adds −1e4 to scores; both underflow to 0 in softmax).
+   */
+  relShiftStream(x, { H, n, Lk, dMax, Lc, subT, C, left, right }) {
+    const y = this.alloc(H * n, Lk);
+    const pipeline = this._pipeline("relshiftstream", RELSHIFT_STREAM_WGSL);
+    const u = this._uniform(new Int32Array([H, n, Lk, x.cols, dMax, Lc, subT, C, left, right, 0, 0]));
+    this._run(pipeline, [x.buf, y.buf], u, Math.ceil((H * n * Lk) / 64));
+    return y;
+  }
+
   /** rel_shift: x = matrix_bd [t, 2t-1] -> [t, t] (relative-position attention). */
   relShift(x) {
     const t = x.rows;
@@ -2846,6 +2882,33 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
     this.device.queue.submit([enc.finish()]);
     return dst;
+  }
+
+  /** Rows [row0, row0+count) of x[rows,cols] — contiguous, so a plain buffer
+   * copy (batch-safe like copyRows: pass paused/reopened inside a batch). */
+  sliceRows(x, row0, count) {
+    const out = this.alloc(count, x.cols);
+    const record = (enc) => enc.copyBufferToBuffer(x.buf, row0 * x.cols * 4, out.buf, 0, count * x.cols * 4);
+    if (this._enc && this._pass) {
+      this._pass.end();
+      record(this._enc);
+      this._pass = this._enc.beginComputePass();
+      return out;
+    }
+    const enc = this.device.createCommandEncoder();
+    record(enc);
+    this.device.queue.submit([enc.finish()]);
+    return out;
+  }
+
+  /** Return a persistent fp32 tensor (pinned cache / upload) to the pool. Only
+   * for alloc/upload-usage tensors (STORAGE|COPY_SRC|COPY_DST, fp32). Pool-put
+   * never destroys, so recorded-but-unsubmitted readers stay valid — call after
+   * the batch that last read the tensor has closed. */
+  freeTensor(t) {
+    if (!t || !t.buf || t.f16) return;
+    const size = Math.max(4, t.rows * t.cols * 4);
+    this._poolPut(t.buf, size, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
   }
 
   /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */

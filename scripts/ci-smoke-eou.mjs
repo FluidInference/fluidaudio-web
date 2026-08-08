@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 import { hfGet, hfJson, hfText, readWav, assert } from "./lib/ci.mjs";
 import { createWasmContext } from "../src/gpu/wasm-context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../src/engines/asr-parakeet/raw-encoder.js";
-import { loadEouDecoder, eouDecode } from "../src/engines/asr-parakeet/raw-decoder-eou.js";
+import { loadEouDecoder, eouDecode, createEouStream, eouDecodeCont } from "../src/engines/asr-parakeet/raw-decoder-eou.js";
+import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../src/engines/asr-parakeet/streaming-encoder.js";
+import { StreamingMel } from "../src/engines/asr-nemotron/streaming-mel.js";
 import { makeEouTokenizer } from "../src/engines/eou-parakeet/eou-decode.js";
 import { JsPreprocessor } from "../src/engines/asr-nemotron/nemotron-mel.js";
 
@@ -25,5 +27,32 @@ const text = tokenizer.decode(ids);
 console.log(`eou (wasm backend): ${Date.now() - t0}ms →`, JSON.stringify(text));
 assert(/suffrage/i.test(text), "transcript contains 'suffrage'");
 assert(/classes/i.test(text), "transcript contains 'classes'");
+
+// True-streaming path on the SAME (wasm) backend: cache-carrying chunked
+// encode + state-carried decode must reproduce the batch tokens exactly
+// (bit-exact on GPU per scripts/streaming-encode-check.mjs; this leg keeps the
+// CPU twins honest in CI).
+const t1 = Date.now();
+const sm = new StreamingMel(128);
+const stEnc = createEncodeStream(ctx, enc);
+const stDec = createEouStream(dec);
+const sIds = [];
+let subT = 0;
+const consume = (out) => {
+  if (!out) return;
+  const n = out.length / 512;
+  sIds.push(...eouDecodeCont(dec, stDec, out, n, subT).ids);
+  subT += n;
+};
+for (let pos = 0; pos < audio.length; pos += 16000) {
+  const { data, count } = sm.push(audio.subarray(pos, pos + 16000));
+  if (data) consume(await encodeStreamPush(ctx, stEnc, data, count, { maxChunk: 64 }));
+}
+const fl = sm.flush();
+if (fl.data) consume(await encodeStreamPush(ctx, stEnc, fl.data, fl.count, { maxChunk: 64 }));
+consume(await encodeStreamFlush(ctx, stEnc));
+disposeEncodeStream(ctx, stEnc);
+console.log(`eou streaming (wasm backend): ${Date.now() - t1}ms → ${sIds.length} tokens`);
+assert(sIds.length === ids.length && sIds.every((v, i) => v === ids[i]), "streaming tokens == batch tokens");
 console.log("EOU SMOKE OK");
 process.exit(0);

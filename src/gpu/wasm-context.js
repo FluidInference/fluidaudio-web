@@ -473,6 +473,25 @@ export class WasmContext {
     dst.data.set(src.data, rowOffset * dst.cols);
     return dst;
   }
+  sliceRows(x, row0, count) {
+    return { data: x.data.slice(row0 * x.cols, (row0 + count) * x.cols), rows: count, cols: x.cols };
+  }
+  freeTensor() {}
+  /** Streaming rel_shift + chunked-causal mask (see compute.js relShiftStream). */
+  relShiftStream(x, { H, n, Lk, dMax, Lc, subT, C, left, right }) {
+    const P = x.cols;
+    const out = new Float32Array(H * n * Lk);
+    for (let r = 0; r < H * n; r++) {
+      const i = r % n,
+        q = subT + i,
+        cs = C * Math.floor(q / C);
+      for (let j = 0; j < Lk; j++) {
+        const k = subT - Lc + j;
+        out[r * Lk + j] = k < cs - left || k > cs + C - 1 + right ? -10000 : x.data[r * P + Math.min(P - 1, Math.max(0, dMax - (q - k)))];
+      }
+    }
+    return { data: out, rows: H * n, cols: Lk };
+  }
   /** Batched rel_shift: x[H*t, 2t-1] → [H*t, t]. */
   relShiftB(x, H) {
     const t = x.rows / H,
