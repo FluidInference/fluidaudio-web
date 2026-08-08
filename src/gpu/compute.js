@@ -1771,6 +1771,9 @@ export async function requestGpuDevice() {
     requiredLimits: {
       maxBufferSize: lim.maxBufferSize,
       maxStorageBufferBindingSize: lim.maxStorageBufferBindingSize,
+      // GPU TDT decoder keeps LSTM state + reductions in workgroup memory
+      // (~29KB) — the 16KB default is too small; Apple/NVIDIA offer 32KB.
+      maxComputeWorkgroupStorageSize: lim.maxComputeWorkgroupStorageSize,
     },
   });
 }
