@@ -196,6 +196,12 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
 }
 
 // ── file plumbing: input, drag & drop, bundled-sample fallback ───────────────
+($("download") as HTMLAnchorElement).addEventListener("click", (e) => {
+  // Before any completed run the href is the placeholder — clicking it would
+  // save the PAGE ITSELF as "….json". Block until a real blob is attached.
+  if (!($("download") as HTMLAnchorElement).href.startsWith("blob:")) e.preventDefault();
+});
+
 const fileInput = $("file") as HTMLInputElement;
 const drop = $("drop");
 
