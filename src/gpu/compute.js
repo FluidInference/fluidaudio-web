@@ -304,13 +304,20 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) l
         @builtin(subgroup_invocation_id) lane: u32) {
   let sg = li / 32u;                       // 4 subgroups per workgroup
   let rowBase = wg.y * 32u + sg * 8u;      // 8 rows per subgroup
-  let colBase = wg.x * 256u + lane * 8u;   // 8 columns per lane (two vec4)
+  // Column ownership split for COALESCING: lane owns cols [lane*4..+3] and
+  // [128 + lane*4..+3] — each of the subgroup's two B loads is then 32
+  // CONSECUTIVE vec4s (one 128-byte burst per half-tile), instead of lanes
+  // striding every other vec4 (lane*8 ownership).
+  let colTile = wg.x * 256u;
+  let col0 = colTile + lane * 4u;          // first vec4-column group
+  let col1 = colTile + 128u + lane * 4u;   // second vec4-column group
   let K4 = m.K / 4u;
   let N4 = m.N / 4u;
-  let cv0 = colBase / 4u;
+  let cva = col0 / 4u;
+  let cvb = col1 / 4u;
   var acc: array<vec4<f16>, 16>;           // [row][2 col-vecs], full-f16 accumulation
   for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f16>(0.0h); }
-  let colInBounds = colBase + 7u < m.N;
+  let colInBounds = col1 + 3u < m.N;
   for (var kv = 0u; kv < K4; kv++) {
     // lanes 0..7 each own one row's A k-vector; broadcast to the subgroup
     var packed_a = vec2<u32>(0u);
@@ -331,8 +338,8 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) l
       let k0 = kv * 4u;
       for (var j = 0u; j < 4u; j++) {
         let bRow = (k0 + j) * N4;
-        let b0 = B[bRow + cv0];
-        let b1 = B[bRow + cv0 + 1u];
+        let b0 = B[bRow + cva];
+        let b1 = B[bRow + cvb];
         for (var r = 0u; r < 8u; r++) {
           let ar = a[r][j];
           acc[r * 2u] += ar * b0;
@@ -347,8 +354,9 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) l
     if (row >= m.M) { continue; }
     for (var cb = 0u; cb < 2u; cb++) {
       let v = vec4<f32>(acc[r * 2u + cb]);
+      let cBase = select(col0, col1, cb == 1u);
       for (var jj = 0u; jj < 4u; jj++) {
-        let c = colBase + cb * 4u + jj;
+        let c = cBase + jj;
         var x = f32(v[jj]);
         if (m.hasBias == 1u) { x += bias[c]; }
         x = actf(x, m.act);
@@ -2344,10 +2352,14 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const addBuf = add ? add.buf : this._dummy();
     // Subgroup backend (probe-confirmed 32-lane; design from parakeet.wgsl):
     // barrier-free, no LDS. OPT-IN (globalThis.__sgGemm) — measured 1.25x
-    // ISOLATED on M5 but TIED in-context: row-major B costs ~4x the traffic of
-    // the LDS kernel's 128-row amortization, and mixed-shape context evicts
-    // the L2 reuse the isolated bench enjoyed. Becomes the default once B is
-    // prepacked tile-major (upstream's layout) and wins in-context.
+    // ISOLATED on M5 but TIED in-context, and COALESCED column ownership
+    // (lane*4 split halves, one 128-byte burst per half-tile) did not move it:
+    // the constraint is B traffic VOLUME (32-row amortization vs the LDS
+    // kernel's 128), which tile-major layout would not change either.
+    // Upstream's remaining edge at the GEMM level: f16-STORED A (half our A
+    // traffic — our activations are f32) + fixed-shape shaders. Kept opt-in
+    // as the basis for the GPU-resident TDT decoder port (task #19), which is
+    // the structural piece of their 180x.
     if (this.hasSubgroups32 && globalThis.__sgGemm === true && N % 256 === 0 && K % 16 === 0) {
       const pipeline = this._pipeline("gemmF16sg", GEMM_F16SG_WGSL);
       const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));
