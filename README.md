@@ -67,7 +67,7 @@ audio *generated* per wall-second; not comparable to ASR).
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | 79× | windowed with 24-permutation overlap stitching |
 | `tts-kokoro` | Kokoro 82M (en + zh) | 4.7× en / 5.6× zh | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped) |
 | `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | realtime+ | cache-aware streaming RNNT |
-| `eou-parakeet` | Parakeet EOU 120M | realtime+ | transcript + end-of-utterance events; ≤8 min whole-clip (streaming encode in progress) |
+| `eou-parakeet` | Parakeet EOU 120M | 40× (1hr file) | transcript + end-of-utterance events; hours-long via 4-min segments (seamless streaming encode in progress) |
 
 First (cold) run is several× slower — WebGPU compiles pipelines and weights
 download once. WebGPU is optional: every engine falls back to the same math on
