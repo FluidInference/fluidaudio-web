@@ -119,7 +119,7 @@ src/
   main.ts / verify.ts   the two demo pages (thin consumers of the registry)
 scripts/        node gates: token-identity, kernel parity, per-engine smokes
 rust/           parakeet RNNT decoder + kernel lib sources (wasm32+simd128)
-docs/           architecture, benchmarks, per-engine notes, the ORT removal story
+docs/           architecture, benchmarks, PORTING.md (add-a-model checklist), the ORT removal story
 ```
 
 ## Hard-won lessons (things that cost real debugging)
