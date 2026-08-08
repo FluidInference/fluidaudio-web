@@ -7,9 +7,13 @@ use, cache client-side, and everything runs on the visitor's machine. This is
 the browser sibling of the Swift/CoreML
 [FluidAudio](https://github.com/FluidInference/FluidAudio) framework.
 
+**1 hour of audio transcribed in ~20 seconds — 181× real-time — in a Chrome
+tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
+1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
+
 **Live:** https://fluidaudio-web.hanweng9.workers.dev — playground (one engine
 at a time) and [`/verify`](https://fluidaudio-web.hanweng9.workers.dev/verify)
-(drop one file, every engine runs on it, results export as JSON).
+(drop one file, selected engines run on it, results export as JSON).
 
 > **Why hand-written kernels?** The first iteration of this repo ran the same
 > models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
@@ -57,13 +61,13 @@ audio *generated* per wall-second; not comparable to ASR).
 
 | Engine | Model | RTFx | Notes |
 |---|---|---|---|
-| `asr-whisper` | Whisper (99 langs) | **114×** | KV-cached decode; f16 weights halve the per-token GEMV (incl. the 106 MB logits matrix) |
-| `asr-parakeet` | Parakeet TDT 0.6B v3 | **107–120×** | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary |
+| `asr-whisper` | Whisper (99 langs) | re-measuring | KV-cached decode, f16 weights; long-form chunking just landed (the prior 114× was measured on the first-30s-only bug and is retracted) |
+| `asr-parakeet` | Parakeet TDT 0.6B v3 | **181×** (1hr file) | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary |
 | `vad-silero` | Silero VAD v5 | 79× | WASM-SIMD (tiny sequential model by design) |
 | `diarization-sortformer` | NVIDIA Sortformer 4-spk | 79× | windowed with 24-permutation overlap stitching |
-| `tts-kokoro` | Kokoro 82M (en + zh) | 2.4× | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped) |
+| `tts-kokoro` | Kokoro 82M (en + zh) | 4.7× en / 5.6× zh | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped) |
 | `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | realtime+ | cache-aware streaming RNNT |
-| `eou-parakeet` | Parakeet EOU 120M | realtime+ | transcript + end-of-utterance events |
+| `eou-parakeet` | Parakeet EOU 120M | realtime+ | transcript + end-of-utterance events; ≤8 min whole-clip (streaming encode in progress) |
 
 First (cold) run is several× slower — WebGPU compiles pipelines and weights
 download once. WebGPU is optional: every engine falls back to the same math on
