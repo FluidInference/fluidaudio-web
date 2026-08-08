@@ -61,26 +61,46 @@ export class ParakeetEouEngine implements AsrEngine {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-    const { features, length } = this.mel.process(audio.samples);
-    if (length === 0) return { text: "", metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: 0 }, events: [] };
-    const tMel = now();
-
-    const r = await parakeetEncode(this.ctx, this.enc, features, length);
-    const frames = await this.ctx.download(r.framesGpu);
-    const tEnc = now();
-
-    const { ids, events: evFrames } = eouDecode(this.dec, frames, r.Tsub);
-    const events = evFrames.map((e: { type: string; frame: number }) => ({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) }));
-    const tDec = now();
-
+    // Long-form: process in 4-minute segments, decoder reset between them.
+    // The whole-clip path builds full [T,T] chunked-attention buffers
+    // (quadratic — a 1-hour clip attempts ~8GB); the model itself is fully
+    // CAUSAL (left context 70 frames ≈ 5.6s), so segmenting only loses that
+    // context at each boundary. Event times are offset per segment; text is
+    // concatenated. (True chunk-level streaming: docs/STREAMING.md.)
+    const SEG_SEC = 4 * 60;
+    const SEG = SEG_SEC * 16000;
+    let melMs = 0;
+    let encMs = 0;
+    let decMs = 0;
+    const texts: string[] = [];
+    const events: { type: string; time: number }[] = [];
+    for (let off = 0; off < audio.samples.length; off += SEG) {
+      const slice = audio.samples.subarray(off, Math.min(off + SEG, audio.samples.length));
+      if (slice.length < 800) break;
+      const tm = now();
+      const { features, length } = this.mel.process(slice);
+      if (length === 0) continue;
+      melMs += now() - tm;
+      const te = now();
+      const r = await parakeetEncode(this.ctx, this.enc, features, length);
+      const frames = await this.ctx.download(r.framesGpu);
+      encMs += now() - te;
+      const td = now();
+      // eouDecode resets decoder state per call — exactly the per-segment
+      // "decode reset" semantics we want at a segment boundary.
+      const { ids, events: evFrames } = eouDecode(this.dec, frames, r.Tsub);
+      decMs += now() - td;
+      const offSec = off / 16000;
+      for (const e of evFrames as { type: string; frame: number }[]) {
+        events.push({ type: e.type, time: +(offSec + e.frame * FRAME_SEC).toFixed(2) });
+      }
+      const text = this.tokenizer.decode(ids);
+      if (text) texts.push(text);
+      (this.ctx as any).trimPool?.();
+    }
     return {
-      text: this.tokenizer.decode(ids),
-      metrics: {
-        melMs: +(tMel - t0).toFixed(1),
-        encodeMs: +(tEnc - tMel).toFixed(1),
-        decodeMs: +(tDec - tEnc).toFixed(1),
-        totalMs: +(tDec - t0).toFixed(1),
-      },
+      text: texts.join(" "),
+      metrics: { melMs: +melMs.toFixed(1), encodeMs: +encMs.toFixed(1), decodeMs: +decMs.toFixed(1), totalMs: +(now() - t0).toFixed(1) },
       events,
     };
   }

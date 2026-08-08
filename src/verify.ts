@@ -12,6 +12,10 @@ import { webgpuAvailable } from "./core/webgpu.js";
 import { ENGINES } from "./engines/registry.js";
 import type { Engine } from "./core/types.js";
 
+// Default-enabled engines: the Parakeet ASR pair. Everything else is opt-in
+// per run (heavy downloads / secondary engines) — tick to include.
+const DEFAULT_ON = new Set(["asr-parakeet", "eou-parakeet"]);
+
 const TTS_TEXT: Record<string, string> = {
   "tts-kokoro-en": "The quick brown fox jumps over the lazy dog.",
   "tts-kokoro-zh": "今天天气很好，我们一起去公园散步吧。",
@@ -188,7 +192,7 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
     const ck = document.createElement("input");
     ck.type = "checkbox";
     ck.id = `ck-${c.id}`;
-    ck.checked = only ? only.includes(c.id) : true; // default: ALL engines run
+    ck.checked = only ? only.includes(c.id) : DEFAULT_ON.has(c.id); // default: ASR duo only
     lbl.appendChild(ck);
     lbl.appendChild(document.createTextNode(`${c.label}${c.kind === "text" ? " (text)" : ""}${c.heavy ? " (heavy)" : ""}`));
     fs.appendChild(lbl);
@@ -196,6 +200,12 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
 }
 
 // ── file plumbing: input, drag & drop, bundled-sample fallback ───────────────
+($("download") as HTMLAnchorElement).addEventListener("click", (e) => {
+  // Before any completed run the href is the placeholder — clicking it would
+  // save the PAGE ITSELF as "….json". Block until a real blob is attached.
+  if (!($("download") as HTMLAnchorElement).href.startsWith("blob:")) e.preventDefault();
+});
+
 const fileInput = $("file") as HTMLInputElement;
 const drop = $("drop");
 

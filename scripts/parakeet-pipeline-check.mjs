@@ -68,6 +68,10 @@ const run = async (pipelined, usePool = true) => {
   const { ids, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, {
     pipelined,
     wb: Number(process.env.WB || 6),
+    // OVL knob: overlap experiments. MEASURED (1hr real speech, cowen.wav):
+    // OVL=1 is +8% throughput but adds seam artifacts ("bottlenecksleneck"
+    // class, 430 diff regions vs OVL=2) — 2s stays the default on quality.
+    overlapSec: Number(process.env.OVL || 2),
     decodePool: usePool ? pool : null,
     gpuDecoder,
   });

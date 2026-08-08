@@ -64,33 +64,43 @@ export class NemotronEngine implements AsrEngine {
     if (!this.enc || !this.dec || !this.pk || !this.vocab) throw new Error("NemotronEngine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-    const { features, length } = this.mel.process(audio.samples);
-    if (length === 0) return { text: "", metrics: { melMs: 0, encodeMs: 0, decodeMs: 0, totalMs: 0 } };
-    const tMel = now();
-
-    const r = await parakeetEncode(this.ctx, this.enc, features, length);
-    const conf = await this.ctx.download(r.framesGpu);
+    // Long-form: 4-minute segments with per-segment decode (the whole-clip
+    // path builds quadratic [T,T] attention buffers — ~8GB at one hour). The
+    // model is causal-chunked (left 56, right 3), so a boundary costs ~4.5s of
+    // left context; text is concatenated across segments.
+    const SEG = 4 * 60 * 16000;
+    let melMs = 0;
+    let encMs = 0;
+    let decMs = 0;
+    const texts: string[] = [];
     const langId = this.langMap[this.opts.language ?? "en-US"] ?? 0;
-    const enc = applyPromptKernel(this.pk, conf, r.Tsub, langId);
-    const tEnc = now();
-
-    const { ids } = nemotronDecode(this.dec, enc, r.Tsub);
-    const text = ids
-      .map((i: number) => this.vocab![i] ?? "")
-      .filter((tk: string) => !tk.startsWith("<"))
-      .join("")
-      .replace(/▁/g, " ")
-      .trim();
-    const tDec = now();
-
+    for (let off = 0; off < audio.samples.length; off += SEG) {
+      const slice = audio.samples.subarray(off, Math.min(off + SEG, audio.samples.length));
+      if (slice.length < 800) break;
+      const tm = now();
+      const { features, length } = this.mel.process(slice);
+      if (length === 0) continue;
+      melMs += now() - tm;
+      const te = now();
+      const r = await parakeetEncode(this.ctx, this.enc, features, length);
+      const conf = await this.ctx.download(r.framesGpu);
+      const enc = applyPromptKernel(this.pk, conf, r.Tsub, langId);
+      encMs += now() - te;
+      const td = now();
+      const { ids } = nemotronDecode(this.dec, enc, r.Tsub);
+      decMs += now() - td;
+      const text = ids
+        .map((i: number) => this.vocab![i] ?? "")
+        .filter((tk: string) => !tk.startsWith("<"))
+        .join("")
+        .replace(/▁/g, " ")
+        .trim();
+      if (text) texts.push(text);
+      (this.ctx as any).trimPool?.();
+    }
     return {
-      text,
-      metrics: {
-        melMs: +(tMel - t0).toFixed(1),
-        encodeMs: +(tEnc - tMel).toFixed(1),
-        decodeMs: +(tDec - tEnc).toFixed(1),
-        totalMs: +(tDec - t0).toFixed(1),
-      },
+      text: texts.join(" "),
+      metrics: { melMs: +melMs.toFixed(1), encodeMs: +encMs.toFixed(1), decodeMs: +decMs.toFixed(1), totalMs: +(now() - t0).toFixed(1) },
     };
   }
 
