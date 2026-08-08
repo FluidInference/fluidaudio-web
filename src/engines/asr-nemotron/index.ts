@@ -61,6 +61,16 @@ export class NemotronEngine implements AsrEngine {
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
+    // Whole-clip design: the chunked-attention mask/scores are full [T,T]
+    // buffers, which grow quadratically — a 1-hour clip needs ~8GB and dies
+    // with an opaque RangeError. Fail with an actionable message instead.
+    // (True long-form: Parakeet windows; Nemotron streaming is docs/STREAMING.md.)
+    const MAX_SEC = 8 * 60;
+    if (audio.samples.length > MAX_SEC * 16000) {
+      throw new Error(
+        `Nemotron processes whole clips and supports up to ${MAX_SEC / 60} minutes (got ${Math.round(audio.samples.length / 16000 / 60)}min). Use Parakeet TDT for long files.`,
+      );
+    }
     if (!this.enc || !this.dec || !this.pk || !this.vocab) throw new Error("NemotronEngine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
