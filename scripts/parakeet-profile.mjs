@@ -31,6 +31,7 @@ function readWav(p) {
 const wav = readWav(process.argv[2] || "/tmp/pk_120s.wav");
 console.log(`audio ${(wav.length / 16000).toFixed(1)}s`);
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const rdU8 = (p) => Uint8Array.from(readFileSync(p));
 const encMan = JSON.parse(readFileSync("/tmp/pk-raw/enc-int8/manifest.json"));
 const encBin = rdU8("/tmp/pk-raw/enc-int8/weights.bin");

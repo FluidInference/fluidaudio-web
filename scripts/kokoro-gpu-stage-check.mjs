@@ -10,6 +10,7 @@ const rd = (p) => {
   return new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
 };
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const K = makeKokoro(ctx, rd(`${KW}/weights.bin`), JSON.parse(readFileSync(`${KW}/manifest.json`)), JSON.parse(readFileSync(`${KW}/roles.json`)));
 const me = (a, b) => {
   let m = 0;

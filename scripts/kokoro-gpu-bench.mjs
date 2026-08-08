@@ -14,6 +14,7 @@ const rd = (p) => {
   return new Float32Array(u.buffer, u.byteOffset, u.byteLength / 4);
 };
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const man = JSON.parse(readFileSync(`${A}/manifest.json`));
 const cpu = {};
 for (const k of Object.keys(man)) cpu[k] = rd(`${A}/${k}.bin`);

@@ -282,6 +282,83 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 // the encoder already carries. Gated by token identity, not just maxΔ.
 // f16C with BK=16: half the barriers and half the f32-promote overhead per K.
 // LDS 2×(16×128) f16 = 8KB — same budget as the fp32 v4 kernel's 8KB.
+// Subgroup f16 GEMM — design adapted from narcotic-sh/parakeet.wgsl (MIT):
+// no workgroup memory, no barriers. Each 32-lane subgroup computes 8 rows;
+// lanes 0..7 load one packed A k-vector each and subgroupBroadcast distributes
+// them; every lane owns 8 output columns (two vec4<f16>) read directly from
+// row-major f16 B. Full-f16 accumulation (WER-validated upstream at 1.69%
+// LibriSpeech; our token gates verify our models). Requires subgroup_size 32
+// with contiguous lane mapping — probeSubgroups() verifies both at runtime.
+const GEMM_F16SG_WGSL = `enable f16;
+enable subgroups;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f16>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<f32>;
+@group(0) @binding(4) var<storage, read> Dt: array<f32>;
+@group(0) @binding(5) var<uniform> m: Meta;
+${WGSL_ACTF}
+@compute @workgroup_size(128)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32,
+        @builtin(subgroup_invocation_id) lane: u32) {
+  let sg = li / 32u;                       // 4 subgroups per workgroup
+  let rowBase = wg.y * 32u + sg * 8u;      // 8 rows per subgroup
+  let colBase = wg.x * 256u + lane * 8u;   // 8 columns per lane (two vec4)
+  let K4 = m.K / 4u;
+  let N4 = m.N / 4u;
+  let cv0 = colBase / 4u;
+  var acc: array<vec4<f16>, 16>;           // [row][2 col-vecs], full-f16 accumulation
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f16>(0.0h); }
+  let colInBounds = colBase + 7u < m.N;
+  for (var kv = 0u; kv < K4; kv++) {
+    // lanes 0..7 each own one row's A k-vector; broadcast to the subgroup
+    var packed_a = vec2<u32>(0u);
+    if (lane < 8u && rowBase + lane < m.M) {
+      let av = vec4<f16>(A[(rowBase + lane) * K4 + kv]);
+      packed_a = bitcast<vec2<u32>>(av);
+    }
+    var a: array<vec4<f16>, 8>;
+    a[0] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 0u));
+    a[1] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 1u));
+    a[2] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 2u));
+    a[3] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 3u));
+    a[4] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 4u));
+    a[5] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 5u));
+    a[6] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 6u));
+    a[7] = bitcast<vec4<f16>>(subgroupBroadcast(packed_a, 7u));
+    if (colInBounds) {
+      let k0 = kv * 4u;
+      for (var j = 0u; j < 4u; j++) {
+        let bRow = (k0 + j) * N4;
+        let b0 = B[bRow + cv0];
+        let b1 = B[bRow + cv0 + 1u];
+        for (var r = 0u; r < 8u; r++) {
+          let ar = a[r][j];
+          acc[r * 2u] += ar * b0;
+          acc[r * 2u + 1u] += ar * b1;
+        }
+      }
+    }
+  }
+  if (!colInBounds) { return; } // edge columns fall to the guarded kernels via routing
+  for (var r = 0u; r < 8u; r++) {
+    let row = rowBase + r;
+    if (row >= m.M) { continue; }
+    for (var cb = 0u; cb < 2u; cb++) {
+      let v = vec4<f32>(acc[r * 2u + cb]);
+      for (var jj = 0u; jj < 4u; jj++) {
+        let c = colBase + cb * 4u + jj;
+        var x = f32(v[jj]);
+        if (m.hasBias == 1u) { x += bias[c]; }
+        x = actf(x, m.act);
+        if (m.hasAdd == 1u) { x += Dt[row * m.N + c]; }
+        C[row * m.N + c] = x;
+      }
+    }
+  }
+}`;
+
 const GEMM_V4_F16C2_WGSL = `enable f16;
 struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
 @group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
@@ -1680,7 +1757,7 @@ export async function requestGpuDevice() {
   // Optional features, taken only when the adapter has them: shader-f16 gates the
   // f16-storage weight path (GpuContext falls back to fp32 without it),
   // timestamp-query enables startProfile/endProfile in the browser.
-  const requiredFeatures = ["shader-f16", "timestamp-query"].filter((f) => adapter.features.has(f));
+  const requiredFeatures = ["shader-f16", "timestamp-query", "subgroups"].filter((f) => adapter.features.has(f));
   return adapter.requestDevice({
     requiredFeatures,
     requiredLimits: {
@@ -1699,6 +1776,14 @@ export class GpuContext {
     // uploadF16 silently falls back to fp32 (kernels using `enable f16;` would
     // otherwise fail validation asynchronously — no-op dispatches, zero outputs).
     this.hasF16 = !!device.features?.has?.("shader-f16") && typeof Float16Array !== "undefined";
+    // Subgroup GEMM backend (adapted from narcotic-sh/parakeet.wgsl, MIT):
+    // requires the subgroups feature AND exactly-32-lane subgroups (the kernel
+    // geometry assumes lane==row mapping; Apple/NVIDIA report 32/32).
+    const info = device.adapterInfo ?? {};
+    // Candidate only — probeSubgroups() must CONFIRM (dawn reports the adapter
+    // range 4..64 on Apple even though the real size is 32).
+    this._sgCandidate = !!device.features?.has?.("subgroups") && (info.subgroupMinSize ?? 32) <= 32 && (info.subgroupMaxSize ?? 32) >= 32;
+    this.hasSubgroups32 = false;
     // Surface validation/OOM errors loudly: they are async in WebGPU and would
     // otherwise show up only as silent garbage output.
     device.addEventListener?.("uncapturederror", (e) => console.error("[gpu] uncaptured:", e.error?.message ?? e.error));
@@ -1828,6 +1913,45 @@ export class GpuContext {
     }
     return t;
   }
+  /** One-time async probe: enable the subgroup GEMM only if the device runs
+   * 32-lane subgroups with contiguous lane mapping (geometry assumption).
+   * Called by createContext(); node gates call it explicitly. */
+  async probeSubgroups() {
+    if (!this._sgCandidate || this.hasSubgroups32) return this.hasSubgroups32;
+    try {
+      const mod = this.device.createShaderModule({
+        code: `enable subgroups;
+@group(0) @binding(0) var<storage, read_write> out: array<u32>;
+@compute @workgroup_size(128)
+fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32, @builtin(subgroup_invocation_id) sl: u32) {
+  if (i == 0u) { out[0] = ss; }
+  if (sl == 0u && ss == 32u) { out[1u + i / 32u] = i; }
+}`,
+      });
+      const pipe = this.device.createComputePipeline({ layout: "auto", compute: { module: mod, entryPoint: "main" } });
+      const buf = this.device.createBuffer({ size: 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+      const stg = this.device.createBuffer({ size: 32, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+      const bg = this.device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: buf } }] });
+      const enc = this.device.createCommandEncoder();
+      const p = enc.beginComputePass();
+      p.setPipeline(pipe);
+      p.setBindGroup(0, bg);
+      p.dispatchWorkgroups(1);
+      p.end();
+      enc.copyBufferToBuffer(buf, 0, stg, 0, 32);
+      this.device.queue.submit([enc.finish()]);
+      await stg.mapAsync(GPUMapMode.READ);
+      const v = new Uint32Array(stg.getMappedRange().slice(0));
+      stg.unmap();
+      stg.destroy();
+      buf.destroy();
+      this.hasSubgroups32 = v[0] === 32 && v[1] === 0 && v[2] === 32 && v[3] === 64 && v[4] === 96;
+    } catch {
+      this.hasSubgroups32 = false;
+    }
+    return this.hasSubgroups32;
+  }
+
   /** Allocation counters for the memory gate (created/reused/bytes). */
   memStatsStart() {
     this._memStats = { created: 0, createdBytes: 0, reused: 0 };
@@ -2218,6 +2342,18 @@ export class GpuContext {
     const c = this.alloc(M, N);
     const biasBuf = bias ? bias.buf : this._dummy();
     const addBuf = add ? add.buf : this._dummy();
+    // Subgroup backend (probe-confirmed 32-lane; design from parakeet.wgsl):
+    // barrier-free, no LDS. OPT-IN (globalThis.__sgGemm) — measured 1.25x
+    // ISOLATED on M5 but TIED in-context: row-major B costs ~4x the traffic of
+    // the LDS kernel's 128-row amortization, and mixed-shape context evicts
+    // the L2 reuse the isolated bench enjoyed. Becomes the default once B is
+    // prepacked tile-major (upstream's layout) and wins in-context.
+    if (this.hasSubgroups32 && globalThis.__sgGemm === true && N % 256 === 0 && K % 16 === 0) {
+      const pipeline = this._pipeline("gemmF16sg", GEMM_F16SG_WGSL);
+      const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));
+      this._run(pipeline, [a.buf, bF16.buf, biasBuf, c.buf, addBuf], u, Math.ceil(N / 256), Math.ceil(M / 32));
+      return c;
+    }
     const bk16 = !globalThis.__f16cbk8 && K % 16 === 0;
     const pipeline = bk16 ? this._pipeline("gemmV4f16c2", GEMM_V4_F16C2_WGSL) : this._pipeline("gemmV4f16c", GEMM_V4_F16C_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));

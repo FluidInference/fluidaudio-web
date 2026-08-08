@@ -15,7 +15,9 @@ const wav = readWav(process.argv[2] || "/tmp/pk_120s.wav");
 const durS = wav.length / 16000;
 console.log(`audio ${durS.toFixed(1)}s`);
 globalThis.__f16cbk8 = !!process.env.F16CBK8;
+globalThis.__sgGemm = !!process.env.SGGEMM; // opt-in subgroup GEMM (see compute.js)
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const rdU8 = (p) => Uint8Array.from(readFileSync(p));
 const enc = loadParakeetEncoder(ctx, rdU8("/tmp/pk-raw/enc-int8/weights.bin"), JSON.parse(readFileSync("/tmp/pk-raw/enc-int8/manifest.json")));
 const decMan = JSON.parse(readFileSync("/tmp/pk-raw/dec/manifest.json"));

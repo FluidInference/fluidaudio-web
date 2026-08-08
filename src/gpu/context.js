@@ -24,6 +24,7 @@ export async function createContext({ backend = "auto", onBackend } = {}) {
   if (backend !== "wasm" && typeof navigator !== "undefined" && navigator.gpu) {
     try {
       const ctx = new GpuContext(await requestGpuDevice());
+      await ctx.probeSubgroups(); // enables the subgroup GEMM on verified-32-lane devices
       onBackend?.("webgpu");
       return ctx;
     } catch {
