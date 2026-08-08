@@ -79,10 +79,17 @@ alternative: persist h/c buffers per stream instead of zero-init.
 ## Status
 
 - [x] Design + gate defined (this doc)
-- [ ] `createStreamState` / `parakeetEncodeChunk` in raw-encoder.js
-- [ ] Rectangular rel-pos attention kernel (compute.js)
-- [ ] Causal-continuation subsampling (no left pad after first chunk)
-- [ ] `decode_cont` in rust + wasm rebuild
-- [ ] streaming-encode-check.mjs parity gate
-- [ ] Engine push()/reset() + mic integration
+- [x] `createEncodeStream` / `encodeStreamPush` / `encodeStreamFlush`
+      (streaming-encoder.js — separate module, raw-encoder.js untouched)
+- [x] Rectangular rel-pos shift + absolute-grid mask (`relShiftStream`,
+      compute.js + wasm-context.js twin; bmmQK/bmmPV were already rectangular)
+- [x] Causal-continuation subsampling (7-mel-frame FIFO overlap; padTop first
+      chunk only, padBottom at flush only)
+- [x] Decoder state carry — EOU's decoder is plain JS, so `createEouStream` +
+      `eouDecodeCont` (raw-decoder-eou.js); no rust rebuild needed. (Parakeet
+      TDT streaming would still need `decode_cont` in rust.)
+- [x] streaming-encode-check.mjs parity gate — **bit-exact** (frames maxΔ 0.0,
+      tokens identical) at 160 ms and coarse cadence; StreamingMel exact
+- [x] Engine push()/finish()/reset() + mic integration (main.ts streams for
+      real; batch engines keep the rolling-tail fallback)
 - [ ] Nemotron variant (right-context 3 ⇒ 3-frame lookahead buffer)

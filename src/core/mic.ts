@@ -84,6 +84,23 @@ export class MicCapture {
     return out;
   }
 
+  /** Samples appended since absolute index `from`; returns them + new total.
+   * For incremental consumers (true-streaming engines): poll with the last
+   * returned total. */
+  since(from: number): { samples: Float32Array; total: number } {
+    const want = this.total - from;
+    if (want <= 0) return { samples: new Float32Array(0), total: this.total };
+    const out = new Float32Array(want);
+    let filled = want;
+    for (let i = this.chunks.length - 1; i >= 0 && filled > 0; i--) {
+      const c = this.chunks[i];
+      const take = Math.min(filled, c.length);
+      out.set(c.subarray(c.length - take), filled - take);
+      filled -= take;
+    }
+    return { samples: out, total: this.total };
+  }
+
   /** Full capture as one buffer. */
   all(): Float32Array {
     const out = new Float32Array(this.total);

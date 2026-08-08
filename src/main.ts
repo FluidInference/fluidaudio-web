@@ -115,23 +115,39 @@ runBtn.addEventListener("click", async () => {
 });
 
 // ── live microphone: rolling-window re-transcription ─────────────────────────
-// No engine exposes true incremental streaming yet (the web Nemotron/EOU run
-// whole-clip), but at 100×+ RTFx re-decoding a 30 s tail every ~1.5 s costs a
-// fraction of a second — the standard "live demo" pattern. On stop, the FULL
-// capture is transcribed once for the final transcript.
+// Engines exposing push() (EOU) stream for real: mic samples feed conformer
+// K/V + LSTM caches incrementally (bit-exact with offline — docs/STREAMING.md).
+// Batch engines fall back to re-decoding a rolling 30 s tail every ~1.5 s
+// (cheap at 100×+ RTFx). On stop: streaming engines flush the tail via
+// finish(); batch engines re-transcribe the FULL capture once.
 const mic = new MicCapture();
 const LIVE_WINDOW_SEC = 30;
 let liveBusy = false;
 let liveTimer: ReturnType<typeof setInterval> | null = null;
+let livePos = 0; // absolute sample index consumed by the streaming path
+
+function isStreaming(
+  e: unknown,
+): e is { push(c: Float32Array): Promise<string>; finish(): Promise<string>; reset(): void; streamEvents?: { type: string; time: number }[] } {
+  return typeof (e as any)?.push === "function";
+}
 
 async function liveTick() {
   if (!engine || liveBusy || mic.seconds < 1) return;
   liveBusy = true;
   try {
-    const samples = mic.tail(LIVE_WINDOW_SEC);
-    const r = await (engine as any).transcribe({ samples, sampleRate: 16000 });
     const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
-    output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (showing last ${Math.min(mic.seconds, LIVE_WINDOW_SEC).toFixed(0)}s)\n\n${r.text}${r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+    if (isStreaming(engine)) {
+      const { samples, total } = mic.since(livePos);
+      livePos = total;
+      const text = await engine.push(samples);
+      const ev = engine.streamEvents ?? [];
+      output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+    } else {
+      const samples = mic.tail(LIVE_WINDOW_SEC);
+      const r = await (engine as any).transcribe({ samples, sampleRate: 16000 });
+      output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (showing last ${Math.min(mic.seconds, LIVE_WINDOW_SEC).toFixed(0)}s)\n\n${r.text}${r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+    }
   } catch (err) {
     output.textContent = `live error: ${String(err)}`;
   } finally {
@@ -143,6 +159,8 @@ async function startLive() {
   output.textContent = "requesting microphone…";
   try {
     mic.clear();
+    livePos = 0;
+    if (engine && isStreaming(engine)) engine.reset();
     await mic.start();
   } catch (err) {
     output.textContent = `microphone unavailable: ${String(err)}`;
@@ -160,8 +178,22 @@ async function stopLive() {
   await mic.stop();
   micBtn.textContent = "🎤 Live";
   runBtn.disabled = false;
-  // Final pass over the WHOLE capture (the rolling view only showed the tail).
-  if (engine && mic.seconds >= 1) {
+  if (engine && isStreaming(engine)) {
+    // Streamed all along — just flush the right-padded tail. No re-decode.
+    try {
+      const { samples, total } = mic.since(livePos);
+      livePos = total;
+      if (samples.length) await engine.push(samples);
+      const text = await engine.finish();
+      const ev = engine.streamEvents ?? [];
+      output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s, true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+      engine.reset();
+      status.textContent = "Done.";
+    } catch (err) {
+      output.textContent = String(err);
+    }
+  } else if (engine && mic.seconds >= 1) {
+    // Final pass over the WHOLE capture (the rolling view only showed the tail).
     status.textContent = `transcribing full ${mic.seconds.toFixed(0)}s capture…`;
     try {
       const t0 = performance.now();
