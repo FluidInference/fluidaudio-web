@@ -7,6 +7,12 @@ export const TARGET_SR = 16000;
 
 /** Decode any browser-supported audio file and resample to 16 kHz mono. */
 export async function decodeToMono16k(input: ArrayBuffer): Promise<AudioData> {
+  // Fast path: canonical 16-bit PCM mono 16 kHz WAV (the benchmark format)
+  // parses directly — decodeAudioData on a 110MB 1-hour WAV is slow, allocates
+  // multiples of the file size, and can abort outright. Anything else (other
+  // rates, stereo, float WAV, compressed) falls through to the browser decoder.
+  const fast = tryParseCanonicalWav(input);
+  if (fast) return fast;
   // Decode at native rate first (decodeAudioData needs a real AudioContext).
   const tmp = new AudioContext();
   const decoded = await tmp.decodeAudioData(input.slice(0));
@@ -29,6 +35,31 @@ export async function decodeToMono16k(input: ArrayBuffer): Promise<AudioData> {
   src.start();
   const rendered = await off.startRendering();
   return { samples: rendered.getChannelData(0).slice(), sampleRate: TARGET_SR };
+}
+
+function tryParseCanonicalWav(input: ArrayBuffer): AudioData | null {
+  if (input.byteLength < 44) return null;
+  const dv = new DataView(input);
+  const tag = (o: number) => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+  if (tag(0) !== "RIFF" || tag(8) !== "WAVE") return null;
+  let o = 12;
+  let fmt: { format: number; channels: number; rate: number; bits: number } | null = null;
+  while (o + 8 <= input.byteLength) {
+    const id = tag(o);
+    const size = dv.getUint32(o + 4, true);
+    if (id === "fmt ") {
+      fmt = { format: dv.getUint16(o + 8, true), channels: dv.getUint16(o + 10, true), rate: dv.getUint32(o + 12, true), bits: dv.getUint16(o + 22, true) };
+    } else if (id === "data") {
+      if (!fmt || fmt.format !== 1 || fmt.channels !== 1 || fmt.rate !== TARGET_SR || fmt.bits !== 16) return null;
+      const n = Math.min(size, input.byteLength - o - 8) >> 1;
+      const pcm = new Int16Array(input, o + 8, n);
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) out[i] = pcm[i] / 32768;
+      return { samples: out, sampleRate: TARGET_SR };
+    }
+    o += 8 + size + (size & 1);
+  }
+  return null;
 }
 
 function downmix(buf: AudioBuffer): Float32Array {
