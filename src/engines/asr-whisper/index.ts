@@ -58,38 +58,52 @@ export class WhisperEngine implements AsrEngine {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("WhisperEngine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-    const { features } = this.mel.process(audio.samples);
-    const encG = whisperEncode(this.ctx, this.enc, features);
-    const kv = whisperCrossKV(this.ctx, this.dec, encG);
-    const tMel = now();
-
-    // KV-cached autoregressive decode: one token per step (O(1)/step; the old
-    // full-prefix path recomputed everything each step — proven token-identical).
-    const tokens = [...PREFIX];
-    const st = whisperDecodeInit(this.ctx, this.dec);
-    let logits: Float32Array | null = null;
-    for (const t of PREFIX) logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, t);
-    for (let step = 0; step < MAX_NEW; step++) {
-      const lg = logits!;
-      for (const t of this.suppress) lg[t] = -Infinity;
-      if (step === 0) {
-        lg[220] = -Infinity;
-        lg[EOT] = -Infinity;
-      } // begin_suppress
-      let maxId = 0,
-        maxV = -Infinity;
-      for (let i = 0; i < lg.length; i++)
-        if (lg[i] > maxV) {
-          maxV = lg[i];
-          maxId = i;
-        }
-      if (maxId === EOT) break;
-      tokens.push(maxId);
-      logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);
+    // Long-form: sequential 30s chunks (Whisper's fixed context), text
+    // concatenated. Previously only the FIRST 30s was transcribed — silently.
+    const CHUNK = 30 * 16000;
+    const parts: string[] = [];
+    let melMs = 0;
+    let decMs = 0;
+    for (let off = 0; off < audio.samples.length; off += CHUNK) {
+      const slice = audio.samples.subarray(off, Math.min(off + CHUNK, audio.samples.length));
+      if (slice.length < 800) break; // <50ms tail: nothing to say
+      const tm = now();
+      const { features } = this.mel.process(slice);
+      const encG = whisperEncode(this.ctx, this.enc, features);
+      const kv = whisperCrossKV(this.ctx, this.dec, encG);
+      melMs += now() - tm;
+      const td = now();
+      const tokens = [...PREFIX];
+      const st = whisperDecodeInit(this.ctx, this.dec);
+      let logits: Float32Array | null = null;
+      for (const t of PREFIX) logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, t);
+      for (let step = 0; step < MAX_NEW; step++) {
+        const lg = logits!;
+        for (const t of this.suppress) lg[t] = -Infinity;
+        if (step === 0) {
+          lg[220] = -Infinity;
+          lg[EOT] = -Infinity;
+        } // begin_suppress
+        let maxId = 0,
+          maxV = -Infinity;
+        for (let i = 0; i < lg.length; i++)
+          if (lg[i] > maxV) {
+            maxV = lg[i];
+            maxId = i;
+          }
+        if (maxId === EOT) break;
+        tokens.push(maxId);
+        logits = await whisperDecodeNext(this.ctx, this.dec, kv, st, maxId);
+      }
+      decMs += now() - td;
+      const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
+      if (text) parts.push(text);
+      (this.ctx as any).trimPool?.(); // chunk drained — evict to budget
     }
-    (this.ctx as any).trimPool?.(); // last step's logits are on the CPU — drained, evict to budget
-    const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
-    return { text, metrics: { melMs: +(tMel - t0).toFixed(0), encodeMs: 0, decodeMs: +(now() - tMel).toFixed(0), totalMs: +(now() - t0).toFixed(0) } };
+    return {
+      text: parts.join(" "),
+      metrics: { melMs: +melMs.toFixed(0), encodeMs: 0, decodeMs: +decMs.toFixed(0), totalMs: +(now() - t0).toFixed(0) },
+    };
   }
 
   async dispose(): Promise<void> {
