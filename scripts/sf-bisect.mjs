@@ -27,6 +27,7 @@ function readWav(p) {
 }
 const one = readWav("/tmp/earn40.wav");
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const rdU8 = (p) => Uint8Array.from(readFileSync(p));
 const enc = loadParakeetEncoder(ctx, rdU8("/tmp/sf-raw/enc-int8/weights.bin"), JSON.parse(readFileSync("/tmp/sf-raw/enc-int8/manifest.json")), {
   xscale: true,

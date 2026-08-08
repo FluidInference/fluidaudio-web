@@ -23,6 +23,7 @@ function readBig(path) {
 }
 const dir = process.argv[2] || "/tmp/pk-raw";
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const man = JSON.parse(readFileSync(`${dir}/enc/manifest.json`, "utf8"));
 const enc = loadParakeetEncoder(ctx, readBig(`${dir}/enc/weights.bin`), man);
 const ref = JSON.parse(readFileSync(`${dir}/ref_final.json`, "utf8"));

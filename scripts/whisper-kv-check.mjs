@@ -6,6 +6,7 @@ import { GpuContext } from "../src/gpu/compute.js";
 import { loadWhisperDecoder, whisperCrossKV, whisperDecodeStep, whisperDecodeInit, whisperDecodeNext } from "../src/engines/asr-whisper/raw-whisper-decoder.js";
 
 const ctx = new GpuContext(await getDevice());
+await ctx.probeSubgroups?.(); // enable subgroup GEMM where hardware qualifies
 const rd = (p) => {
   const u = Uint8Array.from(readFileSync(p));
   return new Float32Array(u.buffer, u.byteOffset, u.byteLength / 4);
