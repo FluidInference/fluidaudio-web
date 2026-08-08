@@ -5,6 +5,7 @@
 import { decodeToMono16k, pcmToWav } from "./core/audio.js";
 import { webgpuAvailable } from "./core/webgpu.js";
 import { ENGINES, type EngineEntry } from "./engines/registry.js";
+import { MicCapture } from "./core/mic.js";
 import type { Engine, LoadProgress } from "./core/types.js";
 
 // Engine catalog lives in engines/registry.ts (shared with the verify page) —
@@ -17,6 +18,7 @@ const status = $<HTMLDivElement>("status");
 const output = $<HTMLDivElement>("output");
 const progress = $<HTMLProgressElement>("progress");
 const runBtn = $<HTMLButtonElement>("run");
+const micBtn = $<HTMLButtonElement>("mic");
 const player = $<HTMLAudioElement>("player");
 
 $("gpu").textContent = webgpuAvailable() ? "WebGPU available" : "WASM only (no WebGPU)";
@@ -47,6 +49,8 @@ function syncInputs() {
 engineSel.addEventListener("change", () => {
   syncInputs();
   runBtn.disabled = true;
+  micBtn.disabled = true;
+  if (mic.running) void stopLive();
 });
 syncInputs();
 
@@ -65,6 +69,7 @@ $("load").addEventListener("click", async () => {
     });
     status.textContent = `Ready: ${entry.label}`;
     runBtn.disabled = false;
+    micBtn.disabled = !(currentEntry().kind === "audio" && typeof (engine as any)?.transcribe === "function");
   } catch (err) {
     status.textContent = `Load failed`;
     output.textContent = String(err);
@@ -107,6 +112,72 @@ runBtn.addEventListener("click", async () => {
   } catch (err) {
     output.textContent = String(err);
   }
+});
+
+// ── live microphone: rolling-window re-transcription ─────────────────────────
+// No engine exposes true incremental streaming yet (the web Nemotron/EOU run
+// whole-clip), but at 100×+ RTFx re-decoding a 30 s tail every ~1.5 s costs a
+// fraction of a second — the standard "live demo" pattern. On stop, the FULL
+// capture is transcribed once for the final transcript.
+const mic = new MicCapture();
+const LIVE_WINDOW_SEC = 30;
+let liveBusy = false;
+let liveTimer: ReturnType<typeof setInterval> | null = null;
+
+async function liveTick() {
+  if (!engine || liveBusy || mic.seconds < 1) return;
+  liveBusy = true;
+  try {
+    const samples = mic.tail(LIVE_WINDOW_SEC);
+    const r = await (engine as any).transcribe({ samples, sampleRate: 16000 });
+    const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
+    output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (showing last ${Math.min(mic.seconds, LIVE_WINDOW_SEC).toFixed(0)}s)\n\n${r.text}${r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+  } catch (err) {
+    output.textContent = `live error: ${String(err)}`;
+  } finally {
+    liveBusy = false;
+  }
+}
+
+async function startLive() {
+  output.textContent = "requesting microphone…";
+  try {
+    mic.clear();
+    await mic.start();
+  } catch (err) {
+    output.textContent = `microphone unavailable: ${String(err)}`;
+    return;
+  }
+  micBtn.textContent = "⏹ Stop";
+  runBtn.disabled = true;
+  output.textContent = "● LIVE — listening…";
+  liveTimer = setInterval(() => void liveTick(), 1500);
+}
+
+async function stopLive() {
+  if (liveTimer) clearInterval(liveTimer);
+  liveTimer = null;
+  await mic.stop();
+  micBtn.textContent = "🎤 Live";
+  runBtn.disabled = false;
+  // Final pass over the WHOLE capture (the rolling view only showed the tail).
+  if (engine && mic.seconds >= 1) {
+    status.textContent = `transcribing full ${mic.seconds.toFixed(0)}s capture…`;
+    try {
+      const t0 = performance.now();
+      const r = await (engine as any).transcribe({ samples: mic.all(), sampleRate: 16000 });
+      const ms = performance.now() - t0;
+      output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s captured, ${ms.toFixed(0)}ms, RTFx ${(mic.seconds / (ms / 1000)).toFixed(1)}×)\n\n${r.text}`;
+      status.textContent = "Done.";
+    } catch (err) {
+      output.textContent = String(err);
+    }
+  }
+}
+
+micBtn.addEventListener("click", () => {
+  if (mic.running) void stopLive();
+  else void startLive();
 });
 
 async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampleRate: number }): Promise<string> {
