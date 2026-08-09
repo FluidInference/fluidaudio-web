@@ -29,7 +29,7 @@ function streamPosEncoding(dMax, dMin, D) {
  * frame s reads mel rows [8s−14, 8s]. */
 const SUB_LOOKBACK = 14;
 
-export function createEncodeStream(ctx, enc) {
+export function createEncodeStream(ctx, enc, { proj = null } = {}) {
   const { D, layers, dwK, attChunk: C } = enc.cfg;
   if (!C || !enc.cfg.convCausal) throw new Error("createEncodeStream: needs a streaming config (attChunk + convCausal)");
   const sp = enc.cfg.subPad || {};
@@ -57,6 +57,9 @@ export function createEncodeStream(ctx, enc) {
     // pos-emb projection per layer is constant for the life of the stream.
     posP: enc.layers.map((w) => ctx.matmul(pe, w.pos)),
     zeroCC: ctx.upload(new Float32Array(D * (dwK - 1)), D, dwK - 1),
+    // Optional joint projection {w, b}: frames download as [n, projDim]
+    // (one fused GEMM rides the chunk batch — feeds the wasm decoder direct).
+    proj,
     flushed: false,
     disposed: false,
   };
@@ -253,6 +256,7 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
         x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
         x = ln(x, w.lnout);
       }
+      if (st.proj) x = ctx.matmul(x, st.proj.w, { bias: st.proj.b });
       frames = ctx.pin ? ctx.pin(x) : x;
     });
   } finally {

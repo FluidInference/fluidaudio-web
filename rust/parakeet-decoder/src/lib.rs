@@ -317,3 +317,156 @@ pub extern "C" fn decode_proj(frames: *const f32, tenc: u32, out_ids: *mut i32, 
         n_out
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EOU RNNT decoder (parakeet_realtime_eou_120m): 1-layer LSTM (hid 640), the
+// exported joint prepends a zero SOS timestep (so predict = TWO LSTM steps),
+// vocab 1027 (blank 1026). RNNT, not TDT: t advances one frame per blank.
+// Encoder frames arrive PRE-PROJECTED (+encB) to [T, 640] — the 512→640
+// projection runs as one batched GEMM on the backend before download. The
+// pred projection is cached across blank frames (the JS decoder recomputed
+// BOTH projections every frame — the 1-hour bottleneck this port removes).
+// State (EH/EC/EPREDPROJ) persists across calls: eou_decode_cont() continues
+// a stream, eou_reset() starts one.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ELOG: usize = 1027;
+const EBLANK: usize = 1026;
+
+struct EW {
+    embed: *const f32,
+    w: *const f32, r: *const f32, b: *const f32,
+    pred_w: *const f32, pred_b: *const f32,
+    out_w: *const f32, out_b: *const f32,
+}
+static mut EWT: EW = EW {
+    embed: core::ptr::null(), w: core::ptr::null(), r: core::ptr::null(), b: core::ptr::null(),
+    pred_w: core::ptr::null(), pred_b: core::ptr::null(), out_w: core::ptr::null(), out_b: core::ptr::null(),
+};
+static mut EH: [f32; HID] = [0.0; HID];
+static mut EC: [f32; HID] = [0.0; HID];
+static mut EDECOUT: [f32; HID] = [0.0; HID];
+static mut EPREDPROJ: [f32; HID] = [0.0; HID];
+static mut EJ: [f32; HID] = [0.0; HID];
+static mut EOUT: [f32; ELOG] = [0.0; ELOG];
+
+// One EOU LSTM step from (EH, EC) into (EH, EC). x null ⇒ the SOS zero input
+// (skips the W·x dot entirely — x contributes nothing).
+unsafe fn eou_lstm_step(x: *const f32) {
+    let w = EWT.w; let r = EWT.r; let b = EWT.b;
+    let mut nh = [0.0f32; HID];
+    let mut nc = [0.0f32; HID];
+    let hp = EH.as_ptr();
+    for g in 0..HID {
+        let wi = g * HID; let wo = (HID + g) * HID; let wf = (2 * HID + g) * HID; let wc = (3 * HID + g) * HID;
+        let mut zi = *b.add(g) + *b.add(4 * HID + g) + dotv(r.add(wi), hp, HID);
+        let mut zo = *b.add(HID + g) + *b.add(5 * HID + g) + dotv(r.add(wo), hp, HID);
+        let mut zf = *b.add(2 * HID + g) + *b.add(6 * HID + g) + dotv(r.add(wf), hp, HID);
+        let mut zc = *b.add(3 * HID + g) + *b.add(7 * HID + g) + dotv(r.add(wc), hp, HID);
+        if !x.is_null() {
+            zi += dotv(w.add(wi), x, HID);
+            zo += dotv(w.add(wo), x, HID);
+            zf += dotv(w.add(wf), x, HID);
+            zc += dotv(w.add(wc), x, HID);
+        }
+        let cc = sigmoid(zf) * EC[g] + sigmoid(zi) * tanhf(zc);
+        nc[g] = cc; nh[g] = sigmoid(zo) * tanhf(cc);
+    }
+    EH = nh; EC = nc;
+}
+
+// predict(token): SOS zero step + embed step (matches the exported ONNX joint
+// byte-for-byte in structure); decOut = final hidden. Commits state (RNNT
+// advances the prediction net on emission only — callers only call this then).
+unsafe fn eou_predict(token: usize) {
+    eou_lstm_step(core::ptr::null());
+    eou_lstm_step(EWT.embed.add(token * HID));
+    for i in 0..HID { EDECOUT[i] = EH[i]; }
+}
+
+unsafe fn eou_predproj() {
+    let w = EWT.pred_w; let b = EWT.pred_b;
+    for n in 0..HID { EPREDPROJ[n] = *b.add(n); }
+    let n4 = HID & !3;
+    for k in 0..HID {
+        let dk = EDECOUT[k];
+        if dk == 0.0 { continue; }
+        let dv = f32x4_splat(dk);
+        let row = w.add(k * HID);
+        let mut n = 0;
+        while n < n4 {
+            let p = EPREDPROJ.as_mut_ptr().add(n);
+            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(dv, v128_load(row.add(n) as *const v128))));
+            n += 4;
+        }
+        while n < HID { EPREDPROJ[n] += dk * *row.add(n); n += 1; }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn eou_set_weights(
+    embed: *const f32, w: *const f32, r: *const f32, b: *const f32,
+    pred_w: *const f32, pred_b: *const f32, out_w: *const f32, out_b: *const f32,
+) {
+    unsafe { EWT = EW { embed, w, r, b, pred_w, pred_b, out_w, out_b }; }
+}
+
+/// Reset the stream: zero LSTM state, prime with predict(BLANK).
+#[no_mangle]
+pub extern "C" fn eou_reset() {
+    unsafe {
+        EH = [0.0; HID]; EC = [0.0; HID];
+        eou_predict(EBLANK);
+        eou_predproj();
+    }
+}
+
+/// Greedy RNNT over PRE-PROJECTED frames [tenc, 640] (encB already added).
+/// Emits ALL non-blank ids (incl. the EOU/EOB event tokens — the JS wrapper
+/// splits them). Continues from the current stream state; returns count.
+#[no_mangle]
+pub extern "C" fn eou_decode_cont(frames: *const f32, tenc: u32, out_ids: *mut i32, out_frames: *mut i32, max_symbols: i32) -> i32 {
+    unsafe {
+        let tenc = tenc as usize;
+        let mut n_out = 0i32;
+        let mut t = 0usize;
+        let mut emitted = 0i32;
+        let m4 = ELOG & !3;
+        while t < tenc {
+            let fp = frames.add(t * HID);
+            // J = relu(encProj + predProj); OUT = outB + J @ outW (skip J==0 rows).
+            for n in 0..HID { let v = *fp.add(n) + EPREDPROJ[n]; EJ[n] = if v > 0.0 { v } else { 0.0 }; }
+            let ob = EWT.out_b;
+            for m in 0..ELOG { EOUT[m] = *ob.add(m); }
+            let ow = EWT.out_w;
+            for n in 0..HID {
+                let jn = EJ[n];
+                if jn == 0.0 { continue; }
+                let jv = f32x4_splat(jn);
+                let row = ow.add(n * ELOG);
+                let mut m = 0;
+                while m < m4 {
+                    let acc = v128_load(EOUT.as_ptr().add(m) as *const v128);
+                    let wv = v128_load(row.add(m) as *const v128);
+                    v128_store(EOUT.as_mut_ptr().add(m) as *mut v128, f32x4_add(acc, f32x4_mul(jv, wv)));
+                    m += 4;
+                }
+                while m < ELOG { EOUT[m] += jn * *row.add(m); m += 1; }
+            }
+            let mut max_id = 0usize; let mut max_v = f32::NEG_INFINITY;
+            for i in 0..ELOG { if EOUT[i] > max_v { max_v = EOUT[i]; max_id = i; } }
+            if max_id == EBLANK || emitted >= max_symbols {
+                t += 1;
+                emitted = 0;
+                continue;
+            }
+            *out_ids.add(n_out as usize) = max_id as i32;
+            *out_frames.add(n_out as usize) = t as i32;
+            n_out += 1;
+            eou_predict(max_id);
+            eou_predproj();
+            emitted += 1;
+        }
+        n_out
+    }
+}

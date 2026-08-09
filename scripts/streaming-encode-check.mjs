@@ -12,7 +12,16 @@ import { getDevice } from "./gpu-globals.mjs";
 import { GpuContext } from "../src/gpu/compute.js";
 import { loadParakeetEncoder, parakeetEncode } from "../src/engines/asr-parakeet/raw-encoder.js";
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../src/engines/asr-parakeet/streaming-encoder.js";
-import { loadEouDecoder, eouDecode, createEouStream, eouDecodeCont } from "../src/engines/asr-parakeet/raw-decoder-eou.js";
+import {
+  loadEouDecoder,
+  eouDecode,
+  createEouStream,
+  eouDecodeCont,
+  loadEouWasmDecoder,
+  eouWasmDecodeCont,
+  eouWasmReset,
+} from "../src/engines/asr-parakeet/raw-decoder-eou.js";
+import { readFileSync } from "node:fs";
 import { makeEouTokenizer } from "../src/engines/eou-parakeet/eou-decode.js";
 import { JsPreprocessor } from "../src/engines/asr-nemotron/nemotron-mel.js";
 import { StreamingMel } from "../src/engines/asr-nemotron/streaming-mel.js";
@@ -63,7 +72,9 @@ assert(melMax < 1e-6, `streaming mel exact parity (got ${melMax})`);
 const ctx = new GpuContext(await getDevice());
 const enc = loadParakeetEncoder(ctx, await hfGet(W, "eou/encoder-fp16.bin"), await hfJson(W, "eou/encoder-fp16.manifest.json"), EOU_CFG);
 const decBinU8 = await hfGet(W, "eou/decoder-fp32.bin");
-const dec = loadEouDecoder(new Float32Array(decBinU8.buffer, decBinU8.byteOffset, decBinU8.byteLength / 4), await hfJson(W, "eou/decoder-fp32.manifest.json"));
+const decF32 = new Float32Array(decBinU8.buffer, decBinU8.byteOffset, decBinU8.byteLength / 4);
+const decMan = await hfJson(W, "eou/decoder-fp32.manifest.json");
+const dec = loadEouDecoder(decF32, decMan);
 const tokenizer = makeEouTokenizer(await hfText("ysdede/parakeet-realtime-eou-120m-v1-onnx", "vocab.txt"));
 
 const r = await parakeetEncode(ctx, enc, offMel, T);
@@ -124,6 +135,23 @@ async function runStreaming(maxChunk, label) {
 
 const idsFine = await runStreaming(2, "streaming maxChunk=2 (160ms cadence)");
 await runStreaming(64, "streaming maxChunk=64");
+
+// ── 4. wasm-SIMD decoder (the engine's shipping decode) on GPU-projected frames ──
+const wdec = await loadEouWasmDecoder(
+  readFileSync(fileURLToPath(new URL("../src/engines/asr-parakeet/parakeet-decoder.wasm", import.meta.url))),
+  decF32,
+  decMan,
+);
+const projW = ctx.upload(dec.encW.slice(), 512, 640);
+const projB = ctx.upload(dec.encB.slice(), 1, 640);
+const r2 = await parakeetEncode(ctx, enc, offMel, T);
+const projFrames = await ctx.download(ctx.matmul(r2.framesGpu, projW, { bias: projB }));
+eouWasmReset(wdec);
+const wIds = eouWasmDecodeCont(wdec, projFrames, r2.Tsub).ids;
+const wOk = wIds.length === offIds.length && wIds.every((v, i) => v === offIds[i]);
+console.log(`wasm decoder: tokens ${wIds.length} vs ${offIds.length} → ${wOk ? "IDENTICAL" : "DIVERGED"}`);
+assert(wOk, "wasm decoder tokens == JS decoder tokens");
+ctx.trimPool?.();
 console.log("text:", JSON.stringify(tokenizer.decode(idsFine)));
 assert(/suffrage/i.test(tokenizer.decode(idsFine)), "transcript sanity");
 console.log("STREAMING ENCODE GATE OK");
