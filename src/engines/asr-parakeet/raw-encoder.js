@@ -314,12 +314,21 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
           p = ctx.matmul(peT, w.pos);
         }
         // Batched over windows × heads (pos-emb rows shared across windows).
-        const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
-        const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
-        let sc = ctx.add(ac, bd);
-        if (maskT) sc = ctx.add(sc, maskT);
-        const probs = ctx.softmax(sc); // rows = W*H*T
-        const outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
+        // Fused path (opt-in, unmasked models, T ≤ 256): one dispatch, no
+        // [W*H*T, T] score tensor — the transient that capped the window
+        // batch at wb≈6 (wb=40 would materialize ~4.5GB on this path).
+        let outc = null;
+        if (!maskT && ctx.attnFused && globalThis.__attnFused !== false) {
+          outc = ctx.attnFused(q, k, v, p, w.pbuAll, w.pbvAll, H, HD, W);
+        }
+        if (!outc) {
+          const ac = ctx.bmmQK(q, k, w.pbuAll, H, HD, W); // [W*H*T, T]
+          const bd = ctx.relShiftB(ctx.bmmQK(q, p, w.pbvAll, H, HD, W, true), W * H); // [W*H*T, T]
+          let sc = ctx.add(ac, bd);
+          if (maskT) sc = ctx.add(sc, maskT);
+          const probs = ctx.softmax(sc); // rows = W*H*T
+          outc = ctx.bmmPV(probs, v, H, HD, W); // [W*T, H*HD]
+        }
         x = ctx.matmul(outc, w.out, { bias: w.outb, add: x });
         // Pointwise convs (k=1) are plain GEMMs; run them X@Wt with weights on the
         // B side (f16 path, fused bias) — shape-valid for any window length.
