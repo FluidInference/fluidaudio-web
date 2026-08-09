@@ -140,6 +140,7 @@ export function createNemotronStream(dec) {
  * is invisible to the decoder. */
 export function nemotronDecodeCont(dec, st, frames, Tenc, maxSymbols = 10) {
   const ids = [];
+  const idFrames = [];
   const enc = new Float32Array(ENC_D);
   let t = 0,
     emitted = 0;
@@ -152,10 +153,11 @@ export function nemotronDecodeCont(dec, st, frames, Tenc, maxSymbols = 10) {
       continue;
     }
     ids.push(maxId);
+    idFrames.push(t);
     st.pred = predict(dec, maxId, st.pred);
     emitted++;
   }
-  return { ids };
+  return { ids, idFrames };
 }
 
 /** RNNT greedy over frames[Tenc*1024] (row-major). Returns { ids } (text token ids). */

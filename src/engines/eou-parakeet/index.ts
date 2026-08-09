@@ -23,6 +23,7 @@ import { loadEouDecoder, loadEouWasmDecoder, eouWasmDecodeCont, eouWasmReset } f
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
 import { StreamingMel } from "../asr-nemotron/streaming-mel.js";
+import { tokensToWords } from "../../core/captions.js";
 import { makeEouTokenizer } from "./eou-decode.js";
 import { EOU_CFG } from "./config.js";
 
@@ -122,6 +123,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     let decMs = 0;
     let subT = 0;
     const ids: number[] = [];
+    const idTimes: number[] = [];
     const events: { type: string; time: number }[] = [];
     const consume = (frames: Float32Array) => {
       const td = now();
@@ -129,6 +131,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       const r = eouWasmDecodeCont(this.wdec, frames, n, subT);
       decMs += now() - td;
       ids.push(...r.ids);
+      idTimes.push(...r.idFrames.map((f: number) => f * FRAME_SEC));
       for (const e of r.events) events.push({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) });
       subT += n;
     };
@@ -162,6 +165,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     }
     return {
       text: this.tokenizer.decode(ids),
+      segments: tokensToWords(ids, idTimes, this.tokenizer.id2token),
       metrics: { melMs: +melMs.toFixed(1), encodeMs: +encMs.toFixed(1), decodeMs: +decMs.toFixed(1), totalMs: +(now() - t0).toFixed(1) },
       events,
     };
