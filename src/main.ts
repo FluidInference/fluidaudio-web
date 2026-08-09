@@ -3,6 +3,7 @@
 // TTS takes text.
 
 import { decodeToMono16k, pcmToWav } from "./core/audio.js";
+import { segmentsToSrt, segmentsToVtt } from "./core/captions.js";
 import { webgpuAvailable } from "./core/webgpu.js";
 import { ENGINES, type EngineEntry } from "./engines/registry.js";
 import { MicCapture } from "./core/mic.js";
@@ -16,6 +17,30 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const engineSel = $<HTMLSelectElement>("engine");
 const status = $<HTMLDivElement>("status");
 const output = $<HTMLDivElement>("output");
+
+// Word-timestamp captions from the last file run (SRT/VTT downloads).
+let lastSegments: { text: string; start: number; end: number }[] | null = null;
+let lastFileName = "";
+function renderCaptionLinks() {
+  const box = document.getElementById("captionLinks");
+  if (!box) return;
+  for (const a of Array.from(box.querySelectorAll("a"))) URL.revokeObjectURL((a as HTMLAnchorElement).href);
+  box.innerHTML = "";
+  if (!lastSegments?.length) return;
+  const base = lastFileName.replace(/\.[^.]+$/, "") || "captions";
+  box.append("captions: ");
+  for (const [ext, mime, body] of [
+    ["srt", "application/x-subrip", segmentsToSrt(lastSegments)],
+    ["vtt", "text/vtt", segmentsToVtt(lastSegments)],
+  ] as const) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([body], { type: mime }));
+    a.download = `${base}.${ext}`;
+    a.textContent = `⬇ ${ext.toUpperCase()}`;
+    a.style.marginRight = "1rem";
+    box.appendChild(a);
+  }
+}
 const progress = $<HTMLProgressElement>("progress");
 const runBtn = $<HTMLButtonElement>("run");
 const micBtn = $<HTMLButtonElement>("mic");
@@ -104,10 +129,12 @@ runBtn.addEventListener("click", async () => {
       }
       const audio = await decodeToMono16k(await file.arrayBuffer());
       const dur = audio.samples.length / audio.sampleRate;
+      lastFileName = file.name;
       const t0 = performance.now();
       const result = await runAudioEngine(engine, audio);
       const ms = performance.now() - t0;
       output.textContent = `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
+      renderCaptionLinks();
     }
   } catch (err) {
     output.textContent = String(err);
@@ -240,6 +267,7 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
     return `${ranges.length} speech segments:\n` + ranges.map((r: any) => `  ${r.start.toFixed(2)}s – ${r.end.toFixed(2)}s`).join("\n");
   }
   if (typeof any.transcribe === "function") {
+    lastSegments = null;
     if (typeof any.setItn === "function") any.setItn(($("itn") as HTMLInputElement)?.checked ?? false);
     if (typeof any.setVocabulary === "function") {
       const raw = ($("vocab") as HTMLInputElement).value.trim();
@@ -253,6 +281,7 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
       );
     }
     const r = await any.transcribe(audio);
+    if (r.segments?.length) lastSegments = r.segments;
     const events = r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : "";
     if (r.metrics) {
       const m = r.metrics;

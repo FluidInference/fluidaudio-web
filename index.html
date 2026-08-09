@@ -10,30 +10,82 @@
     <meta name="referrer" content="no-referrer" />
     <title>FluidAudio Web — in-browser inference (WebGPU/WASM)</title>
     <style>
-      :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, sans-serif; }
-      body { max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
-      h1 { font-size: 1.4rem; } h2 { font-size: 1.05rem; margin-top: 1.5rem; }
-      .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .5rem 0; }
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        max-width: 860px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+      h2 {
+        font-size: 1.05rem;
+        margin-top: 1.5rem;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 0.5rem 0;
+      }
       /* [hidden] must win over .row's display:flex (else TTS shows the file picker
          and audio engines show the text box). */
-      [hidden] { display: none !important; }
-      select, button, input, textarea { font: inherit; padding: .4rem .6rem; }
-      textarea { width: 100%; min-height: 4rem; }
-      #status { font-size: .85rem; opacity: .8; min-height: 1.2rem; }
-      #output { white-space: pre-wrap; background: color-mix(in srgb, Canvas 92%, CanvasText); padding: .75rem; border-radius: 6px; min-height: 3rem; }
-      progress { width: 100%; }
-      .badge { font-size: .7rem; padding: .1rem .4rem; border-radius: 4px; background: color-mix(in srgb, Canvas 85%, CanvasText); }
+      [hidden] {
+        display: none !important;
+      }
+      select,
+      button,
+      input,
+      textarea {
+        font: inherit;
+        padding: 0.4rem 0.6rem;
+      }
+      textarea {
+        width: 100%;
+        min-height: 4rem;
+      }
+      #status {
+        font-size: 0.85rem;
+        opacity: 0.8;
+        min-height: 1.2rem;
+      }
+      #output {
+        white-space: pre-wrap;
+        background: color-mix(in srgb, Canvas 92%, CanvasText);
+        padding: 0.75rem;
+        border-radius: 6px;
+        min-height: 3rem;
+      }
+      progress {
+        width: 100%;
+      }
+      .badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        background: color-mix(in srgb, Canvas 85%, CanvasText);
+      }
     </style>
   </head>
   <body>
     <h1>FluidAudio Web <span class="badge">Playground</span></h1>
-    <nav class="row" style="font-size:.85rem"><strong>Try it</strong> · <a href="verify.html">Verify all engines →</a> · <a href="./live.html">🎤 Live captions</a></nav>
-    <p>Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing
-       leaves your machine. First load downloads the model weights (cached after).
-       <span id="gpu" class="badge"></span></p>
+    <nav class="row" style="font-size: 0.85rem">
+      <strong>Try it</strong> · <a href="verify.html">Verify all engines →</a> · <a href="./live.html">🎤 Live captions</a>
+    </nav>
+    <p>
+      Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model weights (cached after).
+      <span id="gpu" class="badge"></span>
+    </p>
 
     <div class="row">
-      <label>Engine
+      <label
+        >Engine
         <select id="engine"></select>
       </label>
       <button id="load">Load model</button>
@@ -46,8 +98,14 @@
       <input type="file" id="file" accept="audio/*,video/*" />
     </div>
     <div class="row" id="vocabInput" hidden>
-      <input id="vocab" style="width: 100%" placeholder="Custom vocabulary, comma-separated (e.g. NVIDIA, Newrez, Bank of America) — fuzzy-corrects the transcript" />
-      <label style="white-space: nowrap; cursor: pointer"><input type="checkbox" id="itn" /> smart formatting (numbers → digits; can misfire on phrases like “no one”)</label>
+      <input
+        id="vocab"
+        style="width: 100%"
+        placeholder="Custom vocabulary, comma-separated (e.g. NVIDIA, Newrez, Bank of America) — fuzzy-corrects the transcript"
+      />
+      <label style="white-space: nowrap; cursor: pointer"
+        ><input type="checkbox" id="itn" /> smart formatting (numbers → digits; can misfire on phrases like “no one”)</label
+      >
     </div>
     <div class="row" id="textInput" hidden>
       <textarea id="text" placeholder="Text to synthesize…">Hello from FluidAudio, running entirely in your browser.</textarea>
@@ -59,6 +117,7 @@
     </div>
 
     <h2>Output</h2>
+    <div id="captionLinks" style="font-size: 0.9rem; margin: 0.4rem 0"></div>
     <div id="output"></div>
 
     <script type="module" src="/src/main.ts"></script>
