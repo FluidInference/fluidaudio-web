@@ -3,7 +3,7 @@
 // scheduling differs), and the pipelined wall should approach max(enc, mel+dec).
 //   node scripts/parakeet-pipeline-check.mjs [/tmp/pk_120s.wav]
 globalThis.__attnFused = process.env.ATTF === "1";
-globalThis.__tmGemm = process.env.TM === "1"; // tile-major direct-B GEMM (task #27, opt-in) // fused attention is OPT-IN (Chrome regression at default-on — see raw-encoder.js)
+globalThis.__tmGemm = process.env.TM !== "0"; // tile-major direct-B GEMM default-on (browser-verified); TM=0 = baseline // fused attention is OPT-IN (Chrome regression at default-on — see raw-encoder.js)
 import { readFileSync } from "node:fs";
 import { readWav } from "./lib/wav.mjs";
 import { getDevice } from "./gpu-globals.mjs";

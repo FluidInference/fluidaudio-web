@@ -7,7 +7,7 @@ use, cache client-side, and everything runs on the visitor's machine. This is
 the browser sibling of the Swift/CoreML
 [FluidAudio](https://github.com/FluidInference/FluidAudio) framework.
 
-**1 hour of audio transcribed in ~20 seconds — 181× real-time — in a Chrome
+**1 hour of audio transcribed in ~13 seconds — 282× real-time — in a Chrome
 tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
 1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
 
@@ -19,7 +19,7 @@ at a time) and [`/verify`](https://fluidaudio-web.hanweng9.workers.dev/verify)
 > models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
 > WASM-SIMD (see [`docs/ORT_REMOVAL.md`](docs/ORT_REMOVAL.md) and
 > [`docs/RAW_WEBGPU.md`](docs/RAW_WEBGPU.md)) took Parakeet from 33× to **100×+
-> real-time in-browser** — batched-window encoding, f16 weight storage *and*
+> real-time in-browser** — batched-window encoding, f16 weight storage _and_
 > f16 compute (2× ALU on Apple GPUs), a 3-stage GPU/CPU pipeline, and parallel
 > RNNT decode on a Web Worker pool. Every optimization is gated on
 > token-identical output.
@@ -37,7 +37,7 @@ import { decodeToMono16k } from "@fluidinference/fluidaudio-web";
 const asr = new ParakeetV3Engine();
 await asr.load((p) => console.log(p.file, p.fraction));
 asr.setVocabulary(["NVIDIA", "Newrez"]); // optional: fuzzy-correct domain terms
-asr.setItn(true);                        // optional: "twenty one" → "21"
+asr.setItn(true); // optional: "twenty one" → "21"
 const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer));
 await asr.dispose();
 ```
@@ -57,17 +57,17 @@ Release flow: bump `version` in the root `package.json` → `npm run sdk:pack` �
 
 Measured in-browser (Chrome/macOS, WebGPU, warm) on a real 284.5s recording via
 `/verify` — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
-audio *generated* per wall-second; not comparable to ASR).
+audio _generated_ per wall-second; not comparable to ASR).
 
-| Engine | Model | RTFx | Notes |
-|---|---|---|---|
-| `asr-whisper` | Whisper (99 langs) | re-measuring | KV-cached decode, f16 weights; long-form chunking just landed (the prior 114× was measured on the first-30s-only bug and is retracted) |
-| `asr-parakeet` | Parakeet TDT 0.6B v3 | **181×** (1hr file) | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary |
-| `vad-silero` | Silero VAD v5 | 79× | WASM-SIMD (tiny sequential model by design) |
-| `diarization-sortformer` | NVIDIA Sortformer 4-spk | 79× | windowed with 24-permutation overlap stitching |
-| `tts-kokoro` | Kokoro 82M (en + zh) | 4.7× en / 5.6× zh | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped) |
-| `asr-nemotron` | Nemotron 3.5 streaming (40 langs) | realtime+ | cache-aware streaming RNNT |
-| `eou-parakeet` | Parakeet EOU 120M | **297×** browser-verified (1hr in 12.1s; worker-overlapped wasm decode + linear-cost stream-batch encode) | transcript + end-of-utterance events; TRUE streaming push()/finish() (bit-exact cache-carrying encode) + wasm-SIMD RNNT decode; whole-clip batch runs through the same linear-cost encoder |
+| Engine                   | Model                             | RTFx                                                                                                      | Notes                                                                                                                                                                                      |
+| ------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `asr-whisper`            | Whisper (99 langs)                | re-measuring                                                                                              | KV-cached decode, f16 weights; long-form chunking just landed (the prior 114× was measured on the first-30s-only bug and is retracted)                                                     |
+| `asr-parakeet`           | Parakeet TDT 0.6B v3              | **282×** (1hr file)                                                                                       | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary                                                             |
+| `vad-silero`             | Silero VAD v5                     | 79×                                                                                                       | WASM-SIMD (tiny sequential model by design)                                                                                                                                                |
+| `diarization-sortformer` | NVIDIA Sortformer 4-spk           | 79×                                                                                                       | windowed with 24-permutation overlap stitching                                                                                                                                             |
+| `tts-kokoro`             | Kokoro 82M (en + zh)              | 4.7× en / 5.6× zh                                                                                         | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped)                                                                                                |
+| `asr-nemotron`           | Nemotron 3.5 streaming (40 langs) | realtime+                                                                                                 | cache-aware streaming RNNT                                                                                                                                                                 |
+| `eou-parakeet`           | Parakeet EOU 120M                 | **297×** browser-verified (1hr in 12.1s; worker-overlapped wasm decode + linear-cost stream-batch encode) | transcript + end-of-utterance events; TRUE streaming push()/finish() (bit-exact cache-carrying encode) + wasm-SIMD RNNT decode; whole-clip batch runs through the same linear-cost encoder |
 
 First (cold) run is several× slower — WebGPU compiles pipelines and weights
 download once. WebGPU is optional: every engine falls back to the same math on
