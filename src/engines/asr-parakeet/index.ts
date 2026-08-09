@@ -38,6 +38,8 @@ export class ParakeetV3Engine implements AsrEngine {
   private encProjB: any = null;
   private tokenizer: ParakeetTokenizer | null = null;
   private decodePool: any = null;
+  private melPool: { mel(s: Float32Array): Promise<{ features: Float32Array; length: number }>; terminate(): void } | null = null;
+  private melPoolFailed = false;
   private poolSrc: { wasmBytes: ArrayBuffer; decBin: any; decMan: any } | null = null;
   private itnMod: any | null = null;
   private itnEnabled = false;
@@ -140,11 +142,79 @@ export class ParakeetV3Engine implements AsrEngine {
     }
   }
 
+  // Mel workers: windows are independent; two workers keep mel entirely off
+  // the main thread (it delayed GPU submits by ~1.8s/hour despite the
+  // pipeline's compute overlap).
+  private async ensureMelPool() {
+    if (this.melPool || this.melPoolFailed || typeof Worker === "undefined") return this.melPool;
+    try {
+      const workers: Worker[] = [];
+      for (let i = 0; i < 2; i++) {
+        const w = new Worker(new URL("./mel-worker.js", import.meta.url), { type: "module" });
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error("mel worker init timeout")), 10000);
+          w.onmessage = (e: MessageEvent) => {
+            clearTimeout(t);
+            if (e.data?.type === "ready") resolve();
+            else reject(new Error(String(e.data?.error ?? "bad init reply")));
+          };
+          w.onerror = (e) => {
+            clearTimeout(t);
+            reject(new Error(String(e.message ?? e)));
+          };
+          w.postMessage({ type: "init", nMels: 128 });
+        });
+        workers.push(w);
+      }
+      let seq = 0;
+      let next = 0;
+      const waiting = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();
+      for (const w of workers) {
+        w.onmessage = (e: MessageEvent) => {
+          const m = e.data;
+          const pw = waiting.get(m.id);
+          if (!pw) return;
+          waiting.delete(m.id);
+          if (m.type === "err") pw.reject(new Error(`mel worker: ${m.error}`));
+          else pw.resolve({ features: new Float32Array(m.features), length: m.length });
+        };
+        w.onerror = (e) => {
+          for (const [, pw] of waiting) pw.reject(new Error(String(e.message ?? e)));
+          waiting.clear();
+        };
+      }
+      this.melPool = {
+        mel: (sIn: Float32Array) => {
+          const id = seq++;
+          const w = workers[next++ % workers.length];
+          return new Promise((resolve, reject) => {
+            waiting.set(id, { resolve, reject });
+            const copy = sIn.slice(); // subarray of the full capture — copy to transfer
+            try {
+              w.postMessage({ type: "mel", id, samples: copy.buffer }, [copy.buffer]);
+            } catch (e) {
+              waiting.delete(id);
+              reject(e);
+            }
+          });
+        },
+        terminate: () => workers.forEach((w) => w.terminate()),
+      };
+    } catch (err) {
+      console.warn("[asr-parakeet] mel pool unavailable — main-thread mel:", err);
+      this.melPoolFailed = true;
+    }
+    return this.melPool;
+  }
+
   async transcribe(audio: AudioData): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetV3Engine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-    if (audio.samples.length > 2 * WINDOW_SEC * SAMPLE_RATE) await this.ensurePool(); // multi-window → parallel decode pays
+    if (audio.samples.length > 2 * WINDOW_SEC * SAMPLE_RATE) {
+      await this.ensurePool(); // multi-window → parallel decode pays
+      await this.ensureMelPool();
+    }
     // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
     // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
     const { ids, idTimes, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
@@ -152,6 +222,7 @@ export class ParakeetV3Engine implements AsrEngine {
       windowSec: WINDOW_SEC,
       overlapSec: OVERLAP_SEC,
       decodePool: this.decodePool,
+      melPool: this.melPool,
     });
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
@@ -174,6 +245,8 @@ export class ParakeetV3Engine implements AsrEngine {
     this.poolSrc = null; // release retained decoder bytes (~72MB) if the pool never spawned
     this.decodePool?.terminate?.();
     this.decodePool = null;
+    this.melPool?.terminate();
+    this.melPool = null;
     this.ctx?.device?.destroy?.();
     this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
