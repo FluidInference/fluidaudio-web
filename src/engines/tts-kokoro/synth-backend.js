@@ -99,9 +99,8 @@ export async function loadKokoroBackend(
       const pack = await getVoice(voice);
       const si = 256 * Math.min(Math.max(idArr.length - 2, 0), 509);
       const style = pack.slice(si, si + 256);
-      const dEnT = textEncoding(ctx, idArr, albertW, beW, beB);
-      const dEn = { data: await ctx.download(dEnT), rows: idArr.length, cols: fref.be_out };
-      return await synth(K, dEn, idArr, style, { speed });
+      // textEncoding's output stays GPU-resident straight into the predictor.
+      return await synth(K, textEncoding(ctx, idArr, albertW, beW, beB), idArr, style, { speed });
     },
   };
 }

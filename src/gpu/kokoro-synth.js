@@ -183,8 +183,7 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
       const source = sineGen(K, F0cpu, { nsfNoise: zh, randPhase: zh }); // [2T*300]
       const spec = sourceSpec(source); // [22, ~frames]
       const decode3T = await decoder(K, xConcat, asr, F0, N, style.slice(0, 128));
-      const decode3 = { data: await ctx.download(decode3T), rows: decode3T.rows, cols: decode3T.cols };
-      return await generator(K, decode3, spec, style.slice(0, 128));
+      return await generator(K, decode3T, spec, style.slice(0, 128));
     });
   } finally {
     if (arena) ctx.popArena(arena);
@@ -262,25 +261,19 @@ export async function predictor(K, dEn, ids, style, speed = 1) {
     predDur[i] = Math.max(1, Math.min(50, Math.round(s / speed)));
   }
   const T = predDur.reduce((a, b) => a + b, 0);
-  // alignment A[seq,T]; en = d^T @ A where d = concat(durEncOut, sp)[seq,640]
-  const dData = await ctx.download(durEncOut);
-  const d640 = new Float32Array(seq * 640);
-  for (let i = 0; i < seq; i++) {
-    d640.set(dData.subarray(i * 512, i * 512 + 512), i * 640);
-    d640.set(sp, i * 640 + 512);
-  }
-  const en = new Float32Array(640 * T); // [640,T]
+  // Alignment is a duration-expansion GATHER: frame f copies phoneme map[f].
+  // Only the tiny frame→phoneme map is built on the CPU (predDur is already
+  // CPU control flow); the expansion itself runs GPU-side — this used to be
+  // download(durEncOut) → CPU matrix build → re-upload, one of the round
+  // trips that made TTS the slowest engine.
+  const map = new Uint32Array(T);
   {
     let f = 0;
-    for (let i = 0; i < seq; i++) {
-      for (let dd = 0; dd < predDur[i]; dd++) {
-        for (let c = 0; c < 640; c++) en[c * T + (f + dd)] = d640[i * 640 + c];
-      }
-      f += predDur[i];
-    }
+    for (let i = 0; i < seq; i++) for (let dd = 0; dd < predDur[i]; dd++) map[f++] = i;
   }
-  const shared = lstmB(ctx.upload(transposeHost(en, 640, T), T, 640), "shared/LSTM"); // [T,512]
-  const prosody = ctx.upload(transposeHost(await ctx.download(shared), T, 512), 512, T); // [512,T]
+  const en = ctx.gatherCols(ctx.transpose(await catStyle(durEncOut)), map); // [640,T]
+  const shared = lstmB(ctx.transpose(en), "shared/LSTM"); // [T,512]
+  const prosody = ctx.transpose(shared); // [512,T]
 
   // F0/N AdaINResBlocks (prosodic style)
   const f0 = await predResBlocks(K, prosody, "F0", sp);
@@ -298,34 +291,21 @@ export async function predictor(K, dEn, ids, style, speed = 1) {
     te = lnChan(K, te, c);
     te = ctx.leakyRelu(te, 0.2);
   }
-  const teL = lstmB(ctx.upload(transposeHost(await ctx.download(te), 512, seq), seq, 512), "encoder/text_encoder/lstm/LSTM", "/text_encoder/lstm/LSTM"); // [seq,512]
-  // asr = teL^T @ A  → [512,T]
-  const teLd = await ctx.download(teL);
-  const asr = new Float32Array(512 * T);
-  {
-    let f = 0;
-    for (let i = 0; i < seq; i++) {
-      for (let dd = 0; dd < predDur[i]; dd++) {
-        for (let c = 0; c < 512; c++) asr[c * T + (f + dd)] = teLd[i * 512 + c];
-      }
-      f += predDur[i];
-    }
-  }
-  const asrT = ctx.upload(asr, 512, T);
+  const teL = lstmB(ctx.transpose(te), "encoder/text_encoder/lstm/LSTM", "/text_encoder/lstm/LSTM"); // [seq,512]
+  // asr = teL^T @ A — the same duration-expansion gather, GPU-resident.
+  const asrT = ctx.gatherCols(ctx.transpose(teL), map); // [512,T]
 
-  // decoder input Concat = [asr; F0_conv(F0)s2; N_conv(N)s2]
-  const f0cpu = { data: await ctx.download(f0), rows: f0.rows, cols: f0.cols };
-  const nncpu = { data: await ctx.download(nn), rows: nn.rows, cols: nn.cols };
-  const f0conv = convHost(K, f0cpu, "F0_conv/Conv", 1, 2);
-  const nconv = convHost(K, nncpu, "N_conv/Conv", 1, 2);
-  const Tc = Math.min(asr.length / 512, f0conv.cols);
-  const xConcat = new Float32Array(514 * Tc);
-  for (let c = 0; c < 512; c++) for (let t = 0; t < Tc; t++) xConcat[c * Tc + t] = asr[c * T + t];
-  for (let t = 0; t < Tc; t++) {
-    xConcat[512 * Tc + t] = f0conv.data[t];
-    xConcat[513 * Tc + t] = nconv.data[t];
-  }
-  return { xConcat: { data: xConcat, rows: 514, cols: Tc }, asr: asrT, F0: f0, N: nn, predDur, T };
+  // decoder input Concat = [asr; F0_conv(F0)s2; N_conv(N)s2] — all on GPU.
+  const convG = (x, sfx, pad, stride) => {
+    const r = K.findRole(sfx);
+    const wd = K.dims(r.w); // [Cout,Cin,K]
+    return ctx.conv1d(x, K.up(r.w, 1, wd[0] * wd[1] * wd[2]), { cout: wd[0], k: wd[2], bias: r.b ? K.up(r.b, 1, wd[0]) : null, pad, stride });
+  };
+  const f0conv = convG(f0, "F0_conv/Conv", 1, 2);
+  const nconv = convG(nn, "N_conv/Conv", 1, 2);
+  const Tc = Math.min(T, f0conv.cols);
+  const xConcat = ctx.concatRows([ctx.sliceCols(asrT, 0, Tc), ctx.sliceCols(f0conv, 0, Tc), ctx.sliceCols(nconv, 0, Tc)]); // [514,Tc]
+  return { xConcat, asr: asrT, F0: f0, N: nn, predDur, T };
 }
 
 function transposeHost(d, rows, cols) {
