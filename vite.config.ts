@@ -22,6 +22,7 @@ export default defineConfig({
         main: resolve(__dirname, "index.html"),
         verify: resolve(__dirname, "verify.html"),
         live: resolve(__dirname, "live.html"),
+        bench: resolve(__dirname, "bench.html"),
       },
     },
   },
