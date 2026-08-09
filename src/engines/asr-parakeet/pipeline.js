@@ -113,7 +113,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   };
 
   const ids = [];
-  if (!groups.length) return { ids, stats }; // empty / zero-length input
+  const idTimes = []; // absolute seconds per emitted token (window start + frame·80ms)
+  if (!groups.length) return { ids, idTimes, stats }; // empty / zero-length input
   let w = 0;
   let nextMels = melsFor(0);
   let pending = await submit(0, nextMels);
@@ -122,6 +123,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
   // MUST run in window order (it matches against the tail of `ids`).
   const stitch = (windowIdx, sliceLen, Tenc, wids, idFrames) => {
+    const winStartSec = (windowIdx * hop) / sampleRate;
     let skip = 0;
     if (windowIdx > 0 && wids.length) {
       const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
@@ -143,7 +145,10 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       }
       skip = Math.max(matched, frameSkip);
     }
-    for (let k = skip; k < wids.length; k++) ids.push(wids[k]);
+    for (let k = skip; k < wids.length; k++) {
+      ids.push(wids[k]);
+      idTimes.push(winStartSec + idFrames[k] * 0.08);
+    }
   };
 
   const decJobs = []; // pool mode: in-window-order pending decodes
@@ -240,7 +245,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     stats.melMs = Math.round(stats.melMs);
     stats.encWaitMs = Math.round(stats.encWaitMs);
     stats.decodeMs = Math.round(stats.decodeMs);
-    return { ids, stats };
+    return { ids, idTimes, stats };
   } finally {
     for (const a of openArenas) ctx.popArena(a); // throws must not orphan group scopes
     ctx.trimPool?.(); // drained here (final readback resolved) — safe to evict to budget

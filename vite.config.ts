@@ -21,6 +21,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         verify: resolve(__dirname, "verify.html"),
+        live: resolve(__dirname, "live.html"),
       },
     },
   },

@@ -21,6 +21,8 @@ import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder
 import { loadNemotronDecoder, nemotronDecode, loadPromptKernel, applyPromptKernel, createNemotronStream, nemotronDecodeCont } from "./raw-decoder-nemotron.js";
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
 import { StreamingMel } from "./streaming-mel.js";
+import { tokensToWords } from "../../core/captions.js";
+import type { AsrSegment } from "../../core/types.js";
 import { JsPreprocessor } from "./nemotron-mel.js";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
@@ -38,7 +40,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
   private pk: any = null;
   private dec: any = null;
   private mel = new JsPreprocessor({ nMels: 128 });
-  private vocab: string[] | null = null;
+  private vocab: Record<string, string> | null = null; // nemotron/vocab.json is an OBJECT keyed by id string, not an array
   private langMap: Record<string, number> = {};
   private stream: { mel: StreamingMel; encSt: any; decSt: any; ids: number[]; subT: number; finished: boolean; broken: boolean } | null = null;
   private op: Promise<unknown> = Promise.resolve();
@@ -177,6 +179,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
     let encMs = 0;
     let decMs = 0;
     const texts: string[] = [];
+    const segments: AsrSegment[] = [];
     const langId = this.langMap[this.opts.language ?? "en-US"] ?? 0;
     for (let off = 0; off < audio.samples.length; off += SEG) {
       const slice = audio.samples.subarray(off, Math.min(off + SEG, audio.samples.length));
@@ -191,8 +194,17 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
       const enc = applyPromptKernel(this.pk, conf, r.Tsub, langId);
       encMs += now() - te;
       const td = now();
-      const { ids } = nemotronDecode(this.dec, enc, r.Tsub);
+      const { ids, idFrames } = nemotronDecode(this.dec, enc, r.Tsub);
       decMs += now() - td;
+      const offSec = off / 16000;
+      segments.push(
+        ...tokensToWords(
+          ids,
+          idFrames.map((f) => offSec + f * 0.08),
+          this.vocab as Record<number, string>,
+          (id) => (this.vocab![id] ?? "<").startsWith("<"),
+        ),
+      );
       const text = ids
         .map((i: number) => this.vocab![i] ?? "")
         .filter((tk: string) => !tk.startsWith("<"))
@@ -204,6 +216,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
     }
     return {
       text: texts.join(" "),
+      segments,
       metrics: { melMs: +melMs.toFixed(1), encodeMs: +encMs.toFixed(1), decodeMs: +decMs.toFixed(1), totalMs: +(now() - t0).toFixed(1) },
     };
   }

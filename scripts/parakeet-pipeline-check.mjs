@@ -65,7 +65,7 @@ if (POOL > 1) {
 
 const run = async (pipelined, usePool = true) => {
   const t = performance.now();
-  const { ids, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, {
+  const { ids, idTimes, stats } = await transcribeWindowed(ctx, enc, dec, mel, projW, projB, wav, {
     pipelined,
     wb: Number(process.env.WB || 6),
     // OVL knob: overlap experiments. MEASURED (1hr real speech, cowen.wav):
@@ -75,7 +75,7 @@ const run = async (pipelined, usePool = true) => {
     decodePool: usePool ? pool : null,
     gpuDecoder,
   });
-  return { ids, stats, ms: performance.now() - t };
+  return { ids, idTimes, stats, ms: performance.now() - t };
 };
 
 await run(false, false); // warm (shader compile, wasm decoder init)
@@ -89,6 +89,18 @@ const same =
   piped2.ids.length === piped.ids.length &&
   piped2.ids.every((v, i) => v === piped.ids[i]);
 console.log(`tokens: serial ${serial.ids.length}, pipelined ${piped.ids.length} → ${same ? "IDENTICAL" : "DIVERGED"}`);
+// word-timestamp plumbing: one time per token, non-decreasing, within the clip
+{
+  const t = piped.idTimes;
+  let mono = t.length === piped.ids.length;
+  for (let i = 1; i < t.length && mono; i++) if (t[i] < t[i - 1] - 2.05) mono = false; // 2s overlap can step back ≤ overlap
+  const inRange = t.every((v) => v >= 0 && v <= durS + 1);
+  console.log(`idTimes: ${t.length} entries, ordered(±overlap) ${mono}, inRange ${inRange}`);
+  if (!mono || !inRange) {
+    console.error("IDTIMES CHECK FAILED");
+    process.exit(1);
+  }
+}
 const best = Math.min(piped.ms, piped2.ms);
 console.log(`serial    ${serial.ms.toFixed(0)}ms  RTFx ${(durS / (serial.ms / 1000)).toFixed(1)}`);
 console.log(`pipelined ${best.toFixed(0)}ms  RTFx ${(durS / (best / 1000)).toFixed(1)}  (${(serial.ms / best).toFixed(2)}× vs serial)`);

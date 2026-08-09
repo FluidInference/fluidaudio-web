@@ -10,6 +10,7 @@
 import { decodeToMono16k } from "./core/audio.js";
 import { webgpuAvailable } from "./core/webgpu.js";
 import { ENGINES } from "./engines/registry.js";
+import { segmentsToSrt, segmentsToVtt } from "./core/captions.js";
 import type { Engine } from "./core/types.js";
 
 // Default-enabled engines: the Parakeet ASR pair. Everything else is opt-in
@@ -62,11 +63,31 @@ window.addEventListener("pagehide", () => {
   engineCache.clear();
 });
 
+function addCaptionLinks(label: string, segments: { text: string; start: number; end: number }[], sourceName: string) {
+  const base = sourceName.replace(/\.[^.]+$/, "") || "captions";
+  const row = document.createElement("div");
+  row.append(`${label}: `);
+  for (const [ext, mime, body] of [
+    ["srt", "application/x-subrip", segmentsToSrt(segments)],
+    ["vtt", "text/vtt", segmentsToVtt(segments)],
+  ] as const) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([body], { type: mime }));
+    a.download = `${base}.${ext}`;
+    a.textContent = `⬇ ${ext.toUpperCase()}`;
+    a.style.marginRight = "1rem";
+    row.appendChild(a);
+  }
+  $("captions").appendChild(row);
+}
+
 async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
   if (running) return;
   running = true;
   $("log").textContent = "";
   $("json").textContent = "";
+  for (const a of Array.from($("captions").querySelectorAll("a"))) URL.revokeObjectURL((a as HTMLAnchorElement).href);
+  $("captions").innerHTML = "";
   ($("download") as HTMLAnchorElement).hidden = true;
   try {
     const params = new URLSearchParams(location.search);
@@ -125,6 +146,12 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
           rec.rtfxBasis = "output"; // TTS: audio-seconds GENERATED per wall-second — not comparable to ASR rtfx
         }
         if (out?.metrics) rec.stages = out.metrics; // Parakeet per-stage timings
+        if (out?.segments?.length) {
+          // Word timestamps → downloadable captions (segments stay out of the
+          // results JSON — a 1-hour file is ~10k words).
+          rec.words = out.segments.length;
+          addCaptionLinks(c.label, out.segments, sourceName);
+        }
         rec.output = summarize(out, c.id).slice(0, 200);
         rec.ok = true;
         log(`  ✓ load ${rec.loadMs}ms · run ${rec.runMs}ms · RTFx ${rec.rtfx}× · ${rec.output}`);

@@ -18,6 +18,7 @@ import { loadTextNorm, itn } from "../../core/textnorm.js";
 import { createVocabularyRescorer } from "./vocab-rescorer.js";
 import { ParakeetMel } from "./parakeet-mel.js";
 import { ParakeetTokenizer } from "./tokenizer.js";
+import { tokensToWords } from "../../core/captions.js";
 const wasmUrl = new URL("./parakeet-decoder.wasm", import.meta.url); // cross-bundler asset URL
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
@@ -146,7 +147,7 @@ export class ParakeetV3Engine implements AsrEngine {
     if (audio.samples.length > 2 * WINDOW_SEC * SAMPLE_RATE) await this.ensurePool(); // multi-window → parallel decode pays
     // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
     // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
-    const { ids, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
+    const { ids, idTimes, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
       sampleRate: SAMPLE_RATE,
       windowSec: WINDOW_SEC,
       overlapSec: OVERLAP_SEC,
@@ -159,8 +160,12 @@ export class ParakeetV3Engine implements AsrEngine {
     let text = this.tokenizer.decode(ids);
     if (this.rescorer) text = this.rescorer.rescore(text);
     if (this.itnEnabled) text = itn(this.itnMod, text);
+    // Word segments come from the RAW token stream (rescorer/ITN edit only the
+    // flat text — captions keep spoken-form words with true timings).
+    const segments = tokensToWords(ids, idTimes, this.tokenizer.id2token, (id) => id === this.tokenizer!.blankId);
     return {
       text,
+      segments,
       metrics: { melMs: stats.melMs, encodeMs: stats.encWaitMs, decodeMs: stats.decodeMs, totalMs: +(now() - t0).toFixed(0) },
     };
   }
