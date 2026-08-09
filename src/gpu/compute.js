@@ -914,6 +914,116 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 }`;
 
 // Batched rel_shift: X [H*t, 2t-1] → Y [H*t, t], each head block shifted independently.
+
+// Fused rel-pos self-attention (full/unmasked, T ≤ 256): QKᵀ + both rel-pos
+// terms + softmax + PV in ONE dispatch — the [W·H·T, T] score tensor never
+// touches global memory (it was the #1 blocker for larger window batches:
+// wb=40 would materialize ~4.5GB of transients on the multi-pass path).
+// Workgroup = 64 lanes on an 8-query block of one (window, head): scores live
+// in LDS; each K row and each pos-projection row is read exactly once per
+// workgroup; V is consumed in 16-row LDS tiles.
+const ATTN_FUSED_WGSL = `
+struct Meta { T:u32, H:u32, HD:u32, W:u32, P:u32, QB:u32, _a:u32, _b:u32 };
+@group(0) @binding(0) var<storage, read> Q: array<f32>;
+@group(0) @binding(1) var<storage, read> K: array<f32>;
+@group(0) @binding(2) var<storage, read> V: array<f32>;
+@group(0) @binding(3) var<storage, read> POS: array<f32>;
+@group(0) @binding(4) var<storage, read> PBU: array<f32>;
+@group(0) @binding(5) var<storage, read> PBV: array<f32>;
+@group(0) @binding(6) var<storage, read_write> OUT: array<f32>;
+@group(0) @binding(7) var<uniform> m: Meta;
+const MAXT = 256u;
+const QBLK = 8u;
+const HDMAX = 64u;
+var<workgroup> qu: array<f32, 512>;   // QBLK×HD, q+pbu
+var<workgroup> qv: array<f32, 512>;   // QBLK×HD, q+pbv
+var<workgroup> sc: array<f32, 2048>;  // QBLK×MAXT scores
+var<workgroup> vt: array<f32, 1024>;  // 16×HD V tile
+@compute @workgroup_size(64)
+fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  let T = m.T; let H = m.H; let HD = m.HD; let stride = H * HD;
+  let q0 = wg.x * QBLK;
+  let h = wg.y;
+  let w = wg.z;
+  let ho = h * HD;
+  let base = w * T;
+  // load q block (+pbu / +pbv)
+  for (var e = li; e < QBLK * HD; e += 64u) {
+    let i = e / HD; let d = e % HD;
+    var qval = 0.0;
+    if (q0 + i < T) { qval = Q[(base + q0 + i) * stride + ho + d]; }
+    qu[e] = qval + PBU[ho + d];
+    qv[e] = qval + PBV[ho + d];
+  }
+  // init scores to -inf-ish for invalid columns/rows
+  for (var e = li; e < QBLK * MAXT; e += 64u) { sc[e] = 0.0; }
+  workgroupBarrier();
+  // pass A: ac — each K row read once, dotted against all 8 queries
+  for (var j = li; j < T; j += 64u) {
+    let kb = (base + j) * stride + ho;
+    for (var i = 0u; i < QBLK; i++) {
+      var acc = 0.0;
+      for (var d = 0u; d < HD; d++) { acc += qu[i * HD + d] * K[kb + d]; }
+      sc[i * MAXT + j] = acc;
+    }
+  }
+  workgroupBarrier();
+  // pass B: bd — each pos row read once; row r serves (i, j = r-(T-1)+q0+i)
+  for (var r = li; r < T + QBLK - 1u; r += 64u) {
+    let pb = r * stride + ho;
+    // valid pos rows are 0..2T-2; r indexes from (T-1-q0-QBLK+1)... compute per i
+    for (var i = 0u; i < QBLK; i++) {
+      // j such that pos index (T-1 - (q0+i) + j) == rGlobal, with rGlobal = r + T - 1 - q0 - (QBLK - 1)
+      let rg = i32(r) + i32(T) - 1i - i32(q0) - i32(QBLK) + 1i;
+      let j = rg - (i32(T) - 1i) + i32(q0) + i32(i);
+      if (j >= 0i && j < i32(T) && rg >= 0i && rg < i32(m.P)) {
+        var acc = 0.0;
+        let pg = u32(rg) * stride + ho;
+        for (var d = 0u; d < HD; d++) { acc += qv[i * HD + d] * POS[pg + d]; }
+        sc[i * MAXT + u32(j)] += acc;
+      }
+    }
+  }
+  workgroupBarrier();
+  // softmax per query row (8 rows, one lane each)
+  if (li < QBLK) {
+    let i = li;
+    var mx = -3.0e38;
+    for (var j = 0u; j < T; j++) { mx = max(mx, sc[i * MAXT + j]); }
+    var sum = 0.0;
+    for (var j = 0u; j < T; j++) { let e = exp(sc[i * MAXT + j] - mx); sc[i * MAXT + j] = e; sum += e; }
+    let inv = 1.0 / sum;
+    for (var j = 0u; j < T; j++) { sc[i * MAXT + j] *= inv; }
+  }
+  workgroupBarrier();
+  // PV: lane d accumulates all 8 queries over 16-row V tiles
+  var acc: array<f32, 8>;
+  for (var i = 0u; i < QBLK; i++) { acc[i] = 0.0; }
+  var j0 = 0u;
+  loop {
+    if (j0 >= T) { break; }
+    let rows = min(16u, T - j0);
+    for (var e = li; e < rows * HD; e += 64u) {
+      let jj = e / HD; let d = e % HD;
+      vt[jj * HD + d] = V[(base + j0 + jj) * stride + ho + d];
+    }
+    workgroupBarrier();
+    if (li < HD) {
+      for (var jj = 0u; jj < rows; jj++) {
+        let vv = vt[jj * HD + li];
+        for (var i = 0u; i < QBLK; i++) { acc[i] += sc[i * MAXT + j0 + jj] * vv; }
+      }
+    }
+    workgroupBarrier();
+    j0 += 16u;
+  }
+  if (li < HD) {
+    for (var i = 0u; i < QBLK; i++) {
+      if (q0 + i < T) { OUT[(base + q0 + i) * stride + ho + li] = acc[i]; }
+    }
+  }
+}`;
+
 const RELSHIFT_STREAM_WGSL = `
 struct Meta { H:i32, n:i32, Lk:i32, P:i32, dMax:i32, Lc:i32, subT:i32, C:i32, left:i32, right:i32, _a:i32, _b:i32 };
 @group(0) @binding(0) var<storage, read> X: array<f32>;
@@ -2558,6 +2668,22 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const pipeline = this._pipeline("relshiftb", RELSHIFT_B_WGSL);
     const u = this._uniform(new Uint32Array([t, H, 0, 0]));
     this._run(pipeline, [x.buf, y.buf], u, Math.ceil((H * t * t) / 64));
+    return y;
+  }
+
+  /**
+   * Fused rel-pos attention for FULL (unmasked) windows, T ≤ 256: replaces the
+   * bmmQK → relShift → add → softmax → bmmPV chain with one dispatch and no
+   * [W·H·T, T] score tensor. q/k/v [W·T, H·HD], pos [2T−1, H·HD] (shared across
+   * windows), pbu/pbv [1, H·HD]. Returns [W·T, H·HD].
+   */
+  attnFused(q, k, v, pos, pbu, pbv, H, HD, W) {
+    const T = q.rows / W;
+    if (T > 256 || HD > 64) return null; // caller falls back to the multi-pass chain
+    const y = this.alloc(W * T, H * HD);
+    const pipeline = this._pipeline("attnfused", ATTN_FUSED_WGSL);
+    const u = this._uniform(new Uint32Array([T, H, HD, W, pos.rows, 8, 0, 0]));
+    this._run(pipeline, [q.buf, k.buf, v.buf, pos.buf, pbu.buf, pbv.buf, y.buf], u, Math.ceil(T / 8), H, W);
     return y;
   }
 
