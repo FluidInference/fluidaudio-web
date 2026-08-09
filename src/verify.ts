@@ -86,6 +86,7 @@ async function runAll(audioBuf: ArrayBuffer, sourceName: string) {
   running = true;
   $("log").textContent = "";
   $("json").textContent = "";
+  for (const a of Array.from($("captions").querySelectorAll("a"))) URL.revokeObjectURL((a as HTMLAnchorElement).href);
   $("captions").innerHTML = "";
   ($("download") as HTMLAnchorElement).hidden = true;
   try {

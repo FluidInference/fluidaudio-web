@@ -24,6 +24,7 @@ import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeS
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
 import { StreamingMel } from "../asr-nemotron/streaming-mel.js";
 import { tokensToWords } from "../../core/captions.js";
+import type { AsrSegment } from "../../core/types.js";
 import { makeEouTokenizer } from "./eou-decode.js";
 import { EOU_CFG } from "./config.js";
 
@@ -57,6 +58,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     mel: StreamingMel;
     encSt: any;
     ids: number[];
+    idTimes: number[];
     events: { type: string; time: number }[];
     subT: number;
     finished: boolean;
@@ -191,6 +193,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
         mel: new StreamingMel(128),
         encSt: createEncodeStream(this.ctx, this.enc, { proj: { w: this.projW, b: this.projB } }),
         ids: [],
+        idTimes: [],
         events: [],
         subT: 0,
         finished: false,
@@ -239,6 +242,14 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     return this.stream?.events ?? [];
   }
 
+  /** Word segments decoded so far on the current stream — lets consumers split
+   * utterances at event TIMES instead of guessing text boundaries (a push can
+   * decode past an <EOU>, so text-length splits overshoot). */
+  get streamSegments(): AsrSegment[] {
+    if (!this.stream || !this.tokenizer) return [];
+    return tokensToWords(this.stream.ids, this.stream.idTimes, this.tokenizer.id2token);
+  }
+
   reset(): void {
     if (this.stream) {
       disposeEncodeStream(this.ctx, this.stream.encSt);
@@ -250,8 +261,9 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   private consume(frames: Float32Array): void {
     const s = this.stream!;
     const n = frames.length / PROJ_D; // stream frames arrive pre-projected [n, 640]
-    const { ids, events } = eouWasmDecodeCont(this.wdec, frames, n, s.subT);
+    const { ids, idFrames, events } = eouWasmDecodeCont(this.wdec, frames, n, s.subT);
     s.ids.push(...ids);
+    s.idTimes.push(...idFrames.map((f) => f * FRAME_SEC));
     for (const e of events as { type: string; frame: number }[]) s.events.push({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) });
     s.subT += n;
   }

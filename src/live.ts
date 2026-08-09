@@ -13,6 +13,7 @@ type StreamingEngine = Engine & {
   finish(): Promise<string>;
   reset(): void;
   streamEvents?: { type: string; time: number }[];
+  streamSegments?: { text: string; start: number; end: number }[];
 };
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -31,21 +32,44 @@ let uttStart = 0; // seconds, for the history timestamp chips
 
 const STALL_FINALIZE_SEC = 2.5; // no-events engines: utterance ends on silence
 
+function pushHistory(utt: string, startSec: number) {
+  if (!utt) return;
+  const div = document.createElement("div");
+  div.className = "utt";
+  const t = document.createElement("span");
+  t.className = "t";
+  t.textContent = `${Math.floor(startSec / 60)}:${String(Math.floor(startSec % 60)).padStart(2, "0")}`;
+  div.append(t, utt);
+  $("history").appendChild(div);
+  $("history").scrollTop = $("history").scrollHeight;
+}
+
+// Text-boundary fallback for engines without segments/events (Nemotron):
+// finalize the tail of the cumulative transcript on a text stall.
 function finalize(nowText: string) {
-  const utt = nowText.slice(doneLen).trim();
-  if (utt) {
-    const div = document.createElement("div");
-    div.className = "utt";
-    const t = document.createElement("span");
-    t.className = "t";
-    const m = Math.floor(uttStart / 60);
-    t.textContent = `${m}:${String(Math.floor(uttStart % 60)).padStart(2, "0")}`;
-    div.append(t, utt);
-    $("history").appendChild(div);
-    $("history").scrollTop = $("history").scrollHeight;
-  }
+  pushHistory(nowText.slice(doneLen).trim(), uttStart);
   doneLen = nowText.length;
   uttStart = mic.seconds;
+}
+
+// Event-time path (EOU): utterance i = words with start ≤ event[i].time (and
+// after event[i−1]). A push can decode PAST an <EOU> — splitting by TIME keeps
+// those words in the next utterance; splitting by text length would not. Also
+// handles several events landing in one tick (one history row each).
+function renderByEvents(ev: { time: number }[], words: { text: string; start: number }[]) {
+  while (lastEventCount < ev.length) {
+    const bound = ev[lastEventCount].time + 1e-6;
+    const prev = lastEventCount ? ev[lastEventCount - 1].time + 1e-6 : -1;
+    const utt = words.filter((w) => w.start > prev && w.start <= bound);
+    pushHistory(utt.map((w) => w.text).join(" "), utt.length ? utt[0].start : ev[lastEventCount].time);
+    lastEventCount++;
+  }
+  const tailFrom = ev.length ? ev[ev.length - 1].time + 1e-6 : -1;
+  $("current").textContent =
+    words
+      .filter((w) => w.start > tailFrom)
+      .map((w) => w.text)
+      .join(" ") || " ";
 }
 
 async function tick() {
@@ -59,18 +83,15 @@ async function tick() {
     const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
     $("vu").textContent = vu;
     const events = engine.streamEvents;
-    if (events) {
-      if (events.length > lastEventCount) {
-        lastEventCount = events.length;
-        finalize(text);
-      }
-    } else if (text !== lastText) {
-      lastChangeAt = performance.now();
-    } else if (text.length > doneLen && performance.now() - lastChangeAt > STALL_FINALIZE_SEC * 1000) {
-      finalize(text);
+    const segs = engine.streamSegments;
+    if (events && segs) {
+      renderByEvents(events, segs);
+    } else {
+      if (text !== lastText) lastChangeAt = performance.now();
+      else if (text.length > doneLen && performance.now() - lastChangeAt > STALL_FINALIZE_SEC * 1000) finalize(text);
+      $("current").textContent = text.slice(doneLen).trim() || " ";
     }
     lastText = text;
-    $("current").textContent = text.slice(doneLen).trim() || " ";
   } catch (err) {
     $("status").textContent = String(err);
   } finally {
@@ -131,7 +152,15 @@ async function stop() {
         if (samples.length) await engine.push(samples);
         livePos = total;
         const text = await engine.finish();
-        finalize(text);
+        if (engine.streamEvents && engine.streamSegments) {
+          renderByEvents(engine.streamEvents, engine.streamSegments);
+          // whatever remains after the last event is the final utterance
+          const from = engine.streamEvents.length ? engine.streamEvents[engine.streamEvents.length - 1].time : -1;
+          const tailWords = engine.streamSegments.filter((w) => w.start > from);
+          if (tailWords.length) pushHistory(tailWords.map((w) => w.text).join(" "), tailWords[0].start);
+        } else {
+          finalize(text);
+        }
         $("current").textContent = " ";
         $("status").textContent = "Stopped.";
       } catch (err) {
@@ -155,4 +184,12 @@ async function stop() {
 $("go").addEventListener("click", () => {
   if (running) void stop();
   else void start();
+});
+
+// Nav-away while live: stop tracks + release the GPUDevice (matches verify.ts).
+window.addEventListener("pagehide", () => {
+  if (timer) clearInterval(timer);
+  running = false;
+  void mic.stop();
+  void engine?.dispose();
 });

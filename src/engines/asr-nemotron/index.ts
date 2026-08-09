@@ -40,7 +40,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
   private pk: any = null;
   private dec: any = null;
   private mel = new JsPreprocessor({ nMels: 128 });
-  private vocab: string[] | null = null;
+  private vocab: Record<string, string> | null = null; // nemotron/vocab.json is an OBJECT keyed by id string, not an array
   private langMap: Record<string, number> = {};
   private stream: { mel: StreamingMel; encSt: any; decSt: any; ids: number[]; subT: number; finished: boolean; broken: boolean } | null = null;
   private op: Promise<unknown> = Promise.resolve();
@@ -201,7 +201,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
         ...tokensToWords(
           ids,
           idFrames.map((f) => offSec + f * 0.08),
-          this.vocab as unknown as string[],
+          this.vocab as Record<number, string>,
           (id) => (this.vocab![id] ?? "<").startsWith("<"),
         ),
       );

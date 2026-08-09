@@ -11,7 +11,7 @@ const FRAME_SEC = 0.08;
 
 /** Token (id, time) stream → word-level segments. `skipId` filters control
  * tokens (blank/EOU/EOB); tokens missing from id2token are ignored. */
-export function tokensToWords(ids: number[], times: number[], id2token: string[], skipId?: (id: number) => boolean): AsrSegment[] {
+export function tokensToWords(ids: number[], times: number[], id2token: string[] | Record<number, string>, skipId?: (id: number) => boolean): AsrSegment[] {
   const words: AsrSegment[] = [];
   let text = "";
   let start = 0;
@@ -21,7 +21,7 @@ export function tokensToWords(ids: number[], times: number[], id2token: string[]
     text = "";
   };
   for (let i = 0; i < ids.length; i++) {
-    const tok = id2token[ids[i]];
+    const tok = (id2token as Record<number, string>)[ids[i]];
     if (tok === undefined || (skipId && skipId(ids[i]))) continue;
     if (tok.startsWith("▁")) {
       flush();
@@ -55,10 +55,13 @@ export function groupCues(words: AsrSegment[], { maxGapSec = 0.9, maxDurSec = 5,
 }
 
 function ts(sec: number, sep: string): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  const ms = Math.round((sec % 1) * 1000);
+  // Total-ms first: rounding the fraction alone can carry to ms=1000 and emit
+  // a malformed "00:00:01,1000" (sec=1.9995).
+  const t = Math.round(sec * 1000);
+  const ms = t % 1000;
+  const s = Math.floor(t / 1000) % 60;
+  const m = Math.floor(t / 60000) % 60;
+  const h = Math.floor(t / 3600000);
   const p = (n: number, w = 2) => String(n).padStart(w, "0");
   return `${p(h)}:${p(m)}:${p(s)}${sep}${p(ms, 3)}`;
 }
