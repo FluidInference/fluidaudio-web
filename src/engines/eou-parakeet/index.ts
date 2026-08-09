@@ -52,6 +52,9 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   private mel: JsPreprocessor | null = null;
   private tokenizer: ReturnType<typeof makeEouTokenizer> | null = null;
   private wdec: any = null; // wasm-SIMD decoder (holds the stream's RNNT state)
+  private decSrc: { wasmBytes: ArrayBuffer; decBuf: Float32Array; man: any } | null = null;
+  private worker: { call(msg: any, transfer?: Transferable[]): Promise<any>; terminate(): void } | null = null;
+  private workerFailed = false;
   private projW: any = null; // joint enc projection 512→640, run GPU-side pre-download
   private projB: any = null;
   private stream: {
@@ -94,12 +97,77 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     this.dec = loadEouDecoder(decF32, decMan);
     // Decode runs in the wasm-SIMD crate (JS loop is the hour-scale bottleneck);
     // the joint's 512→640 enc projection rides the encode batch as one GEMM.
-    this.wdec = await loadEouWasmDecoder(await (await fetch(wasmUrl)).arrayBuffer(), decF32, decMan);
+    const wasmBytes = await (await fetch(wasmUrl)).arrayBuffer();
+    this.wdec = await loadEouWasmDecoder(wasmBytes, decF32, decMan);
+    this.decSrc = { wasmBytes, decBuf: decF32, man: decMan };
     this.projW = this.ctx.upload(this.dec.encW.slice(), 512, 640);
     this.projB = this.ctx.upload(this.dec.encB.slice(), 1, 640);
     this.mel = new JsPreprocessor({ nMels: 128 });
     this.tokenizer = makeEouTokenizer(vocab);
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
+  }
+
+  // One stateful decode worker (RNNT state lives in ITS wasm instance): batch
+  // decode runs off the main thread and overlaps the next chunk's GPU encode.
+  // Chrome main-thread wasm ran ~2.6× slower than node while also driving the
+  // GPU — this was EOU's whole 1-hour bottleneck after the stream-batch encode.
+  private async ensureWorker(): Promise<typeof this.worker> {
+    if (this.worker || this.workerFailed) return this.worker;
+    if (typeof Worker === "undefined" || !this.decSrc) return null;
+    try {
+      const w = new Worker(new URL("./eou-decoder-worker.js", import.meta.url), { type: "module" });
+      let seq = 0;
+      const waiting = new Map<number, { resolve: (m: any) => void; reject: (e: any) => void }>();
+      w.onmessage = (e: MessageEvent) => {
+        const m = e.data;
+        if (m.type === "ready") return;
+        const p = waiting.get(m.id);
+        if (!p) return;
+        waiting.delete(m.id);
+        if (m.type === "err") p.reject(new Error(`eou decode worker: ${m.error}`));
+        else p.resolve(m);
+      };
+      w.onerror = (e) => {
+        for (const [, p] of waiting) p.reject(new Error(String(e.message ?? e)));
+        waiting.clear();
+      };
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error("eou decode worker init timeout")), 20000);
+        const prev = w.onmessage!;
+        w.onmessage = (e: MessageEvent) => {
+          if (e.data?.type === "ready") {
+            clearTimeout(t);
+            w.onmessage = prev;
+            resolve();
+          } else if (e.data?.type === "err") {
+            clearTimeout(t);
+            reject(new Error(String(e.data.error)));
+          }
+        };
+        // copies, not transfers — the main-thread wdec keeps its own instance
+        w.postMessage({ type: "init", wasmBytes: this.decSrc!.wasmBytes.slice(0), decBuf: this.decSrc!.decBuf.slice().buffer, man: this.decSrc!.man });
+      });
+      this.worker = {
+        call: (msg, transfer) => {
+          const id = seq++;
+          return new Promise((resolve, reject) => {
+            waiting.set(id, { resolve, reject });
+            try {
+              w.postMessage({ ...msg, id }, transfer ?? []);
+            } catch (e) {
+              waiting.delete(id);
+              reject(e);
+            }
+          });
+        },
+        terminate: () => w.terminate(),
+      };
+    } catch (err) {
+      console.warn("[eou-parakeet] decode worker unavailable — inline decode:", err);
+      this.workerFailed = true;
+      this.worker = null;
+    }
+    return this.worker;
   }
 
   transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
@@ -119,7 +187,9 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     // the WHOLE clip (no per-segment reset — whole-clip LSTM continuity).
     const mel = new StreamingMel(128);
     const encSt = createEncodeStream(this.ctx, this.enc, { proj: { w: this.projW, b: this.projB } });
-    eouWasmReset(this.wdec);
+    const worker = await this.ensureWorker();
+    if (worker) await worker.call({ type: "reset" });
+    else eouWasmReset(this.wdec);
     let melMs = 0;
     let encMs = 0;
     let decMs = 0;
@@ -127,15 +197,31 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     const ids: number[] = [];
     const idTimes: number[] = [];
     const events: { type: string; time: number }[] = [];
-    const consume = (frames: Float32Array) => {
-      const td = now();
-      const n = frames.length / PROJ_D;
-      const r = eouWasmDecodeCont(this.wdec, frames, n, subT);
-      decMs += now() - td;
+    // Worker path: decode of chunk k overlaps the GPU encode of chunk k+1.
+    // Decode is stateful+sequential, so results append via a promise chain
+    // (chunk order preserved); frames buffers are TRANSFERRED (each is a
+    // fresh download, never reused).
+    let decChain: Promise<void> = Promise.resolve();
+    const accumulate = (r: { ids: number[]; idFrames: number[]; events: { type: string; frame: number }[] }) => {
       ids.push(...r.ids);
       idTimes.push(...r.idFrames.map((f: number) => f * FRAME_SEC));
       for (const e of r.events) events.push({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) });
+    };
+    const consume = (frames: Float32Array) => {
+      const n = frames.length / PROJ_D;
+      const mySubT = subT;
       subT += n;
+      if (worker) {
+        decChain = decChain.then(async () => {
+          const r = await worker.call({ type: "decode", frames: frames.buffer, n, subT: mySubT }, [frames.buffer]);
+          decMs += r.ms;
+          accumulate(r);
+        });
+      } else {
+        const td = now();
+        accumulate(eouWasmDecodeCont(this.wdec, frames, n, mySubT));
+        decMs += now() - td;
+      }
     };
     const SLICE = 240 * 16000; // feed 4-min slices so chunk passes reach BATCH_CHUNK
     try {
@@ -161,7 +247,12 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       const tail = await encodeStreamFlush(this.ctx, encSt);
       encMs += now() - te;
       if (tail) consume(tail);
+      await decChain; // drain the overlapped decodes (order-preserving)
     } finally {
+      // even on a mid-loop throw, in-flight worker decodes must settle before
+      // the arena/pool teardown (they only touch transferred CPU buffers, but
+      // a rejected chain must not become an unhandled rejection).
+      await decChain.catch(() => {});
       disposeEncodeStream(this.ctx, encSt);
       (this.ctx as any).trimPool?.();
     }
@@ -270,6 +361,8 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
 
   async dispose(): Promise<void> {
     this.reset();
+    this.worker?.terminate();
+    this.worker = null;
     this.ctx?.device?.destroy?.();
     this.ctx = this.enc = this.dec = this.wdec = this.projW = this.projB = this.mel = this.tokenizer = null;
   }
