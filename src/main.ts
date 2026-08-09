@@ -18,12 +18,11 @@ const engineSel = $<HTMLSelectElement>("engine");
 const status = $<HTMLDivElement>("status");
 const output = $<HTMLDivElement>("output");
 
-// ?tm=1: opt into the tile-major direct-B GEMM (task #27) — load-time weight
-// format choice, so set BEFORE any engine loads. +24% on the node 10-min
-// bench; browser verdict decides the default (the fused-attn lesson).
-if (new URLSearchParams(location.search).get("tm") === "1") {
-  (globalThis as any).__tmGemm = true;
-  console.info("[playground] tile-major GEMM enabled (?tm=1)");
+// Tile-major direct-B GEMM is DEFAULT ON (browser-verified 282× on the 1hr
+// bench). ?tm=0 restores the LDS-staged baseline for A/Bs.
+if (new URLSearchParams(location.search).get("tm") === "0") {
+  (globalThis as any).__tmGemm = false;
+  console.info("[playground] tile-major GEMM disabled (?tm=0)");
 }
 
 // Word-timestamp captions from the last file run (SRT/VTT downloads).
