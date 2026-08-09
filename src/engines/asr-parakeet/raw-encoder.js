@@ -83,9 +83,13 @@ export function loadParakeetEncoder(ctx, bin, man, cfgOverride = {}) {
   // mixed-precision v4 kernel reads them at half the traffic and half the GPU
   // memory (~2.3GB → 1.17GB for the fp32-dequantized encoder). Activations and
   // biases stay fp32.
-  // __tmGemm === true (opt-in, load-time): weights prepack tile-major for the
-  // direct-B subgroup GEMM (task #27); self-falls-back per-tensor on dims.
-  const upW = (data, r, c) => (globalThis.__tmGemm === true && ctx.uploadTileMajorF16 ? ctx.uploadTileMajorF16(data, r, c) : ctx.uploadF16(data, r, c)); // context owns the format decision
+  // Tile-major direct-B GEMM weights: DEFAULT ON (browser-verified 282× on the
+  // 1hr bench). PR #39 flipped main.ts/README/gates but THIS line's edit
+  // silently no-op'd (string-replace mismatch) — and the node gates couldn't
+  // catch it because the gate script sets the flag itself. __tmGemm === false
+  // (?tm=0 / TM=0) restores the LDS-staged baseline; self-falls-back
+  // per-tensor on dims and on devices without probed 32-lane subgroups.
+  const upW = (data, r, c) => (globalThis.__tmGemm !== false && ctx.uploadTileMajorF16 ? ctx.uploadTileMajorF16(data, r, c) : ctx.uploadF16(data, r, c)); // context owns the format decision
   const mat = (k) => upW(raw(k).slice(), man[k].dims[0], man[k].dims[1]);
   const vec = (k) => ctx.upload(raw(k).slice(), 1, man[k].count ?? man[k].len);
   const matScaled = (k, s) => upW(scaled(k, s), man[k].dims[0], man[k].dims[1]);
