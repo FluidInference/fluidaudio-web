@@ -320,14 +320,16 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
           p = ctx.matmul(peT, w.pos);
         }
         // Batched over windows × heads (pos-emb rows shared across windows).
-        // Fused path (opt-in, unmasked models, T ≤ 256): one dispatch, no
-        // [W*H*T, T] score tensor — the transient that capped the window
-        // batch at wb≈6 (wb=40 would materialize ~4.5GB on this path).
-        // OPT-IN ONLY (__attnFused === true): +1.6% on dawn-node but ~2× SLOWER
-        // in Chrome/Metal (user-measured: 1hr encode 17.7s → 36.2s) — the 16KB
-        // workgroup-memory footprint kills occupancy under Chrome's compiler.
-        // Kept for the memory win it may offer constrained targets; never
-        // default it on again without a browser measurement first.
+        // Fused path (opt-in, unmasked models, T ≤ 256, HD 64/128): one
+        // dispatch, no [W*H*T, T] score tensor. RECORD CORRECTION: the
+        // original HD ≤ 64 guard meant this NEVER engaged on Parakeet
+        // (HD=128) — the PR #32-era "+1.6%" was fallback noise and the
+        // "Chrome 2× regression" attributed to it was environmental. With
+        // HD=128 support it now truly runs — and measures 78.6ms/group vs
+        // ~20ms for the multi-pass chain (dawn): the per-lane serial design
+        // loses to the tiled bmm kernels. Stays opt-in-off; a competitive
+        // version needs a flash-attention-grade tiled kernel (~4% end-to-end
+        // upside, task-27 archive has their reference).
         let outc = null;
         if (!maskT && ctx.attnFused && globalThis.__attnFused === true) {
           outc = ctx.attnFused(q, k, v, p, w.pbuAll, w.pbvAll, H, HD, W);
