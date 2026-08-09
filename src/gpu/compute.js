@@ -1014,7 +1014,15 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
 // Workgroup = 64 lanes on an 8-query block of one (window, head): scores live
 // in LDS; each K row and each pos-projection row is read exactly once per
 // workgroup; V is consumed in 16-row LDS tiles.
-const ATTN_FUSED_WGSL = `
+function genAttnFusedWgsl(QB, HD) {
+  // Workgroup = HD lanes (64 or 128). LDS: qu/qv 2·QB·HD·4 + sc QB·256·4 +
+  // vt VROWS·HD·4 bytes; VROWS shrinks at HD=128 to stay ≤ 12KB (16KB was an
+  // occupancy cliff). NOTE the original QB=8/HD≤64 guard meant this kernel
+  // NEVER ran on Parakeet (HD=128) — every earlier in-context "fused" number
+  // was actually the multi-pass fallback.
+  const WGS = HD;
+  const VROWS = HD === 128 ? 8 : 16;
+  return `enable f16;
 struct Meta { T:u32, H:u32, HD:u32, W:u32, P:u32, QB:u32, _a:u32, _b:u32 };
 @group(0) @binding(0) var<storage, read> Q: array<f32>;
 @group(0) @binding(1) var<storage, read> K: array<f32>;
@@ -1025,59 +1033,52 @@ struct Meta { T:u32, H:u32, HD:u32, W:u32, P:u32, QB:u32, _a:u32, _b:u32 };
 @group(0) @binding(6) var<storage, read_write> OUT: array<f32>;
 @group(0) @binding(7) var<uniform> m: Meta;
 const MAXT = 256u;
-const QBLK = 8u;
-const HDMAX = 64u;
-var<workgroup> qu: array<f32, 512>;   // QBLK×HD, q+pbu
-var<workgroup> qv: array<f32, 512>;   // QBLK×HD, q+pbv
-var<workgroup> sc: array<f32, 2048>;  // QBLK×MAXT scores
-var<workgroup> vt: array<f32, 1024>;  // 16×HD V tile
-@compute @workgroup_size(64)
+const QBLK = ${QB}u;
+const HDC = ${HD}u;
+const VROWS = ${VROWS}u;
+var<workgroup> qu: array<f32, ${QB * HD}>;
+var<workgroup> qv: array<f32, ${QB * HD}>;
+var<workgroup> sc: array<f32, ${QB * 256}>;
+var<workgroup> vt: array<f32, ${VROWS * HD}>;
+@compute @workgroup_size(${WGS})
 fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
-  let T = m.T; let H = m.H; let HD = m.HD; let stride = H * HD;
+  let T = m.T; let H = m.H; let stride = H * HDC;
   let q0 = wg.x * QBLK;
   let h = wg.y;
   let w = wg.z;
-  let ho = h * HD;
+  let ho = h * HDC;
   let base = w * T;
-  // load q block (+pbu / +pbv)
-  for (var e = li; e < QBLK * HD; e += 64u) {
-    let i = e / HD; let d = e % HD;
+  for (var e = li; e < QBLK * HDC; e += ${WGS}u) {
+    let i = e / HDC; let d = e % HDC;
     var qval = 0.0;
     if (q0 + i < T) { qval = Q[(base + q0 + i) * stride + ho + d]; }
     qu[e] = qval + PBU[ho + d];
     qv[e] = qval + PBV[ho + d];
   }
-  // init scores to -inf-ish for invalid columns/rows
-  for (var e = li; e < QBLK * MAXT; e += 64u) { sc[e] = 0.0; }
+  for (var e = li; e < QBLK * MAXT; e += ${WGS}u) { sc[e] = 0.0; }
   workgroupBarrier();
-  // pass A: ac — each K row read once, dotted against all 8 queries
-  for (var j = li; j < T; j += 64u) {
+  for (var j = li; j < T; j += ${WGS}u) {
     let kb = (base + j) * stride + ho;
     for (var i = 0u; i < QBLK; i++) {
       var acc = 0.0;
-      for (var d = 0u; d < HD; d++) { acc += qu[i * HD + d] * K[kb + d]; }
+      for (var d = 0u; d < HDC; d++) { acc += qu[i * HDC + d] * K[kb + d]; }
       sc[i * MAXT + j] = acc;
     }
   }
   workgroupBarrier();
-  // pass B: bd — each pos row read once; row r serves (i, j = r-(T-1)+q0+i)
-  for (var r = li; r < T + QBLK - 1u; r += 64u) {
-    let pb = r * stride + ho;
-    // valid pos rows are 0..2T-2; r indexes from (T-1-q0-QBLK+1)... compute per i
+  for (var r = li; r < T + QBLK - 1u; r += ${WGS}u) {
     for (var i = 0u; i < QBLK; i++) {
-      // j such that pos index (T-1 - (q0+i) + j) == rGlobal, with rGlobal = r + T - 1 - q0 - (QBLK - 1)
       let rg = i32(r) + i32(T) - 1i - i32(q0) - i32(QBLK) + 1i;
       let j = rg - (i32(T) - 1i) + i32(q0) + i32(i);
       if (j >= 0i && j < i32(T) && rg >= 0i && rg < i32(m.P)) {
         var acc = 0.0;
         let pg = u32(rg) * stride + ho;
-        for (var d = 0u; d < HD; d++) { acc += qv[i * HD + d] * POS[pg + d]; }
+        for (var d = 0u; d < HDC; d++) { acc += qv[i * HDC + d] * POS[pg + d]; }
         sc[i * MAXT + u32(j)] += acc;
       }
     }
   }
   workgroupBarrier();
-  // softmax per query row (8 rows, one lane each)
   if (li < QBLK) {
     let i = li;
     var mx = -3.0e38;
@@ -1088,33 +1089,29 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) l
     for (var j = 0u; j < T; j++) { sc[i * MAXT + j] *= inv; }
   }
   workgroupBarrier();
-  // PV: lane d accumulates all 8 queries over 16-row V tiles
-  var acc: array<f32, 8>;
+  var acc: array<f32, ${QB}>;
   for (var i = 0u; i < QBLK; i++) { acc[i] = 0.0; }
   var j0 = 0u;
   loop {
     if (j0 >= T) { break; }
-    let rows = min(16u, T - j0);
-    for (var e = li; e < rows * HD; e += 64u) {
-      let jj = e / HD; let d = e % HD;
-      vt[jj * HD + d] = V[(base + j0 + jj) * stride + ho + d];
+    let rows = min(VROWS, T - j0);
+    for (var e = li; e < rows * HDC; e += ${WGS}u) {
+      let jj = e / HDC; let d = e % HDC;
+      vt[jj * HDC + d] = V[(base + j0 + jj) * stride + ho + d];
     }
     workgroupBarrier();
-    if (li < HD) {
-      for (var jj = 0u; jj < rows; jj++) {
-        let vv = vt[jj * HD + li];
-        for (var i = 0u; i < QBLK; i++) { acc[i] += sc[i * MAXT + j0 + jj] * vv; }
-      }
+    for (var jj = 0u; jj < rows; jj++) {
+      let vv = vt[jj * HDC + li];
+      for (var i = 0u; i < QBLK; i++) { acc[i] += sc[i * MAXT + j0 + jj] * vv; }
     }
     workgroupBarrier();
-    j0 += 16u;
+    j0 += VROWS;
   }
-  if (li < HD) {
-    for (var i = 0u; i < QBLK; i++) {
-      if (q0 + i < T) { OUT[(base + q0 + i) * stride + ho + li] = acc[i]; }
-    }
+  for (var i = 0u; i < QBLK; i++) {
+    if (q0 + i < T) { OUT[(base + q0 + i) * stride + ho + li] = acc[i]; }
   }
 }`;
+}
 
 const RELSHIFT_STREAM_WGSL = `
 struct Meta { H:i32, n:i32, Lk:i32, P:i32, dMax:i32, Lc:i32, subT:i32, C:i32, left:i32, right:i32, _a:i32, _b:i32 };
@@ -2821,11 +2818,12 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
    */
   attnFused(q, k, v, pos, pbu, pbv, H, HD, W) {
     const T = q.rows / W;
-    if (T > 256 || HD > 64) return null; // caller falls back to the multi-pass chain
+    if (T > 256 || (HD !== 64 && HD !== 128)) return null; // caller falls back to the multi-pass chain
+    const QB = globalThis.__attnQb || 4;
     const y = this.alloc(W * T, H * HD);
-    const pipeline = this._pipeline("attnfused", ATTN_FUSED_WGSL);
-    const u = this._uniform(new Uint32Array([T, H, HD, W, pos.rows, 8, 0, 0]));
-    this._run(pipeline, [q.buf, k.buf, v.buf, pos.buf, pbu.buf, pbv.buf, y.buf], u, Math.ceil(T / 8), H, W);
+    const pipeline = this._pipeline(`attnfused${QB}h${HD}`, genAttnFusedWgsl(QB, HD));
+    const u = this._uniform(new Uint32Array([T, H, HD, W, pos.rows, QB, 0, 0]));
+    this._run(pipeline, [q.buf, k.buf, v.buf, pos.buf, pbu.buf, pbv.buf, y.buf], u, Math.ceil(T / QB), H, W);
     return y;
   }
 
