@@ -7,7 +7,7 @@ use, cache client-side, and everything runs on the visitor's machine. This is
 the browser sibling of the Swift/CoreML
 [FluidAudio](https://github.com/FluidInference/FluidAudio) framework.
 
-**1 hour of audio transcribed in ~13 seconds — 282× real-time — in a Chrome
+**1 hour of audio transcribed in ~12 seconds — 293× real-time — in a Chrome
 tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
 1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
 
