@@ -47,7 +47,9 @@ const projB = ctx.upload(dec.encB.slice(), 1, 640);
 const projFrames = await ctx.download(ctx.matmul(r.framesGpu, projW, { bias: projB }));
 eouWasmReset(wdec);
 const wIds = eouWasmDecodeCont(wdec, projFrames, r.Tsub).ids;
-assert(wIds.length === ids.length && wIds.every((v, i) => v === ids[i]), "wasm decoder tokens == JS decoder tokens");
+// NOTE smoke, not proof: rust uses poly expf/tanhf and blocked FP accumulation
+// vs JS Math.* — a near-tie argmax on OTHER audio can legitimately differ.
+assert(wIds.length === ids.length && wIds.every((v, i) => v === ids[i]), "wasm decoder tokens == JS decoder tokens (this sample)");
 console.log(`eou (wasm backend): ${Date.now() - t0}ms →`, JSON.stringify(text));
 assert(/suffrage/i.test(text), "transcript contains 'suffrage'");
 assert(/classes/i.test(text), "transcript contains 'classes'");

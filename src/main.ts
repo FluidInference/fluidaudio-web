@@ -157,6 +157,7 @@ async function liveTick() {
 }
 
 async function startLive() {
+  if (stopping) return; // a previous session's flush is still settling
   output.textContent = "requesting microphone…";
   try {
     mic.clear();
@@ -185,20 +186,30 @@ async function stopLive() {
   while (liveBusy) await new Promise((r) => setTimeout(r, 25));
   await mic.stop();
   micBtn.textContent = "🎤 Live";
-  runBtn.disabled = false;
-  if (engine && isStreaming(engine)) {
+  // (Run stays disabled until the flush below completes.)
+  // Capture: the dropdown can reassign the global `engine` while we await —
+  // the flush must finish/reset the engine that owned this stream.
+  const eng = engine;
+  if (eng && isStreaming(eng)) {
     // Streamed all along — just flush the right-padded tail. No re-decode.
     try {
       const { samples, total } = mic.since(livePos);
       livePos = total;
-      if (samples.length) await engine.push(samples);
-      const text = await engine.finish();
-      const ev = engine.streamEvents ?? [];
+      if (samples.length) await eng.push(samples);
+      const text = await eng.finish();
+      const ev = eng.streamEvents ?? [];
       output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s, true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
-      engine.reset();
       status.textContent = "Done.";
     } catch (err) {
       output.textContent = String(err);
+    } finally {
+      // reset even when the flush failed — a stranded stream blocks every
+      // subsequent Run with the stream-active guard.
+      try {
+        eng.reset();
+      } catch {
+        /* disposed mid-flight */
+      }
     }
   } else if (engine && mic.seconds >= 1) {
     // Final pass over the WHOLE capture (the rolling view only showed the tail).
@@ -213,6 +224,7 @@ async function stopLive() {
       output.textContent = String(err);
     }
   }
+  runBtn.disabled = false; // only after the flush — Run mid-flush hits the stream-active guard
   stopping = false;
 }
 

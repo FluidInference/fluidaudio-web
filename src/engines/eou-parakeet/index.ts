@@ -54,7 +54,21 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     events: { type: string; time: number }[];
     subT: number;
     finished: boolean;
+    broken: boolean;
   } | null = null;
+  // push()/finish() serialize through this chain: the SDK doesn't force callers
+  // to await one push before the next, and interleaved encodeStreamPush loops
+  // on one encSt corrupt the FIFO/caches.
+  private op: Promise<unknown> = Promise.resolve();
+
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const r = this.op.then(fn, fn);
+    this.op = r.then(
+      () => undefined,
+      () => undefined,
+    );
+    return r;
+  }
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[eou-parakeet] backend: ${b}`) });
@@ -136,9 +150,14 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   // costs one tiny chunk pass instead of a rolling re-decode.
 
   /** Feed 16 kHz samples; returns the text emitted so far (plus buffered state). */
-  async push(chunk: Float32Array): Promise<string> {
+  push(chunk: Float32Array): Promise<string> {
+    return this.serialize(() => this.pushInner(chunk));
+  }
+
+  private async pushInner(chunk: Float32Array): Promise<string> {
     if (!this.enc || !this.wdec || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
     if (this.stream?.finished) throw new Error("finish() already called — reset() to start a new stream");
+    if (this.stream?.broken) throw new Error("stream broken by an earlier push failure — reset() to start a new stream");
     if (!this.stream) {
       eouWasmReset(this.wdec); // RNNT state lives in the wasm instance
       this.stream = {
@@ -148,22 +167,35 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
         events: [],
         subT: 0,
         finished: false,
+        broken: false,
       };
     }
     const s = this.stream;
-    const { data, count } = s.mel.push(chunk);
-    if (data && count > 0) {
-      const out = await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
-      if (out) this.consume(out);
+    // The mel FIFO absorbs the chunk BEFORE the encode that can throw — after a
+    // failure the stream state is undefined (re-sending the chunk would feed
+    // the mel twice). Poison it: the caller must reset() for a new utterance.
+    try {
+      const { data, count } = s.mel.push(chunk);
+      if (data && count > 0) {
+        const out = await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
+        if (out) this.consume(out);
+      }
+    } catch (err) {
+      s.broken = true;
+      throw err;
     }
     return this.tokenizer.decode(s.ids);
   }
 
   /** Flush the right-padded tail and return the final utterance text. */
-  async finish(): Promise<string> {
+  finish(): Promise<string> {
+    return this.serialize(() => this.finishInner());
+  }
+
+  private async finishInner(): Promise<string> {
     if (!this.stream || !this.tokenizer) return "";
     const s = this.stream;
-    if (s.finished) return this.tokenizer.decode(s.ids);
+    if (s.finished || s.broken) return this.tokenizer.decode(s.ids);
     s.finished = true;
     const { data, count } = s.mel.flush();
     if (data && count > 0) {
