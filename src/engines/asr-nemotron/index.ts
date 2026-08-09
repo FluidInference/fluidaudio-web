@@ -15,10 +15,12 @@
 // Full offline int8 path == coherent transcript matching the ORT streaming reference.
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
-import { loadNemotronDecoder, nemotronDecode, loadPromptKernel, applyPromptKernel } from "./raw-decoder-nemotron.js";
+import { loadNemotronDecoder, nemotronDecode, loadPromptKernel, applyPromptKernel, createNemotronStream, nemotronDecodeCont } from "./raw-decoder-nemotron.js";
+import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
+import { StreamingMel } from "./streaming-mel.js";
 import { JsPreprocessor } from "./nemotron-mel.js";
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
@@ -26,7 +28,9 @@ const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 // pad, causal depthwise conv, cache-aware attention (chunk 4, left 56, right 3).
 const NEMO_CFG = { melBins: 128, subPad: { t: 2, b: 1, l: 2, r: 1 }, convCausal: true, attChunk: 4, attLeft: 56, attRight: 3 };
 
-export class NemotronEngine implements AsrEngine {
+const ENC_D = 1024;
+
+export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
   readonly id = "asr-nemotron";
   readonly label = "Nemotron 3.5 multilingual";
   private ctx: any = null;
@@ -36,6 +40,98 @@ export class NemotronEngine implements AsrEngine {
   private mel = new JsPreprocessor({ nMels: 128 });
   private vocab: string[] | null = null;
   private langMap: Record<string, number> = {};
+  private stream: { mel: StreamingMel; encSt: any; decSt: any; ids: number[]; subT: number; finished: boolean; broken: boolean } | null = null;
+  private op: Promise<unknown> = Promise.resolve();
+
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const r = this.op.then(fn, fn);
+    this.op = r.then(
+      () => undefined,
+      () => undefined,
+    );
+    return r;
+  }
+
+  private idsToText(ids: number[]): string {
+    return ids
+      .map((i) => this.vocab![i] ?? "")
+      .filter((tk) => !tk.startsWith("<"))
+      .join("")
+      .replace(/\u2581/g, " ")
+      .trim();
+  }
+
+  // ── true streaming (docs/STREAMING.md) — provisional-tail lookahead for the
+  // right-context-3 attention: B=4 chunks (1.28s) per the measured decay curve;
+  // gate: scripts/streaming-encode-check.mjs (tokens == offline). ──
+  push(chunk: Float32Array): Promise<string> {
+    return this.serialize(() => this.pushInner(chunk));
+  }
+
+  private async pushInner(chunk: Float32Array): Promise<string> {
+    if (!this.enc || !this.dec || !this.vocab) throw new Error("NemotronEngine.load() not called");
+    if (this.stream?.finished) throw new Error("finish() already called — reset() to start a new stream");
+    if (this.stream?.broken) throw new Error("stream broken by an earlier push failure — reset()");
+    if (!this.stream) {
+      this.stream = {
+        mel: new StreamingMel(128),
+        encSt: createEncodeStream(this.ctx, this.enc, { lookaheadChunks: 4 }),
+        decSt: createNemotronStream(this.dec),
+        ids: [],
+        subT: 0,
+        finished: false,
+        broken: false,
+      };
+    }
+    const s = this.stream;
+    try {
+      const { data, count } = s.mel.push(chunk);
+      if (data && count > 0) {
+        const out = await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
+        if (out) this.consume(out);
+      }
+    } catch (err) {
+      s.broken = true;
+      throw err;
+    }
+    return this.idsToText(s.ids);
+  }
+
+  finish(): Promise<string> {
+    return this.serialize(() => this.finishInner());
+  }
+
+  private async finishInner(): Promise<string> {
+    if (!this.stream || !this.vocab) return "";
+    const s = this.stream;
+    if (s.finished || s.broken) return this.idsToText(s.ids);
+    s.finished = true;
+    const { data, count } = s.mel.flush();
+    if (data && count > 0) {
+      const out = await encodeStreamPush(this.ctx, s.encSt, data, count, { maxChunk: 16 });
+      if (out) this.consume(out);
+    }
+    const tail = await encodeStreamFlush(this.ctx, s.encSt);
+    if (tail) this.consume(tail);
+    return this.idsToText(s.ids);
+  }
+
+  reset(): void {
+    if (this.stream) {
+      disposeEncodeStream(this.ctx, this.stream.encSt);
+      this.ctx?.trimPool?.();
+    }
+    this.stream = null;
+  }
+
+  private consume(frames: Float32Array): void {
+    const s = this.stream!;
+    const n = frames.length / ENC_D;
+    const langId = this.langMap[this.opts.language ?? "en-US"] ?? 0;
+    const enc = applyPromptKernel(this.pk, frames, n, langId);
+    s.ids.push(...nemotronDecodeCont(this.dec, s.decSt, enc, n).ids);
+    s.subT += n;
+  }
 
   /** @param opts.language e.g. "en-US" / "de" / "zh-CN" / "ja-JP" (default en-US). */
   constructor(private opts: { language?: string } = {}) {}
@@ -62,6 +158,7 @@ export class NemotronEngine implements AsrEngine {
 
   async transcribe(audio: AudioData): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.pk || !this.vocab) throw new Error("NemotronEngine.load() not called");
+    if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
     // Long-form: 4-minute segments with per-segment decode (the whole-clip
@@ -105,6 +202,7 @@ export class NemotronEngine implements AsrEngine {
   }
 
   async dispose(): Promise<void> {
+    this.reset();
     this.ctx?.device?.destroy?.();
     this.ctx = this.enc = this.pk = this.dec = this.vocab = null;
   }

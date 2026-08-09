@@ -131,25 +131,34 @@ function jointArgmax(dec, encFrame, decOut) {
 
 const zeroState = () => ({ h: [new Float32Array(HID), new Float32Array(HID)], c: [new Float32Array(HID), new Float32Array(HID)] });
 
-/** RNNT greedy over frames[Tenc*1024] (row-major). Returns { ids } (text token ids). */
-export function nemotronDecode(dec, frames, Tenc, maxSymbols = 10) {
+/** Fresh decode state for streaming continuation (nemotronDecodeCont). */
+export function createNemotronStream(dec) {
+  return { pred: predict(dec, BLANK, zeroState()) };
+}
+
+/** RNNT greedy over frames[Tenc*1024], CONTINUING from `st` — a chunk boundary
+ * is invisible to the decoder. */
+export function nemotronDecodeCont(dec, st, frames, Tenc, maxSymbols = 10) {
   const ids = [];
-  let state = zeroState();
-  let pred = predict(dec, BLANK, state);
   const enc = new Float32Array(ENC_D);
   let t = 0,
     emitted = 0;
   while (t < Tenc) {
     enc.set(frames.subarray(t * ENC_D, t * ENC_D + ENC_D));
-    const maxId = jointArgmax(dec, enc, pred.decOut);
+    const maxId = jointArgmax(dec, enc, st.pred.decOut);
     if (maxId === BLANK || emitted >= maxSymbols) {
       t += 1;
       emitted = 0;
       continue;
     }
     ids.push(maxId);
-    pred = predict(dec, maxId, pred);
+    st.pred = predict(dec, maxId, st.pred);
     emitted++;
   }
   return { ids };
+}
+
+/** RNNT greedy over frames[Tenc*1024] (row-major). Returns { ids } (text token ids). */
+export function nemotronDecode(dec, frames, Tenc, maxSymbols = 10) {
+  return nemotronDecodeCont(dec, createNemotronStream(dec), frames, Tenc, maxSymbols);
 }

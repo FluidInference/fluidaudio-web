@@ -154,5 +154,64 @@ assert(wOk, "wasm decoder tokens == JS decoder tokens");
 ctx.trimPool?.();
 console.log("text:", JSON.stringify(tokenizer.decode(idsFine)));
 assert(/suffrage/i.test(tokenizer.decode(idsFine)), "transcript sanity");
+
+// ── 5. Nemotron (attRight=3): provisional-tail streaming, B=4 chunks ────────
+// RIGHT>0 cascades future-dependence through layers, so streaming here is NOT
+// bit-exact — the gate asserts the measured decay point (B=4 → ~1e-3) plus
+// TOKEN equality end-to-end (prompt kernel + RNNT decode on both frame sets).
+const { loadNemotronDecoder, loadPromptKernel, applyPromptKernel, nemotronDecode } = await import("../src/engines/asr-nemotron/raw-decoder-nemotron.js");
+const NEMO_CFG = { melBins: 128, subPad: { t: 2, b: 1, l: 2, r: 1 }, convCausal: true, attChunk: 4, attLeft: 56, attRight: 3 };
+const nEncBin = await hfGet(W, "nemotron/encoder-int8.bin");
+const nEncMan = await hfJson(W, "nemotron/encoder-int8.manifest.json");
+const nEnc = loadParakeetEncoder(ctx, nEncBin, nEncMan, NEMO_CFG);
+const nDecU8 = await hfGet(W, "nemotron/decoder-fp32.bin");
+const nDec = loadNemotronDecoder(
+  new Float32Array(nDecU8.buffer, nDecU8.byteOffset, nDecU8.byteLength / 4),
+  await hfJson(W, "nemotron/decoder-fp32.manifest.json"),
+);
+const pk = loadPromptKernel(new Float32Array(nEncBin.buffer, nEncBin.byteOffset, nEncBin.byteLength >> 2), nEncMan);
+
+const nOff = await parakeetEncode(ctx, nEnc, offMel, T);
+const nOffFrames = await ctx.download(nOff.framesGpu);
+const nOffIds = nemotronDecode(nDec, applyPromptKernel(pk, nOffFrames, nOff.Tsub), nOff.Tsub).ids;
+ctx.trimPool?.();
+
+const nSt = createEncodeStream(ctx, nEnc, { lookaheadChunks: 4 });
+const nParts = [];
+{
+  const SL = [5, 32, 3, 96, 11, 200];
+  let pos = 0,
+    si = 0;
+  while (pos < T) {
+    const cnt = Math.min(SL[si++ % SL.length], T - pos);
+    const slab = new Float32Array(128 * cnt);
+    for (let t = 0; t < cnt; t++) for (let c = 0; c < 128; c++) slab[c * cnt + t] = stCols[pos + t][c];
+    const out = await encodeStreamPush(ctx, nSt, slab, cnt, { maxChunk: 16 });
+    if (out) nParts.push(out);
+    pos += cnt;
+  }
+  const tail = await encodeStreamFlush(ctx, nSt);
+  if (tail) nParts.push(tail);
+}
+disposeEncodeStream(ctx, nSt);
+ctx.trimPool?.();
+const nTotal = nParts.reduce((s2, p) => s2 + p.length, 0) / 1024;
+assert(nTotal === nOff.Tsub, `nemotron frame count ${nTotal} vs ${nOff.Tsub}`);
+const nStFrames = new Float32Array(nTotal * 1024);
+{
+  let off2 = 0;
+  for (const p of nParts) {
+    nStFrames.set(p, off2);
+    off2 += p.length;
+  }
+}
+let nMax = 0;
+for (let i = 0; i < nStFrames.length; i++) nMax = Math.max(nMax, Math.abs(nStFrames[i] - nOffFrames[i]));
+const nStIds = nemotronDecode(nDec, applyPromptKernel(pk, nStFrames, nTotal), nTotal).ids;
+const nTokOk = nStIds.length === nOffIds.length && nStIds.every((v, i) => v === nOffIds[i]);
+console.log(`nemotron B=4: frames maxΔ ${nMax.toExponential(2)}, tokens ${nStIds.length} vs ${nOffIds.length} → ${nTokOk ? "IDENTICAL" : "DIVERGED"}`);
+assert(nMax < 5e-3, `nemotron streaming frame delta (B=4 decay point), got ${nMax}`);
+assert(nTokOk, "nemotron streaming tokens == offline tokens");
+
 console.log("STREAMING ENCODE GATE OK");
 process.exit(0);
