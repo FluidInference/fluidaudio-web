@@ -156,7 +156,14 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
-  async transcribe(audio: AudioData): Promise<AsrResult> {
+  transcribe(audio: AudioData): Promise<AsrResult> {
+    // Serialized on the same chain as push/finish — a queued-but-unexecuted
+    // push would otherwise race the segment loop (TOCTOU on this.stream) and
+    // trimPool() mid-stream violates the drained-queue contract.
+    return this.serialize(() => this.transcribeInner(audio));
+  }
+
+  private async transcribeInner(audio: AudioData): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.pk || !this.vocab) throw new Error("NemotronEngine.load() not called");
     if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
