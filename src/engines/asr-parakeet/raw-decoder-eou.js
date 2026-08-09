@@ -147,3 +147,61 @@ export function eouDecodeCont(dec, st, frames, Tenc, frameOffset = 0, maxSymbols
 export function eouDecode(dec, frames, Tenc, maxSymbols = 10) {
   return eouDecodeCont(dec, createEouStream(dec), frames, Tenc, 0, maxSymbols);
 }
+
+// ── wasm-SIMD decode (rust/parakeet-decoder EOU section) ──────────────────
+// The JS loop above recomputes BOTH joint projections every frame — fine for
+// clips, the bottleneck at hour scale (~52× decode RTFx). The wasm path takes
+// PRE-PROJECTED frames [T,640] (one batched 512→640 GEMM on the backend),
+// caches predProj across blank frames, and SIMD-vectorizes the 640→1027 out
+// matmul with zero-row skip. Stream state (LSTM h/c + predProj) lives in wasm
+// statics: eouWasmDecodeCont continues it, eouWasmReset starts fresh — one
+// stream per instance.
+
+/** Instantiate the shared decoder wasm and load the EOU weights. */
+export async function loadEouWasmDecoder(wasmBytes, bin, man) {
+  const { instance } = await WebAssembly.instantiate(wasmBytes, {});
+  const ex = instance.exports;
+  ex.reset_to(ex.__heap_base.value);
+  const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
+  const put = (arr) => {
+    const p = ex.alloc(arr.byteLength);
+    new Float32Array(ex.memory.buffer, p, arr.length).set(arr);
+    return p;
+  };
+  ex.eou_set_weights(put(g("embed")), put(g("lstm_W")), put(g("lstm_R")), put(g("lstm_B")), put(g("predW")), put(g("predB")), put(g("outW")), put(g("outB")));
+  ex.eou_reset();
+  return { ex, mark: ex.bump_mark() };
+}
+
+export function eouWasmReset(wd) {
+  wd.ex.eou_reset();
+}
+
+/** RNNT greedy over PRE-PROJECTED frames [Tenc,640] (encB included), CONTINUING
+ * the wasm stream state. Same result shape as eouDecodeCont. */
+export function eouWasmDecodeCont(wd, framesProj, Tenc, frameOffset = 0, maxSymbols = 10) {
+  const ex = wd.ex;
+  ex.reset_to(wd.mark);
+  // Alloc everything BEFORE writing: alloc may grow memory and detach views.
+  const fp = ex.alloc(framesProj.byteLength);
+  const cap = Math.max(1, Tenc * maxSymbols);
+  const ip = ex.alloc(cap * 4);
+  const tp = ex.alloc(cap * 4);
+  new Float32Array(ex.memory.buffer, fp, framesProj.length).set(framesProj);
+  const n = ex.eou_decode_cont(fp, Tenc, ip, tp, maxSymbols);
+  const rawIds = new Int32Array(ex.memory.buffer, ip, n);
+  const rawFr = new Int32Array(ex.memory.buffer, tp, n);
+  const ids = [],
+    idFrames = [],
+    events = [];
+  for (let i = 0; i < n; i++) {
+    const id = rawIds[i],
+      fr = frameOffset + rawFr[i];
+    if (id === EOU || id === EOB) events.push({ type: id === EOU ? "eou" : "eob", frame: fr });
+    else {
+      ids.push(id);
+      idFrames.push(fr);
+    }
+  }
+  return { ids, idFrames, events };
+}

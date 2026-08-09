@@ -14,3 +14,12 @@ export function eouDecodeCont(
   frameOffset?: number,
   maxSymbols?: number,
 ): { ids: number[]; idFrames: number[]; events: { type: string; frame: number }[] };
+export function loadEouWasmDecoder(wasmBytes: ArrayBuffer | Uint8Array, bin: Float32Array, man: any): Promise<any>;
+export function eouWasmReset(wd: any): void;
+export function eouWasmDecodeCont(
+  wd: any,
+  framesProj: Float32Array,
+  Tenc: number,
+  frameOffset?: number,
+  maxSymbols?: number,
+): { ids: number[]; idFrames: number[]; events: { type: string; frame: number }[] };

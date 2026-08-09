@@ -19,12 +19,14 @@ import { fetchCached, hfUrl } from "../../core/modelCache.js";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
-import { loadEouDecoder, eouDecode, createEouStream, eouDecodeCont } from "../asr-parakeet/raw-decoder-eou.js";
+import { loadEouDecoder, loadEouWasmDecoder, eouWasmDecodeCont, eouWasmReset } from "../asr-parakeet/raw-decoder-eou.js";
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
 import { StreamingMel } from "../asr-nemotron/streaming-mel.js";
 import { makeEouTokenizer } from "./eou-decode.js";
 import { EOU_CFG } from "./config.js";
+
+const wasmUrl = new URL("../asr-parakeet/parakeet-decoder.wasm", import.meta.url); // cross-bundler asset URL
 
 const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const VOCAB_REPO = "ysdede/parakeet-realtime-eou-120m-v1-onnx";
@@ -32,7 +34,7 @@ const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
 // EOU streaming FastConformer config (see raw-encoder.js): causal subsampling pad,
 // causal depthwise conv, chunked-causal attention (chunk 2, left context 70).
 
-const ENC_D = 512;
+const PROJ_D = 640; // joint-projected frame width (512→640 GEMM rides the encode batch)
 
 export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   readonly id = "eou-parakeet";
@@ -42,10 +44,12 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   private dec: any = null;
   private mel: JsPreprocessor | null = null;
   private tokenizer: ReturnType<typeof makeEouTokenizer> | null = null;
+  private wdec: any = null; // wasm-SIMD decoder (holds the stream's RNNT state)
+  private projW: any = null; // joint enc projection 512→640, run GPU-side pre-download
+  private projB: any = null;
   private stream: {
     mel: StreamingMel;
     encSt: any;
-    decSt: any;
     ids: number[];
     events: { type: string; time: number }[];
     subT: number;
@@ -64,14 +68,21 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     const vocab = new TextDecoder().decode(await fetchCached(hfUrl(VOCAB_REPO, "vocab.txt"), onProgress, "vocab.txt"));
 
     this.enc = loadParakeetEncoder(this.ctx, encBin, encMan, EOU_CFG);
-    this.dec = loadEouDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
+    const decF32 = new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4);
+    this.dec = loadEouDecoder(decF32, decMan);
+    // Decode runs in the wasm-SIMD crate (JS loop is the hour-scale bottleneck);
+    // the joint's 512→640 enc projection rides the encode batch as one GEMM.
+    this.wdec = await loadEouWasmDecoder(await (await fetch(wasmUrl)).arrayBuffer(), decF32, decMan);
+    this.projW = this.ctx.upload(this.dec.encW.slice(), 512, 640);
+    this.projB = this.ctx.upload(this.dec.encB.slice(), 1, 640);
     this.mel = new JsPreprocessor({ nMels: 128 });
     this.tokenizer = makeEouTokenizer(vocab);
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
   async transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
-    if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
+    if (!this.enc || !this.wdec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
+    if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe (shared decoder state)");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
     // Long-form: process in 4-minute segments, decoder reset between them.
@@ -96,12 +107,13 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       melMs += now() - tm;
       const te = now();
       const r = await parakeetEncode(this.ctx, this.enc, features, length);
-      const frames = await this.ctx.download(r.framesGpu);
+      const frames = await this.ctx.download(this.ctx.matmul(r.framesGpu, this.projW, { bias: this.projB }));
       encMs += now() - te;
       const td = now();
-      // eouDecode resets decoder state per call — exactly the per-segment
-      // "decode reset" semantics we want at a segment boundary.
-      const { ids, events: evFrames } = eouDecode(this.dec, frames, r.Tsub);
+      // Reset per segment — exactly the per-segment "decode reset" semantics
+      // we want at a segment boundary.
+      eouWasmReset(this.wdec);
+      const { ids, events: evFrames } = eouWasmDecodeCont(this.wdec, frames, r.Tsub);
       decMs += now() - td;
       const offSec = off / 16000;
       for (const e of evFrames as { type: string; frame: number }[]) {
@@ -125,13 +137,13 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
 
   /** Feed 16 kHz samples; returns the text emitted so far (plus buffered state). */
   async push(chunk: Float32Array): Promise<string> {
-    if (!this.enc || !this.dec || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
+    if (!this.enc || !this.wdec || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
     if (this.stream?.finished) throw new Error("finish() already called — reset() to start a new stream");
     if (!this.stream) {
+      eouWasmReset(this.wdec); // RNNT state lives in the wasm instance
       this.stream = {
         mel: new StreamingMel(128),
-        encSt: createEncodeStream(this.ctx, this.enc),
-        decSt: createEouStream(this.dec),
+        encSt: createEncodeStream(this.ctx, this.enc, { proj: { w: this.projW, b: this.projB } }),
         ids: [],
         events: [],
         subT: 0,
@@ -178,8 +190,8 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
 
   private consume(frames: Float32Array): void {
     const s = this.stream!;
-    const n = frames.length / ENC_D;
-    const { ids, events } = eouDecodeCont(this.dec, s.decSt, frames, n, s.subT);
+    const n = frames.length / PROJ_D; // stream frames arrive pre-projected [n, 640]
+    const { ids, events } = eouWasmDecodeCont(this.wdec, frames, n, s.subT);
     s.ids.push(...ids);
     for (const e of events as { type: string; frame: number }[]) s.events.push({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) });
     s.subT += n;
@@ -188,6 +200,6 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   async dispose(): Promise<void> {
     this.reset();
     this.ctx?.device?.destroy?.();
-    this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
+    this.ctx = this.enc = this.dec = this.wdec = this.projW = this.projB = this.mel = this.tokenizer = null;
   }
 }
