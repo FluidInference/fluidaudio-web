@@ -31,7 +31,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // decodePool (decode-pool.js): windows decode in parallel on worker threads;
   // browsers where decode dominates the wall (encode 355ms vs decode 1821ms on
   // one measured machine) gain ~pool-size× on the decode term.
-  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null, gpuDecoder = null } = opts;
+  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null, gpuDecoder = null, melPool = null } = opts;
   const winSamples = windowSec * sampleRate;
   const overlapSamples = overlapSec * sampleRate;
   const hop = winSamples - overlapSamples;
@@ -64,7 +64,19 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     if (cur.length) groups.push(cur);
   }
 
+  // melPool (browser): windows fan out to mel workers and compute WHILE the
+  // GPU runs earlier groups — main-thread mel was ~1.8s of unhidden wall on
+  // the 1-hour browser run. Returns a promise; resolveMels() times only the
+  // UNHIDDEN wait. Sync path (node gates / no workers) unchanged.
   const melsFor = (g) => {
+    if (melPool) {
+      return Promise.all(
+        groups[g].map((i) => {
+          const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
+          return melPool.mel(slice);
+        }),
+      ).then((rs) => rs.filter((r) => r.length > 0).map((r) => r.features));
+    }
     const t0 = now();
     const mels = [];
     for (const i of groups[g]) {
@@ -74,6 +86,13 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     }
     stats.melMs += now() - t0;
     return mels;
+  };
+  const resolveMels = async (m) => {
+    if (!melPool) return m;
+    const t0 = now();
+    const arr = await m;
+    stats.melMs += now() - t0; // unhidden mel wait only
+    return arr;
   };
 
   // Joint encoder projection [W*Tsub,1024]→[W*Tsub,640] + staging copy, recorded
@@ -117,7 +136,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   if (!groups.length) return { ids, idTimes, stats }; // empty / zero-length input
   let w = 0;
   let nextMels = melsFor(0);
-  let pending = await submit(0, nextMels);
+  let pending = await submit(0, await resolveMels(nextMels));
   nextMels = groups.length > 1 ? melsFor(1) : null;
 
   // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
@@ -158,7 +177,7 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       const cur = pending;
       const advance = async () => {
         if (g + 1 < groups.length) {
-          pending = await submit(g + 1, nextMels);
+          pending = await submit(g + 1, await resolveMels(nextMels));
           nextMels = g + 2 < groups.length ? melsFor(g + 2) : null;
         } else {
           pending = null;

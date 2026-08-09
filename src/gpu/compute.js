@@ -484,25 +484,35 @@ fn main(
       var av = vec4<f32>(0.0);
       let aRow = rowBase + lane;
       if (lane < 8u && aRow < m.M) { av = A[aRow * K4 + kb * 8u + kv]; }
+      // one vec4 broadcast per row per k_vector (8 total) instead of 32
+      // scalar broadcasts; f16-convert once per row.
+      let r0 = vec4<f16>(subgroupBroadcast(av, 0u));
+      let r1 = vec4<f16>(subgroupBroadcast(av, 1u));
+      let r2 = vec4<f16>(subgroupBroadcast(av, 2u));
+      let r3 = vec4<f16>(subgroupBroadcast(av, 3u));
+      let r4 = vec4<f16>(subgroupBroadcast(av, 4u));
+      let r5 = vec4<f16>(subgroupBroadcast(av, 5u));
+      let r6 = vec4<f16>(subgroupBroadcast(av, 6u));
+      let r7 = vec4<f16>(subgroupBroadcast(av, 7u));
       for (var c = 0u; c < 4u; c++) {
         let pb = B[tileBase + (kv * 4u + c) * 32u + lane];
         let b0 = bitcast<vec4<f16>>(pb.xy);
         let b1 = bitcast<vec4<f16>>(pb.zw);
-        let a0 = vec4<f16>(f16(subgroupBroadcast(av[c], 0u)));
+        let a0 = vec4<f16>(r0[c]);
         acc[0] = fma(a0, b0, acc[0]); acc[1] = fma(a0, b1, acc[1]);
-        let a1 = vec4<f16>(f16(subgroupBroadcast(av[c], 1u)));
+        let a1 = vec4<f16>(r1[c]);
         acc[2] = fma(a1, b0, acc[2]); acc[3] = fma(a1, b1, acc[3]);
-        let a2 = vec4<f16>(f16(subgroupBroadcast(av[c], 2u)));
+        let a2 = vec4<f16>(r2[c]);
         acc[4] = fma(a2, b0, acc[4]); acc[5] = fma(a2, b1, acc[5]);
-        let a3 = vec4<f16>(f16(subgroupBroadcast(av[c], 3u)));
+        let a3 = vec4<f16>(r3[c]);
         acc[6] = fma(a3, b0, acc[6]); acc[7] = fma(a3, b1, acc[7]);
-        let a4 = vec4<f16>(f16(subgroupBroadcast(av[c], 4u)));
+        let a4 = vec4<f16>(r4[c]);
         acc[8] = fma(a4, b0, acc[8]); acc[9] = fma(a4, b1, acc[9]);
-        let a5 = vec4<f16>(f16(subgroupBroadcast(av[c], 5u)));
+        let a5 = vec4<f16>(r5[c]);
         acc[10] = fma(a5, b0, acc[10]); acc[11] = fma(a5, b1, acc[11]);
-        let a6 = vec4<f16>(f16(subgroupBroadcast(av[c], 6u)));
+        let a6 = vec4<f16>(r6[c]);
         acc[12] = fma(a6, b0, acc[12]); acc[13] = fma(a6, b1, acc[13]);
-        let a7 = vec4<f16>(f16(subgroupBroadcast(av[c], 7u)));
+        let a7 = vec4<f16>(r7[c]);
         acc[14] = fma(a7, b0, acc[14]); acc[15] = fma(a7, b1, acc[15]);
       }
     }

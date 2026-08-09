@@ -6,7 +6,7 @@ export function transcribeWindowed(
   projW: any,
   projB: any,
   samples: Float32Array,
-  opts?: { sampleRate?: number; windowSec?: number; overlapSec?: number; wb?: number; pipelined?: boolean; decodePool?: any },
+  opts?: { sampleRate?: number; windowSec?: number; overlapSec?: number; wb?: number; pipelined?: boolean; decodePool?: any; melPool?: any },
 ): Promise<{
   ids: number[];
   idTimes: number[];
