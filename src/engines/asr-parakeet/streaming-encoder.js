@@ -29,14 +29,21 @@ function streamPosEncoding(dMax, dMin, D) {
  * frame s reads mel rows [8s−14, 8s]. */
 const SUB_LOOKBACK = 14;
 
-export function createEncodeStream(ctx, enc, { proj = null } = {}) {
+export function createEncodeStream(ctx, enc, { proj = null, lookaheadChunks = 0 } = {}) {
   const { D, layers, dwK, attChunk: C } = enc.cfg;
   if (!C || !enc.cfg.convCausal) throw new Error("createEncodeStream: needs a streaming config (attChunk + convCausal)");
   const sp = enc.cfg.subPad || {};
   if (sp.t !== 2) throw new Error("createEncodeStream: subsampling continuation assumes subPad.t === 2");
   const LEFT = enc.cfg.attLeft ?? 70;
   const RIGHT = enc.cfg.attRight ?? 0;
-  if (RIGHT !== 0) throw new Error("createEncodeStream: right-context lookahead not implemented yet");
+  // RIGHT > 0 (Nemotron): exact values need future context that CASCADES through
+  // layers, so streaming computes a provisional B-frame tail each pass, emits
+  // only the settled chunk frames, and recomputes the tail next pass (NeMo
+  // cache-aware style). Error vs offline decays geometrically with B — measured
+  // on Nemotron int8 (chunk 4, right 3): B=2 chunks maxΔ 1.4e-2, B=3 → 2.1e-3,
+  // B=4 → 8.2e-4 (≈ noise floor). The caller picks the latency/accuracy point;
+  // B=4 (1.28s lookahead) recommended.
+  if (RIGHT !== 0 && lookaheadChunks < 1) throw new Error("createEncodeStream: attRight > 0 needs lookaheadChunks >= 1 (see comment)");
   const dMax = LEFT + C - 1;
   const dMin = -(C - 1 + RIGHT);
   const pe = ctx.upload(streamPosEncoding(dMax, dMin, D), dMax - dMin + 1, D);
@@ -60,6 +67,7 @@ export function createEncodeStream(ctx, enc, { proj = null } = {}) {
     // Optional joint projection {w, b}: frames download as [n, projDim]
     // (one fused GEMM rides the chunk batch — feeds the wasm decoder direct).
     proj,
+    B: RIGHT > 0 ? lookaheadChunks * C : 0, // provisional-tail frames per pass
     flushed: false,
     disposed: false,
   };
@@ -83,19 +91,23 @@ export async function encodeStreamPush(ctx, st, mel, count, { maxChunk = 64 } = 
   const outs = [];
   for (;;) {
     const M = st.fifo.length / melBins;
+    // The pass computes nComp = n + B frames (B provisional lookahead frames,
+    // recomputed next pass); only n are emitted and cached. Mel availability
+    // must cover the full nComp.
     let n;
     if (st.subT === 0) {
-      n = Math.floor((M + 7) / 8); // first chunk consumes 8n−7 frames (mel [0, 8n−8])
+      n = Math.floor((M + 7) / 8) - st.B; // first pass consumes 8·nComp−7 mel frames
     } else {
-      n = Math.floor((M - 7) / 8); // continuation consumes 8n+7 (7-frame overlap tail + 8n new)
+      n = Math.floor((M - 7) / 8) - st.B; // continuation consumes 8·nComp+7
     }
     n = Math.min(n, maxChunk) - (Math.min(n, maxChunk) % st.C);
     if (n < st.C) break;
-    const m = st.subT === 0 ? 8 * n - 7 : 8 * n + 7;
-    outs.push(await runChunk(ctx, st, st.fifo.subarray(0, m * melBins), m, n, false));
+    const nComp = n + st.B;
+    const m = st.subT === 0 ? 8 * nComp - 7 : 8 * nComp + 7;
+    outs.push(await runChunk(ctx, st, st.fifo.subarray(0, m * melBins), m, n, false, nComp));
     advanceFifo(st, n, melBins);
   }
-  return concatOut(outs, st.enc.cfg.D);
+  return concatOut(outs);
 }
 
 /** Encode the final partial chunk with the offline bottom pad (signal end).
@@ -117,7 +129,7 @@ export async function encodeStreamFlush(ctx, st) {
   for (let i = 0; i < 3; i++) T = Math.floor((T + pt + sp.b - 3) / 2) + 1;
   const n = T;
   if (n <= 0) return null;
-  const out = await runChunk(ctx, st, st.fifo, M, n, true);
+  const out = await runChunk(ctx, st, st.fifo, M, n, true, n);
   st.fifo = new Float32Array(0);
   return out;
 }
@@ -139,7 +151,7 @@ function advanceFifo(st, n, melBins) {
   st.fifoStart = keepFrom;
 }
 
-function concatOut(outs, D) {
+function concatOut(outs) {
   const kept = outs.filter(Boolean);
   if (!kept.length) return null;
   if (kept.length === 1) return kept[0];
@@ -153,9 +165,11 @@ function concatOut(outs, D) {
   return all;
 }
 
-// One chunk pass: mel slice (frame-major, m frames) → n new frames [n, D],
-// downloaded. Everything records into one batch submit; caches update inside.
-async function runChunk(ctx, st, melSlice, m, n, isFlush) {
+// One chunk pass: mel slice (frame-major, m frames) → nComp computed frames,
+// n ≤ nComp EMITTED (downloaded [n, D]); the nComp−n provisional tail frames
+// are attention right-context only — never cached, recomputed next pass.
+// Everything records into one batch submit; caches update inside.
+async function runChunk(ctx, st, melSlice, m, n, isFlush, nComp = n) {
   const enc = st.enc;
   const { D, H, HD, layers: LAYERS, dwK, Csub, melBins } = enc.cfg;
   const sp = enc.cfg.subPad;
@@ -204,7 +218,7 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
         Hh = Math.floor((Hh + pt + pb - k) / stride) + 1;
         Wd = Math.floor((Wd + (s2 ? sp.l + sp.r : 0) - k) / stride) + 1;
       }
-      if (Hh !== n) throw new Error(`streaming subsample: expected ${n} frames, got ${Hh}`);
+      if (Hh !== nComp) throw new Error(`streaming subsample: expected ${nComp} frames, got ${Hh}`);
       let x = ctx.matmul(ctx.subReshape(s, Csub, Hh, Wd), enc.sub.linw, { bias: enc.sub.linb }); // [n, D]
 
       for (let L = 0; L < LAYERS; L++) {
@@ -217,12 +231,12 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
         const Lc = st.k[L] ? st.k[L].rows : 0;
         const K = Lc ? ctx.concatRows([st.k[L], kN]) : kN;
         const V = Lc ? ctx.concatRows([st.v[L], vN]) : vN;
-        const Lk = Lc + n;
-        const ac = ctx.bmmQK(q, K, w.pbuAll, H, HD, 1); // [H*n, Lk]
-        const bdRaw = ctx.bmmQK(q, st.posP[L], w.pbvAll, H, HD, 1, true); // [H*n, P]
+        const Lk = Lc + nComp;
+        const ac = ctx.bmmQK(q, K, w.pbuAll, H, HD, 1); // [H*nComp, Lk]
+        const bdRaw = ctx.bmmQK(q, st.posP[L], w.pbvAll, H, HD, 1, true); // [H*nComp, P]
         const bd = ctx.relShiftStream(bdRaw, {
           H,
-          n,
+          n: nComp,
           Lk,
           dMax: st.dMax,
           Lc,
@@ -233,17 +247,20 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
         });
         const probs = ctx.softmax(ctx.add(ac, bd));
         x = ctx.matmul(ctx.bmmPV(probs, V, H, HD, 1), w.out, { bias: w.outb, add: x });
-        const keep = Math.min(st.LEFT, Lk);
-        swaps.push(["k", L, ctx.pin(ctx.sliceRows(K, Lk - keep, keep))]);
-        swaps.push(["v", L, ctx.pin(ctx.sliceRows(V, Lk - keep, keep))]);
+        // Cache K/V of EMITTED frames only (rows < Lc+n) — the provisional tail
+        // is non-final by construction.
+        const keep = Math.min(st.LEFT, Lc + n);
+        swaps.push(["k", L, ctx.pin(ctx.sliceRows(K, Lc + n - keep, keep))]);
+        swaps.push(["v", L, ctx.pin(ctx.sliceRows(V, Lc + n - keep, keep))]);
 
         // Conv module: depthwise input = [convCache ‖ GLU output], causal k=dwK
         // ⇒ emits exactly n frames; cache = last dwK−1 columns.
-        const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [n, 2D]
-        const glu = ctx.glu(ctx.transpose(pre1)); // [D, n]
-        const gfull = ctx.alloc(D, dwK - 1 + n);
+        const pre1 = ctx.matmul(ln(x, w.lnconv), w.pw1T, { bias: w.pw1b }); // [nComp, 2D]
+        const glu = ctx.glu(ctx.transpose(pre1)); // [D, nComp]
+        const gfull = ctx.alloc(D, dwK - 1 + nComp);
         ctx.setCols(gfull, st.cc[L] || st.zeroCC, 0);
         ctx.setCols(gfull, glu, dwK - 1);
+        // conv cache = the dwK−1 GLU columns preceding the emit boundary.
         swaps.push(["cc", L, ctx.pin(ctx.sliceCols(gfull, n, dwK - 1))]);
         const dopts = { cout: D, k: dwK, groups: D, padLeft: 0, padRight: 0, bias: w.dwb };
         let dwo;
@@ -257,6 +274,7 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush) {
         x = ff(x, w.lnff2, w.ff2w1, w.ff2w2, w.ff2b1, w.ff2b2);
         x = ln(x, w.lnout);
       }
+      if (nComp !== n) x = ctx.sliceRows(x, 0, n); // drop the provisional tail
       if (st.proj) x = ctx.matmul(x, st.proj.w, { bias: st.proj.b });
       frames = ctx.pin ? ctx.pin(x) : x;
     });

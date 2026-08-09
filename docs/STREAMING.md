@@ -92,4 +92,12 @@ alternative: persist h/c buffers per stream instead of zero-init.
       tokens identical) at 160 ms and coarse cadence; StreamingMel exact
 - [x] Engine push()/finish()/reset() + mic integration (main.ts streams for
       real; batch engines keep the rolling-tail fallback)
-- [ ] Nemotron variant (right-context 3 ⇒ 3-frame lookahead buffer)
+- [x] Nemotron variant (right-context 3). DESIGN FINDING: right context
+      CASCADES through layers (each layer's exact value needs ~chunk more
+      future), so bit-exact streaming is impossible with bounded lookahead.
+      Measured decay (truncated-offline floor, int8): B=2 chunks maxΔ 1.4e-2,
+      B=3 → 2.1e-3, B=4 → 8.2e-4 ≈ noise floor. Shipped as NeMo-style
+      provisional tail: compute [C·k + B] frames per pass, emit C·k, cache
+      only emitted K/V, recompute the tail next pass (lookaheadChunks=4 ⇒
+      1.28s lookahead, ~1.3s added latency). End-to-end gate: frames
+      maxΔ 2.85e-3 incl. cache compounding, TOKENS identical to offline.
