@@ -105,6 +105,7 @@ export async function encodeStreamFlush(ctx, st) {
   st.flushed = true;
   const { melBins } = st.enc.cfg;
   const M = st.fifo.length / melBins;
+  if (M === 0 && st.subT === 0) return null; // nothing ever pushed
   // Remaining output length = what the offline conv stack yields for the tail
   // slice: each of the 3 stride-2 k=3 convs pads padTop (first chunk only) and
   // padBottom (flush). Continuation slices start at global mel 8·subT−14, whose

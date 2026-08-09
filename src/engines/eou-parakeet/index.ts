@@ -18,7 +18,7 @@
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
-import { loadParakeetEncoder, parakeetEncode } from "../asr-parakeet/raw-encoder.js";
+import { loadParakeetEncoder } from "../asr-parakeet/raw-encoder.js";
 import { loadEouDecoder, loadEouWasmDecoder, eouWasmDecodeCont, eouWasmReset } from "../asr-parakeet/raw-decoder-eou.js";
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
 import { JsPreprocessor } from "../asr-nemotron/nemotron-mel.js";
@@ -35,6 +35,11 @@ const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
 // causal depthwise conv, chunked-causal attention (chunk 2, left context 70).
 
 const PROJ_D = 640; // joint-projected frame width (512→640 GEMM rides the encode batch)
+// Batch-transcribe chunk size (subsampled frames ≈ 61s audio). Swept on the
+// 1-hour bench (dawn, M-series): 384→173×, 512→207×, 640→229×, 768→254×,
+// 896→208×, 1536→149× — 768 is a solid local optimum (GEMM occupancy vs
+// attention-rectangle size), 1.5× the old quadratic-segment path's 167×.
+const BATCH_CHUNK = 768;
 
 export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   readonly id = "eou-parakeet";
@@ -94,51 +99,69 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
-  async transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
+  transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
+    return this.serialize(() => this.transcribeInner(audio)) as Promise<AsrResult & { events?: { type: string; time: number }[] }>;
+  }
+
+  private async transcribeInner(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
     if (!this.enc || !this.wdec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
     if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe (shared decoder state)");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
-    // Long-form: process in 4-minute segments, decoder reset between them.
-    // The whole-clip path builds full [T,T] chunked-attention buffers
-    // (quadratic — a 1-hour clip attempts ~8GB); the model itself is fully
-    // CAUSAL (left context 70 frames ≈ 5.6s), so segmenting only loses that
-    // context at each boundary. Event times are offset per segment; text is
-    // concatenated. (True chunk-level streaming: docs/STREAMING.md.)
-    const SEG_SEC = 4 * 60;
-    const SEG = SEG_SEC * 16000;
+    // Batch IS a big-chunk stream. The old path materialized full [T,T]
+    // chunked-attention buffers per 4-minute segment (~288MB of scores each)
+    // even though the model only attends 70 frames back; the streaming encoder
+    // computes the same function at linear cost (bit-exact — gate:
+    // scripts/streaming-encode-check.mjs). Decoder state now carries across
+    // the WHOLE clip (no per-segment reset — whole-clip LSTM continuity).
+    const mel = new StreamingMel(128);
+    const encSt = createEncodeStream(this.ctx, this.enc, { proj: { w: this.projW, b: this.projB } });
+    eouWasmReset(this.wdec);
     let melMs = 0;
     let encMs = 0;
     let decMs = 0;
-    const texts: string[] = [];
+    let subT = 0;
+    const ids: number[] = [];
     const events: { type: string; time: number }[] = [];
-    for (let off = 0; off < audio.samples.length; off += SEG) {
-      const slice = audio.samples.subarray(off, Math.min(off + SEG, audio.samples.length));
-      if (slice.length < 800) break;
+    const consume = (frames: Float32Array) => {
+      const td = now();
+      const n = frames.length / PROJ_D;
+      const r = eouWasmDecodeCont(this.wdec, frames, n, subT);
+      decMs += now() - td;
+      ids.push(...r.ids);
+      for (const e of r.events) events.push({ type: e.type, time: +(e.frame * FRAME_SEC).toFixed(2) });
+      subT += n;
+    };
+    const SLICE = 240 * 16000; // feed 4-min slices so chunk passes reach BATCH_CHUNK
+    try {
+      for (let off = 0; off < audio.samples.length; off += SLICE) {
+        const tm = now();
+        const { data, count } = mel.push(audio.samples.subarray(off, Math.min(off + SLICE, audio.samples.length)));
+        melMs += now() - tm;
+        if (data && count > 0) {
+          const te = now();
+          const out = await encodeStreamPush(this.ctx, encSt, data, count, { maxChunk: BATCH_CHUNK });
+          encMs += now() - te;
+          if (out) consume(out);
+        }
+      }
       const tm = now();
-      const { features, length } = this.mel.process(slice);
-      if (length === 0) continue;
+      const fl = mel.flush();
       melMs += now() - tm;
       const te = now();
-      const r = await parakeetEncode(this.ctx, this.enc, features, length);
-      const frames = await this.ctx.download(this.ctx.matmul(r.framesGpu, this.projW, { bias: this.projB }));
-      encMs += now() - te;
-      const td = now();
-      // Reset per segment — exactly the per-segment "decode reset" semantics
-      // we want at a segment boundary.
-      eouWasmReset(this.wdec);
-      const { ids, events: evFrames } = eouWasmDecodeCont(this.wdec, frames, r.Tsub);
-      decMs += now() - td;
-      const offSec = off / 16000;
-      for (const e of evFrames as { type: string; frame: number }[]) {
-        events.push({ type: e.type, time: +(offSec + e.frame * FRAME_SEC).toFixed(2) });
+      if (fl.data && fl.count > 0) {
+        const out = await encodeStreamPush(this.ctx, encSt, fl.data, fl.count, { maxChunk: BATCH_CHUNK });
+        if (out) consume(out);
       }
-      const text = this.tokenizer.decode(ids);
-      if (text) texts.push(text);
+      const tail = await encodeStreamFlush(this.ctx, encSt);
+      encMs += now() - te;
+      if (tail) consume(tail);
+    } finally {
+      disposeEncodeStream(this.ctx, encSt);
       (this.ctx as any).trimPool?.();
     }
     return {
-      text: texts.join(" "),
+      text: this.tokenizer.decode(ids),
       metrics: { melMs: +melMs.toFixed(1), encodeMs: +encMs.toFixed(1), decodeMs: +decMs.toFixed(1), totalMs: +(now() - t0).toFixed(1) },
       events,
     };
