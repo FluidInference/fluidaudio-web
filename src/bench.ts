@@ -7,10 +7,14 @@ import { GpuContext, requestGpuDevice } from "./gpu/compute.js";
 const out = document.getElementById("out")!;
 const log = (s: string) => (out.textContent += s + "\n");
 
-async function bench(ctx: any, dev: any, label: string, M: number, K: number, N: number, f16 = true) {
+async function bench(ctx: any, dev: any, label: string, M: number, K: number, N: number, f16: boolean | "tm" = true) {
   const rand = (n: number) => Float32Array.from({ length: n }, () => (Math.random() * 2 - 1) * 0.05);
   const a = ctx.upload(rand(M * K), M, K);
-  const b = f16 ? ctx.uploadF16(rand(K * N), K, N) : ctx.upload(rand(K * N), K, N);
+  const b = f16 === "tm" ? ctx.uploadTileMajorF16(rand(K * N), K, N) : f16 ? ctx.uploadF16(rand(K * N), K, N) : ctx.upload(rand(K * N), K, N);
+  if (f16 === "tm" && !b.tm) {
+    log(`${label.padEnd(30)} (tile-major unavailable — no 32-lane subgroups)`);
+    return;
+  }
   const fn = () => (ctx as any).matmul(a, b);
   for (let w = 0; w < 8; w++) fn();
   await dev.queue.onSubmittedWorkDone();
@@ -50,6 +54,11 @@ document.getElementById("go")!.addEventListener("click", async () => {
     await bench(ctx, dev, "FFN1sg 1128x1024x4096", 1128, 1024, 4096);
     await bench(ctx, dev, "FFN1sg 7520x1024x4096", 7520, 1024, 4096);
     (globalThis as any).__sgGemm = false;
+    log("\n— tile-major direct-B GEMM (task #27, ?tm=1 to run the full engine on it) —");
+    await bench(ctx, dev, "FFN1tm 1128x1024x4096", 1128, 1024, 4096, "tm");
+    await bench(ctx, dev, "FFN2tm 1128x4096x1024", 1128, 4096, 1024, "tm");
+    await bench(ctx, dev, "QKVtm  1128x1024x1024", 1128, 1024, 1024, "tm");
+    await bench(ctx, dev, "FFN1tm 7520x1024x4096", 7520, 1024, 4096, "tm");
     log("\ndone — copy this block.");
     dev.destroy();
   } catch (err) {

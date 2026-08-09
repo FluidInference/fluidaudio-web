@@ -443,6 +443,88 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// Tile-major direct-B subgroup GEMM — the parakeet.wgsl geometry (task #27).
+// Workgroup = 128 lanes = 4 subgroups covering a 32-row × 256-col C tile; each
+// subgroup owns 8 rows × 256 cols; each lane owns 8 columns (2 vec4). B is
+// PREPACKED tile-major ([colTile][K/32][32][32 packs of 8 f16] — vec4<u32>),
+// read directly from global memory: NO workgroup memory, NO barriers. A rows
+// are loaded by lanes 0..7 and distributed per-scalar via subgroupBroadcast.
+// Accumulators are vec4<f16> end-to-end (f16 FMA = 2× f32 rate on Apple),
+// promoted to f32 once at the epilogue (bias → act → residual add, f32 C).
+const GEMM_TM_WGSL = `enable f16;
+enable subgroups;
+struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<u32>>;
+@group(0) @binding(2) var<storage, read> bias: array<f32>;
+@group(0) @binding(3) var<storage, read_write> C: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read> Dt: array<vec4<f32>>;
+@group(0) @binding(5) var<uniform> m: Meta;
+${WGSL_ACTF}
+@compute @workgroup_size(128)
+fn main(
+  @builtin(local_invocation_index) li: u32,
+  @builtin(workgroup_id) wg: vec3<u32>,
+) {
+  // subgroup_id/subgroup_invocation_id builtins are gated on some runtimes;
+  // probeSubgroups() verified 32-lane CONTIGUOUS mapping, so both derive
+  // from the local index (this kernel is only routed when the probe passed).
+  let lane = li % 32u;
+  let sg = li / 32u;
+  let K4 = m.K / 4u;
+  let N4 = m.N / 4u;
+  let rowBase = wg.y * 32u + sg * 8u;
+  let kTiles = m.K / 32u;
+  var acc: array<vec4<f16>, 16>; // 8 rows × 2 col-vec4
+  for (var i = 0u; i < 16u; i++) { acc[i] = vec4<f16>(0.0h); }
+  let tileBase0 = wg.x * kTiles * 1024u; // 32 k-rows × 32 packs per K-tile
+  for (var kb = 0u; kb < kTiles; kb++) {
+    let tileBase = tileBase0 + kb * 1024u;
+    for (var kv = 0u; kv < 8u; kv++) {
+      var av = vec4<f32>(0.0);
+      let aRow = rowBase + lane;
+      if (lane < 8u && aRow < m.M) { av = A[aRow * K4 + kb * 8u + kv]; }
+      for (var c = 0u; c < 4u; c++) {
+        let pb = B[tileBase + (kv * 4u + c) * 32u + lane];
+        let b0 = bitcast<vec4<f16>>(pb.xy);
+        let b1 = bitcast<vec4<f16>>(pb.zw);
+        let a0 = vec4<f16>(f16(subgroupBroadcast(av[c], 0u)));
+        acc[0] = fma(a0, b0, acc[0]); acc[1] = fma(a0, b1, acc[1]);
+        let a1 = vec4<f16>(f16(subgroupBroadcast(av[c], 1u)));
+        acc[2] = fma(a1, b0, acc[2]); acc[3] = fma(a1, b1, acc[3]);
+        let a2 = vec4<f16>(f16(subgroupBroadcast(av[c], 2u)));
+        acc[4] = fma(a2, b0, acc[4]); acc[5] = fma(a2, b1, acc[5]);
+        let a3 = vec4<f16>(f16(subgroupBroadcast(av[c], 3u)));
+        acc[6] = fma(a3, b0, acc[6]); acc[7] = fma(a3, b1, acc[7]);
+        let a4 = vec4<f16>(f16(subgroupBroadcast(av[c], 4u)));
+        acc[8] = fma(a4, b0, acc[8]); acc[9] = fma(a4, b1, acc[9]);
+        let a5 = vec4<f16>(f16(subgroupBroadcast(av[c], 5u)));
+        acc[10] = fma(a5, b0, acc[10]); acc[11] = fma(a5, b1, acc[11]);
+        let a6 = vec4<f16>(f16(subgroupBroadcast(av[c], 6u)));
+        acc[12] = fma(a6, b0, acc[12]); acc[13] = fma(a6, b1, acc[13]);
+        let a7 = vec4<f16>(f16(subgroupBroadcast(av[c], 7u)));
+        acc[14] = fma(a7, b0, acc[14]); acc[15] = fma(a7, b1, acc[15]);
+      }
+    }
+  }
+  let colVec0 = wg.x * 64u + lane * 2u;
+  for (var r = 0u; r < 8u; r++) {
+    let row = rowBase + r;
+    if (row >= m.M) { continue; }
+    for (var cv = 0u; cv < 2u; cv++) {
+      let colVec = colVec0 + cv;
+      var v = vec4<f32>(acc[r * 2u + cv]);
+      if (m.hasBias == 1u) {
+        let cb = colVec * 4u;
+        v += vec4<f32>(bias[cb], bias[cb + 1u], bias[cb + 2u], bias[cb + 3u]);
+      }
+      v = vec4<f32>(actf(v.x, m.act), actf(v.y, m.act), actf(v.z, m.act), actf(v.w, m.act));
+      if (m.hasAdd == 1u) { v += Dt[row * N4 + colVec]; }
+      C[row * N4 + colVec] = v;
+    }
+  }
+}`;
+
 const GEMM_V4_F16C_WGSL = `enable f16;
 struct Meta { M:u32, N:u32, K:u32, act:u32, hasBias:u32, hasAdd:u32, _p1:u32, _p2:u32 };
 @group(0) @binding(0) var<storage, read> A: array<vec4<f32>>;
@@ -2135,6 +2217,44 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     this.device.queue.writeBuffer(buf, 0, u16);
     return { buf, rows, cols, f16: true };
   }
+  /** Upload f32 weights [K,N] PREPACKED tile-major for the direct-B subgroup
+   * GEMM (GEMM_TM_WGSL): [N/256 col-tiles][K/32 k-tiles][32 k-rows][32 packs],
+   * pack = 8 consecutive f16 columns in a vec4<u32>. Requires K%32==0 &&
+   * N%256==0 and 32-lane subgroups (probeSubgroups) — callers fall back to
+   * uploadF16 otherwise. Marked {tm:true}; matmul routes on it (opt-in). */
+  uploadTileMajorF16(data, K, N) {
+    if (!this.hasF16 || K % 32 !== 0 || N % 256 !== 0 || !this.hasSubgroups32) return this.uploadF16(data, K, N);
+    const f16 = new Float16Array(data);
+    const u16 = new Uint16Array(f16.buffer);
+    const packed = new Uint16Array(K * N); // same element count, tile-major order
+    let o = 0;
+    for (let ct = 0; ct < N / 256; ct++) {
+      for (let kt = 0; kt < K / 32; kt++) {
+        for (let kr = 0; kr < 32; kr++) {
+          const k = kt * 32 + kr;
+          const src = k * N + ct * 256;
+          packed.set(u16.subarray(src, src + 256), o);
+          o += 256;
+        }
+      }
+    }
+    const buf = this.device.createBuffer({ size: packed.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
+    this.device.queue.writeBuffer(buf, 0, packed);
+    return { buf, rows: K, cols: N, f16: true, tm: true };
+  }
+
+  /** Direct-B tile-major subgroup GEMM (see uploadTileMajorF16 / GEMM_TM_WGSL). */
+  matmulTM(a, b, { bias = null, act = "none", add = null } = {}) {
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
+    const y = this.alloc(M, N);
+    const pipeline = this._pipeline("gemmTM", GEMM_TM_WGSL);
+    const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, add ? 1 : 0, 0, 0]));
+    this._run(pipeline, [a.buf, b.buf, bias ? bias.buf : this._dummy(), y.buf, add ? add.buf : this._dummy16()], u, N / 256, Math.ceil(M / 32));
+    return y;
+  }
+
   /** Allocate an uninitialized f16 tensor (pooled, arena-scoped like alloc). */
   allocF16(rows, cols) {
     const size = Math.max(4, Math.ceil((rows * cols * 2) / 4) * 4);
@@ -2272,6 +2392,12 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
   _dummy() {
     if (!this._dummyBuf) this._dummyBuf = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.STORAGE });
     return this._dummyBuf;
+  }
+
+  /** 16-byte dummy for bindings typed array<vec4<f32>> (min binding size 16). */
+  _dummy16() {
+    if (!this._dummy16Buf) this._dummy16Buf = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE });
+    return this._dummy16Buf;
   }
 
   /** Cached per-length zero bias for reroute epilogues (avoids per-call uploads). */
@@ -2414,6 +2540,12 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     // 1.46× vs the f32-compute F16B variant, which stays available for A/Bs).
     // `add` (residual [M,N]) fuses into the f16C epilogue; other routes compose
     // with a separate elementwise add so semantics match on every path.
+    // Tile-major prepacked weights (uploadTileMajorF16) always route here —
+    // the OPT-IN happens at UPLOAD time (weights are only prepacked when
+    // __tmGemm === true at load; layout is incompatible with the f16C kernel).
+    if (b.tm) {
+      return this.matmulTM(a, b, { bias, act, add });
+    }
     if (b.f16 && this.hasF16 && K % 4 === 0 && N % 4 === 0) {
       if (!globalThis.__f16bforce) return this.matmulF16C(a, b, { bias, act, add });
       const oB = this.matmulF16B(a, b, { bias, act });
