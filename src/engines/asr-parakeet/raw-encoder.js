@@ -317,8 +317,13 @@ export async function parakeetEncodeBatch(ctx, enc, mels, wantData = false, post
         // Fused path (opt-in, unmasked models, T ≤ 256): one dispatch, no
         // [W*H*T, T] score tensor — the transient that capped the window
         // batch at wb≈6 (wb=40 would materialize ~4.5GB on this path).
+        // OPT-IN ONLY (__attnFused === true): +1.6% on dawn-node but ~2× SLOWER
+        // in Chrome/Metal (user-measured: 1hr encode 17.7s → 36.2s) — the 16KB
+        // workgroup-memory footprint kills occupancy under Chrome's compiler.
+        // Kept for the memory win it may offer constrained targets; never
+        // default it on again without a browser measurement first.
         let outc = null;
-        if (!maskT && ctx.attnFused && globalThis.__attnFused !== false) {
+        if (!maskT && ctx.attnFused && globalThis.__attnFused === true) {
           outc = ctx.attnFused(q, k, v, p, w.pbuAll, w.pbvAll, H, HD, W);
         }
         if (!outc) {
