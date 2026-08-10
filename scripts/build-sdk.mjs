@@ -50,6 +50,8 @@ const exports_ = {
   "./registry": { types: "./engines/registry.d.ts", default: "./engines/registry.js" },
   "./textnorm": { types: "./core/textnorm.d.ts", default: "./core/textnorm.js" },
   "./vocab-rescorer": { types: "./engines/asr-parakeet/vocab-rescorer.d.ts", default: "./engines/asr-parakeet/vocab-rescorer.js" },
+  "./captions": { types: "./core/captions.d.ts", default: "./core/captions.js" },
+  "./mic": { types: "./core/mic.d.ts", default: "./core/mic.js" },
 };
 for (const e of ENGINE_SUBPATHS) {
   exports_[`./${e}`] = { types: `./engines/${e}/index.d.ts`, default: `./engines/${e}/index.js` };

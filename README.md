@@ -42,6 +42,32 @@ const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer));
 await asr.dispose();
 ```
 
+True streaming (EOU / Nemotron) and captions (v0.2.0):
+
+```ts
+import { MicCapture, segmentsToSrt } from "@fluidinference/fluidaudio-web";
+import { ParakeetEouEngine } from "@fluidinference/fluidaudio-web/eou-parakeet";
+
+const engine = new ParakeetEouEngine();
+await engine.load();
+
+// live: feed mic chunks, get cumulative text; <EOU> events + word segments
+const mic = new MicCapture();
+await mic.start();
+let pos = 0;
+setInterval(async () => {
+  const { samples, total } = mic.since(pos);
+  const text = await engine.push(samples); // conformer caches carried — no re-decode
+  pos = total;
+  console.log(text, engine.streamEvents, engine.streamSegments);
+}, 300);
+// on stop: const final = await engine.finish(); engine.reset();
+
+// batch: word timestamps → SRT captions
+const r = await engine.transcribe({ samples, sampleRate: 16000 });
+const srt = segmentsToSrt(r.segments); // also: segmentsToVtt, groupCues
+```
+
 One tree-shakeable subpath per engine — `/asr-parakeet`, `/asr-whisper`,
 `/asr-nemotron`, `/tts-kokoro` (`{ lang: "en" | "zh" }`), `/vad-silero`,
 `/diarization-sortformer`, `/eou-parakeet` — plus `/registry` (enumerate
