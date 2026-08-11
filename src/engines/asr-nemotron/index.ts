@@ -127,7 +127,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
   reset(): void {
     if (this.stream) {
       disposeEncodeStream(this.ctx, this.stream.encSt);
-      this.ctx?.trimPool?.();
+      this.ctx?.trimPool();
     }
     this.stream = null;
   }
@@ -259,7 +259,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
       if (tail) consumeB(tail);
     } finally {
       disposeEncodeStream(this.ctx, encSt);
-      (this.ctx as any).trimPool?.();
+      this.ctx.trimPool();
     }
     return {
       text: this.idsToText(ids),
@@ -270,7 +270,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
 
   async dispose(): Promise<void> {
     this.reset();
-    this.ctx?.device?.destroy?.();
+    this.ctx?.destroy();
     this.ctx = this.enc = this.pk = this.dec = this.vocab = null;
   }
 }

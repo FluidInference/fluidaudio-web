@@ -58,9 +58,9 @@ const leakyHost = (data, slope) => {
   for (let i = 0; i < data.length; i++) o[i] = data[i] > 0 ? data[i] : slope * data[i];
   return o;
 };
-// Normalize a CPU-side {data,rows,cols} into a ctx tensor (no-op for real tensors:
-// WasmContext tensors ARE {data,…}; GpuContext tensors have .buf and no .data).
-const toT = (ctx, t) => (t && t.data !== undefined && !t.buf ? ctx.upload(t.data, t.rows, t.cols) : t);
+// Normalize a CPU-side {data,rows,cols} into a ctx tensor (no-op for real
+// tensors) — the backend owns the host-vs-tensor check, not this file.
+const toT = (ctx, t) => (t ? ctx.ensureTensor(t) : t);
 // h = W[2C,128] @ style[128] (+b), computed on HOST from the CPU weight views —
 // avoids a GPU round-trip per AdaIN/AdaLN (~140 syncs per synthesis otherwise).
 function styleFc(K, suffix, style128) {
@@ -173,7 +173,7 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
   // Whole synth inside one batch: ~970 per-op submits collapse to one submit
   // per stretch between downloads (download() flushes + reopens the batch).
   // Whole-synth arena: intermediates recycle after each synthesize call.
-  const arena = ctx.pushArena ? ctx.pushArena() : null;
+  const arena = ctx.pushArena();
   try {
     return await ctx.withBatch(async () => {
       const { xConcat, asr, F0, N } = await predictor(K, dEn, ids, style, speed);
@@ -186,8 +186,8 @@ export async function synth(K, dEn, ids, style, { speed = 1 } = {}) {
       return await generator(K, decode3T, spec, style.slice(0, 128));
     });
   } finally {
-    if (arena) ctx.popArena(arena);
-    ctx.trimPool?.(); // wav is on the CPU — queue drained, safe to evict
+    ctx.popArena(arena);
+    ctx.trimPool(); // wav is on the CPU — queue drained, safe to evict
   }
 }
 

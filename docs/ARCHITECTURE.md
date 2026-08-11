@@ -3,131 +3,121 @@
 ## Goal
 
 Run FluidAudio's core models in the browser with **WebGPU + WebAssembly**, no
-server. This is a parallel deployment of the *same models* FluidAudio ships as
-CoreML — but from their **ONNX** source, because CoreML has no browser runtime.
+server. This is a parallel deployment of the _same models_ FluidAudio ships as
+CoreML — but on a hand-written compute stack, because CoreML has no browser
+runtime and onnxruntime-web's per-op dispatch left most of the performance on
+the table (see [`ORT_REMOVAL.md`](ORT_REMOVAL.md) for that history — production
+code has **no onnxruntime anywhere**; `onnxruntime-node` survives only as a
+devDependency for offline reference generation).
 
 ## Layers
 
 ```
-UI (main.ts)  →  Engine interface (core/types.ts)  →  runtime
-                                                        ├─ onnxruntime-web  (ASR, VAD, EOU, diarization)
-                                                        ├─ kokoro-js        (TTS)
-                                                        └─ transformers.js  (Whisper)
-core/ort.ts        backend selection (WebGPU→WASM), threads/SIMD
-core/modelCache.ts HF fetch + Cache API persistence + byte progress
-core/audio.ts      file→16kHz mono float, resample, WAV encode
-core/registry.ts   ONNX repos/files/quant per engine
+UI / SDK consumer (main.ts, live.ts, @fluidinference/fluidaudio-web)
+    ↓
+Engine interface (core/types.ts: AsrEngine, StreamingAsrEngine, TtsEngine, …)
+    ↓  one folder per model under src/engines/, listed in core/registry.ts
+ComputeContext (src/gpu/compute.d.ts — ONE backend-independent op interface)
+    ├─ WebGPU: GpuContext (src/gpu/compute.js — facade + op methods)
+    │     ├─ kernels/         hand-written WGSL (gemm, attention, conv, …)
+    │     ├─ buffer-pool.js   exact-size pool + arena scopes + pinning
+    │     ├─ scheduler.js     batching, dispatch, uniform ring, profiler
+    │     └─ pipeline-cache.js compiled-pipeline cache
+    └─ WASM: WasmContext (src/gpu/wasm-context.js)
+          └─ wasm-kernels.wasm  Rust SIMD-128 (rust/wasm-kernels): f32/int8/int4
+             GEMM + conv1d over a bump arena; everything else typed-array JS
 ```
 
-Everything the UI touches is one of the interfaces in `core/types.ts`
-(`AsrEngine`, `StreamingAsrEngine`, `DiarizationEngine`, `TtsEngine`,
-`VadEngine`). Adding a model = add a folder under `src/engines/` implementing one
-of them + a `registry.ts` entry.
+`createContext()` (src/gpu/context.js) prefers WebGPU and falls back to
+WASM+SIMD. Both backends implement every required `ComputeContext` member —
+engine code never inspects tensor storage (`.buf`/`.data`) and never
+feature-probes shared members; only genuinely WebGPU-only capabilities
+(`attnFused`, `uploadTileMajorF16`, profiling) are optional. Two gates keep
+this honest: `interface-conformance.mjs` (structure, runs in ci:smoke) and
+`backend-conformance.mjs` (numeric GPU↔WASM parity over every required op,
+`npm run conformance:numeric`).
 
 ## Backend policy (the important part)
 
-`onnxruntime-web`'s WebGPU EP does **not** have kernels for every op. Dynamic-shape
-graphs (RNNT/TDT decoders) fall back to CPU per-op, with GPU↔CPU syncs that can
-make WebGPU *slower than WASM-int8* (parakeet.js measured ~15× on some devices).
-So the rule encoded in `core/ort.ts`:
+The old ORT-era rule ("encoders on WebGPU EP, decoders on WASM EP") is gone.
+Instead:
 
-- **Encoders** (heavy, mostly static) → request `webgpu` (falls back to wasm).
-- **Decoders / joints** (tiny, dynamic, stepwise) → request `wasm` directly.
+- **Encoders** run on the raw WebGPU kernels: GPU-resident tensors, fused
+  dispatches, one submit per window group (`withBatch`), arena-scoped buffer
+  reuse. The win is fusion + residency, not a faster single GEMM
+  ([`RAW_WEBGPU.md`](RAW_WEBGPU.md)).
+- **Autoregressive decoders** (RNNT/TDT) run on CPU WASM-SIMD — one result per
+  token means a GPU decoder pays a round trip per step. Parakeet/Nemotron/EOU
+  ship dedicated Rust decoders (`rust/parakeet-decoder`); Whisper's decoder is
+  the exception (KV-cached greedy loop on the GPU, one submit per token).
+- No cross-origin isolation is required: there is no SharedArrayBuffer use,
+  and COEP would break cross-origin model fetches (see `vite.config.ts` note).
+  Workers communicate by transfer.
 
-Cross-origin isolation (COOP/COEP) is required for threaded WASM — set in
-`vite.config.ts` for dev; **any production host must send the same headers.**
+## Per-engine matrix
 
-## Per-engine status & notes
+| Engine                           | Compute                                                       | Weights (HF: FluidInference/fluidaudio-web)         | Pipeline                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `asr-parakeet` (TDT 0.6B v3)     | GPU encoder **int8**, WASM decoder fp32                       | `parakeet/encoder-int8`, `decoder-fp32`             | JS mel → FastConformer → GPU joint-projection → WASM TDT; 15s/2s windows, 3-stage pipeline (see below)   |
+| `asr-nemotron` (0.6B, 40 langs)  | GPU encoder **int8**, WASM decoder fp32                       | `nemotron/…` + `languages.json`                     | True streaming push()/finish(): cache-aware chunked encoder + GPU prompt-MLP with folded language bias   |
+| `asr-whisper` (base, 99 langs)   | GPU fp32 end-to-end                                           | `whisper/…`, vocab from onnx-community              | Sequential 30s chunks; 6-layer PRE-LN encoder; KV-cached greedy GPU decode                               |
+| `eou-parakeet` (120M EOU)        | GPU encoder **fp16** (int8 degrades this model), WASM decoder | `eou/…`                                             | Streaming or 240s batch; `<EOU>`/`<EOB>` become timestamped events                                       |
+| `tts-kokoro` (82M, en+zh)        | GPU fp32                                                      | `kokoro/`, `kokoro-zh/`, voices from onnx-community | Lexicon G2P (misaki en / pinyin→bopomofo zh) → ALBERT → prosody → iSTFTNet synth (`gpu/kokoro-synth.js`) |
+| `vad-silero` (v5)                | WASM only, weights **bundled** (~1.2MB)                       | none (in-repo)                                      | Hand-written forward (`raw-silero.js`), 512-sample windows, hysteresis + merge                           |
+| `diarization-sortformer` (4-spk) | GPU encoder **int8**, head fp32                               | `sortformer/…`                                      | Shared FastConformer + 18-layer head; 90s/15s windows stitched by overlap-permutation matching           |
+| `diarization-pyannote`           | —                                                             | —                                                   | Scaffold only: the intended path is vendoring sherpa-onnx's WASM diarization bundle, not raw kernels     |
 
-### ✅ `vad-silero` — reimplemented on `core/ort`
-Drives `silero_vad.onnx` (v5, `onnx-community/silero-vad`) directly — **no**
-`@ricky0123/vad-web`. That package is CJS and does a dynamic
-`require("onnxruntime-web/wasm")` that Vite can't resolve once ORT is excluded
-from `optimizeDeps` (which it must be — see backend policy). Silero's interface is
-trivial — `input[1,512]` + `state[2,1,128]` + `sr` (int64 scalar) → speech prob +
-`stateN` — so `silero.js` runs 512-sample (32 ms) windows, thresholds with
-hysteresis, and merges with min-speech / min-silence / pad guards. WASM only (the
-model is 2 MB; WebGPU buys nothing). Verified: `scripts/smoke-vad.mjs`.
+All engines share: `core/modelCache.ts` (HF fetch + Cache API), `core/audio.ts`
+(decode to 16k mono), `core/captions.ts` (word timings, SRT/VTT),
+`core/textnorm.ts` (opt-in ITN), `core/mic.ts` (live capture).
 
-### ✅ `tts-kokoro` (en/zh) — wired, zh caveat
-Wraps `kokoro-js` (transformers.js; WebGPU with WASM fallback). English is
-complete. **Chinese's open item is G2P**: the ONNX is acoustic-only; robust
-Mandarin needs a JS frontend (jieba segmentation → polyphone disambiguation →
-pinyin→IPA), the browser analog of FluidAudio's separate `g2pW` CoreML model.
-Options: port g2pW to ONNX and run it via ORT, or use a JS pinyin lib + a
-polyphone table. Until then `zh` relies on kokoro-js's own handling.
+## The Parakeet pipeline (the template for batch ASR)
 
-### ✅ `asr-parakeet` (v3) — internalized (no ASR library), all-ORT compute
-Fully in-repo, and **all feature extraction + inference runs on onnxruntime-web
-(WebGPU/WASM)** — no heavy JS DSP:
-- mel: `nemo128.onnx` (the NeMo log-mel preprocessor, **per-feature CMVN**) run on
-  ORT **WASM** (`onnxMel.js`) — replaces the earlier JS FFT.
-- encoder: `encoder-model.onnx` (**fp32**, external `.data`) on **WebGPU**.
-- decoder+joint: `decoder_joint-model.int8.onnx` on **WASM**.
-- `tokenizer.js` (vocab.txt + SentencePiece decode) and the TDT greedy loop in
-  `tdt.js` are JS **orchestration** (argmax over logits, loop control, string
-  decode) — scalar glue, not tensor compute.
+`engines/asr-parakeet/pipeline.js` orchestrates a 3-stage software pipeline —
+GPU encodes group g+1 while WASM decodes group g and workers compute mel for
+g+2. The concerns live in single-purpose modules:
 
-The exact same core runs in the browser engine (`index.ts`, onnxruntime-web) and
-the headless verifier (`scripts/smoke-parakeet-internal.mjs`, onnxruntime-node) —
-no `parakeet.js` dependency. Repo: `ysdede/parakeet-tdt-0.6b-v3-onnx`.
+- `windowing.js` — window starts + wb-sized equal-length encoder groups
+- `mel-scheduler.js` — mel prefetch via worker pool (unhidden wait timed)
+- `decode-sink.js` — GPU-decoder / worker-pool / sync-WASM decode paths,
+  strictly in window order
+- `stitcher.js` — overlap seam dedup (frame-estimated skip refined by exact
+  token match)
 
-**Verified transcribing headlessly** (fp32 encoder, ort-node):
-`node scripts/smoke-parakeet-internal.mjs /tmp/pk_intro.wav /tmp/pkv3 fp32`
-→ "Four Classes That Constitute a Menace from Anti-Suffrage Ten Good Reasons by
-Grace Duffield Goodwin" (41 tokens, 0.24 s).
+The joint projection and the staging readback ride the encoder's own submit
+(`post` hook), so the GPU never idles waiting for JS to request a readback.
+Worker pools (decode, mel) spawn lazily and fall back to the main thread.
+Streaming engines (Nemotron, EOU) use `streaming-encoder.js` instead:
+cache-carrying chunked encode, same kernels ([`STREAMING.md`](STREAMING.md)).
 
-**Why fp32, not int8.** The WebGPU EP has no int8 kernels, so an int8 encoder
-silently falls back to WASM — where *this* encoder is numerically degenerate: its
-output collapses to ~0 (measured std **0.017** vs ~O(1) healthy) and every frame
-decodes to blank → empty transcript. So the engine ships the **fp32** encoder
-(`encoder-model.onnx` + `.data`, ~2.4 GB) on WebGPU (throws if WebGPU is absent)
-and the int8 decoder on WASM. The mel is confirmed correct independently
-(per-feature CMVN output: mean 0, std 1). Full LibriSpeech test-clean → **2.15%
-WER**, matching native FluidAudio.
+## Verification & gates
 
-### ✅ `asr-nemotron` (en + multilingual) — working (int4 on WASM)
-`onnx-community/nemotron-3.5-asr-streaming-0.6b-onnx-int4` (40 langs, INT4,
-~750 MB). Cache-aware streaming: the encoder threads `cache_last_channel` /
-`cache_last_time` / `cache_last_channel_len` across 65-frame chunks (9 pre-encode
-cache + 56 new), then an RNNT greedy loop over 7 encoder frames. NA log-mel (no
-CMVN, unlike Parakeet). int4 is **healthy on WASM** (encoder std 0.43) so no
-WebGPU is needed. The bug that looked like int4 degeneracy was `lang_id=0` =
-Bulgarian — en-US is ordinal **24** (`makeNemotronLangMap`). See
-[`NEMOTRON.md`](NEMOTRON.md). Verified: `scripts/smoke-nemotron.mjs`.
+Layered, mostly hermetic:
 
-### ✅ `diarization-sortformer` — working (short audio)
-NVIDIA `diar_streaming_sortformer_4spk-v2.1` ONNX (fp32, CPU-runnable). Offline
-single-chunk path: `chunk[1,T,128]` mel + empty `spkcache`/`fifo` state →
-per-frame 4-speaker probs → segments (123× RTFx). Reuses the `nemo128` mel.
-Long meetings need the streaming `spkcache`/`fifo` state loop (single-chunk
-collapses to the dominant speaker — see [`BENCHMARKS.md`](BENCHMARKS.md)); that's
-the open follow-up. (`diarization-pyannote` via sherpa-onnx WASM remains an
-alternative if you want the pyannote pipeline.)
+| Gate                                                 | Scope                                                         | Command                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
+| Structural conformance                               | both backends implement ComputeContext (parsed from the d.ts) | in `ci:smoke`                                         |
+| Numeric conformance                                  | every required op, GPU vs WASM, seeded inputs                 | `npm run conformance:numeric`                         |
+| Kernel parity vs CPU refs                            | WGSL kernels (dawn) / Rust kernels                            | `npm run gpu:verify` / `wasm:verify`                  |
+| Engine smokes (e2e, WASM backend, hermetic given HF) | parakeet, eou, kokoro                                         | `npm run ci:smoke`                                    |
+| GPU memory gate                                      | pooling/arena invariants over a 120s transcribe               | `scripts/gpu-memory-check.mjs` (needs local fixtures) |
+| In-browser                                           | all engines + metrics JSON                                    | `verify.html` / `bench.html`                          |
 
-### ✅ `eou-parakeet` — working (transcript + `<EOU>`/`<EOB>`)
-`ysdede/parakeet-realtime-eou-120m-v1-onnx` (asrjs export of NVIDIA
-`parakeet_realtime_eou_120m-v1`). Streaming FastConformer RNNT with `<EOU>`/`<EOB>`
-control tokens; fused `decoder_joint`, single-layer LSTM, blank id 1026. Offline
-RNNT greedy decode (last-1027 slice of the joint grid); ids ≥ 1024 become
-timestamped events, dropped from the transcript. **Wants NA (un-normalized)
-log-mel** — the Nemotron frontend, NOT Parakeet's per-feature CMVN; wrong
-normalization → content-free encoder frames → all-blank. fp32 encoder decodes on
-both WASM and WebGPU (no int8-collapse). See [`EOU.md`](EOU.md). Verified:
-`scripts/smoke-eou.mjs`.
+Node GPU gates run on dawn (`@kmamal/gpu`); dawn keeps the event loop alive,
+so gate scripts end with `process.exit`.
 
-## Status
+## Entry points & SDK
 
-All seven engines are correctness-verified on real data — see the model matrix in
-the [README](../README.md) and numbers in [`BENCHMARKS.md`](BENCHMARKS.md). Open
-follow-ups are enhancements, not blockers: Sortformer's streaming state loop for
-long meetings, true streaming `push()` for Nemotron/EOU (their exports here are
-whole-clip), g2pW polyphone accuracy for Kokoro-zh, and fp16 encoders to shrink
-downloads.
+- `index.html` / `main.ts` — playground (ASR + TTS), `live.html` / `live.ts` —
+  mic captions with EOU finalization, `verify.html`, `bench.html`.
+- SDK: `npm run sdk:build` → `dist-sdk/`, published as
+  `@fluidinference/fluidaudio-web` with per-engine subpath exports
+  (`…/asr-parakeet` etc.); asset URLs use the cross-bundler
+  `new URL("./x.wasm", import.meta.url)` pattern.
 
 ## Hosting
 
-Static site. Must send `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: require-corp` (GitHub Pages needs a workaround;
-Cloudflare Pages / Netlify can set headers directly). Model weights stream from
-Hugging Face and cache client-side; no backend.
+Static site; model weights stream from Hugging Face and cache client-side via
+the Cache API — no backend, no special headers (COOP/COEP deliberately NOT
+set; it gates only SharedArrayBuffer, which nothing uses, and would break
+cross-origin model fetches).

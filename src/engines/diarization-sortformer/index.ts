@@ -88,7 +88,7 @@ export class SortformerDiarizationEngine implements DiarizationEngine {
   }
 
   async dispose(): Promise<void> {
-    this.ctx?.device?.destroy?.();
+    this.ctx?.destroy();
     this.ctx = this.enc = this.head = null;
   }
 }

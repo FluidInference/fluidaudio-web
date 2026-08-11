@@ -98,7 +98,7 @@ export class WhisperEngine implements AsrEngine {
       decMs += now() - td;
       const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
       if (text) parts.push(text);
-      (this.ctx as any).trimPool?.(); // chunk drained — evict to budget
+      this.ctx.trimPool(); // chunk drained — evict to budget
     }
     return {
       text: parts.join(" "),
@@ -107,7 +107,7 @@ export class WhisperEngine implements AsrEngine {
   }
 
   async dispose(): Promise<void> {
-    this.ctx?.device?.destroy?.();
+    this.ctx?.destroy();
     this.ctx = this.enc = this.dec = this.mel = this.tokenizer = null;
   }
 }

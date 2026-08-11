@@ -11,12 +11,19 @@
 // conservative mapAsync implementation (drain-everything-before-map) cannot
 // serialize the pipeline. Used by the browser engine (index.ts) and the node
 // gates — same shipping code path in both.
+//
+// This file is the orchestrator; the concerns live in their own modules:
+// windowing.js (window/group planning), mel-scheduler.js (mel prefetch),
+// decode-sink.js (the three decode paths), stitcher.js (seam dedup).
 
 import { parakeetEncodeBatch } from "./raw-encoder.js";
-import { wasmDecodeProj } from "./raw-decoder-wasm.js";
+import { planWindows, groupWindows } from "./windowing.js";
+import { createMelScheduler } from "./mel-scheduler.js";
+import { createDecodeSink } from "./decode-sink.js";
+import { createStitcher } from "./stitcher.js";
 
 /**
- * @returns {Promise<{ids: number[], stats: {melMs: number, encWaitMs: number, decodeMs: number, windows: number, groups: number}}>}
+ * @returns {Promise<{ids: number[], idTimes: number[], stats: {melMs: number, encWaitMs: number, decodeMs: number, windows: number, groups: number}}>}
  *   deduped token ids + a stage breakdown. Stages OVERLAP (that is the point of
  *   the pipeline): encWaitMs is only the GPU wait NOT hidden behind CPU work,
  *   so melMs + encWaitMs + decodeMs ≈ wall. A GPU-bound machine shows a large
@@ -38,69 +45,19 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   const single = samples.length <= winSamples;
   const D = projW.cols; // joint dim (640)
 
-  const starts = [];
-  for (let s = 0; s < samples.length; s += hop) {
-    starts.push(s);
-    if (single) break;
-  }
+  const starts = planWindows(samples.length, winSamples, hop);
+  const groups = groupWindows(starts, samples.length, winSamples, wb);
 
-  // Groups of up to wb equal-length windows (batched through the encoder:
-  // bigger GEMMs + one readback per group). A short tail encodes alone.
-  const groups = [];
-  {
-    let cur = [];
-    for (let i = 0; i < starts.length; i++) {
-      const len = Math.min(starts[i] + winSamples, samples.length) - starts[i];
-      if (cur.length && (len !== winSamples || cur.length >= wb)) {
-        groups.push(cur);
-        cur = [];
-      }
-      cur.push(i);
-      if (len !== winSamples) {
-        groups.push(cur);
-        cur = [];
-      }
-    }
-    if (cur.length) groups.push(cur);
-  }
-
-  // melPool (browser): windows fan out to mel workers and compute WHILE the
-  // GPU runs earlier groups — main-thread mel was ~1.8s of unhidden wall on
-  // the 1-hour browser run. Returns a promise; resolveMels() times only the
-  // UNHIDDEN wait. Sync path (node gates / no workers) unchanged.
-  const melsFor = (g) => {
-    if (melPool) {
-      return Promise.all(
-        groups[g].map((i) => {
-          const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
-          return melPool.mel(slice);
-        }),
-      ).then((rs) => rs.filter((r) => r.length > 0).map((r) => r.features));
-    }
-    const t0 = now();
-    const mels = [];
-    for (const i of groups[g]) {
-      const slice = single ? samples : samples.subarray(starts[i], Math.min(starts[i] + winSamples, samples.length));
-      const { features, length } = mel.process(slice);
-      if (length > 0) mels.push(features);
-    }
-    stats.melMs += now() - t0;
-    return mels;
-  };
-  const resolveMels = async (m) => {
-    if (!melPool) return m;
-    const t0 = now();
-    const arr = await m;
-    stats.melMs += now() - t0; // unhidden mel wait only
-    return arr;
-  };
+  const { melsFor, resolveMels } = createMelScheduler({ mel, melPool, groups, starts, samples, winSamples, single, stats, now });
+  const { ids, idTimes, stitch } = createStitcher({ hop, sampleRate, overlapSamples });
+  const sink = createDecodeSink({ dec, D, decodePool, stitch, stats, now, starts, winSamples, totalSamples: samples.length });
 
   // Joint encoder projection [W*Tsub,1024]→[W*Tsub,640] + staging copy, recorded
-  // inside the encoder's batch. WASM backend has no stageDownload — plain download.
+  // inside the encoder's batch.
   const post = (x) => {
     const proj = ctx.matmul(x, projW, { bias: projB });
     if (gpuDecoder) return { proj }; // GPU decode: no readback at all
-    return ctx.stageDownload ? ctx.stageDownload(proj) : { read: async () => ctx.download(proj) };
+    return ctx.stageDownload(proj);
   };
 
   const openArenas = new Set(); // group scopes, popped on every exit path (incl. throws)
@@ -111,8 +68,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     if (!mels.length) return null;
     // Arena per group: every intermediate the encode allocates returns to the
     // buffer pool the moment this group's frames land on the CPU.
-    const arena = ctx.pushArena ? ctx.pushArena() : null;
-    if (arena) openArenas.add(arena);
+    const arena = ctx.pushArena();
+    openArenas.add(arena);
     try {
       const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
       if (gpuDecoder) {
@@ -123,54 +80,20 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       }
       return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length, arena };
     } catch (e) {
-      if (arena) {
-        openArenas.delete(arena);
-        ctx.popArena(arena);
-      }
+      openArenas.delete(arena);
+      ctx.popArena(arena);
       throw e;
     }
   };
+  const closeArena = (arena) => {
+    openArenas.delete(arena);
+    ctx.popArena(arena);
+  };
 
-  const ids = [];
-  const idTimes = []; // absolute seconds per emitted token (window start + frame·80ms)
   if (!groups.length) return { ids, idTimes, stats }; // empty / zero-length input
-  let w = 0;
   let nextMels = melsFor(0);
   let pending = await submit(0, await resolveMels(nextMels));
   nextMels = groups.length > 1 ? melsFor(1) : null;
-
-  // Seam dedup: frame-estimated overlap refined by an exact token-match stitch.
-  // MUST run in window order (it matches against the tail of `ids`).
-  const stitch = (windowIdx, sliceLen, Tenc, wids, idFrames) => {
-    const winStartSec = (windowIdx * hop) / sampleRate;
-    let skip = 0;
-    if (windowIdx > 0 && wids.length) {
-      const overlapEnc = Math.round((Tenc * overlapSamples) / sliceLen);
-      let frameSkip = 0;
-      while (frameSkip < idFrames.length && idFrames[frameSkip] < overlapEnc) frameSkip++;
-      const maxL = Math.min(ids.length, wids.length, frameSkip + 8);
-      let matched = 0;
-      for (let L = maxL; L >= 2; L--) {
-        let ok = true;
-        for (let i = 0; i < L; i++)
-          if (ids[ids.length - L + i] !== wids[i]) {
-            ok = false;
-            break;
-          }
-        if (ok) {
-          matched = L;
-          break;
-        }
-      }
-      skip = Math.max(matched, frameSkip);
-    }
-    for (let k = skip; k < wids.length; k++) {
-      ids.push(wids[k]);
-      idTimes.push(winStartSec + idFrames[k] * 0.08);
-    }
-  };
-
-  const decJobs = []; // pool mode: in-window-order pending decodes
 
   try {
     for (let g = 0; g < groups.length; g++) {
@@ -188,85 +111,33 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       if (pipelined) await advance();
       if (!cur) {
         if (!pipelined) await advance();
-        w += groups[g].length;
+        sink.skip(groups[g].length);
         continue;
       }
       const tw = now();
       if (cur.decP) {
-        // GPU decoder path: tokens arrive directly; frames never left the GPU.
         const perWindow = await cur.decP;
-        if (cur.arena) {
-          openArenas.delete(cur.arena);
-          ctx.popArena(cur.arena);
-        }
+        closeArena(cur.arena);
         stats.encWaitMs += now() - tw;
         stats.groups++;
         if (!pipelined) await advance();
-        const td = now();
-        for (let wi = 0; wi < cur.n; wi++, w++) {
-          const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-          stitch(w, sliceLen, cur.Tsub, perWindow[wi].ids, perWindow[wi].idFrames);
-        }
-        stats.decodeMs += now() - td;
-        stats.windows += cur.n;
+        sink.consumeGpu(cur, perWindow);
         continue;
       }
       const frames = await cur.framesP;
-      if (cur.arena) {
-        openArenas.delete(cur.arena);
-        ctx.popArena(cur.arena); // group's GPU work is drained — recycle its buffers
-      }
+      closeArena(cur.arena); // group's GPU work is drained — recycle its buffers
       stats.encWaitMs += now() - tw;
       stats.groups++;
       if (!pipelined) await advance();
-
-      const Tenc = cur.Tsub;
-      if (decodePool) {
-        // Fan windows out to the worker pool as soon as their frames land; the
-        // GPU keeps encoding and workers decode concurrently. Stitching happens
-        // at the end, in window order.
-        for (let wi = 0; wi < cur.n; wi++, w++) {
-          const win = frames.slice(wi * Tenc * D, (wi + 1) * Tenc * D); // copy: transferred to the worker
-          const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-          const job = { windowIdx: w, sliceLen, Tenc, p: decodePool.decode(win, Tenc), r: null };
-          job.p = job.p.then((res) => {
-            job.r = res;
-            return res;
-          });
-          decJobs.push(job);
-        }
-        // Opportunistic in-order drain: stitch already-finished leading jobs so
-        // results/buffers don't accumulate unboundedly on multi-hour files.
-        while (decJobs.length && decJobs[0].r) {
-          const j = decJobs.shift();
-          stitch(j.windowIdx, j.sliceLen, j.Tenc, j.r.ids, j.r.idFrames);
-        }
-      } else {
-        const td = now();
-        for (let wi = 0; wi < cur.n; wi++, w++) {
-          const win = frames.subarray(wi * Tenc * D, (wi + 1) * Tenc * D);
-          const sliceLen = Math.min(starts[w] + winSamples, samples.length) - starts[w];
-          const { ids: wids, idFrames } = wasmDecodeProj(dec, win, Tenc);
-          stitch(w, sliceLen, Tenc, wids, idFrames);
-        }
-        stats.decodeMs += now() - td;
-      }
-      stats.windows += cur.n;
+      sink.consumeFrames(cur, frames);
     }
-    if (decJobs.length) {
-      const td = now();
-      for (const j of decJobs) {
-        const { ids: wids, idFrames } = await j.p;
-        stitch(j.windowIdx, j.sliceLen, j.Tenc, wids, idFrames);
-      }
-      stats.decodeMs += now() - td;
-    }
+    await sink.finish(); // pool mode: stitch the remaining in-flight decodes
     stats.melMs = Math.round(stats.melMs);
     stats.encWaitMs = Math.round(stats.encWaitMs);
     stats.decodeMs = Math.round(stats.decodeMs);
     return { ids, idTimes, stats };
   } finally {
     for (const a of openArenas) ctx.popArena(a); // throws must not orphan group scopes
-    ctx.trimPool?.(); // drained here (final readback resolved) — safe to evict to budget
+    ctx.trimPool(); // drained here (final readback resolved) — safe to evict to budget
   }
 }

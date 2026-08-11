@@ -74,10 +74,8 @@ export function whisperCrossKV(ctx, dec, encGpu) {
   return dec.layers.map((w) => {
     const k = ctx.matmul(encGpu, w.ckw);
     const v = ctx.matmul(encGpu, w.cvw, { bias: w.cvb });
-    if (ctx.pin) {
-      ctx.pin(k);
-      ctx.pin(v);
-    }
+    ctx.pin(k);
+    ctx.pin(v);
     return { k, v };
   });
 }
@@ -89,7 +87,7 @@ export function whisperCrossKV(ctx, dec, encGpu) {
  * constant; cached is O(1) per step).
  */
 export function whisperDecodeInit(ctx, dec, maxLen = 448) {
-  const pinned = (t) => (ctx.pin ? ctx.pin(t) : t); // caches live across all steps
+  const pinned = (t) => ctx.pin(t); // caches live across all steps
   return {
     n: 0,
     maxLen,
@@ -97,9 +95,6 @@ export function whisperDecodeInit(ctx, dec, maxLen = 448) {
     selfV: dec.layers.map(() => pinned(ctx.alloc(maxLen, D))),
   };
 }
-
-// rows-limited view over a preallocated cache tensor (no copy; both backends).
-const rowsView = (t, rows) => (t.buf ? { buf: t.buf, rows, cols: t.cols } : { data: t.data.subarray(0, rows * t.cols), rows, cols: t.cols });
 
 /** Feed one token through the cached decoder; returns logits [VOCAB] for it. */
 export async function whisperDecodeNext(ctx, dec, kv, st, token) {
@@ -109,7 +104,7 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
   for (let d = 0; d < D; d++) emb[d] = dec.embed[token * D + d] + dec.pos[n * D + d];
   let x = ctx.upload(emb, 1, D);
   // Arena per step: the ~50 intermediates recycle once the logits land.
-  const arena = ctx.pushArena ? ctx.pushArena() : null;
+  const arena = ctx.pushArena();
   // One submit for the whole step; the staging copy rides it (one submit +
   // one map per token). The batch is closed by withBatchSync before read().
   const staged = ctx.withBatchSync(() => {
@@ -120,8 +115,8 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
       const q = ctx.matmul(h, w.sqw, { bias: w.sqb });
       ctx.copyRows(st.selfK[li], ctx.matmul(h, w.skw), n);
       ctx.copyRows(st.selfV[li], ctx.matmul(h, w.svw, { bias: w.svb }), n);
-      const K = rowsView(st.selfK[li], n + 1),
-        V = rowsView(st.selfV[li], n + 1);
+      const K = ctx.rowsView(st.selfK[li], n + 1),
+        V = ctx.rowsView(st.selfV[li], n + 1);
       const probs = ctx.softmax(ctx.bmmQK(q, K, null, NH, HD)); // [NH, n+1]
       x = ctx.add(x, ctx.matmul(ctx.bmmPV(probs, V, NH, HD), w.sow, { bias: w.sob }));
       // cross-attn (K/V precomputed once from the encoder)
@@ -135,13 +130,13 @@ export async function whisperDecodeNext(ctx, dec, kv, st, token) {
     }
     st.n = n + 1;
     const logits = ctx.matmul(ln(x, dec.lnf), dec.embedT); // [1, VOCABP]
-    return ctx.stageDownload ? ctx.stageDownload(logits) : { read: async () => ctx.download(logits) };
+    return ctx.stageDownload(logits);
   });
   try {
     const full = await staged.read();
     return full.length > VOCAB ? full.subarray(0, VOCAB) : full; // drop f16 pad cols
   } finally {
-    if (arena) ctx.popArena(arena); // recycle even if the readback rejects
+    ctx.popArena(arena); // recycle even if the readback rejects
   }
 }
 
