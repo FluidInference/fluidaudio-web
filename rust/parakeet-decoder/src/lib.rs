@@ -470,3 +470,185 @@ pub extern "C" fn eou_decode_cont(frames: *const f32, tenc: u32, out_ids: *mut i
         n_out
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Nemotron RNNT decoder: 2-layer LSTM (hid 640, NO SOS prepend), vocab 13088.
+// Encoder frames arrive PRE-PROJECTED (+encB) to [T, 640] — the 1024→640
+// projection rides the GPU encode batch (with the prompt-kernel MLP). RNNT:
+// one frame per blank, predProj cached across blanks. State persists across
+// calls (nemo_decode_cont continues a stream; nemo_reset starts one).
+// The 13088-wide out matrix supports the same per-row int8 path as parakeet
+// (nemo_set_out_q) — it is 33MB fp32, the decode hot loop's whole traffic.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const NLOG: usize = 13088;
+const NBLANK: usize = NLOG - 1;
+
+struct NW {
+    embed: *const f32,
+    lw: [*const f32; 2], lr: [*const f32; 2], lb: [*const f32; 2],
+    pred_w: *const f32, pred_b: *const f32,
+    out_w: *const f32, out_b: *const f32,
+}
+static mut NWT: NW = NW {
+    embed: core::ptr::null(), lw: [core::ptr::null(); 2], lr: [core::ptr::null(); 2],
+    lb: [core::ptr::null(); 2], pred_w: core::ptr::null(), pred_b: core::ptr::null(),
+    out_w: core::ptr::null(), out_b: core::ptr::null(),
+};
+static mut NH_: [[f32; HID]; 2] = [[0.0; HID]; 2];
+static mut NC_: [[f32; HID]; 2] = [[0.0; HID]; 2];
+static mut NDECOUT: [f32; HID] = [0.0; HID];
+static mut NPREDPROJ: [f32; HID] = [0.0; HID];
+static mut NJ: [f32; HID] = [0.0; HID];
+static mut NOUT: [f32; NLOG] = [0.0; NLOG];
+static mut NOUT_WQ: *const i8 = core::ptr::null();
+static mut NOUT_SCALE: *const f32 = core::ptr::null();
+
+#[no_mangle]
+pub extern "C" fn nemo_set_out_q(q: *const i8, scale: *const f32) {
+    unsafe { NOUT_WQ = q; NOUT_SCALE = scale; }
+}
+
+unsafe fn nemo_lstm_step(layer: usize, x: *const f32) -> ([f32; HID], [f32; HID]) {
+    let w = NWT.lw[layer]; let r = NWT.lr[layer]; let b = NWT.lb[layer];
+    let h = &NH_[layer]; let c = &NC_[layer];
+    let hp = h.as_ptr();
+    let mut nh = [0.0f32; HID];
+    let mut nc = [0.0f32; HID];
+    for g in 0..HID {
+        let wi = g * HID; let wo = (HID + g) * HID; let wf = (2 * HID + g) * HID; let wc = (3 * HID + g) * HID;
+        let zi = *b.add(g) + *b.add(4 * HID + g) + dotv(w.add(wi), x, HID) + dotv(r.add(wi), hp, HID);
+        let zo = *b.add(HID + g) + *b.add(5 * HID + g) + dotv(w.add(wo), x, HID) + dotv(r.add(wo), hp, HID);
+        let zf = *b.add(2 * HID + g) + *b.add(6 * HID + g) + dotv(w.add(wf), x, HID) + dotv(r.add(wf), hp, HID);
+        let zc = *b.add(3 * HID + g) + *b.add(7 * HID + g) + dotv(w.add(wc), x, HID) + dotv(r.add(wc), hp, HID);
+        let cc = sigmoid(zf) * c[g] + sigmoid(zi) * tanhf(zc);
+        nc[g] = cc; nh[g] = sigmoid(zo) * tanhf(cc);
+    }
+    (nh, nc)
+}
+
+// predict(token): embed → LSTM0 → LSTM1 (no SOS). Commits state (RNNT
+// advances the prediction net on emission only).
+unsafe fn nemo_predict(token: usize) {
+    let x = NWT.embed.add(token * HID);
+    let (h0, c0) = nemo_lstm_step(0, x);
+    NH_[0] = h0; NC_[0] = c0;
+    let (h1, c1) = nemo_lstm_step(1, NH_[0].as_ptr());
+    NH_[1] = h1; NC_[1] = c1;
+    for i in 0..HID { NDECOUT[i] = NH_[1][i]; }
+}
+
+unsafe fn nemo_predproj() {
+    let w = NWT.pred_w; let b = NWT.pred_b;
+    for n in 0..HID { NPREDPROJ[n] = *b.add(n); }
+    let n4 = HID & !3;
+    for k in 0..HID {
+        let dk = NDECOUT[k];
+        if dk == 0.0 { continue; }
+        let dv = f32x4_splat(dk);
+        let row = w.add(k * HID);
+        let mut n = 0;
+        while n < n4 {
+            let p = NPREDPROJ.as_mut_ptr().add(n);
+            v128_store(p as *mut v128, f32x4_add(v128_load(p as *const v128), f32x4_mul(dv, v128_load(row.add(n) as *const v128))));
+            n += 4;
+        }
+        while n < HID { NPREDPROJ[n] += dk * *row.add(n); n += 1; }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn nemo_set_weights(
+    embed: *const f32, l0w: *const f32, l0r: *const f32, l0b: *const f32,
+    l1w: *const f32, l1r: *const f32, l1b: *const f32,
+    pred_w: *const f32, pred_b: *const f32, out_w: *const f32, out_b: *const f32,
+) {
+    unsafe {
+        NWT = NW { embed, lw: [l0w, l1w], lr: [l0r, l1r], lb: [l0b, l1b], pred_w, pred_b, out_w, out_b };
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn nemo_reset() {
+    unsafe {
+        NH_ = [[0.0; HID]; 2]; NC_ = [[0.0; HID]; 2];
+        nemo_predict(NBLANK);
+        nemo_predproj();
+    }
+}
+
+/// Greedy RNNT over PRE-PROJECTED frames [tenc, 640] (encB + prompt kernel
+/// already applied GPU-side). Continues stream state; returns emission count.
+#[no_mangle]
+pub extern "C" fn nemo_decode_cont(frames: *const f32, tenc: u32, out_ids: *mut i32, out_frames: *mut i32, max_symbols: i32) -> i32 {
+    unsafe {
+        let tenc = tenc as usize;
+        let mut n_out = 0i32;
+        let mut t = 0usize;
+        let mut emitted = 0i32;
+        let m4 = NLOG & !3;
+        let m16 = NLOG & !15;
+        while t < tenc {
+            let fp = frames.add(t * HID);
+            for n in 0..HID { let v = *fp.add(n) + NPREDPROJ[n]; NJ[n] = if v > 0.0 { v } else { 0.0 }; }
+            let ob = NWT.out_b;
+            for m in 0..NLOG { NOUT[m] = *ob.add(m); }
+            if !NOUT_WQ.is_null() {
+                for n in 0..HID {
+                    let jn = NJ[n];
+                    if jn == 0.0 { continue; }
+                    let sc = jn * *NOUT_SCALE.add(n);
+                    let jv = f32x4_splat(sc);
+                    let row = NOUT_WQ.add(n * NLOG);
+                    let mut m = 0;
+                    while m < m16 {
+                        let w16 = v128_load(row.add(m) as *const v128);
+                        let lo = i16x8_extend_low_i8x16(w16);
+                        let hi = i16x8_extend_high_i8x16(w16);
+                        let f0 = f32x4_convert_i32x4(i32x4_extend_low_i16x8(lo));
+                        let f1 = f32x4_convert_i32x4(i32x4_extend_high_i16x8(lo));
+                        let f2 = f32x4_convert_i32x4(i32x4_extend_low_i16x8(hi));
+                        let f3 = f32x4_convert_i32x4(i32x4_extend_high_i16x8(hi));
+                        let o = NOUT.as_mut_ptr().add(m);
+                        v128_store(o as *mut v128, f32x4_add(v128_load(o as *const v128), f32x4_mul(jv, f0)));
+                        v128_store(o.add(4) as *mut v128, f32x4_add(v128_load(o.add(4) as *const v128), f32x4_mul(jv, f1)));
+                        v128_store(o.add(8) as *mut v128, f32x4_add(v128_load(o.add(8) as *const v128), f32x4_mul(jv, f2)));
+                        v128_store(o.add(12) as *mut v128, f32x4_add(v128_load(o.add(12) as *const v128), f32x4_mul(jv, f3)));
+                        m += 16;
+                    }
+                    while m < NLOG { NOUT[m] += sc * (*row.add(m) as f32); m += 1; }
+                }
+            } else {
+                let ow = NWT.out_w;
+                for n in 0..HID {
+                    let jn = NJ[n];
+                    if jn == 0.0 { continue; }
+                    let jv = f32x4_splat(jn);
+                    let row = ow.add(n * NLOG);
+                    let mut m = 0;
+                    while m < m4 {
+                        let acc = v128_load(NOUT.as_ptr().add(m) as *const v128);
+                        let w = v128_load(row.add(m) as *const v128);
+                        v128_store(NOUT.as_mut_ptr().add(m) as *mut v128, f32x4_add(acc, f32x4_mul(jv, w)));
+                        m += 4;
+                    }
+                    while m < NLOG { NOUT[m] += jn * *row.add(m); m += 1; }
+                }
+            }
+            let mut max_id = 0usize; let mut max_v = f32::NEG_INFINITY;
+            for i in 0..NLOG { if NOUT[i] > max_v { max_v = NOUT[i]; max_id = i; } }
+            if max_id == NBLANK || emitted >= max_symbols {
+                t += 1;
+                emitted = 0;
+                continue;
+            }
+            *out_ids.add(n_out as usize) = max_id as i32;
+            *out_frames.add(n_out as usize) = t as i32;
+            n_out += 1;
+            nemo_predict(max_id);
+            nemo_predproj();
+            emitted += 1;
+        }
+        n_out
+    }
+}
