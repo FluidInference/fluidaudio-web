@@ -181,3 +181,12 @@ docs/           architecture, benchmarks, PORTING.md (add-a-model checklist), th
 
 MIT (code). Model weights follow their upstream licenses (see the registry and
 Hugging Face model cards).
+
+## Acknowledgements
+
+The encoder GEMM kernel geometry and the GPU TDT decoder design are adapted
+from [parakeet.wgsl](https://github.com/narcotic-sh/parakeet.wgsl) by
+Narcotic Software (MIT) — a fast, focused browser Parakeet implementation
+that served as both inspiration and reference throughout our optimization
+work. See [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md) for the full
+list of adapted code and licenses.
