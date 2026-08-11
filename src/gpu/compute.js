@@ -1,4 +1,7 @@
-// Raw-WebGPU compute core — hand-written WGSL kernels, GPU-resident tensors.
+// Raw-WebGPU compute core — GPU-resident tensors over the hand-written WGSL
+// kernels in src/gpu/kernels/. Internals are composed from buffer-pool.js
+// (pool + arena scopes), scheduler.js (batching / dispatch / profiler), and
+// pipeline-cache.js; this file is the public GpuContext facade + op methods.
 //
 // This is the "write raw WebGPU (and WASM where needed)" path: instead of handing
 // a whole ONNX graph to onnxruntime-web (many un-fused dispatches + GPU↔CPU syncs
@@ -14,6 +17,9 @@
 // Kernels take and return Tensors; only download() copies back to CPU. Verified
 // for numerical parity against CPU references on a real M5 Pro GPU.
 
+import { PipelineCache } from "./pipeline-cache.js";
+import { BufferPool } from "./buffer-pool.js";
+import { Scheduler } from "./scheduler.js";
 import { WGSL_ACTF, ACT } from "./kernels/actf.js";
 import {
   GEMM_WGSL,
@@ -74,7 +80,12 @@ export class GpuContext {
   constructor(device) {
     this.device = device;
     this.backend = "webgpu";
-    this.pipelines = new Map();
+    // Composed internals: compiled-pipeline cache, buffer pool + arena scopes,
+    // and command scheduling (batching / dispatch / uniforms / profiler). The
+    // public GpuContext API delegates; op methods use _pipeline/_uniform/_run.
+    this._pipes = new PipelineCache(device);
+    this._bufs = new BufferPool(device);
+    this._sched = new Scheduler(device);
     // f16 storage needs the device feature AND Float16Array; without either,
     // uploadF16 silently falls back to fp32 (kernels using `enable f16;` would
     // otherwise fail validation asynchronously — no-op dispatches, zero outputs).
@@ -93,14 +104,7 @@ export class GpuContext {
   }
 
   _pipeline(key, code, entry = "main") {
-    let p = this.pipelines.get(key);
-    if (!p) {
-      const module = this.device.createShaderModule({ code });
-      p = this.device.createComputePipeline({ layout: "auto", compute: { module, entryPoint: entry } });
-      p.__label = key; // for the profiler
-      this.pipelines.set(key, p);
-    }
-    return p;
+    return this._pipes.get(key, code, entry);
   }
 
   /** @param {Float32Array} data @returns {{buf:GPUBuffer, rows:number, cols:number}} */
@@ -120,44 +124,7 @@ export class GpuContext {
     return t.buf ? t : this.upload(t.data, t.rows, t.cols);
   }
 
-  /** Allocate an uninitialized GPU tensor. */
-  // ── buffer pool + arena scopes ─────────────────────────────────────────────
-  // Intermediate tensors used to be one fresh GPUBuffer each, never destroyed —
-  // GPU memory ballooned until the JS GC lazily collected the wrappers. Now:
-  // alloc() draws from an exact-size free pool, and pushArena()/popArena()
-  // scope a group/step/synth so its intermediates return to the pool the
-  // moment the readback lands. Reuse is queue-ordered-safe (later submits
-  // execute after earlier ones; all kernels fully write their outputs — no
-  // zero-init assumptions, verified + parity-gated). pin(t) exempts tensors
-  // that outlive the scope (weight-derived caches, KV caches).
-  _poolGet(size, usage) {
-    this._pool = this._pool || new Map();
-    const key = `${size}|${usage}`;
-    const list = this._pool.get(key);
-    if (list && list.length) {
-      this._pooledBytes -= size;
-      this._memStats && (this._memStats.reused += 1);
-      return list.pop();
-    }
-    if (this._memStats) {
-      this._memStats.created += 1;
-      this._memStats.createdBytes += size;
-    }
-    return this.device.createBuffer({ size, usage });
-  }
-  _poolPut(buf, size, usage) {
-    // NEVER destroy here: a popped arena's buffers may still be referenced by
-    // recorded-but-unsubmitted command buffers (per-layer arenas pop while the
-    // batch is still recording) — destroying one drops the whole submit with
-    // an async validation error. Eviction happens in trimPool(), which engines
-    // call at known-drained points (after the run's final readback).
-    this._pooledBytes = (this._pooledBytes || 0) + size;
-    this._pool = this._pool || new Map();
-    const key = `${size}|${usage}`;
-    let list = this._pool.get(key);
-    if (!list) this._pool.set(key, (list = []));
-    list.push(buf);
-  }
+  // ── buffer pool + arena scopes (BufferPool) ────────────────────────────────
   /** Destroy pooled buffers down to the byte budget. Call ONLY when this
    * context's GPU work is drained (end of a transcribe/synth, after the final
    * readback resolved) — pooled buffers are unreferenced by definition then.
@@ -166,62 +133,20 @@ export class GpuContext {
    * pure idle retention. Consumers can lower ctx.poolBudgetBytes on
    * memory-constrained targets (cost is re-creation time, not correctness). */
   trimPool(budgetBytes) {
-    const budget = budgetBytes ?? this.poolBudgetBytes ?? 1 << 30;
-    if (!this._pool || (this._pooledBytes || 0) <= budget) return;
-    // Evict largest size-classes first (fewest destroys to get under budget).
-    const keys = [...this._pool.keys()].sort((a, b) => Number(b.split("|")[0]) - Number(a.split("|")[0]));
-    for (const key of keys) {
-      if (this._pooledBytes <= budget) break;
-      const size = Number(key.split("|")[0]);
-      const list = this._pool.get(key);
-      while (list.length && this._pooledBytes > budget) {
-        list.pop().destroy();
-        this._pooledBytes -= size;
-      }
-      if (!list.length) this._pool.delete(key);
-    }
+    this._bufs.trim(budgetBytes ?? this.poolBudgetBytes ?? 1 << 30);
   }
   /** Pool occupancy (for gates/telemetry). */
   poolInfo() {
-    return { bytes: this._pooledBytes || 0 };
+    return this._bufs.info();
   }
-  /** Open an allocation scope; allocs land in the NEWEST open scope. Returns a
-   * handle — scopes may close out of order (the pipelined engines interleave
-   * groups), so popArena takes the handle rather than assuming LIFO. */
   pushArena() {
-    this._arenas = this._arenas || [];
-    const arena = [];
-    this._arenas.push(arena);
-    return arena;
+    return this._bufs.pushArena();
   }
-  /** Close a scope: its (unpinned) buffers return to the pool for reuse. */
   popArena(handle) {
-    if (!this._arenas) return;
-    const arena = handle ?? this._arenas[this._arenas.length - 1];
-    const i = this._arenas.indexOf(arena);
-    if (i < 0) return;
-    this._arenas.splice(i, 1);
-    // Invariant: each live buf appears in at most one arena entry (alloc pushes
-    // once; pin() SPLICES entries out rather than marking them).
-    for (const e of arena) this._poolPut(e.buf, e.size, e.usage);
+    this._bufs.popArena(handle);
   }
-  /** Exempt a tensor from its arena. Default: persistent (never pooled — for
-   * caches). toParent: move it to the ENCLOSING arena instead (for tensors
-   * that outlive an inner scope but die with the outer one, e.g. the residual
-   * stream x outliving a per-layer arena but dying with its group). */
   pin(t, toParent = false) {
-    if (!this._arenas) return t;
-    for (let ai = this._arenas.length - 1; ai >= 0; ai--) {
-      const arena = this._arenas[ai];
-      for (let i = 0; i < arena.length; i++) {
-        if (arena[i].buf !== t.buf) continue;
-        const e = arena.splice(i, 1)[0];
-        if (toParent && ai > 0) this._arenas[ai - 1].push(e);
-        // else: persistent — belongs to no arena, never pooled
-        return t;
-      }
-    }
-    return t;
+    return this._bufs.pin(t, toParent);
   }
   /** One-time async probe: enable the subgroup GEMM only if the device runs
    * 32-lane subgroups with contiguous lane mapping (geometry assumption).
@@ -262,29 +187,16 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     return this.hasSubgroups32;
   }
 
-  /** Allocation counters for the memory gate (created/reused/bytes). */
+  /** Allocation counters for the memory gate (created/createdBytes/reused). */
   memStatsStart() {
-    this._memStats = { created: 0, createdBytes: 0, reused: 0 };
+    this._bufs.statsStart();
   }
   memStats() {
-    return this._memStats;
+    return this._bufs.stats();
   }
 
   _allocRaw(size, usage) {
-    const top = this._arenas && this._arenas.length ? this._arenas[this._arenas.length - 1] : null;
-    // No open arena → legacy persistent alloc. It must NOT draw from the pool:
-    // it would never return the buffer (one-way drain — a no-arena caller like
-    // the sortformer head would steal the encoder's pooled scratch for good).
-    if (!top) {
-      if (this._memStats) {
-        this._memStats.created += 1;
-        this._memStats.createdBytes += size;
-      }
-      return this.device.createBuffer({ size, usage });
-    }
-    const buf = this._poolGet(size, usage);
-    top.push({ buf, size, usage });
-    return buf;
+    return this._bufs.allocRaw(size, usage);
   }
 
   alloc(rows, cols) {
@@ -355,17 +267,8 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
     // Batch-aware like download(): inside an open batch the copy rides the
     // batch submit (then flush + reopen) so it sees the producing kernels.
-    if (this._enc && this._pass) {
-      this._pass.end();
-      this._enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-      this.device.queue.submit([this._enc.finish()]);
-      this._enc = this._pass = null;
-      this.beginBatch();
-    } else {
-      const enc = this.device.createCommandEncoder();
-      enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-      this.device.queue.submit([enc.finish()]);
-    }
+    this._sched.encodeCopy((enc) => enc.copyBufferToBuffer(t.buf, 0, stg, 0, size));
+    this._sched.flush();
     await stg.mapAsync(GPUMapMode.READ);
     const h = new Float16Array(stg.getMappedRange().slice(0, n * 2));
     const out = Float32Array.from(h);
@@ -408,20 +311,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const y = this.alloc(M, N);
     const pipeline = this._pipeline("matmulNBits", MATMUL_NBITS_WGSL);
     const u = this._uniform(new Uint32Array([M, N, K, nblk, zpb, 0, 0, 0]));
-    const bg = this.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [a.buf, bq.buf, scales.buf, zp.buf, y.buf, u].map((b, i) => ({ binding: i, resource: { buffer: b } })),
-    });
-    const enc = this.device.createCommandEncoder();
-    const pass = this._pass || enc.beginComputePass();
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bg);
-    const tot = Math.ceil((M * N) / 64);
-    pass.dispatchWorkgroups(Math.min(tot, 65535), Math.ceil(tot / 65535));
-    if (!this._pass) {
-      pass.end();
-      this.device.queue.submit([enc.finish()]);
-    }
+    this._run(pipeline, [a.buf, bq.buf, scales.buf, zp.buf, y.buf], u, Math.ceil((M * N) / 64));
     return y;
   }
 
@@ -439,40 +329,8 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     return y;
   }
 
-  /**
-   * Uniform buffers come from a per-size ring (reused via writeBuffer) instead of
-   * one new GPUBuffer per dispatch — the dominant buffer churn. Reuse across
-   * submits is safe (queue operations are ordered); within ONE batched command
-   * buffer every dispatch sees the final write, so the ring must exceed the max
-   * dispatches per batch (largest today ~700; warn if a batch wraps the ring).
-   */
   _uniform(arr) {
-    const bytes = arr instanceof ArrayBuffer ? new Uint8Array(arr) : arr;
-    const size = bytes.byteLength;
-    this._uniRing = this._uniRing || new Map();
-    let ring = this._uniRing.get(size);
-    if (!ring) {
-      ring = { bufs: [], i: 0 };
-      this._uniRing.set(size, ring);
-    }
-    const CAP = 4096;
-    let buf;
-    if (ring.bufs.length < CAP) {
-      buf = this.device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-      ring.bufs.push(buf);
-    } else {
-      buf = ring.bufs[ring.i % CAP];
-    }
-    ring.i++;
-    if (this._pass) {
-      this._batchUniforms = (this._batchUniforms || 0) + 1;
-      if (this._batchUniforms > CAP && !this._warnedRing) {
-        this._warnedRing = true;
-        console.warn("[gpu] uniform ring wrapped within one batch — split the batch");
-      }
-    }
-    this.device.queue.writeBuffer(buf, 0, bytes);
-    return buf;
+    return this._sched.uniform(arr);
   }
 
   /** Shared 4-byte dummy buffer for bias-less ops (was a fresh alloc per call). */
@@ -498,56 +356,17 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     return t;
   }
 
-  /**
-   * Per-dispatch GPU profiling (timestamp-query): between startProfile()/endProfile()
-   * every _run gets its own compute pass with begin/end timestamps, labeled by
-   * pipeline. endProfile() resolves and returns [{label, ms, count}] sorted by ms.
-   * Works inside beginBatch/endBatch (passes share the batch encoder).
-   */
+  // ── command scheduling (Scheduler): batching, dispatch, profiler ──────────
   startProfile(maxOps = 2000) {
-    // querySet count limit is 4096 → ≤2048 ops
-    if (!this.device.features.has("timestamp-query")) throw new Error("timestamp-query not available");
-    this._prof = {
-      qs: this.device.createQuerySet({ type: "timestamp", count: maxOps * 2 }),
-      labels: [],
-      max: maxOps,
-    };
+    this._sched.startProfile(maxOps);
   }
   async endProfile() {
-    const prof = this._prof;
-    this._prof = null;
-    const n = prof.labels.length;
-    const qb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
-    const rb = this.device.createBuffer({ size: n * 16, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    const enc = this.device.createCommandEncoder();
-    enc.resolveQuerySet(prof.qs, 0, n * 2, qb, 0);
-    enc.copyBufferToBuffer(qb, 0, rb, 0, n * 16);
-    this.device.queue.submit([enc.finish()]);
-    await rb.mapAsync(GPUMapMode.READ);
-    const t = new BigUint64Array(rb.getMappedRange());
-    const agg = new Map();
-    for (let i = 0; i < n; i++) {
-      const ms = Number(t[2 * i + 1] - t[2 * i]) / 1e6;
-      const a2 = agg.get(prof.labels[i]) || { label: prof.labels[i], ms: 0, count: 0 };
-      a2.ms += ms;
-      a2.count++;
-      agg.set(prof.labels[i], a2);
-    }
-    rb.unmap();
-    qb.destroy();
-    rb.destroy();
-    prof.qs.destroy();
-    return [...agg.values()].sort((a2, b) => b.ms - a2.ms);
+    return this._sched.endProfile();
   }
 
   /** Batch mode: queue many kernels into one submit. beginBatch()…endBatch(). */
   beginBatch() {
-    // Non-reentrant by design: nesting would silently discard the outer
-    // encoder's recorded-but-unsubmitted work. Fail loudly instead.
-    if (this._enc) throw new Error("beginBatch: a batch is already open");
-    this._enc = this.device.createCommandEncoder();
-    this._pass = this._enc.beginComputePass();
-    this._batchUniforms = 0;
+    this._sched.beginBatch();
   }
   /** Sync batch wrapper for record-only sections (no awaits inside fn). */
   withBatchSync(fn) {
@@ -555,7 +374,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     try {
       return fn();
     } finally {
-      if (this._pass) this.endBatch();
+      if (this._sched.batchOpen) this.endBatch();
     }
   }
 
@@ -566,56 +385,16 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     try {
       return await fn();
     } finally {
-      if (this._pass) this.endBatch();
+      if (this._sched.batchOpen) this.endBatch();
     }
   }
 
   endBatch() {
-    if (!this._pass) throw new Error("endBatch without beginBatch");
-    this._pass.end();
-    this.device.queue.submit([this._enc.finish()]);
-    this._enc = this._pass = null;
+    this._sched.endBatch();
   }
 
   _run(pipeline, buffers, uniform, groupsX, groupsY = 1, groupsZ = 1) {
-    // WebGPU caps each grid dimension at 65535. For flat 1-D kernels (groupsY===1)
-    // that exceed it, fold the excess into Y; those kernels linearize the group id
-    // via num_workgroups. 2-D callers (GEMM) already pass groupsY and stay in range.
-    if (groupsY === 1 && groupsX > 65535) {
-      groupsY = Math.ceil(groupsX / 65535);
-      groupsX = Math.ceil(groupsX / groupsY);
-    }
-    const entries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b } }));
-    entries.push({ binding: buffers.length, resource: { buffer: uniform } });
-    const bg = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries });
-    const prof = this._prof && this._prof.labels.length < this._prof.max ? this._prof : null;
-    const tw = prof ? { querySet: prof.qs, beginningOfPassWriteIndex: prof.labels.length * 2, endOfPassWriteIndex: prof.labels.length * 2 + 1 } : undefined;
-    if (prof) prof.labels.push(pipeline.__label || "op");
-    if (this._pass) {
-      // batched
-      if (prof) {
-        // own timestamped pass inside the batch encoder
-        this._pass.end();
-        const p = this._enc.beginComputePass({ timestampWrites: tw });
-        p.setPipeline(pipeline);
-        p.setBindGroup(0, bg);
-        p.dispatchWorkgroups(groupsX, groupsY, groupsZ);
-        p.end();
-        this._pass = this._enc.beginComputePass();
-        return;
-      }
-      this._pass.setPipeline(pipeline);
-      this._pass.setBindGroup(0, bg);
-      this._pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
-      return;
-    }
-    const enc = this.device.createCommandEncoder();
-    const pass = enc.beginComputePass(prof ? { timestampWrites: tw } : undefined);
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bg);
-    pass.dispatchWorkgroups(groupsX, groupsY, groupsZ);
-    pass.end();
-    this.device.queue.submit([enc.finish()]);
+    this._sched.run(pipeline, buffers, uniform, groupsX, groupsY, groupsZ);
   }
 
   /** C = act(A@B + bias). a:[M,K] b:[K,N] bias?:[1,N] -> [M,N] */
@@ -1218,15 +997,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
    * command encoder (pass paused/reopened) so it stays ordered after the
    * dispatches that produce src. */
   copyRows(dst, src, rowOffset) {
-    if (this._enc && this._pass) {
-      this._pass.end();
-      this._enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
-      this._pass = this._enc.beginComputePass();
-      return dst;
-    }
-    const enc = this.device.createCommandEncoder();
-    enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4);
-    this.device.queue.submit([enc.finish()]);
+    this._sched.encodeCopy((enc) => enc.copyBufferToBuffer(src.buf, 0, dst.buf, rowOffset * dst.cols * 4, src.rows * src.cols * 4));
     return dst;
   }
 
@@ -1234,16 +1005,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
    * copy (batch-safe like copyRows: pass paused/reopened inside a batch). */
   sliceRows(x, row0, count) {
     const out = this.alloc(count, x.cols);
-    const record = (enc) => enc.copyBufferToBuffer(x.buf, row0 * x.cols * 4, out.buf, 0, count * x.cols * 4);
-    if (this._enc && this._pass) {
-      this._pass.end();
-      record(this._enc);
-      this._pass = this._enc.beginComputePass();
-      return out;
-    }
-    const enc = this.device.createCommandEncoder();
-    record(enc);
-    this.device.queue.submit([enc.finish()]);
+    this._sched.encodeCopy((enc) => enc.copyBufferToBuffer(x.buf, row0 * x.cols * 4, out.buf, 0, count * x.cols * 4));
     return out;
   }
 
@@ -1254,7 +1016,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
   freeTensor(t) {
     if (!t || !t.buf || t.f16 || t.view) return;
     const size = Math.max(4, t.rows * t.cols * 4);
-    this._poolPut(t.buf, size, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
+    this._bufs.put(t.buf, size, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
   }
 
   /** Concat along rows (row-major ⇒ contiguous buffer concatenation, no readback). */
@@ -1265,22 +1027,13 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const cols = tensors[0].cols;
     const rows = tensors.reduce((s, t) => s + t.rows, 0);
     const out = this.alloc(rows, cols);
-    const record = (enc) => {
+    this._sched.encodeCopy((enc) => {
       let off = 0;
       for (const t of tensors) {
         enc.copyBufferToBuffer(t.buf, 0, out.buf, off * 4, t.rows * t.cols * 4);
         off += t.rows * t.cols;
       }
-    };
-    if (this._enc && this._pass) {
-      this._pass.end();
-      record(this._enc);
-      this._pass = this._enc.beginComputePass();
-      return out;
-    }
-    const enc = this.device.createCommandEncoder();
-    record(enc);
-    this.device.queue.submit([enc.finish()]);
+    });
     return out;
   }
 
@@ -1346,15 +1099,9 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
    * so callers may interleave downloads with batched work freely: one submit
    * per stretch between downloads instead of one per op. */
   async download(t) {
-    if (this._enc && this._pass) {
-      const staged = this.stageDownload(t);
-      this._pass.end();
-      this.device.queue.submit([this._enc.finish()]);
-      this._enc = this._pass = null;
-      this.beginBatch();
-      return staged.read();
-    }
-    return this.stageDownload(t).read();
+    const staged = this.stageDownload(t);
+    this._sched.flush();
+    return staged.read();
   }
 
   /** Record a copy of t into a fresh MAP_READ staging buffer; read() maps it later.
@@ -1365,15 +1112,7 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
   stageDownload(t) {
     const size = t.rows * t.cols * 4;
     const stg = this.device.createBuffer({ size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    if (this._enc && this._pass) {
-      this._pass.end();
-      this._enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-      this._pass = this._enc.beginComputePass();
-    } else {
-      const enc = this.device.createCommandEncoder();
-      enc.copyBufferToBuffer(t.buf, 0, stg, 0, size);
-      this.device.queue.submit([enc.finish()]);
-    }
+    this._sched.encodeCopy((enc) => enc.copyBufferToBuffer(t.buf, 0, stg, 0, size));
     let consumed = false;
     return {
       read: async () => {
