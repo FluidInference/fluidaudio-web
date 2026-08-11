@@ -29,7 +29,7 @@ function streamPosEncoding(dMax, dMin, D) {
  * frame s reads mel rows [8s−14, 8s]. */
 const SUB_LOOKBACK = 14;
 
-export function createEncodeStream(ctx, enc, { proj = null, lookaheadChunks = 0 } = {}) {
+export function createEncodeStream(ctx, enc, { proj = null, post = null, lookaheadChunks = 0 } = {}) {
   const { D, layers, dwK, attChunk: C } = enc.cfg;
   if (!C || !enc.cfg.convCausal) throw new Error("createEncodeStream: needs a streaming config (attChunk + convCausal)");
   const sp = enc.cfg.subPad || {};
@@ -66,7 +66,10 @@ export function createEncodeStream(ctx, enc, { proj = null, lookaheadChunks = 0 
     zeroCC: ctx.upload(new Float32Array(D * (dwK - 1)), D, dwK - 1),
     // Optional joint projection {w, b}: frames download as [n, projDim]
     // (one fused GEMM rides the chunk batch — feeds the wasm decoder direct).
+    // `post(ctx, x)` generalizes it: an arbitrary GPU tail (e.g. Nemotron's
+    // prompt-kernel MLP + projection) recorded into the same batch.
     proj,
+    post,
     B: RIGHT > 0 ? lookaheadChunks * C : 0, // provisional-tail frames per pass
     flushed: false,
     disposed: false,
@@ -275,7 +278,8 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush, nComp = n) {
         x = ln(x, w.lnout);
       }
       if (nComp !== n) x = ctx.sliceRows(x, 0, n); // drop the provisional tail
-      if (st.proj) x = ctx.matmul(x, st.proj.w, { bias: st.proj.b });
+      if (st.post) x = st.post(ctx, x);
+      else if (st.proj) x = ctx.matmul(x, st.proj.w, { bias: st.proj.b });
       frames = ctx.pin ? ctx.pin(x) : x;
     });
   } finally {

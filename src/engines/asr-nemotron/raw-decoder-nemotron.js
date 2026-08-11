@@ -164,3 +164,76 @@ export function nemotronDecodeCont(dec, st, frames, Tenc, maxSymbols = 10) {
 export function nemotronDecode(dec, frames, Tenc, maxSymbols = 10) {
   return nemotronDecodeCont(dec, createNemotronStream(dec), frames, Tenc, maxSymbols);
 }
+
+// ── wasm-SIMD decode (rust/parakeet-decoder nemo section) ───────────────────
+// The JS jointArgmax recomputes enc-proj + pred-proj per frame with a 13088-
+// wide out matmul in scalar JS — minutes per hour of audio. The wasm path
+// takes frames that are FULLY processed GPU-side (prompt kernel + 1024→640
+// projection), caches predProj across blanks, int8-quantizes the 33MB out
+// matrix, and runs the axpy in v128. Stream state lives in the instance.
+
+export async function loadNemoWasmDecoder(wasmBytes, bin, man, { int8 = true } = {}) {
+  const { instance } = await WebAssembly.instantiate(wasmBytes, {});
+  const ex = instance.exports;
+  ex.reset_to(ex.__heap_base.value);
+  const g = (k) => bin.subarray(man[k].offset, man[k].offset + man[k].len);
+  const put = (arr) => {
+    const ptr = ex.alloc(arr.byteLength);
+    new Float32Array(ex.memory.buffer, ptr, arr.length).set(arr);
+    return ptr;
+  };
+  ex.nemo_set_weights(
+    put(g("embed")),
+    put(g("l0_W")),
+    put(g("l0_R")),
+    put(g("l0_B")),
+    put(g("l1_W")),
+    put(g("l1_R")),
+    put(g("l1_B")),
+    put(g("predW")),
+    put(g("predB")),
+    put(g("outW")),
+    put(g("outB")),
+  );
+  if (int8) {
+    const ow = g("outW"); // [640][13088] row-major
+    const H = 640,
+      L = ow.length / H;
+    const q = new Int8Array(ow.length),
+      scales = new Float32Array(H);
+    for (let n = 0; n < H; n++) {
+      let mx = 0;
+      for (let m = 0; m < L; m++) {
+        const a = Math.abs(ow[n * L + m]);
+        if (a > mx) mx = a;
+      }
+      const sc = mx / 127 || 1;
+      scales[n] = sc;
+      for (let m = 0; m < L; m++) q[n * L + m] = Math.max(-127, Math.min(127, Math.round(ow[n * L + m] / sc)));
+    }
+    const qp = ex.alloc(q.byteLength);
+    new Int8Array(ex.memory.buffer, qp, q.length).set(q);
+    const sp = ex.alloc(scales.byteLength);
+    new Float32Array(ex.memory.buffer, sp, scales.length).set(scales);
+    ex.nemo_set_out_q(qp, sp);
+  }
+  ex.nemo_reset();
+  return { ex, mark: ex.bump_mark() };
+}
+
+export function nemoWasmReset(wd) {
+  wd.ex.nemo_reset();
+}
+
+/** RNNT greedy over GPU-processed frames [Tenc,640], continuing wasm state. */
+export function nemoWasmDecodeCont(wd, framesProj, Tenc, maxSymbols = 10) {
+  const ex = wd.ex;
+  ex.reset_to(wd.mark);
+  const fp = ex.alloc(framesProj.byteLength);
+  const cap = Math.max(1, Tenc * maxSymbols);
+  const ip = ex.alloc(cap * 4);
+  const tp = ex.alloc(cap * 4);
+  new Float32Array(ex.memory.buffer, fp, framesProj.length).set(framesProj);
+  const n = ex.nemo_decode_cont(fp, Tenc, ip, tp, maxSymbols);
+  return { ids: Array.from(new Int32Array(ex.memory.buffer, ip, n)), idFrames: Array.from(new Int32Array(ex.memory.buffer, tp, n)) };
+}

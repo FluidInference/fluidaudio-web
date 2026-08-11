@@ -213,5 +213,36 @@ console.log(`nemotron B=4: frames maxΔ ${nMax.toExponential(2)}, tokens ${nStId
 assert(nMax < 5e-3, `nemotron streaming frame delta (B=4 decay point), got ${nMax}`);
 assert(nTokOk, "nemotron streaming tokens == offline tokens");
 
+// ── 6. Nemotron FAST PATH (task #29): GPU prompt kernel + wasm RNNT decode
+// must match the scalar-JS reference exactly on in-distribution input.
+// (Out-of-distribution near-ties can flip under f32-wasm vs f64-JS — the
+// documented smoke-not-proof caveat, same as EOU's.)
+const { loadNemoWasmDecoder, nemoWasmDecodeCont, nemoWasmReset } = await import("../src/engines/asr-nemotron/raw-decoder-nemotron.js");
+const wnd = await loadNemoWasmDecoder(
+  readFileSync(fileURLToPath(new URL("../src/engines/asr-parakeet/parakeet-decoder.wasm", import.meta.url))),
+  new Float32Array(nDecU8.buffer, nDecU8.byteOffset, nDecU8.byteLength / 4),
+  await hfJson(W, "nemotron/decoder-fp32.manifest.json"),
+);
+{
+  const fold = new Float32Array(2048);
+  for (let i = 0; i < 2048; i++) fold[i] = pk.pk0b[i] + pk.pk0w[1024 * 2048 + i]; // langId 0
+  const lb = ctx.upload(fold, 1, 2048);
+  const pk0c = ctx.uploadTileMajorF16(pk.pk0w.subarray(0, 1024 * 2048), 1024, 2048);
+  const pk2w2 = ctx.uploadTileMajorF16(pk.pk2w, 2048, 1024);
+  const pk2b2 = ctx.upload(pk.pk2b.slice(), 1, 1024);
+  const pjW = ctx.upload(nDec.encW.slice(), 1024, 640);
+  const pjB = ctx.upload(nDec.encB.slice(), 1, 640);
+  const r3 = await parakeetEncode(ctx, nEnc, offMel, T);
+  const proj = await ctx.download(
+    ctx.matmul(ctx.matmul(ctx.matmul(r3.framesGpu, pk0c, { bias: lb, act: "relu" }), pk2w2, { bias: pk2b2 }), pjW, { bias: pjB }),
+  );
+  nemoWasmReset(wnd);
+  const fIds = nemoWasmDecodeCont(wnd, proj, r3.Tsub).ids;
+  const fOk = fIds.length === nOffIds.length && fIds.every((v, i) => v === nOffIds[i]);
+  console.log(`nemotron fast path: tokens ${fIds.length} vs ${nOffIds.length} → ${fOk ? "IDENTICAL" : "DIVERGED"}`);
+  assert(fOk, "nemotron GPU-prompt-kernel + wasm decode == JS reference (en)");
+  ctx.trimPool?.();
+}
+
 console.log("STREAMING ENCODE GATE OK");
 process.exit(0);
