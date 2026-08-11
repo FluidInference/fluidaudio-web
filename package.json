@@ -53,7 +53,8 @@
     "ci:smoke": "node scripts/interface-conformance.mjs && node scripts/ci-smoke-parakeet.mjs && node scripts/ci-smoke-eou.mjs && node scripts/ci-smoke-kokoro.mjs",
     "sdk:build": "node scripts/build-sdk.mjs",
     "sdk:pack": "node scripts/build-sdk.mjs && cd dist-sdk && npm pack --pack-destination ..",
-    "conformance": "node scripts/interface-conformance.mjs"
+    "conformance": "node scripts/interface-conformance.mjs",
+    "conformance:numeric": "node scripts/backend-conformance.mjs"
   },
   "dependencies": {
     "pinyin-pro": "^3.28.2"

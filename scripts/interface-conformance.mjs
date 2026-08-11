@@ -4,28 +4,11 @@
 // rewrite fixed (a member declared but missing on one backend, or implemented
 // but never declared) — tsc can't, because allowJs/checkJs are off.
 //   node scripts/interface-conformance.mjs
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import ts from "typescript";
 import { GpuContext } from "../src/gpu/compute.js";
 import { WasmContext } from "../src/gpu/wasm-context.js";
+import { computeInterfaceMethods } from "./lib/compute-interface.mjs";
 
-const dtsPath = fileURLToPath(new URL("../src/gpu/compute.d.ts", import.meta.url));
-const src = ts.createSourceFile(dtsPath, readFileSync(dtsPath, "utf8"), ts.ScriptTarget.Latest, true);
-
-let required = null; // method names without a question token
-let optional = null;
-src.forEachChild((node) => {
-  if (ts.isInterfaceDeclaration(node) && node.name.text === "ComputeContext") {
-    required = [];
-    optional = [];
-    for (const m of node.members) {
-      if (!ts.isMethodSignature(m) || !ts.isIdentifier(m.name)) continue;
-      (m.questionToken ? optional : required).push(m.name.text);
-    }
-  }
-});
-if (!required) throw new Error("ComputeContext interface not found in compute.d.ts");
+const { required, optional } = computeInterfaceMethods();
 
 const backends = [
   ["GpuContext", GpuContext],
