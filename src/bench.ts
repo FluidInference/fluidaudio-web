@@ -25,7 +25,7 @@ async function bench(ctx: any, dev: any, label: string, M: number, K: number, N:
   const ms = (performance.now() - t0) / iters;
   const tf = (2 * M * K * N) / (ms / 1000) / 1e12;
   log(`${label.padEnd(30)} ${ms.toFixed(2).padStart(7)}ms  ${tf.toFixed(2)} TFLOP/s`);
-  (ctx as any).trimPool?.(0);
+  ctx.trimPool(0);
 }
 
 document.getElementById("go")!.addEventListener("click", async () => {

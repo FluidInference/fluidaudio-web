@@ -254,7 +254,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       // a rejected chain must not become an unhandled rejection).
       await decChain.catch(() => {});
       disposeEncodeStream(this.ctx, encSt);
-      (this.ctx as any).trimPool?.();
+      this.ctx.trimPool();
     }
     return {
       text: this.tokenizer.decode(ids),
@@ -344,7 +344,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
   reset(): void {
     if (this.stream) {
       disposeEncodeStream(this.ctx, this.stream.encSt);
-      this.ctx?.trimPool?.();
+      this.ctx?.trimPool();
     }
     this.stream = null;
   }
@@ -363,7 +363,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     this.reset();
     this.worker?.terminate();
     this.worker = null;
-    this.ctx?.device?.destroy?.();
+    this.ctx?.destroy();
     this.ctx = this.enc = this.dec = this.wdec = this.projW = this.projB = this.mel = this.tokenizer = null;
   }
 }

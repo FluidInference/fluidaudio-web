@@ -179,7 +179,7 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush, nComp = n) {
   const isFirst = st.subT === 0;
   const ln = (x, lp) => ctx.layernorm(x, lp[0], lp[1]);
   const ff = (x, lp, w1, w2, b1, b2) => ctx.matmul(ctx.matmul(ln(x, lp), w1, { bias: b1, act: "silu" }), w2, { bias: b2, add: x });
-  const arena = ctx.pushArena ? ctx.pushArena() : null;
+  const arena = ctx.pushArena();
   const swaps = []; // [slot, layer, newTensor] applied after the batch closes
   let frames = null;
   let melUp = null; // upload() is pool-exempt — return it explicitly below
@@ -280,10 +280,10 @@ async function runChunk(ctx, st, melSlice, m, n, isFlush, nComp = n) {
       if (nComp !== n) x = ctx.sliceRows(x, 0, n); // drop the provisional tail
       if (st.post) x = st.post(ctx, x);
       else if (st.proj) x = ctx.matmul(x, st.proj.w, { bias: st.proj.b });
-      frames = ctx.pin ? ctx.pin(x) : x;
+      frames = ctx.pin(x);
     });
   } finally {
-    if (arena) ctx.popArena(arena);
+    ctx.popArena(arena);
   }
   // Batch closed: pool the mel upload, swap caches, pool the replaced generation.
   if (melUp) ctx.freeTensor(melUp);

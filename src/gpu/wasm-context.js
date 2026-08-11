@@ -76,6 +76,33 @@ export class WasmContext {
   async downloadF16(t) {
     return t.data.slice();
   }
+  /** Staged readback, same contract as GpuContext: the value is snapshotted at
+   * stage time (matching WebGPU queue order — ops recorded after the staging
+   * copy don't affect the read), read() delivers it later. Single-use, like the
+   * GPU staging buffer — a second read() throws instead of silently sharing a
+   * mutable array (callers mutate readback results, e.g. whisper suppression). */
+  stageDownload(t) {
+    let snap = t.data.slice();
+    return {
+      read: async () => {
+        if (!snap) throw new Error("StagedRead.read(): already consumed (single-use)");
+        const out = snap;
+        snap = null;
+        return out;
+      },
+    };
+  }
+  /** Rows-limited view over a preallocated tensor (no copy — aliases storage). */
+  rowsView(t, rows) {
+    return { ...t, data: t.data.subarray(0, rows * t.cols), rows, view: true };
+  }
+  /** Normalize a host {data,rows,cols} literal into a backend tensor; backend
+   * tensors pass through unchanged (a host f32 literal IS a valid CPU tensor). */
+  ensureTensor(t) {
+    return t.data instanceof Float32Array ? t : this.upload(t.data, t.rows, t.cols);
+  }
+  /** Tear down the backend (no device to release on CPU). */
+  destroy() {}
   beginBatch() {}
   endBatch() {}
   async withBatch(fn) {
@@ -84,8 +111,10 @@ export class WasmContext {
   withBatchSync(fn) {
     return fn();
   }
+  // Arenas are a GPU-pool concept; on CPU the handle is inert (but truthy, so
+  // callers can pushArena()/popArena(handle) unconditionally on any backend).
   pushArena() {
-    return null;
+    return [];
   }
   popArena() {}
   trimPool() {}

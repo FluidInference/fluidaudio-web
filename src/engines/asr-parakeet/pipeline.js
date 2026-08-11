@@ -96,11 +96,11 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   };
 
   // Joint encoder projection [W*Tsub,1024]→[W*Tsub,640] + staging copy, recorded
-  // inside the encoder's batch. WASM backend has no stageDownload — plain download.
+  // inside the encoder's batch.
   const post = (x) => {
     const proj = ctx.matmul(x, projW, { bias: projB });
     if (gpuDecoder) return { proj }; // GPU decode: no readback at all
-    return ctx.stageDownload ? ctx.stageDownload(proj) : { read: async () => ctx.download(proj) };
+    return ctx.stageDownload(proj);
   };
 
   const openArenas = new Set(); // group scopes, popped on every exit path (incl. throws)
@@ -111,8 +111,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     if (!mels.length) return null;
     // Arena per group: every intermediate the encode allocates returns to the
     // buffer pool the moment this group's frames land on the CPU.
-    const arena = ctx.pushArena ? ctx.pushArena() : null;
-    if (arena) openArenas.add(arena);
+    const arena = ctx.pushArena();
+    openArenas.add(arena);
     try {
       const r = await parakeetEncodeBatch(ctx, enc, mels, false, post);
       if (gpuDecoder) {
@@ -123,10 +123,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       }
       return { framesP: r.staged.read(), Tsub: r.Tsub, n: mels.length, arena };
     } catch (e) {
-      if (arena) {
-        openArenas.delete(arena);
-        ctx.popArena(arena);
-      }
+      openArenas.delete(arena);
+      ctx.popArena(arena);
       throw e;
     }
   };
@@ -195,10 +193,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
       if (cur.decP) {
         // GPU decoder path: tokens arrive directly; frames never left the GPU.
         const perWindow = await cur.decP;
-        if (cur.arena) {
-          openArenas.delete(cur.arena);
-          ctx.popArena(cur.arena);
-        }
+        openArenas.delete(cur.arena);
+        ctx.popArena(cur.arena);
         stats.encWaitMs += now() - tw;
         stats.groups++;
         if (!pipelined) await advance();
@@ -212,10 +208,8 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
         continue;
       }
       const frames = await cur.framesP;
-      if (cur.arena) {
-        openArenas.delete(cur.arena);
-        ctx.popArena(cur.arena); // group's GPU work is drained — recycle its buffers
-      }
+      openArenas.delete(cur.arena);
+      ctx.popArena(cur.arena); // group's GPU work is drained — recycle its buffers
       stats.encWaitMs += now() - tw;
       stats.groups++;
       if (!pipelined) await advance();
@@ -267,6 +261,6 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
     return { ids, idTimes, stats };
   } finally {
     for (const a of openArenas) ctx.popArena(a); // throws must not orphan group scopes
-    ctx.trimPool?.(); // drained here (final readback resolved) — safe to evict to budget
+    ctx.trimPool(); // drained here (final readback resolved) — safe to evict to budget
   }
 }
