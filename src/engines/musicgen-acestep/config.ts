@@ -13,32 +13,17 @@ export const ACE_DEFAULT_MODEL_ORIGIN = "https://ace-step-wgsl-models.narcotic.s
  * Overridable via VITE_ACE_MODEL_ORIGIN. A path value ("/model") serves
  * locally staged packages laid out like packages/acestep/model/files-*.
  */
-export const ACE_MODEL_ORIGIN: string =
-  (import.meta.env.VITE_ACE_MODEL_ORIGIN as string | undefined) ??
-  ACE_DEFAULT_MODEL_ORIGIN;
+export const ACE_MODEL_ORIGIN: string = (import.meta.env.VITE_ACE_MODEL_ORIGIN as string | undefined) ?? ACE_DEFAULT_MODEL_ORIGIN;
 
-export const REFERENCE_PAYLOAD_PREFIX_SHA256 =
-  "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6";
-export const DIRECT_REFERENCE_MANIFEST_SHA256 =
-  "b44a3d157009d035a8f20aa752db4ceef2fac5bd140eff13be8f7488bc978089";
-export const DIRECT_REFERENCE_MANIFEST_REMOTE_NAME =
-  `direct-manifest-${DIRECT_REFERENCE_MANIFEST_SHA256}.json`;
-export const DIT_MANIFEST_SHA256 =
-  "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f";
-export const VAE_MANIFEST_SHA256 =
-  "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7";
+export const REFERENCE_PAYLOAD_PREFIX_SHA256 = "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6";
+export const DIRECT_REFERENCE_MANIFEST_SHA256 = "b44a3d157009d035a8f20aa752db4ceef2fac5bd140eff13be8f7488bc978089";
+export const DIRECT_REFERENCE_MANIFEST_REMOTE_NAME = `direct-manifest-${DIRECT_REFERENCE_MANIFEST_SHA256}.json`;
+export const DIT_MANIFEST_SHA256 = "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f";
+export const VAE_MANIFEST_SHA256 = "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7";
 
-function productionManifestUrl(
-  localDirectory: string,
-  productionPackage: string,
-  payloadPrefixSha256: string,
-  manifestRemoteName = "manifest.json",
-): string {
+function productionManifestUrl(localDirectory: string, productionPackage: string, payloadPrefixSha256: string, manifestRemoteName = "manifest.json"): string {
   if (ACE_MODEL_ORIGIN.startsWith("/")) {
-    return new URL(
-      `${ACE_MODEL_ORIGIN}/${localDirectory}/${manifestRemoteName}`,
-      location.href,
-    ).href;
+    return new URL(`${ACE_MODEL_ORIGIN}/${localDirectory}/${manifestRemoteName}`, location.href).href;
   }
   return `${ACE_MODEL_ORIGIN}/v1/${productionPackage}/${payloadPrefixSha256}/${manifestRemoteName}`;
 }
@@ -46,32 +31,18 @@ function productionManifestUrl(
 /** The exact production worker configuration used by the upstream demo. */
 export function aceProductionWorkerConfiguration() {
   return {
-    manifestUrl: productionManifestUrl(
-      "files-reference",
-      "reference",
-      REFERENCE_PAYLOAD_PREFIX_SHA256,
-      DIRECT_REFERENCE_MANIFEST_REMOTE_NAME,
-    ),
+    manifestUrl: productionManifestUrl("files-reference", "reference", REFERENCE_PAYLOAD_PREFIX_SHA256, DIRECT_REFERENCE_MANIFEST_REMOTE_NAME),
     manifestSha256: DIRECT_REFERENCE_MANIFEST_SHA256,
     modelProfile: "reference-bf16",
     schedulingProfile: "cooperative",
     ditDensePackage: {
-      manifestUrl: productionManifestUrl(
-        "files-fp16-dit-rev7-oracle",
-        "dit-revision7",
-        DIT_MANIFEST_SHA256,
-      ),
+      manifestUrl: productionManifestUrl("files-fp16-dit-rev7-oracle", "dit-revision7", DIT_MANIFEST_SHA256),
       manifestSha256: DIT_MANIFEST_SHA256,
       runtimeProfile: "opt-0009-fp16-fp32-dense-v1",
     },
-    ditAttentionRuntimeProfile:
-      "opt-0070-fixed32-quad-query32-full-self-production-v1",
+    ditAttentionRuntimeProfile: "opt-0070-fixed32-quad-query32-full-self-production-v1",
     vaePackage: {
-      manifestUrl: productionManifestUrl(
-        "files-fp16-vae-revision7-experimental",
-        "vae-revision7",
-        VAE_MANIFEST_SHA256,
-      ),
+      manifestUrl: productionManifestUrl("files-fp16-vae-revision7-experimental", "vae-revision7", VAE_MANIFEST_SHA256),
       manifestSha256: VAE_MANIFEST_SHA256,
       runtimeProfile: "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
       windowRuntimeProfile: "opt-0070-c2378-overlap64-production-v1",

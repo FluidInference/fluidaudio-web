@@ -1,12 +1,7 @@
 // Music generation page: ACE-Step 1.5 Turbo via the musicgen-acestep client.
 // Engine module (and the 1.3 MB runtime) loads lazily after support probing.
 
-import type {
-  AceGenerationRequest,
-  AceGenerationResult,
-  AceModelCacheInfo,
-  AceStepMusicClient,
-} from "./engines/musicgen-acestep/index.js";
+import type { AceGenerationRequest, AceGenerationResult, AceModelCacheInfo, AceStepMusicClient } from "./engines/musicgen-acestep/index.js";
 
 type MusicEngineModule = typeof import("./engines/musicgen-acestep/index.js");
 
@@ -62,9 +57,7 @@ async function initialize(): Promise<void> {
     const support = await engine.checkSupport();
     supported = support.supported;
     if (!supported) {
-      supportWarning.textContent =
-        support.errors.join(" ") ||
-        "This browser does not support the required WebGPU features.";
+      supportWarning.textContent = support.errors.join(" ") || "This browser does not support the required WebGPU features.";
       supportWarning.hidden = false;
     } else if (support.warnings.length > 0) {
       supportWarning.textContent = support.warnings.join(" ");
@@ -138,12 +131,7 @@ async function generate(): Promise<void> {
       },
       onGenerationProgress: (p) => {
         const fraction = clamp(p.overallFraction);
-        setProgress(
-          fraction,
-          "Generating song",
-          friendly(p.message, p.stage),
-          `${Math.min(99, Math.round(fraction * 100))}%`,
-        );
+        setProgress(fraction, "Generating song", friendly(p.message, p.stage), `${Math.min(99, Math.round(fraction * 100))}%`);
       },
       onDiagnostic: (d) => {
         diagnostics = [...diagnostics.slice(-19), d];
@@ -168,11 +156,7 @@ function readRequest(): AceGenerationRequest {
   if (prompt.length === 0) throw new Error("Enter a prompt for the song.");
 
   const durationSeconds = Number(durationInput.value);
-  if (
-    !Number.isInteger(durationSeconds) ||
-    durationSeconds < engine.ACE_MIN_DURATION_SECONDS ||
-    durationSeconds > engine.ACE_MAX_DURATION_SECONDS
-  ) {
+  if (!Number.isInteger(durationSeconds) || durationSeconds < engine.ACE_MIN_DURATION_SECONDS || durationSeconds > engine.ACE_MAX_DURATION_SECONDS) {
     throw new Error("Duration must be a whole number of seconds from 10 through 240.");
   }
 
@@ -189,9 +173,7 @@ function readRequest(): AceGenerationRequest {
     ...optional("timeSignature", timeSignatureInput.value),
     ...optional("vocalLanguage", vocalLanguageInput.value),
   };
-  const seed = seedInput.value.trim() === ""
-    ? randomSeed()
-    : engine.aceSeed(seedInput.value.trim());
+  const seed = seedInput.value.trim() === "" ? randomSeed() : engine.aceSeed(seedInput.value.trim());
 
   return {
     generationProfile: "ace-turbo-v1-correctness",
@@ -249,14 +231,10 @@ async function refreshCacheInfo(): Promise<void> {
     if (!cacheDetails.supported) {
       cacheStatus.textContent = "Model storage is unavailable in this context.";
     } else if (cacheDetails.assetCount === 0 && cacheDetails.partialAssetCount === 0) {
-      cacheStatus.textContent =
-        `Model not downloaded · ${engine.formatDecimalBytes(engine.MODEL_DOWNLOAD_TOTAL_BYTES)} on first generation`;
+      cacheStatus.textContent = `Model not downloaded · ${engine.formatDecimalBytes(engine.MODEL_DOWNLOAD_TOTAL_BYTES)} on first generation`;
     } else {
-      const partial = cacheDetails.partialAssetCount === 0
-        ? ""
-        : ` · ${cacheDetails.partialAssetCount} incomplete`;
-      cacheStatus.textContent =
-        `${engine.formatDecimalBytes(cacheDetails.sizeBytes)} · ${cacheDetails.assetCount} files${partial}`;
+      const partial = cacheDetails.partialAssetCount === 0 ? "" : ` · ${cacheDetails.partialAssetCount} incomplete`;
+      cacheStatus.textContent = `${engine.formatDecimalBytes(cacheDetails.sizeBytes)} · ${cacheDetails.assetCount} files${partial}`;
     }
   } catch (error) {
     cacheDetails = undefined;
@@ -283,17 +261,12 @@ async function deleteModel(): Promise<void> {
 }
 
 function cacheDeletable(): boolean {
-  return (
-    cacheDetails?.supported === true &&
-    (cacheDetails.assetCount > 0 || cacheDetails.partialAssetCount > 0)
-  );
+  return cacheDetails?.supported === true && (cacheDetails.assetCount > 0 || cacheDetails.partialAssetCount > 0);
 }
 
 function setBusy(value: boolean): void {
   busy = value;
-  for (const control of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-    "input, textarea",
-  )) {
+  for (const control of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")) {
     control.disabled = value;
   }
   updateButtons();
@@ -305,12 +278,7 @@ function updateButtons(): void {
   deleteModelButton.disabled = busy || !cacheDeletable();
 }
 
-function setProgress(
-  fraction: number | undefined,
-  title: string,
-  detail: string,
-  percent = "",
-): void {
+function setProgress(fraction: number | undefined, title: string, detail: string, percent = ""): void {
   progressPanel.hidden = false;
   progressTitle.textContent = title;
   progressDetail.textContent = detail;
@@ -343,20 +311,14 @@ function randomSeed() {
   return engine.aceSeed(value);
 }
 
-function optional<Key extends string>(
-  key: Key,
-  value: string,
-): Readonly<Record<Key, string>> | Record<string, never> {
+function optional<Key extends string>(key: Key, value: string): Readonly<Record<Key, string>> | Record<string, never> {
   const text = value.trim();
   return text === "" ? {} : ({ [key]: text } as Record<Key, string>);
 }
 
 function friendly(text: string | undefined, stage: string): string {
   if (text === undefined || text.trim() === "") return stage.replaceAll("-", " ");
-  const cleaned = text.replace(
-    /^(?:cache|network):\s+.+?(?=\s+[0-9]+\/[0-9]+ bytes$)/u,
-    "Processing model data",
-  );
+  const cleaned = text.replace(/^(?:cache|network):\s+.+?(?=\s+[0-9]+\/[0-9]+ bytes$)/u, "Processing model data");
   return cleaned.length > 120 ? `${cleaned.slice(0, 117)}…` : cleaned;
 }
 
@@ -368,9 +330,7 @@ function formatDuration(seconds: number): string {
 function formatElapsed(milliseconds: number): string {
   if (!Number.isFinite(milliseconds) || milliseconds < 0) return "—";
   const seconds = milliseconds / 1_000;
-  return seconds < 60
-    ? `${seconds.toFixed(1)} s`
-    : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  return seconds < 60 ? `${seconds.toFixed(1)} s` : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
 function clamp(value: number): number {

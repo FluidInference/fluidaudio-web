@@ -27,20 +27,16 @@ export interface ModelDownloadProgress {
   readonly total: number;
 }
 
-export const INITIAL_MODEL_DOWNLOAD_PROGRESS: ModelDownloadProgress =
-  createProgress(0);
+export const INITIAL_MODEL_DOWNLOAD_PROGRESS: ModelDownloadProgress = createProgress(0);
 
 /** Show the first-download note until the complete pinned cache is present. */
-export function shouldShowModelDownloadNote(
-  cache: ModelCacheSummary | undefined,
-): boolean {
+export function shouldShowModelDownloadNote(cache: ModelCacheSummary | undefined): boolean {
   return cache?.supported === true && !isModelDownloadComplete(cache);
 }
 
-export function isModelDownloadComplete(
-  cache: ModelCacheSummary | undefined,
-): boolean {
-  return cache?.supported === true && (
+export function isModelDownloadComplete(cache: ModelCacheSummary | undefined): boolean {
+  return (
+    cache?.supported === true &&
     cache.assetCount === MODEL_DOWNLOAD_ASSET_COUNT &&
     cache.sizeBytes === MODEL_DOWNLOAD_TOTAL_BYTES &&
     cache.partialAssetCount === 0
@@ -53,10 +49,7 @@ export function isModelDownloadComplete(
  * The input may be either a progress payload or a worker message containing a
  * `progress` payload. Unknown, malformed, and regressing events are ignored.
  */
-export function updateModelDownloadProgress(
-  current: ModelDownloadProgress,
-  event: unknown,
-): ModelDownloadProgress {
+export function updateModelDownloadProgress(current: ModelDownloadProgress, event: unknown): ModelDownloadProgress {
   const candidate = physicalCompletedBytes(event);
   if (candidate === undefined || candidate <= current.completed) return current;
   return createProgress(candidate);
@@ -71,9 +64,7 @@ export function formatDecimalBytes(value: number): string {
   return `${compactDecimal(bytes / 1_000_000, 1)} MB`;
 }
 
-export function formatModelDownloadAmount(
-  progress: Pick<ModelDownloadProgress, "completed" | "total">,
-): string {
+export function formatModelDownloadAmount(progress: Pick<ModelDownloadProgress, "completed" | "total">): string {
   return `${formatDecimalBytes(progress.completed)} / ${formatDecimalBytes(progress.total)}`;
 }
 
@@ -91,26 +82,15 @@ function physicalCompletedBytes(event: unknown): number | undefined {
   return undefined;
 }
 
-function initializationPhysicalBytes(
-  progress: Readonly<Record<string, unknown>>,
-): number | undefined {
-  if (
-    progress.unit !== "bytes" ||
-    progress.totalUnits !== INITIALIZATION_WEIGHTS_LOGICAL_BYTES
-  ) {
+function initializationPhysicalBytes(progress: Readonly<Record<string, unknown>>): number | undefined {
+  if (progress.unit !== "bytes" || progress.totalUnits !== INITIALIZATION_WEIGHTS_LOGICAL_BYTES) {
     return undefined;
   }
 
-  const logicalCompleted = clampedByteCount(
-    progress.completedUnits,
-    INITIALIZATION_WEIGHTS_LOGICAL_BYTES,
-  );
+  const logicalCompleted = clampedByteCount(progress.completedUnits, INITIALIZATION_WEIGHTS_LOGICAL_BYTES);
   if (logicalCompleted === undefined) return undefined;
 
-  return Number(
-    (BigInt(logicalCompleted) * BigInt(INITIALIZATION_CACHE_PHYSICAL_BYTES)) /
-      BigInt(INITIALIZATION_WEIGHTS_LOGICAL_BYTES),
-  );
+  return Number((BigInt(logicalCompleted) * BigInt(INITIALIZATION_CACHE_PHYSICAL_BYTES)) / BigInt(INITIALIZATION_WEIGHTS_LOGICAL_BYTES));
 }
 
 function deferredVaePhysicalBytes(message: unknown): number | undefined {
@@ -121,19 +101,13 @@ function deferredVaePhysicalBytes(message: unknown): number | undefined {
   const completed = Number(match[1]);
   const total = Number(match[2]);
   if (total !== DEFERRED_VAE_CACHE_PHYSICAL_BYTES) return undefined;
-  const vaeCompleted = clampedByteCount(
-    completed,
-    DEFERRED_VAE_CACHE_PHYSICAL_BYTES,
-  );
+  const vaeCompleted = clampedByteCount(completed, DEFERRED_VAE_CACHE_PHYSICAL_BYTES);
   if (vaeCompleted === undefined) return undefined;
   return INITIALIZATION_CACHE_PHYSICAL_BYTES + vaeCompleted;
 }
 
 function createProgress(completed: number): ModelDownloadProgress {
-  const safeCompleted = Math.min(
-    MODEL_DOWNLOAD_TOTAL_BYTES,
-    safeNonnegativeInteger(completed),
-  );
+  const safeCompleted = Math.min(MODEL_DOWNLOAD_TOTAL_BYTES, safeNonnegativeInteger(completed));
   const fraction = safeCompleted / MODEL_DOWNLOAD_TOTAL_BYTES;
   return Object.freeze({
     fraction,
@@ -144,11 +118,7 @@ function createProgress(completed: number): ModelDownloadProgress {
 }
 
 function clampedByteCount(value: unknown, total: number): number | undefined {
-  if (
-    typeof value !== "number" ||
-    !Number.isSafeInteger(value) ||
-    !Number.isFinite(value)
-  ) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || !Number.isFinite(value)) {
     return undefined;
   }
   return Math.min(total, Math.max(0, value));
@@ -164,7 +134,5 @@ function compactDecimal(value: number, digits: number): string {
 }
 
 function record(value: unknown): Readonly<Record<string, unknown>> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Readonly<Record<string, unknown>>)
-    : undefined;
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Readonly<Record<string, unknown>>) : undefined;
 }

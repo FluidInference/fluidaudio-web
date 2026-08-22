@@ -1,7 +1,7 @@
 # FluidAudio Web
 
-Local speech AI in the browser — ASR, TTS, VAD, and speaker diarization on
-**hand-written WebGPU (WGSL) + WASM-SIMD kernels**. No onnxruntime-web, no
+Local speech AI in the browser — ASR, TTS, VAD, speaker diarization, and
+music generation on **hand-written WebGPU (WGSL) + WASM-SIMD kernels**. No onnxruntime-web, no
 transformers.js, no server: model weights stream from Hugging Face on first
 use, cache client-side, and everything runs on the visitor's machine. This is
 the browser sibling of the Swift/CoreML
@@ -94,11 +94,32 @@ audio _generated_ per wall-second; not comparable to ASR).
 | `tts-kokoro`             | Kokoro 82M (en + zh)              | 4.7× en / 5.6× zh                                                                                         | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped)                                                                                                |
 | `asr-nemotron`           | Nemotron 3.5 streaming (40 langs) | realtime+                                                                                                 | cache-aware streaming RNNT                                                                                                                                                                 |
 | `eou-parakeet`           | Parakeet EOU 120M                 | **297×** browser-verified (1hr in 12.1s; worker-overlapped wasm decode + linear-cost stream-batch encode) | transcript + end-of-utterance events; TRUE streaming push()/finish() (bit-exact cache-carrying encode) + wasm-SIMD RNNT decode; whole-clip batch runs through the same linear-cost encoder |
+| `musicgen-acestep`       | ACE-Step 1.5 Turbo (3.5B + VAE)   | ~1.9× (180s song in ~95s, M3, warm)                                                                       | full text-to-music on [`/music`](music.html): 8-step DiT + Oobleck VAE in pure WGSL (`packages/acestep`); ~5.7 GB one-time download; requires `shader-f16`; direct mode (optional planner LLM path exists upstream, still being optimized) |
 
 First (cold) run is several× slower — WebGPU compiles pipelines and weights
 download once. WebGPU is optional: every engine falls back to the same math on
 WASM-SIMD (slower on the big encoders, identical outputs — cross-backend
 parity is CI-gated). History and methodology: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+
+## Music generation (ACE-Step)
+
+[`/music.html`](music.html) generates full songs — prompt, optional lyrics, up
+to 4 minutes, stereo 48 kHz WAV — entirely client-side. The runtime is
+[`packages/acestep`](packages/acestep/), a vendored npm-workspace import of
+[ace-step-1.5.wgsl](https://github.com/narcotic-sh/ace-step-1.5.wgsl):
+~100k lines of TypeScript + WGSL implementing the Qwen3 text encoder, ACE
+condition encoder, 24-layer DiT, and Oobleck VAE decoder, with authenticated
+streamed model packaging, bounded GPU memory, and cooperative scheduling. It
+keeps its own rigorous experiment ledger (`packages/acestep/optimization/`) —
+read `packages/acestep/AGENTS.md` before touching kernels there.
+
+The ~5.7 GB of content-addressed model packages currently stream from the
+upstream author's public R2 bucket and cache in OPFS; set
+`VITE_ACE_MODEL_ORIGIN` to point at a mirror or locally staged packages
+(`packages/acestep/model/convert.py --profile production` reproduces the
+exact tuple). The optional 0.6B planner ("thinking") path is excluded from
+the served manifest until its pending optimization experiments
+(OPT-0084/0085/0087) are integrated.
 
 ## Text processing (WASM)
 
@@ -119,6 +140,8 @@ npm install
 npm run dev        # http://localhost:5173 — playground; /verify.html for all-engine runs
 npm run build      # static site → dist/
 npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
+
+npm run acestep:check && npm run acestep:test   # ACE-Step runtime (packages/acestep) gates
 ```
 
 `/verify.html` params: `?engines=asr-parakeet,vad-silero` preselects the
@@ -146,7 +169,10 @@ src/
   engines/      one folder per model on those kernels; registry.ts is the catalog
   core/         audio I/O, model cache, text normalization, shared types
   index.ts      SDK root (engines are subpath exports)
-  main.ts / verify.ts   the two demo pages (thin consumers of the registry)
+  main.ts / verify.ts / music.ts   demo pages (thin consumers of the registry / music client)
+packages/
+  acestep/      vendored ace-step-1.5.wgsl music-gen runtime (own kernels,
+                scheduler, tests, and optimization ledger — see its AGENTS.md)
 scripts/        node gates: token-identity, kernel parity, per-engine smokes
 rust/           parakeet RNNT decoder + kernel lib sources (wasm32+simd128)
 docs/           architecture, benchmarks, PORTING.md (add-a-model checklist), the ORT removal story
@@ -188,5 +214,16 @@ The encoder GEMM kernel geometry and the GPU TDT decoder design are adapted
 from [parakeet.wgsl](https://github.com/narcotic-sh/parakeet.wgsl) by
 Narcotic Software (MIT) — a fast, focused browser Parakeet implementation
 that served as both inspiration and reference throughout our optimization
-work. See [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md) for the full
+work.
+
+Music generation is built on
+[ace-step-1.5.wgsl](https://github.com/narcotic-sh/ace-step-1.5.wgsl) by
+**Hamza Qayyum** (Narcotic Software, MIT): he built the complete ACE-Step
+1.5 Turbo browser port — correctness-gated WGSL kernels, model packaging,
+scheduling, and the Stage-2 optimization program — and handed the project
+over for integration here; we took it over, integrated, and are continuing
+the optimization work. The `packages/acestep` runtime and the `/music` page's
+backend seam are his code.
+
+See [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md) for the full
 list of adapted code and licenses.

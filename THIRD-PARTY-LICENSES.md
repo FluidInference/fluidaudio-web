@@ -26,6 +26,20 @@ work. Specifically:
 If this project interests you, check out theirs — it is an excellent,
 fast, focused Parakeet implementation for the browser.
 
+## ace-step-1.5.wgsl (MIT)
+
+https://github.com/narcotic-sh/ace-step-1.5.wgsl
+Copyright (c) 2026 Narcotic Software (Hamza Qayyum) — MIT License.
+
+The entire music-generation runtime (`packages/acestep`) is a vendored
+import of ace-step-1.5.wgsl, and the `/music` page's worker backend
+(`src/engines/musicgen-acestep/direct-only-backend.ts`, the generated
+semantic-validation tensor metadata, and the download-progress accounting)
+is adapted from its companion demo. The complete upstream license and the
+ACE-Step / Qwen model-artifact terms are preserved in
+`packages/acestep/LICENSE` and `packages/acestep/THIRD_PARTY_LICENSES`.
+Model weights retain their upstream ACE-Step and Qwen licenses.
+
 ```
 MIT License
 

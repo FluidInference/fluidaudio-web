@@ -15,11 +15,7 @@ import {
 } from "ace-step-1.5.wgsl";
 
 import { aceProductionWorkerConfiguration } from "./config.js";
-import {
-  INITIAL_MODEL_DOWNLOAD_PROGRESS,
-  updateModelDownloadProgress,
-  type ModelDownloadProgress,
-} from "./model-download-progress.js";
+import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
 
 export {
   ACE_MAX_DURATION_SECONDS,
@@ -31,12 +27,7 @@ export {
   releaseAceAudioOutput,
   requestAceModelStoragePersistence,
 } from "ace-step-1.5.wgsl";
-export type {
-  AceGenerationRequest,
-  AceGenerationResult,
-  AceModelCacheInfo,
-  AceSupportReport,
-} from "ace-step-1.5.wgsl";
+export type { AceGenerationRequest, AceGenerationResult, AceModelCacheInfo, AceSupportReport } from "ace-step-1.5.wgsl";
 export {
   isModelDownloadComplete,
   MODEL_DOWNLOAD_TOTAL_BYTES,
@@ -70,9 +61,7 @@ export class AceStepMusicClient {
   private nextRequestId = 1;
   private nextJobId = 1;
   private active: ActiveOperation | undefined;
-  private disposal:
-    | { requestId: number; resolve: () => void; reject: (reason: unknown) => void }
-    | undefined;
+  private disposal: { requestId: number; resolve: () => void; reject: (reason: unknown) => void } | undefined;
   private fatalGpuDiagnostic = false;
   private downloadProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
   /** Diagnostics reported by the worker's ready message, when initialized. */
@@ -90,10 +79,7 @@ export class AceStepMusicClient {
    * Generate one song. Initializes the worker (downloading/loading model
    * packages) on first use. Only one generation may be in flight.
    */
-  async generate(
-    request: AceGenerationRequest,
-    handlers: AceMusicGenerateHandlers = {},
-  ): Promise<AceGenerationResult> {
+  async generate(request: AceGenerationRequest, handlers: AceMusicGenerateHandlers = {}): Promise<AceGenerationResult> {
     if (this.active !== undefined) {
       throw new Error("A generation is already in progress");
     }
@@ -235,10 +221,7 @@ export class AceStepMusicClient {
         return;
       }
       case "diagnostic":
-        if (
-          message.diagnostic.code === "WEBGPU_DEVICE_LOST" ||
-          message.diagnostic.code === "WEBGPU_UNCAPTURED_ERROR"
-        ) {
+        if (message.diagnostic.code === "WEBGPU_DEVICE_LOST" || message.diagnostic.code === "WEBGPU_UNCAPTURED_ERROR") {
           this.fatalGpuDiagnostic = true;
         }
         active?.handlers.onDiagnostic?.(message.diagnostic);
@@ -265,12 +248,8 @@ export class AceStepMusicClient {
           this.disposal = undefined;
           return;
         }
-        const fatal =
-          this.fatalGpuDiagnostic || isAceFatalGpuErrorCode(message.error.code);
-        this.fail(
-          new Error(`${message.error.code}: ${message.error.message}`),
-          fatal,
-        );
+        const fatal = this.fatalGpuDiagnostic || isAceFatalGpuErrorCode(message.error.code);
+        this.fail(new Error(`${message.error.code}: ${message.error.message}`), fatal);
         return;
       }
     }
