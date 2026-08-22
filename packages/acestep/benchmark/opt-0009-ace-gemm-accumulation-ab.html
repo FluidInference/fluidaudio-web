@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0009 three-arm GEMM accumulation A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 76rem; }
+      button { margin-inline-end: 0.75rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p>
+      Correctness runs the full adversarial matrix and exact ACE shapes without
+      a thermal claim. Timing requires the externally logged continuous nominal
+      pre-gate and logger coverage through post-timing cleanup.
+    </p>
+    <button id="run-correctness" type="button">Run correctness</button>
+    <button id="run-timing" type="button">Run thermal timing</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0009-ace-gemm-accumulation-ab.ts"></script>
+  </body>
+</html>

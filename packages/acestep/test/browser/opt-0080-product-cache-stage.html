@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 product cache staging</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 88rem; }
+      button { margin-block: 0.75rem; padding: 0.55rem 0.8rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0080 — authenticated product-cache staging</h1>
+    <p>
+      This setup-only page authenticates and sequentially caches the exact seven
+      revision-7 VAE shards required by the product gate. It requests no GPU,
+      runs no model inference, and makes no experiment or performance claim.
+    </p>
+    <button id="stage" type="button">Stage exact revision-7 VAE package</button>
+    <div id="progress" role="status">idle — no cache mutation has started</div>
+    <pre id="result">not started</pre>
+    <script type="module" src="./opt-0080-product-cache-stage.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 2,
+  "experimentId": "OPT-0081",
+  "stage": "representative-two-layer-graph-prefix",
+  "status": "completed-non-pass",
+  "identity": {
+    "coreCommit": "608ae288bb3cb57b0d95a9697990bd050424a965",
+    "harnessCommit": "608ae288bb3cb57b0d95a9697990bd050424a965",
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "Codex in-app Chromium 151.0.0.0",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "requestSha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "denseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "storageProfile": "opt-0081-six-dense-input-f16-storage-v1",
+    "tokens": 2250,
+    "conditionTokens": 98,
+    "evaluation": 0
+  },
+  "artifacts": {
+    "browserReceipt": {
+      "location": "optimization/artifacts/OPT-0081/representative/representative-layers-receipt.json",
+      "storedSha256": "43741ab16e041ce996515e6c8a9f753ef4a94ca937bff6b7b6fe73b4847605da",
+      "storedByteLength": 208589,
+      "downloadBlobSha256": "eddb46919d5f281d64c3babe4f4de7d68eabb70d955e19d0f690ba10739270de",
+      "downloadBlobByteLength": 208588,
+      "storedNormalization": "one terminal LF added while preserving the browser blob"
+    },
+    "thermalTrace": {
+      "location": "optimization/artifacts/OPT-0081/representative/thermal-trace-v3.jsonl",
+      "sha256": "55b2e0099c6aa8cf880a929ce35e8a6848f609caca9423f7d1aa616112a0807d",
+      "byteLength": 37258
+    },
+    "untimedPreparationFailures": [
+      {
+        "sha256": "591b3069fb6b541d4f4f9fe4ba2ea2b79b652585cea4243f57942422ae7ea84d",
+        "byteLength": 6719,
+        "cause": "typed-array upload byte counts used as element counts"
+      },
+      {
+        "sha256": "158d54931dff33a585855ebf981c3d8412bbf119b41a3812c6eed404a43c59fe",
+        "byteLength": 9188,
+        "cause": "correctness target reused the production attention route registry"
+      },
+      {
+        "sha256": "4c4da12a155ab089a15a26ed3b9f7d67bfedac1a61b1d40f11d8432db230f51b",
+        "byteLength": 83981,
+        "cause": "independent checkpoint runs did not restore canonical aliased arena state"
+      }
+    ]
+  },
+  "correctness": {
+    "passed": true,
+    "runOrder": ["A", "A", "B", "B"],
+    "controlBoundaryRepeatCount": 12,
+    "candidateBoundaryRunCount": 2,
+    "candidateBoundaryRepeatCount": 12,
+    "denseAndLayerComparisonArmCount": 3,
+    "candidateBoundaryWordsPerRun": 73728000,
+    "denseOutputWordsPerComparison": 110592000,
+    "layerOutputWordsPerComparison": 9216000,
+    "totalComparedWordInstances": 654336000,
+    "rawMismatchCount": 0,
+    "unwrittenWordCount": 0,
+    "signedZeroExact": true,
+    "finiteCompleteOutputs": true,
+    "guardsIntact": true,
+    "uncapturedGpuErrorCount": 0,
+    "validationErrorCount": 0,
+    "deviceLossCount": 0
+  },
+  "arena": {
+    "controlBytes": 674815488,
+    "candidateBytes": 601087488,
+    "savingBytes": 73728000,
+    "controlRoleCount": 123,
+    "candidateRoleCount": 123,
+    "controlSlotCount": 98,
+    "candidateSlotCount": 98,
+    "candidateSelectedDenseInputSlotIndices": [61, 69, 72, 77, 81, 84],
+    "castOrCopyBufferCountInTimedPath": 0,
+    "passed": true
+  },
+  "timing": {
+    "authority": "fenced slice wall from command 25 through command 52 true drain",
+    "roundOrder": ["AB", "BA", "BA", "AB", "AB", "BA", "BA", "AB"],
+    "aWallMilliseconds": [
+      535.4000000953674,
+      541.3000001907349,
+      662.2999999523163,
+      491.2999999523163,
+      533.2999999523163,
+      541.5,
+      546.8999998569489,
+      535.7000000476837
+    ],
+    "bWallMilliseconds": [
+      527.6999998092651,
+      546.8999998569489,
+      574.7000000476837,
+      452.7000000476837,
+      519.5999999046326,
+      549.4000000953674,
+      487.5,
+      499.5
+    ],
+    "pairedSavingsMilliseconds": [
+      7.700000286102295,
+      -5.599999666213989,
+      87.59999990463257,
+      38.59999990463257,
+      13.700000047683716,
+      -7.900000095367432,
+      59.39999985694885,
+      36.200000047683716
+    ],
+    "aMeanWallMilliseconds": 548.4625000059605,
+    "bMeanWallMilliseconds": 519.7499999701977,
+    "meanSpeedup": 1.0552429053148806,
+    "meanSavingMilliseconds": 28.712500035762787,
+    "aMedianWallMilliseconds": 538.5000001192093,
+    "bMedianWallMilliseconds": 523.6499998569489,
+    "medianSpeedup": 1.0283586370024198,
+    "pairedWins": 6,
+    "requiredPairedWins": 7,
+    "forwardPairedWins": 4,
+    "reversePairedWins": 2,
+    "requiredWinsPerDirection": 3,
+    "forwardMeanPairedSavingMilliseconds": 24.050000071525574,
+    "reverseMeanPairedSavingMilliseconds": 33.375,
+    "requiredMeanSavingPerDirectionMilliseconds": 31.25,
+    "forwardSampleStandardDeviationMilliseconds": 15.639373261535814,
+    "reverseSampleStandardDeviationMilliseconds": 47.75048852827076,
+    "forwardLower95Milliseconds": -0.8357327550424998,
+    "reverseLower95Milliseconds": -42.606682896156926,
+    "requiredLower95PerDirectionMilliseconds": 31.25,
+    "forwardProjectedEightEvaluationSavingMilliseconds": 2308.800006866455,
+    "reverseProjectedEightEvaluationSavingMilliseconds": 3204,
+    "overallMeanProjectedEightEvaluationSavingMilliseconds": 2756.4000034332275,
+    "topologyIdenticalAcrossArms": true,
+    "wallBoundaryConsistent": true,
+    "passed": false
+  },
+  "thermal": {
+    "traceStartedAtEpochMilliseconds": 1787336379169,
+    "gateStartedAtEpochMilliseconds": 1787336596179,
+    "gateCompletedAtEpochMilliseconds": 1787336682170,
+    "gateObservationCount": 87,
+    "gateMaximumPollGapMilliseconds": 1010,
+    "launchDelayMilliseconds": 898,
+    "completedAtEpochMilliseconds": 1787336724177,
+    "observationCount": 346,
+    "maximumPollGapMilliseconds": 1013,
+    "nonNominalObservationCount": 159,
+    "missingObservationCount": 0,
+    "initialLevel": 0,
+    "finalLevel": 0,
+    "transitions": [
+      {"atEpochMilliseconds": 1787336437169, "level": 1},
+      {"atEpochMilliseconds": 1787336451169, "level": 2},
+      {"atEpochMilliseconds": 1787336569169, "level": 1},
+      {"atEpochMilliseconds": 1787336596169, "level": 0}
+    ],
+    "passed": true
+  },
+  "cancellation": {
+    "residentCandidateReused": true,
+    "successorAlreadySubmitted": true,
+    "backfillAfterObservationCount": 0,
+    "progressAfterObservationCount": 0,
+    "allSubmittedFencesSettledBeforeRelease": true,
+    "originalErrorPreserved": true,
+    "cleanupMilliseconds": 42,
+    "temporaryBufferCount": 0,
+    "passed": true
+  },
+  "lifecycle": {
+    "createdBufferCount": 507,
+    "destroyedBufferCount": 507,
+    "maximumLiveBytes": 5813317376,
+    "mappedRangeCount": 128,
+    "unmappedRangeCount": 128,
+    "runtimeOwnerCount": 66,
+    "destroyedRuntimeOwnerCount": 66,
+    "maximumPendingDescriptorCount": 2,
+    "maximumActiveLeaseCount": 1,
+    "liveBufferCountAfterCleanup": 0,
+    "liveByteCountAfterCleanup": 0,
+    "liveMapCountAfterCleanup": 0,
+    "pendingDescriptorCountAfterCleanup": 0,
+    "drainOrderViolationCount": 0,
+    "profileSwitchWhilePendingCount": 0,
+    "setupFailureCleanupPassed": true,
+    "deviceLossCleanupPassed": true,
+    "idempotentDestroy": true,
+    "postDestroyRejected": true,
+    "passed": true
+  },
+  "decision": {
+    "disposition": "inconclusive-directional-or-material-wall-evidence",
+    "passed": false,
+    "completeEvaluationFollowUpAuthorized": false,
+    "fullTrajectoryAuthorized": false,
+    "productGateAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false,
+    "unchangedTimingRetryPerformed": false,
+    "productionRemains": "OPT-0009 FP32 activation storage with OPT-0080 scheduling"
+  }
+}

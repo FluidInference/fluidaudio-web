@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0062 quad-query integration gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0062 — exact quad-query full-self integration gate</h1>
+    <p>
+      The first explicit button runs three untimed correctness arms. The quad
+      arms execute the unchanged query8 owner beside quad inside each of the 96
+      selected production layers and compare all 442,368,000 output words on
+      GPU. All eight sampler taps and the final latent must also be raw-U32
+      exact, including a deterministic quad repeat.
+    </p>
+    <p>
+      After correctness, forward (query8→quad) and reverse (quad→query8) each
+      require their own externally recorded continuous ≥30-second nominal
+      thermal gate. Keep the same notifyutil poll running through both graph
+      arms and cleanup, then paste its authenticated completion receipt. The
+      worker reports the evaluation-zero full-self slice, full-self family,
+      graph, complete DiT stage, command/drain, requested idle, readback,
+      residual, and every non-attention family sample.
+    </p>
+    <p>
+      Every arm is sequential and fully disposed. The dense package remains
+      authenticated rev7, the public omission remains query8, and the harness
+      stops before any VAE weight acquisition. No worker, device, package load,
+      or GPU work exists before <strong>Prepare correctness gate</strong>.
+    </p>
+    <button id="prepare" type="button">Prepare correctness gate</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <fieldset>
+      <legend>Current direction nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-direction" type="button" disabled>Run direction</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same trace through both arms and cleanup JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0062-dit-quad-query.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0062-dit-quad-query.ts"></script>
+  </body>
+</html>

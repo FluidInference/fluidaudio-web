@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE-Step 1.5 WebGPU listening candidate</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Stage 1 correctness candidate</p>
+        <h1>ACE-Step 1.5 · WebGPU</h1>
+        <p>
+          Local generation on Apple Silicon. This harness deliberately uses the
+          cooperative execution profile and packed-BF16 reference weights.
+        </p>
+      </header>
+
+      <section class="card controls" aria-labelledby="generation-heading">
+        <h2 id="generation-heading">Generation</h2>
+
+        <label>
+          Prompt
+          <textarea id="prompt" rows="4">Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.</textarea>
+        </label>
+
+        <label>
+          Lyrics
+          <textarea id="lyrics" rows="5" placeholder="Ignored for instrumental generation"></textarea>
+        </label>
+
+        <div class="grid">
+          <label>
+            Duration (seconds)
+            <input id="duration" type="number" min="10" max="240" step="1" value="12" />
+          </label>
+          <label>
+            Seed
+            <input id="seed" value="0x0000000000c0ffee" spellcheck="false" />
+          </label>
+        </div>
+
+        <div class="grid metadata-grid">
+          <label>
+            BPM (optional)
+            <input id="bpm" type="number" min="30" max="300" step="1" value="104" />
+          </label>
+          <label>
+            Key / scale (optional)
+            <input id="key-scale" value="D minor" />
+          </label>
+          <label>
+            Time signature (optional)
+            <input id="time-signature" value="4" />
+          </label>
+          <label>
+            Vocal language (optional)
+            <input id="vocal-language" placeholder="e.g. en" />
+          </label>
+        </div>
+
+        <div class="toggles">
+          <label><input id="instrumental" type="checkbox" checked /> Instrumental</label>
+          <label><input id="planner" type="checkbox" /> Enable 0.6B planner</label>
+        </div>
+
+        <div class="actions">
+          <button id="initialize" type="button">Initialize model</button>
+          <button id="generate" type="button" disabled>Generate</button>
+          <button id="cancel" class="secondary" type="button" disabled>Cancel</button>
+        </div>
+      </section>
+
+      <section class="card status" aria-live="polite">
+        <div class="status-heading">
+          <h2>Status</h2>
+          <output id="status-text">Not initialized</output>
+        </div>
+        <progress id="progress" max="1" value="0"></progress>
+        <pre id="log"></pre>
+      </section>
+
+      <section id="result-card" class="card result" hidden>
+        <h2>Browser output</h2>
+        <audio id="audio" controls></audio>
+        <div class="actions">
+          <a id="download" class="button" download="ace-step-browser.wav">Download WAV</a>
+          <button id="release" class="secondary" type="button">Release stored output</button>
+        </div>
+        <pre id="result-metadata"></pre>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+{
+  "schema": "ace-opt-0073-final-product-result-v1",
+  "experimentId": "OPT-0073",
+  "status": "passed",
+  "passed": true,
+  "sourceCommit": "33feaf6ec22737c67090c5d2f07eb1aa9ffe7c5d",
+  "request": {
+    "generationProfile": "ace-turbo-v1-correctness",
+    "prompt": "Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.",
+    "instrumental": true,
+    "durationSeconds": 180,
+    "seed": "0000000000c0ffee",
+    "planner": {
+      "mode": "disabled"
+    },
+    "metadata": {
+      "bpm": 104,
+      "keyScale": "D minor",
+      "timeSignature": "4"
+    }
+  },
+  "timing": {
+    "generateToWavMilliseconds": 94774.80000007153,
+    "uiCompleteSeconds": 94.8,
+    "warmInitializationLogResolutionMilliseconds": 1000,
+    "warmInitializationObservedSeconds": 7,
+    "stageTimings": {
+      "prepare": 29.899999976158142,
+      "textEncoder": 1482.6000000238419,
+      "conditionEncoder": 2214.7000000476837,
+      "releaseConditioning": 31.899999976158142,
+      "ditLoad": 2351.399999976158,
+      "ditDenoise": 54986.200000047684,
+      "vaeLoad": 627.7999999523163,
+      "vaeDecode": 32586.700000047684,
+      "wavEncode": 463.60000002384186
+    },
+    "cooperativeGpuQueueDrains": 3803,
+    "cooperativeIdleMilliseconds": 3800
+  },
+  "productionIdentity": {
+    "cacheAuthenticationOwner": "webcrypto-whole-file",
+    "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+    "ditAttentionRuntimeProfile": "opt-0070-fixed32-quad-query32-full-self-production-v1",
+    "ditAttentionKernelSetId": "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1",
+    "vaeRuntimeProfile": "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
+    "vaePhysicalRuntimeProfile": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+    "vaeKernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+    "vaePrecisionMapSha256": "4815ec86311e401a9bf8cec3f4474d479ef3ac28c925f4824fed4c9ae3b8bc60",
+    "vaeWindowRuntimeProfile": "opt-0070-c2378-overlap64-production-v1",
+    "vaeMaximumWindowFrames": 2378,
+    "vaeWindowCount": 2,
+    "vaeWindowInputFrames": [2314, 2314]
+  },
+  "output": {
+    "fileName": "ace-step-optimized-180s-2026-08-16.wav",
+    "byteLength": 69120044,
+    "sha256": "e6a7f69b44639db177ac3f72cb2cba8d7027924795cffd3810daecec1cb87df8",
+    "mimeType": "audio/wav",
+    "format": "ieee-float32",
+    "sampleRateHz": 48000,
+    "channelCount": 2,
+    "frameCount": 8640000,
+    "sampleCount": 17280000,
+    "finiteSampleCount": 17280000,
+    "nonzeroSampleCount": 17280000,
+    "peakAbsoluteSample": 0.8912509083747864,
+    "rms": 0.1235668851672505
+  },
+  "resources": {
+    "peakTrackedGpuBytes": 3826885376,
+    "outputReleasedAfterDownload": true,
+    "deviceLoss": false
+  },
+  "thermal": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "observationCount": 281,
+    "startedAtEpochMilliseconds": 1786869471105,
+    "completedAtEpochMilliseconds": 1786869726137,
+    "durationMilliseconds": 255032,
+    "maximumPollGapMilliseconds": 922,
+    "generationStartedAtEpochMilliseconds": 1786869579071,
+    "nonNominalObservationCount": 69,
+    "transitions": [
+      {
+        "atEpochMilliseconds": 1786869471105,
+        "level": 0
+      },
+      {
+        "atEpochMilliseconds": 1786869651379,
+        "level": 1
+      },
+      {
+        "atEpochMilliseconds": 1786869676855,
+        "level": 2
+      },
+      {
+        "atEpochMilliseconds": 1786869694212,
+        "level": 1
+      },
+      {
+        "atEpochMilliseconds": 1786869714304,
+        "level": 0
+      }
+    ],
+    "interpretation": "The run began after more than 50 seconds continuously at level 0. Level 1 began 72.308 seconds after Generate; level 2 began about 2.984 seconds after the 94.8-second Generate-to-WAV boundary, while receipt/download/cleanup work was still being completed."
+  },
+  "artifacts": {
+    "browserReceipt": {
+      "path": "final-180s-receipt.json",
+      "sha256": "6169dc8f097ffdfbacb3b813410852ecf673499a4cede76a567dfc4fcdf68f67"
+    },
+    "thermalTrace": {
+      "path": "raw/final-180s-thermal.jsonl"
+    }
+  },
+  "decision": "select-webcrypto-and-retain-eight-evaluation-opt0070-opt0072-production-stack"
+}

@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "contractId": "ace-seed-v1",
+  "gaussianMapping": "probit-acklam-binary64-f32-v1",
+  "categoricalMapping": "u32-midpoint-binary64-cdf-v1",
+  "philox": [
+    {
+      "id": "zero-seed-diffusion-block-zero",
+      "seed": "0000000000000000",
+      "stream": "diffusion-noise",
+      "blockIndexHex": "0000000000000000",
+      "outputWords": [4273647691, 184731372, 3392169629, 981088556]
+    },
+    {
+      "id": "zero-seed-planner-block-zero",
+      "seed": "0000000000000000",
+      "stream": "planner-sampling",
+      "blockIndexHex": "0000000000000000",
+      "outputWords": [143943182, 2865181800, 2197482749, 1658045973]
+    },
+    {
+      "id": "mixed-seed-diffusion-block-one",
+      "seed": "0123456789abcdef",
+      "stream": "diffusion-noise",
+      "blockIndexHex": "0000000000000001",
+      "outputWords": [645241392, 1933375137, 166771140, 2677375847]
+    },
+    {
+      "id": "max-seed-planner-max-block",
+      "seed": "ffffffffffffffff",
+      "stream": "planner-sampling",
+      "blockIndexHex": "ffffffffffffffff",
+      "outputWords": [1695175860, 2283635642, 1068893150, 2963016305]
+    },
+    {
+      "id": "fixture-seed-diffusion-high-counter",
+      "seed": "0000000000c0ffee",
+      "stream": "diffusion-noise",
+      "blockIndexHex": "0000000100000000",
+      "outputWords": [793538395, 144586122, 1248040420, 4202571231]
+    }
+  ],
+  "gaussian": [
+    {"id": "minimum-word", "word": 0, "outputF32Bits": 3234517133},
+    {"id": "next-minimum-word", "word": 1, "outputF32Bits": 3234157412},
+    {"id": "lower-tail-last-word", "word": 104152956, "outputF32Bits": 3220998653},
+    {"id": "central-first-word", "word": 104152957, "outputF32Bits": 3220998653},
+    {"id": "center-negative", "word": 2147483647, "outputF32Bits": 2946526361},
+    {"id": "center-positive", "word": 2147483648, "outputF32Bits": 799042713},
+    {"id": "central-last-word", "word": 4190814338, "outputF32Bits": 1073515005},
+    {"id": "upper-tail-first-word", "word": 4190814339, "outputF32Bits": 1073515005},
+    {"id": "next-maximum-word", "word": 4294967294, "outputF32Bits": 1086673764},
+    {"id": "maximum-word", "word": 4294967295, "outputF32Bits": 1087033485}
+  ],
+  "streamGaussian": [
+    {
+      "id": "zero-seed-first-lane",
+      "seed": "0000000000000000",
+      "wordIndex": 0,
+      "word": 4273647691,
+      "outputF32Bits": 1076167545
+    },
+    {
+      "id": "zero-seed-fourth-lane",
+      "seed": "0000000000000000",
+      "wordIndex": 3,
+      "word": 981088556,
+      "outputF32Bits": 3208542493
+    },
+    {
+      "id": "zero-seed-next-block-second-lane",
+      "seed": "0000000000000000",
+      "wordIndex": 17,
+      "word": 3693056141,
+      "outputF32Bits": 1066021582
+    },
+    {
+      "id": "zero-seed-word-index-32-bit-boundary-minus-one",
+      "seed": "0000000000000000",
+      "wordIndex": 4294967295,
+      "word": 1707212913,
+      "outputF32Bits": 3196390008
+    },
+    {
+      "id": "zero-seed-word-index-32-bit-boundary",
+      "seed": "0000000000000000",
+      "wordIndex": 4294967296,
+      "word": 2781468900,
+      "outputF32Bits": 1052900467
+    },
+    {
+      "id": "fixture-seed-first-lane",
+      "seed": "0000000000c0ffee",
+      "wordIndex": 0,
+      "word": 4017660225,
+      "outputF32Bits": 1069694631
+    },
+    {
+      "id": "fixture-seed-third-lane",
+      "seed": "0000000000c0ffee",
+      "wordIndex": 2,
+      "word": 327754900,
+      "outputF32Bits": 3216446721
+    },
+    {
+      "id": "fixture-seed-high-word-index",
+      "seed": "0000000000c0ffee",
+      "wordIndex": 4294967296,
+      "word": 82837772,
+      "outputF32Bits": 3221513616
+    }
+  ],
+  "categorical": [
+    {"id": "two-equal-low", "weights": [1.0, 1.0], "word": 0, "token": 0},
+    {"id": "two-equal-lower-boundary", "weights": [1.0, 1.0], "word": 2147483647, "token": 0},
+    {"id": "two-equal-upper-boundary", "weights": [1.0, 1.0], "word": 2147483648, "token": 1},
+    {"id": "two-equal-high", "weights": [1.0, 1.0], "word": 4294967295, "token": 1},
+    {"id": "zero-weights-low", "weights": [0.0, 1.0, 0.0], "word": 0, "token": 1},
+    {"id": "zero-weights-high", "weights": [0.0, 1.0, 0.0], "word": 4294967295, "token": 1},
+    {"id": "skew-low", "weights": [1.0, 3.0, 6.0], "word": 0, "token": 0},
+    {"id": "skew-first-boundary-below", "weights": [1.0, 3.0, 6.0], "word": 429496729, "token": 0},
+    {"id": "skew-first-boundary-above", "weights": [1.0, 3.0, 6.0], "word": 429496730, "token": 1},
+    {"id": "skew-second-boundary-below", "weights": [1.0, 3.0, 6.0], "word": 1717986917, "token": 1},
+    {"id": "skew-high", "weights": [1.0, 3.0, 6.0], "word": 4294967295, "token": 2},
+    {"id": "tiny-edge-mass", "weights": [1e-30, 1.0, 1e-30], "word": 4294967295, "token": 1}
+  ],
+  "plannerStream": [
+    {
+      "id": "planner-fixture-draw-zero",
+      "seed": "000000000badc0de",
+      "drawIndex": 0,
+      "word": 2132909650,
+      "weights": [0.0, 1.0, 3.0, 0.0, 6.0],
+      "token": 4
+    },
+    {
+      "id": "planner-fixture-draw-three",
+      "seed": "000000000badc0de",
+      "drawIndex": 3,
+      "word": 3998011720,
+      "weights": [0.0, 1.0, 3.0, 0.0, 6.0],
+      "token": 4
+    },
+    {
+      "id": "planner-fixture-next-block",
+      "seed": "000000000badc0de",
+      "drawIndex": 4,
+      "word": 3115288796,
+      "weights": [0.0, 1.0, 3.0, 0.0, 6.0],
+      "token": 4
+    },
+    {
+      "id": "planner-fixture-draw-seven",
+      "seed": "000000000badc0de",
+      "drawIndex": 7,
+      "word": 1276403535,
+      "weights": [0.0, 1.0, 3.0, 0.0, 6.0],
+      "token": 2
+    },
+    {
+      "id": "planner-fixture-draw-nine",
+      "seed": "000000000badc0de",
+      "drawIndex": 9,
+      "word": 382911894,
+      "weights": [0.0, 1.0, 3.0, 0.0, 6.0],
+      "token": 1
+    }
+  ]
+}

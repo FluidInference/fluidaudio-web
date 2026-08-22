@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+  "bindings": [
+    {
+      "tapId": "token.caption.ids",
+      "strategy": "explicit-service-payload",
+      "source": "acestep/core/generation/handler/conditioning_text.py:ConditioningTextMixin._prepare_text_conditioning_inputs",
+      "value": "padded_text_token_idss"
+    },
+    {
+      "tapId": "token.caption.mask",
+      "strategy": "explicit-service-payload",
+      "source": "acestep/core/generation/handler/conditioning_text.py:ConditioningTextMixin._prepare_text_conditioning_inputs",
+      "value": "text_attention_masks"
+    },
+    {
+      "tapId": "token.lyric.ids",
+      "strategy": "explicit-service-payload",
+      "source": "acestep/core/generation/handler/conditioning_text.py:ConditioningTextMixin._prepare_text_conditioning_inputs",
+      "value": "padded_lyric_token_idss"
+    },
+    {
+      "tapId": "token.lyric.mask",
+      "strategy": "explicit-service-payload",
+      "source": "acestep/core/generation/handler/conditioning_text.py:ConditioningTextMixin._prepare_text_conditioning_inputs",
+      "value": "lyric_attention_masks"
+    },
+    {
+      "tapId": "text.embedding.input",
+      "strategy": "forward-hook",
+      "source": "handler.text_encoder.embed_tokens",
+      "value": "module output on caption encoder call"
+    },
+    {
+      "tapId": "text.layer.13.output",
+      "strategy": "forward-hook",
+      "source": "handler.text_encoder.layers[13]",
+      "value": "first tensor in module output on caption encoder call"
+    },
+    {
+      "tapId": "text.final.output",
+      "strategy": "method-result",
+      "source": "acestep/core/generation/handler/conditioning_embed.py:ConditioningEmbedMixin.infer_text_embeddings",
+      "value": "last_hidden_state"
+    },
+    {
+      "tapId": "lyric.embedding.input",
+      "strategy": "method-result",
+      "source": "acestep/core/generation/handler/conditioning_embed.py:ConditioningEmbedMixin.infer_lyric_embeddings",
+      "value": "embed_tokens result"
+    },
+    {
+      "tapId": "planner.prompt.ids",
+      "strategy": "method-wrapper",
+      "source": "acestep/llm_inference.py:LLMHandler.generate_from_formatted_prompt",
+      "value": "llm_tokenizer input_ids before eager PyTorch prefill"
+    },
+    {
+      "tapId": "planner.code.ids",
+      "strategy": "phase-result",
+      "source": "acestep/llm_inference.py:LLMHandler.generate_with_stop_condition",
+      "value": "parsed constrained semantic code ids"
+    },
+    {
+      "tapId": "planner.logits.probes",
+      "strategy": "sampler-wrapper",
+      "source": "acestep/llm_inference.py:LLMHandler._sample_tokens",
+      "value": "float32 post-filter semantic logits at steps 0, floor(C5/2), and C5-1, gathered in audio-code value order 0:64000 from tokenizer IDs"
+    },
+    {
+      "tapId": "planner.sample.words",
+      "strategy": "external-injection",
+      "source": "reference/native.py:PlannerWordInjector",
+      "value": "all externally supplied uint32 words consumed continuously across CoT, semantic-code, forced, and stop tokens"
+    },
+    {
+      "tapId": "semantic.fsq.output",
+      "strategy": "method-wrapper",
+      "source": "handler.model.tokenizer.quantizer.get_output_from_indices",
+      "value": "quantized semantic embeddings"
+    },
+    {
+      "tapId": "semantic.detokenizer.layer.0",
+      "strategy": "forward-hook",
+      "source": "handler.model.detokenizer.layers[0]",
+      "value": "layer output on semantic-hint detokenization"
+    },
+    {
+      "tapId": "semantic.hints.25hz",
+      "strategy": "method-local",
+      "source": "handler.model.prepare_condition",
+      "value": "cropped lm_hints_25Hz before source-latent selection"
+    },
+    {
+      "tapId": "condition.lyric.layer.0",
+      "strategy": "forward-hook",
+      "source": "handler.model.encoder.lyric_encoder.layers[0]",
+      "value": "first lyric encoder layer output"
+    },
+    {
+      "tapId": "condition.lyric.final",
+      "strategy": "forward-hook",
+      "source": "handler.model.encoder.lyric_encoder.norm",
+      "value": "normalized lyric encoder output"
+    },
+    {
+      "tapId": "condition.timbre.final",
+      "strategy": "method-result",
+      "source": "handler.model.encoder.timbre_encoder.forward",
+      "value": "unpacked timbre embeddings before sequence packing"
+    },
+    {
+      "tapId": "condition.encoder.output",
+      "strategy": "method-result",
+      "source": "handler.model.encoder.forward",
+      "value": "packed encoder_hidden_states"
+    },
+    {
+      "tapId": "condition.encoder.mask",
+      "strategy": "method-result",
+      "source": "handler.model.encoder.forward",
+      "value": "packed encoder_attention_mask"
+    },
+    {
+      "tapId": "condition.context",
+      "strategy": "method-result",
+      "source": "handler.model.prepare_condition",
+      "value": "context_latents"
+    },
+    {
+      "tapId": "diffusion.initial-noise",
+      "strategy": "external-injection",
+      "source": "handler.model.prepare_noise",
+      "value": "fixture-pinned float32 tensor before model-dtype conversion"
+    },
+    {
+      "tapId": "dit.step.{0,7}.input",
+      "strategy": "method-local",
+      "source": "handler.model.generate_audio diffusion loop",
+      "value": "xt immediately before selected decoder evaluation"
+    },
+    {
+      "tapId": "dit.step.{0,7}.layer.{0,1,22,23}.output",
+      "strategy": "forward-hook-with-step-scope",
+      "source": "handler.model.decoder.layers[{layer}]",
+      "value": "selected DiT layer output while diffusion step scope is 0 or 7"
+    },
+    {
+      "tapId": "dit.step.{0,7}.velocity",
+      "strategy": "method-local",
+      "source": "handler.model.generate_audio diffusion loop",
+      "value": "selected decoder velocity after guidance and before Euler update"
+    },
+    {
+      "tapId": "dcw.step.{0,7}.denoised",
+      "strategy": "method-wrapper-with-step-scope",
+      "source": "acestep.models.common.dcw_correction.DCWCorrector.apply",
+      "value": "float32 denoised argument"
+    },
+    {
+      "tapId": "dcw.step.{0,7}.output",
+      "strategy": "method-wrapper-with-step-scope",
+      "source": "acestep.models.common.dcw_correction.DCWCorrector.apply",
+      "value": "corrected latent result"
+    },
+    {
+      "tapId": "diffusion.final-latent",
+      "strategy": "method-result",
+      "source": "handler.model.generate_audio",
+      "value": "outputs.target_latents"
+    },
+    {
+      "tapId": "vae.nonchunked.output",
+      "strategy": "method-result",
+      "source": "handler.vae.decode",
+      "value": "float32 waveform from one non-chunked decode"
+    },
+    {
+      "tapId": "vae.chunked.raw-output",
+      "strategy": "method-result",
+      "source": "acestep/core/generation/handler/generate_music_decode.py:GenerateMusicDecodeMixin._decode_generated_latents",
+      "value": "assembled float32 waveform before normalization and fades"
+    },
+    {
+      "tapId": "audio.final-output",
+      "strategy": "method-result",
+      "source": "acestep/inference.py generate_music postprocess",
+      "value": "final normalized stereo float32 waveform before file encoding"
+    }
+  ]
+}

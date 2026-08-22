@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 3,
+  "packageFormat": "ace-step-webgpu-v1",
+  "converterRevision": 4,
+  "sourceTensorCount": 1662,
+  "logicalTensorCount": 1412,
+  "tensorRecordCount": 1420,
+  "fileRecordCount": 163,
+  "weightShardFileCount": 138,
+  "packages": {
+    "reference": {
+      "directory": "files-reference",
+      "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "manifestBytes": 759692,
+      "listedFileBytes": 7500043294,
+      "packageBytesIncludingManifest": 7500802986
+    },
+    "fp16": {
+      "directory": "files-fp16",
+      "manifestSha256": "c5b547cd08aa5e6d2971b2c9c84940b8af193f2e230ce689258ca81fcd292a3b",
+      "manifestBytes": 713747,
+      "listedFileBytes": 7500043294,
+      "packageBytesIncludingManifest": 7500757041
+    }
+  },
+  "productionPackages": {
+    "reference": {
+      "profile": "reference",
+      "converterRevision": 4,
+      "directory": "files-reference",
+      "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "manifestBytes": 759692,
+      "listedFileBytes": 7500043294,
+      "packageBytesIncludingManifest": 7500802986
+    },
+    "dit": {
+      "profile": "fp16-dit-dense-experimental",
+      "converterRevision": 7,
+      "directory": "files-fp16-dit-rev7-oracle",
+      "manifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "manifestBytes": 254357,
+      "listedFileBytes": 3087910671,
+      "packageBytesIncludingManifest": 3088165028
+    },
+    "vae": {
+      "profile": "fp16-vae-experimental",
+      "converterRevision": 7,
+      "directory": "files-fp16-vae-revision7-experimental",
+      "manifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+      "manifestBytes": 716185,
+      "listedFileBytes": 7331254814,
+      "packageBytesIncludingManifest": 7331970999
+    }
+  },
+  "replacementPackages": {
+    "fp16-vae-experimental": {
+      "directory": "files-fp16-vae-experimental",
+      "manifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "manifestBytes": 715301,
+      "listedFileBytes": 7331253998,
+      "packageBytesIncludingManifest": 7331969299
+    },
+    "fp16-dit-dense-experimental": {
+      "directory": "files-fp16-dit-layer-mixed-experimental",
+      "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+      "manifestBytes": 257789,
+      "listedFileBytes": 3087913263,
+      "packageBytesIncludingManifest": 3088171052
+    }
+  },
+  "verification": {
+    "fullAuditEnvironment": "ACE_STEP_VERIFY_FULL_PACKAGE=1",
+    "reproducedFromVerifiedOfflineCache": true,
+    "consecutiveManifestIdentityMatches": 2
+  }
+}

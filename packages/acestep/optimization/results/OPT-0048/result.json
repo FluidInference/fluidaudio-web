@@ -1,0 +1,150 @@
+{
+  "schema": "ace-opt-0048-vae-convtranspose-k4-partials-v1",
+  "experimentId": "OPT-0048",
+  "status": "completed",
+  "passed": false,
+  "disposition": "negative-universal-owner-shape-selector-follow-up",
+  "controlKernelId": "ace-vae-fp16-fixed32-subgroup-shape-selected-conv-transpose1d-v1",
+  "exactRouteKernelIds": {
+    "channel": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1",
+    "row": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+  },
+  "candidateKernelIds": {
+    "channel": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1",
+    "row": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+  },
+  "candidateWeightLayout": "ace-opt-0048-phase-tap-cin4-cout-tile-lane-output-k4-f16-v1",
+  "packingOutsideTimedRegion": true,
+  "correctness": {
+    "passed": true,
+    "operationCount": 5,
+    "packedAndInverseWeightWords": 49610752,
+    "inverseMismatchCount": 0,
+    "outputElementsCompared": 141312000,
+    "candidateComparisons": 282624000,
+    "differingU16Count": 0,
+    "deterministicMismatchCount": 0,
+    "outputPrefillRemainingCount": 0,
+    "controlNonFiniteCount": 0,
+    "candidateNonFiniteCount": 0,
+    "signedZeroDifferenceCount": 0,
+    "classChangeCount": 0,
+    "deterministicRawU16": true,
+    "completeWrites": true,
+    "allCanariesIntact": true,
+    "allFinite": true,
+    "packingOutsideTimedRegion": true,
+    "milliseconds": 5842
+  },
+  "thermal": {
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "waitStartedAtEpochMilliseconds": 1786836597765,
+    "checkedAtEpochMilliseconds": 1786836636956,
+    "waitDurationMilliseconds": 39191,
+    "checkCount": 1,
+    "thermalLevel": 0,
+    "launchDelayMilliseconds": 56,
+    "pollingLoggerUsed": false
+  },
+  "timing": {
+    "rounds": 6,
+    "orders": [
+      ["exact", "candidate"],
+      ["candidate", "exact"],
+      ["candidate", "exact"],
+      ["exact", "candidate"],
+      ["exact", "candidate"],
+      ["candidate", "exact"]
+    ],
+    "orderContract": "six balanced A/B or B/A permutations; shape order alternates forward/reverse",
+    "sampleContract": "one submit and matching queue drain per sample",
+    "milliseconds": 3041,
+    "cases": [
+      {
+        "label": "block-0-conv-t1",
+        "reuseAxis": "channel",
+        "samplesMilliseconds": {
+          "exact": [40.300000071525574, 42.60000002384186, 41.10000002384186, 42.299999952316284, 41.299999952316284, 42.700000047683716],
+          "candidate": [46.200000047683716, 44.10000002384186, 45.200000047683716, 43.60000002384186, 45.60000002384186, 44.5]
+        },
+        "mediansMilliseconds": {"exact": 41.799999952316284, "candidate": 44.85000002384186},
+        "speedup": 0.9319955391325703,
+        "nonSlower": false
+      },
+      {
+        "label": "block-1-conv-t1",
+        "reuseAxis": "channel",
+        "samplesMilliseconds": {
+          "exact": [73.89999997615814, 59.89999997615814, 48.199999928474426, 62.299999952316284, 57.59999990463257, 63.10000002384186],
+          "candidate": [37.60000002384186, 49.39999997615814, 60.800000071525574, 49.60000002384186, 40.5, 46.60000002384186]
+        },
+        "mediansMilliseconds": {"exact": 61.09999996423721, "candidate": 48},
+        "speedup": 1.2729166659216087,
+        "nonSlower": true
+      },
+      {
+        "label": "block-2-conv-t1",
+        "reuseAxis": "channel",
+        "samplesMilliseconds": {
+          "exact": [46.199999928474426, 56.299999952316284, 45.5, 62.300000071525574, 45.39999997615814, 55.59999990463257],
+          "candidate": [25.600000023841858, 36.10000002384186, 26.200000047683716, 31.5, 25.600000023841858, 31.5]
+        },
+        "mediansMilliseconds": {"exact": 50.8999999165535, "candidate": 28.850000023841858},
+        "speedup": 1.7642980892370659,
+        "nonSlower": true
+      },
+      {
+        "label": "block-3-conv-t1",
+        "reuseAxis": "row",
+        "samplesMilliseconds": {
+          "exact": [71.39999997615814, 87.39999997615814, 87.59999990463257, 84, 73.89999997615814, 79.70000004768372],
+          "candidate": [36.59999990463257, 33.60000002384186, 27.100000023841858, 30.699999928474426, 40.39999997615814, 34.199999928474426]
+        },
+        "mediansMilliseconds": {"exact": 81.85000002384186, "candidate": 33.89999997615814},
+        "speedup": 2.4144542796875204,
+        "nonSlower": true
+      },
+      {
+        "label": "block-4-conv-t1",
+        "reuseAxis": "row",
+        "samplesMilliseconds": {
+          "exact": [78.10000002384186, 80.29999995231628, 82.20000004768372, 67.39999997615814, 83.39999997615814, 80.79999995231628],
+          "candidate": [35.699999928474426, 36.800000071525574, 37.10000002384186, 37.5, 37.89999997615814, 30.800000071525574]
+        },
+        "mediansMilliseconds": {"exact": 80.54999995231628, "candidate": 36.950000047683716},
+        "speedup": 2.1799729322968084,
+        "nonSlower": true
+      }
+    ],
+    "summedMediansMilliseconds": {"exact": 316.19999980926514, "candidate": 192.55000007152557},
+    "summedSpeedup": 1.6421708631098828,
+    "requiredSummedSpeedup": 1.5,
+    "noSlowerEveryShape": false,
+    "allCanariesIntact": true,
+    "passed": false
+  },
+  "derivedShapeSelector": {
+    "authority": "planning-only-follow-up-not-part-of-this-decision",
+    "route": {"block-0-conv-t1": "exact", "blocks-1-through-4": "candidate"},
+    "summedMediansMilliseconds": 189.5,
+    "speedupOverExact": 1.66860158210694
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapter": {"vendor": "apple", "architecture": "metal-3", "subgroupMinSize": 32, "subgroupMaxSize": 32, "isFallbackAdapter": false},
+    "features": ["core-features-and-limits", "shader-f16", "subgroups"],
+    "limits": {"maxBufferSize": 4294967292, "maxStorageBufferBindingSize": 4294967292, "maxComputeWorkgroupsPerDimension": 65535}
+  },
+  "cleanup": {
+    "createdBufferCount": 125,
+    "destroyedBufferCount": 125,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "maximumLiveBytes": 937559632,
+    "mapCount": 218,
+    "unmapCount": 218,
+    "activeMapCount": 0,
+    "mapsBalanced": true,
+    "deviceDestroyed": true
+  }
+}

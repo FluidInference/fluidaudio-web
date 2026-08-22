@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 complete FP16 B-256 VAE window correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only. In one dedicated worker this gate authenticates the
+      frozen OPT-0011 xorshift32 latent, loads the accepted revision-4 FP32 VAE
+      oracle, executes it twice, and destroys every oracle GPU resource before
+      acquiring the revision-5 experimental FP16 VAE package. It then executes
+      the complete B-256 mixed-precision decoder twice through all 3,943 FIFO
+      quanta using the production batch-eight, one-outstanding-command-buffer,
+      drain, and real queue-empty-idle policy. Complete raw FP32 output,
+      qNaN-prefill completeness, activation guards, deterministic reruns,
+      frozen A/B waveform bounds, cancellation, package/shader identity,
+      heartbeat liveness, and idempotent cleanup are validated. This gate
+      records no performance or thermal result and makes no listening,
+      selector, integration, or FP16-512 claim.
+    </p>
+    <button id="start" type="button">
+      Run OPT-0011 complete FP16 B-256 window correctness
+    </button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <fieldset id="raw-result-retrieval">
+      <legend>Bounded raw-result retrieval — available from page start</legend>
+      <label>
+        Next code-unit offset
+        <input name="rawResultOffset" inputmode="numeric" value="0" />
+      </label>
+      <button id="publish-raw-result-chunk" type="button">
+        Publish raw-result chunk
+      </button>
+      <pre
+        id="raw-result-chunk"
+        data-state="ready"
+        hidden
+        aria-hidden="true"
+      ></pre>
+    </fieldset>
+    <script
+      type="module"
+      src="./opt-0011-vae-fp16-window-correctness.ts"
+    ></script>
+  </body>
+</html>

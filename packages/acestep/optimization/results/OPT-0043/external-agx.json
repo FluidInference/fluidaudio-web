@@ -1,0 +1,29 @@
+{
+  "schema": "ace-opt-0043-external-agx-v1",
+  "thermalGate": {
+    "protocol": "wait-30s-then-one-level0-check",
+    "startedAtEpochMilliseconds": 1786833105148,
+    "checkedAtEpochMilliseconds": 1786833135194,
+    "durationMilliseconds": 30046,
+    "observationCount": 1,
+    "observedLevel": 0
+  },
+  "samples": [
+    {
+      "placement": "before-browser-timing",
+      "sampledAtEpochMilliseconds": 1786833135194,
+      "deviceUtilizationPercent": 46,
+      "rendererUtilizationPercent": 43,
+      "tilerUtilizationPercent": 44
+    },
+    {
+      "placement": "after-browser-timing",
+      "sampledAtEpochMilliseconds": 1786833158402,
+      "deviceUtilizationPercent": 46,
+      "rendererUtilizationPercent": 45,
+      "tilerUtilizationPercent": 46
+    }
+  ],
+  "source": "ioreg -r -c AGXAccelerator -d1 -l PerformanceStatistics",
+  "interpretationLimit": "Rolling I/O Registry percentages are coarse samples outside browser timing fences; GPU pass timestamps are the direct utilization authority."
+}

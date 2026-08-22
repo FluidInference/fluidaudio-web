@@ -1,0 +1,27 @@
+{
+  "schema": "ace-opt-0058-wgsl-language-feature-probe-v1",
+  "experimentId": "OPT-0058",
+  "observedAtUtc": "2026-08-16T00:24:40Z",
+  "machineModel": "Mac15,12",
+  "gpuCoreCount": 10,
+  "memoryBytes": 17179869184,
+  "browserVersion": "Google Chrome 151.0.7922.138",
+  "stockWebGpuOnly": true,
+  "experimentalBrowserFlags": false,
+  "deviceRequested": false,
+  "gpuDispatchPerformed": false,
+  "navigatorGpuPresent": true,
+  "wgslLanguageFeatures": [
+    "immediate_address_space",
+    "linear_indexing",
+    "packed_4x8_integer_dot_product",
+    "pointer_composite_access",
+    "readonly_and_readwrite_storage_textures",
+    "subgroup_id",
+    "subgroup_uniformity",
+    "texture_and_sampler_let",
+    "uniform_buffer_standard_layout",
+    "unrestricted_pointer_parameters"
+  ],
+  "packed4x8IntegerDotProductPresent": true
+}

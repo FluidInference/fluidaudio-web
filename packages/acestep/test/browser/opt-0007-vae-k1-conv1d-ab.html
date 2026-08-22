@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0007 pointwise VAE Conv1D A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 76rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      OPT-0007 has four independent, decision-useful modes. Use
+      <code>runMode=correctness</code> for the complete manageable exactness
+      graph. Use <code>runMode=screen-c1024</code> or
+      <code>runMode=screen-c128</code> for exactly one middle production range
+      after a continuous 30-second nominal external thermal gate. Use
+      <code>runMode=sequence-c128</code> for 16 consecutive middle C128 ranges
+      in exactly two drained eight-pass command buffers. A production screen
+      compares independent qNaN-prefilled scalar and candidate outputs, uses
+      symmetric warmup and balanced paired samples, and never runs a complete
+      operation, VAE window, or song. Each screen remains independently useful.
+    </p>
+    <button id="start" type="button">Run selected OPT-0007 screen</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0007-vae-k1-conv1d-ab.ts"></script>
+  </body>
+</html>

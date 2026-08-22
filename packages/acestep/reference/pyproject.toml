@@ -1,0 +1,9 @@
+[project]
+name = "ace-step-15-wgsl-reference"
+version = "0.1.0"
+description = "Pinned native-reference capture contracts for ACE-Step 1.5 WebGPU"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[tool.uv]
+package = false

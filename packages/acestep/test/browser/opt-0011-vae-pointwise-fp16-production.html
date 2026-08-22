@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 production FP16 pointwise correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only: authenticate the promoted production shader-f16
+      pointwise source and generated WGSL, compare every raw FP16 output bit
+      for the complete B-256 FP32-to-FP16 decoder ingress and all 15 Add
+      operations across all 348 exact B-256 graph ranges with an independent
+      CPU oracle, and repeat every selected range deterministically. Bounded
+      arithmetic fixtures pin signed zero, subnormals, round-to-nearest-even,
+      and odd tails. The run also validates qNaN guards, canaries, binding
+      padding, real multi-range cancellation, heartbeat responsiveness, and
+      complete idempotent cleanup/device loss. It performs no timing and makes
+      no thermal, throughput, quality, listening, or production-selector claim.
+    </p>
+    <button id="start" type="button">
+      Run OPT-0011 production FP16 pointwise correctness
+    </button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <fieldset id="raw-result-retrieval" hidden disabled>
+      <legend>Bounded raw-result retrieval</legend>
+      <label>
+        Next code-unit offset
+        <input name="rawResultOffset" inputmode="numeric" value="0" />
+      </label>
+      <button id="publish-raw-result-chunk" type="button">
+        Publish next raw-result chunk
+      </button>
+      <pre
+        id="raw-result-chunk"
+        data-state="empty"
+        hidden
+        aria-hidden="true"
+      ></pre>
+    </fieldset>
+    <script
+      type="module"
+      src="./opt-0011-vae-pointwise-fp16-production.ts"
+    ></script>
+  </body>
+</html>

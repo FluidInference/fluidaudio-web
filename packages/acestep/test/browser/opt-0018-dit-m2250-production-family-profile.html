@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0018 production M2250 DiT family profile</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; }
+      p { max-width: 82rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 66rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 29rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <h1>OPT-0018 current-production M2250 DiT family profile</h1>
+    <p>
+      This dedicated benchmark worker initializes the normal authenticated
+      production manifests, packages, cache, and WebGPU device. The only run is
+      the exact approved direct-instrumental fixture expanded from 12 to 180
+      seconds: batch 1, 4,500 latent frames, 2,250 DiT tokens, eight Euler
+      evaluations, Haar/double DCW at 0.05/0.02, and the current mixed OPT-0009
+      dense plus Query8 attention selection. Its authenticated conditioning is
+      82 text tokens plus 15 lyric tokens plus one packed no-reference timbre
+      row: C98.
+    </p>
+    <p>
+      After one externally observed continuous 30-second nominal start, run
+      once and accept the disclosed result without a thermal retry. Keep the
+      same external logger polling through cleanup. The worker stops with a
+      private identity sentinel only after the 1,152,000-byte final latent is
+      detached, hashed, checked finite/nonzero, and the DiT is destroyed. It
+      does not acquire VAE weights, create a VAE backend or audio transaction,
+      use the stable Cancel message, or change a public protocol/default.
+    </p>
+    <p>
+      Supply coreCommit, harnessCommit, machineModel, osVersion, osBuild,
+      browserVersion, gpuCoreCount, and memoryBytes in the URL query. Save and
+      hash the external thermal JSONL separately; enter its final summary below
+      after the worker reports that cleanup and backend disposal have finished.
+    </p>
+    <button id="prepare" type="button">Initialize exact production runtime</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>One externally observed nominal start</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms; blank uses click time)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations before launch
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run the one M2250 DiT profile
+      </button>
+    </fieldset>
+
+    <fieldset id="thermal-completion" disabled>
+      <legend>Same external trace through cleanup</legend>
+      <label>
+        Raw JSONL SHA-256
+        <input name="thermalTraceSha256" spellcheck="false" />
+      </label>
+      <label>
+        Trace completion (epoch ms; blank uses click time)
+        <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Total observation count
+        <input name="thermalTraceObservations" inputmode="numeric" />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Total non-nominal observations
+        <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Later transitions JSON ([{"atEpochMilliseconds":…,"level":…}])
+        <input name="thermalTraceTransitionsJson" value="[]" spellcheck="false" />
+      </label>
+      <button id="finalize" type="button" disabled>
+        Finalize compact receipt without retry
+      </button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0018-dit-m2250-production-family-profile.json">
+      Download full authenticated raw receipt
+    </a>
+    <script type="module" src="./opt-0018-dit-m2250-production-family-profile.ts"></script>
+  </body>
+</html>

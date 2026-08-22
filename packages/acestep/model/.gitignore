@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+
+# Pinned upstream downloads and generated browser packages are intentionally
+# distributed separately from the source repository.
+cache/
+files-reference/
+files-fp16/
+
+# Transactional conversion/install state.
+.*.staging-*/
+.*.previous/
+*.partial

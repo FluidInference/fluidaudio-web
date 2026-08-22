@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0055/0065 sampler schedule listening gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 78rem; }
+      button, select { margin: 0.25rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+      #artifacts li { margin: 0.75rem 0; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0055 / OPT-0065 — untimed 8/6/5 listening gate</h1>
+    <p>
+      Prime the reference main, rev7 OPT-0009 dense, and rev6 OPT-0028 VAE
+      packages in the ordinary demo first. This isolated worker is cache-only.
+      It deliberately uses exact query8 attention and the exact C512 VAE window
+      owner because the public OPT-0070 production tuple is sealed to the
+      physical quad-query owner. No product request or demo default changes.
+    </p>
+    <p>
+      One initialized worker runs the same request sequentially as exact 8,
+      OPT-0055 6, then OPT-0065 5 evaluations. It captures raw evaluation-0
+      velocity and requires U32 identity across all arms, every post-sampler
+      latent, each final latent, and retained pre-normalization OPFS audio.
+      Raw audio is compared in bounded blocks. Formal timing is forbidden until
+      correctness and owner listening pass.
+    </p>
+    <label>
+      Gate mode
+      <select id="mode">
+        <option value="direct12">12 s direct instrumental (required first)</option>
+        <option value="vocal30">30 s planner vocal (only after direct approval)</option>
+      </select>
+    </label>
+    <button id="start" type="button">Run sequential 8 / 6 / 5 gate</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <h2>Blinded WAV artifacts</h2>
+    <ol id="artifacts"></ol>
+    <p>
+      Download all three before revealing. Listen to each complete file at the
+      same playback gain and device, without inspecting waveform, hash, or
+      metadata. Note musical structure, transient damage, high-frequency
+      roughness, vocal intelligibility (vocal mode), and overall preference.
+    </p>
+    <label>
+      Listening notes and rank (required before reveal)
+      <textarea id="listening-notes" disabled></textarea>
+    </label>
+    <label>
+      <input id="listened" type="checkbox" disabled />
+      I listened blind to A, B, and C in full at matched gain.
+    </label>
+    <button id="reveal" type="button" disabled>Seal notes and reveal mapping</button>
+    <button id="release" type="button" disabled>
+      Release OPFS artifacts after downloads finish
+    </button>
+
+    <h2>Receipt</h2>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0055-0065-sampler-schedule.ts"></script>
+  </body>
+</html>

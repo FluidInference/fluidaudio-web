@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 2,
+  "experimentId": "OPT-0024",
+  "riskClass": "approximate-fp16-dot4-partials-with-fp32-cross-group-accumulation",
+  "baselineCommit": "51ced73b7f2078ade30d409afcd7fdba7082f171",
+  "candidateCommit": null,
+  "identity": {
+    "registrationCommit": "51ced73b7f2078ade30d409afcd7fdba7082f171",
+    "registrationRecordSha256": "64ef45495d2f217aa220d0dde5d06497b828fd33a619817e35180b48813c2d5c",
+    "fixed32CoreSourceSha256": "7d218516d6b2c8d6e3332a53101be5fdeae1142096c442433915bfa58941ce32",
+    "candidateCoreSourceSha256": "fe3bf8110cef1a3bb791006e9d376fe549e9f00fe30e4738d7429cb0daf65841",
+    "conv1dCoreSourceSha256": "fd14f625e3efeba3277bd9c4e8aa052af92a2b44c078108303173c9bb42a4310",
+    "decoderCoreSourceSha256": "07f294e2aadd615c0a8b840884f43205bc00c146362f54048a39a85440da1d3e",
+    "harnessSourceSha256": "2e3fff0323a4b4ba913a46aa83690a09f64cd540038efbfb76dd2de17ead1fc6",
+    "harnessHtmlSha256": "342c899611844791b4ea6c181c53a19baebe52007445d596fde677480e61566d",
+    "candidateKernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "shippedKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+    "generatedShaderCountPerArm": 16,
+    "browserVersion": "Chrome 151.0.0.0",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "deviceFeatures": ["core-features-and-limits", "shader-f16", "subgroups"]
+    }
+  },
+  "correctness": {
+    "passed": true,
+    "operationCount": 16,
+    "probeCount": 48,
+    "sameRunCandidateControlComparisonCount": 12599296,
+    "deterministicCandidateRerunHashes": true,
+    "qNaNPrefillCompleteWrites": true,
+    "allOutputsFinite": true,
+    "guardsAndAdjacentCanariesUntouched": true,
+    "aggregate": {
+      "rawU16MismatchCount": 2949364,
+      "maximumAbsoluteError": 0.000030517578125,
+      "meanAbsoluteError": 0.0000010044642189555161,
+      "rmsError": 0.000003265783783489144,
+      "nrmse": 0.0001774657859663131,
+      "snrDb": 75.01770726325253,
+      "pearson": 0.9999999842612771,
+      "controlPeak": 0.0599365234375,
+      "relativeMaximumAbsoluteError": 0.0005091649694501018,
+      "signedZeroDifferenceCount": 0
+    },
+    "cleanup": {
+      "createdBufferCount": 118,
+      "destroyedBufferCount": 118,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "mapCount": 116,
+      "unmapCount": 116,
+      "mapsBalanced": true,
+      "maximumLiveBytes": 506546688,
+      "drainBeforeRelease": true,
+      "idempotent": true,
+      "postDestroyRejectionPassed": true,
+      "deviceDestroyed": true
+    }
+  },
+  "metrics": {
+    "baseline": {
+      "arm": "shipped-fixed32-subgroup-k7",
+      "weightedC300Milliseconds": 8044.05006891489,
+      "opt0023LongK7Milliseconds": 59993.59999811649
+    },
+    "candidate": {
+      "arm": "native-oki-fp16-dot4-partials-fp32-cross-group-accumulation",
+      "weightedC300Milliseconds": 4688.24998319149,
+      "everyTierCandidateWon": true,
+      "tiers": [
+        {
+          "id": "c1024",
+          "weight": 282,
+          "shippedSamplesMilliseconds": [14.399999976158142, 6.600000023841858, 6.5, 5.799999952316284],
+          "candidateSamplesMilliseconds": [5.100000023841858, 4.299999952316284, 3, 2.5],
+          "shippedMedianMilliseconds": 6.550000011920929,
+          "candidateMedianMilliseconds": 3.649999976158142,
+          "speedup": 1.7945205629330503
+        },
+        {
+          "id": "c512",
+          "weight": 423,
+          "shippedSamplesMilliseconds": [3.899999976158142, 4.100000023841858, 4, 3.8000000715255737],
+          "candidateSamplesMilliseconds": [1.5, 3, 1.5999999046325684, 1.600000023841858],
+          "shippedMedianMilliseconds": 3.949999988079071,
+          "candidateMedianMilliseconds": 1.5999999642372131,
+          "speedup": 2.468750047730283
+        },
+        {
+          "id": "c256",
+          "weight": 423,
+          "shippedSamplesMilliseconds": [4.199999928474426, 2.8000000715255737, 4.300000071525574, 3.0999999046325684],
+          "candidateSamplesMilliseconds": [1.3000000715255737, 1.5999999046325684, 1.1999999284744263, 1.4000000953674316],
+          "shippedMedianMilliseconds": 3.6499999165534973,
+          "candidateMedianMilliseconds": 1.3500000834465027,
+          "speedup": 2.7037034747695543
+        },
+        {
+          "id": "c128",
+          "weight": 1269,
+          "shippedSamplesMilliseconds": [2.4000000953674316, 2.200000047683716, 3.1999999284744263, 2.3000000715255737],
+          "candidateSamplesMilliseconds": [1.2999999523162842, 2.5, 1.5, 2.299999952316284],
+          "shippedMedianMilliseconds": 2.3500000834465027,
+          "candidateMedianMilliseconds": 1.899999976158142,
+          "speedup": 1.2368421647026937
+        }
+      ]
+    },
+    "delta": {
+      "weightedSpeedup": 1.7157894945352221,
+      "weightedSpeedupThreshold": 1.25,
+      "weightedSpeedupThresholdPassed": true,
+      "c128Speedup": 1.2368421647026937,
+      "c128SpeedupThreshold": 1.2,
+      "c128SpeedupThresholdPassed": true,
+      "projectedLongK7Milliseconds": 34965.59466600985,
+      "projectedLongK7SavingMilliseconds": 25028.005332106644,
+      "projectionIsPlanningArithmeticNotC512OrC4500Evidence": true
+    }
+  },
+  "protocol": {
+    "authoritativeTimedRunCount": 1,
+    "timingSamplesPerArmPerTier": 4,
+    "timedSubmitDrainEventCount": 32,
+    "timedDispatchCount": 96,
+    "timingOrderPerTier": ["shipped/candidate", "candidate/shipped", "candidate/shipped", "shipped/candidate"],
+    "unchangedTimedRetryPerformed": false,
+    "rejectedPagePreflights": {
+      "count": 2,
+      "timedDispatchCount": 0,
+      "reasons": [
+        "gate-to-launch delay exceeded 5000 ms",
+        "31 observations spanned 29999 ms due to observation jitter"
+      ]
+    },
+    "thermalGate": {
+      "observationCount": 32,
+      "durationMilliseconds": 31000,
+      "maximumPollGapMilliseconds": 1004,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "launchDelayMilliseconds": 4391
+    },
+    "thermalTrace": {
+      "classification": "complete-trace-nominal",
+      "rawTraceSha256": "d37ebdaa977a2561a6073a1779701adea7acdcea29259db31f966cac640ab918",
+      "rawTraceByteLength": 40726,
+      "observationCount": 246,
+      "durationMilliseconds": 245001,
+      "maximumPollGapMilliseconds": 1006,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "initialLevel": 0,
+      "finalLevel": 0,
+      "transitions": [],
+      "coveredValidationAndCleanup": true
+    }
+  },
+  "evidence": {
+    "conclusion": "positive",
+    "rationale": "The isolated stock-WebGPU candidate passed all primitive numerical/lifecycle checks, won all four representative tiers, reached 1.7157894945352221x weighted speedup, and cleared both frozen timing thresholds. The result authorizes only the authenticated C512 subsystem gate."
+  },
+  "disposition": {
+    "state": "benchmark-only-positive-c512-escalation-authorized",
+    "productionIntegrationAuthorized": false,
+    "c512SubsystemGateAuthorized": true,
+    "c4500RunAuthorized": false,
+    "fullProductRunAuthorized": false
+  }
+}

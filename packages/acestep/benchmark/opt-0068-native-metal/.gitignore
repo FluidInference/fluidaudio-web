@@ -1,0 +1,8 @@
+.build/
+__pycache__/
+*.pyc
+captures/
+results/
+*.jsonl
+*.bin
+*.npy

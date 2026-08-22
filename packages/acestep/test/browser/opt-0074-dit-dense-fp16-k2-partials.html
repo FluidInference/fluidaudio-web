@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0074 dense FP16 K2 partials</title>
+  <style>
+    body { font: 14px system-ui; margin: 24px; max-width: 960px; }
+    button { font: inherit; padding: 8px 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0074 dense FP16 K2 partials</h1>
+  <p id="progress">preparing exact, K2, and K4 M2250 correctness fixtures…</p>
+  <p>After READY, start the thermal-pressure logger, establish at least 30 continuous seconds at level 0 with a current launch observation, then click once. Keep thermal polling through the completed cleanup receipt. Optional coarse AGX samples are contextual only and must remain outside every browser timing fence.</p>
+  <button id="run" type="button" disabled>Run balanced exact/K2/K4 timestamp gate</button>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0074-dit-dense-fp16-k2-partials.ts"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0056 selective exact-down trajectory gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 82rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0056 — selective exact-down eight-tap M2250 gate</h1>
+    <p>
+      One click first proves raw U32 identity between OPT-0009 and the exact
+      revision-8 K4-layout owner on all four production dense shapes. It then
+      runs the same fixed 180-second C98 request in four strictly sequential,
+      fully disposed arms: rev7 exact control, rev8 all-K4, rev8 selective
+      exact-down, and a selective deterministic repeat.
+    </p>
+    <p>
+      Each arm captures the latent after all eight sampler evaluations by
+      copying into bounded diagnostic readbacks in the sampler command buffer.
+      Mapping happens only after the graph has drained, adding no command-buffer
+      submission or queue drain. VAE weights are never acquired; no waveform,
+      performance, listening, or product-default claim is made here. No worker,
+      WebGPU device, or model load exists before the explicit button action.
+    </p>
+    <button id="run" type="button">Run primitive + four sequential arms</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0056-dit-selective-k4.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0056-dit-selective-k4.ts"></script>
+  </body>
+</html>

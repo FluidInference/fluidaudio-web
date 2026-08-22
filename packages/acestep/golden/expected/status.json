@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "captures": {
+    "direct-instrumental-short": {"status": "pending", "reason": "pinned native capture harness has not produced authenticated tensors or audio"},
+    "direct-lyrics-long-condition": {"status": "pending", "reason": "pinned native capture harness has not produced authenticated tensors or audio"},
+    "direct-lyrics-short": {"status": "pending", "reason": "pinned native capture harness has not produced authenticated tensors or audio"},
+    "planner-lyrics-short": {"status": "pending", "reason": "browser-defined initial noise and planner words are ready for injection, but the pinned harness has not yet run a supported BF16 native capture or produced authenticated outputs"}
+  }
+}

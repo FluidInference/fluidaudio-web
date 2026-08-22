@@ -1,0 +1,337 @@
+{
+  "schema": "ace-browser-result-receipt-v1",
+  "jobId": 1,
+  "submittedRequest": {
+    "generationProfile": "ace-turbo-v1-correctness",
+    "prompt": "Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.",
+    "lyrics": "",
+    "instrumental": true,
+    "durationSeconds": 180,
+    "seed": "0000000000c0ffee",
+    "planner": {
+      "mode": "disabled"
+    },
+    "metadata": {
+      "bpm": 104,
+      "keyScale": "D minor",
+      "timeSignature": "4"
+    }
+  },
+  "trace": {
+    "ACE_PLANNER_CONDITIONING_RESOLVED": {
+      "plannerEnabled": false,
+      "instrumental": true,
+      "resolvedCaption": "Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.",
+      "captionCharacters": 132,
+      "lyricCharacters": 14,
+      "vocalLanguage": "unknown",
+      "metadata": "{\"duration\":180,\"bpm\":104,\"keyscale\":\"D minor\",\"timesignature\":\"4\"}",
+      "cotRan": false,
+      "phase2MetadataThinkBlock": null,
+      "generationProfile": "ace-turbo-v1-correctness",
+      "plannerConfiguration": "{\"mode\":\"disabled\"}",
+      "samplingOracleId": null,
+      "samplingFirstDraw": null,
+      "samplingFinalDraw": null,
+      "semanticCodeCount": 0,
+      "semanticCodeSha256": null,
+      "semanticCodePrefix": [],
+      "semanticCodeIds": [],
+      "textTokenCount": 82,
+      "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+      "lyricTokenCount": 15,
+      "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764"
+    },
+    "ACE_CONDITIONING_TENSORS_READY": {
+      "mode": "direct",
+      "conditionTokens": 98,
+      "lyricConditionRows": 15,
+      "lyricConditionPrefixComplete": true,
+      "lyricConditionPrefixSha256": "28d307586a769bea49591d6a81d1bb221f09962668366260ab7f32ac9c802bc9",
+      "conditionSha256": "102308c377139c80b034acd38d90d3c81c7272eb9aa077cd9fbd66f47100c49b",
+      "contextSha256": "22c66fd3f3c80d1cd4c6c7ffbf3f20f65a5fc822d89aa0ed4b5729a92c1a66c0",
+      "conditionNonFinite": 0,
+      "contextNonFinite": 0,
+      "conditionMaxAbs": 57.65910339355469,
+      "contextMaxAbs": 6.726634979248047,
+      "conditionMaskValidRows": 98
+    },
+    "ACE_VAE_FP16_FAMILY_PROFILE": {
+      "schema": "ace-vae-fp16-family-profile-v1",
+      "runtimeProfile": "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
+      "physicalRuntimeProfile": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+      "kernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+      "precisionMapSha256": "4815ec86311e401a9bf8cec3f4474d479ef3ac28c925f4824fed4c9ae3b8bc60",
+      "windowCount": 2,
+      "windowInputFrames": [
+        2314,
+        2314
+      ],
+      "quantaPerCommandBuffer": 64,
+      "readbackExcluded": true,
+      "decoderBatchCount": 1110,
+      "decoderQuantumCount": 70996,
+      "decoderSubmitThroughDrainMs": 30633.200001001358,
+      "homogeneousBatchCount": 954,
+      "homogeneousQuantumCount": 61056,
+      "homogeneousSubmitThroughDrainMs": 26028.90000116825,
+      "homogeneousBatchCoverage": 0.8594594594594595,
+      "homogeneousTimeCoverage": 0.8496957549429182,
+      "mixedBatchCount": 156,
+      "mixedQuantumCount": 9940,
+      "mixedSubmitThroughDrainMs": 4604.299999833107,
+      "k7Conv1dBatchCount": 546,
+      "k7Conv1dQuantumCount": 34944,
+      "k7Conv1dSubmitThroughDrainMs": 19587.99999988079,
+      "k1Conv1dBatchCount": 90,
+      "k1Conv1dQuantumCount": 5760,
+      "k1Conv1dSubmitThroughDrainMs": 1792.800000667572,
+      "convTranspose1dBatchCount": 80,
+      "convTranspose1dQuantumCount": 5120,
+      "convTranspose1dSubmitThroughDrainMs": 3211.899999976158,
+      "snakeBatchCount": 166,
+      "snakeQuantumCount": 10624,
+      "snakeSubmitThroughDrainMs": 920.2000006437302,
+      "addBatchCount": 72,
+      "addQuantumCount": 4608,
+      "addSubmitThroughDrainMs": 516
+    }
+  },
+  "result": {
+    "durationSeconds": 180,
+    "seed": "0000000000c0ffee",
+    "generationProfile": "ace-turbo-v1-correctness",
+    "manifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "mimeType": "audio/wav",
+    "sampleRateHz": 48000,
+    "channelCount": 2,
+    "frameCount": 8640000,
+    "diagnostics": {
+      "backend": "custom-webgpu-wgsl-and-wasm",
+      "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "modelManifestUrl": "http://127.0.0.1:5173/model/files-reference/manifest.json",
+      "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "ditDenseManifestUrl": "http://127.0.0.1:5173/model/files-fp16-dit-rev7-oracle/manifest.json",
+      "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "ditDenseManifestByteLength": 254357,
+      "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+      "ditDenseKernelSetId": "opt-0009-n256-k32-fp16-fp32-v1",
+      "ditAttentionRuntimeProfile": "opt-0070-fixed32-quad-query32-full-self-production-v1",
+      "ditAttentionKernelSetId": "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1",
+      "ditDenseLayerBytes": 3020808192,
+      "ditResidentWeightBytes": 3150917888,
+      "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+      "vaeManifestUrl": "http://127.0.0.1:5173/model/files-fp16-vae-revision7-experimental/manifest.json",
+      "vaeManifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+      "vaeManifestByteLength": 716185,
+      "vaeRuntimeProfile": "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
+      "vaeKernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+      "vaePrecisionMapSha256": "4815ec86311e401a9bf8cec3f4474d479ef3ac28c925f4824fed4c9ae3b8bc60",
+      "vaeWindowRuntimeProfile": "opt-0070-c2378-overlap64-production-v1",
+      "vaeMaxWindowFrames": 2378,
+      "executionProfile": {
+        "id": "reference-bf16-subgroups",
+        "modelProfile": "reference-bf16",
+        "weightStorage": "packed-bf16-u32",
+        "matrixArithmetic": "float32",
+        "sensitiveReductions": "float32",
+        "vaeArithmetic": "float32",
+        "kernelBackend": "subgroups",
+        "requiredFeatures": [
+          "subgroups"
+        ]
+      },
+      "schedulingProfile": "cooperative",
+      "capabilities": {
+        "executionProfile": {
+          "id": "reference-bf16-subgroups",
+          "modelProfile": "reference-bf16",
+          "weightStorage": "packed-bf16-u32",
+          "matrixArithmetic": "float32",
+          "sensitiveReductions": "float32",
+          "vaeArithmetic": "float32",
+          "kernelBackend": "subgroups",
+          "requiredFeatures": [
+            "subgroups"
+          ]
+        },
+        "schedulingProfile": "cooperative",
+        "adapterInfo": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "description": "",
+          "subgroupMinSize": 32,
+          "subgroupMaxSize": 32,
+          "isFallbackAdapter": false
+        },
+        "adapterFeatures": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "core-features-and-limits",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-component-swizzle",
+          "texture-compression-astc",
+          "texture-compression-astc-sliced-3d",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "texture-compression-etc2",
+          "texture-formats-tier1",
+          "texture-formats-tier2",
+          "timestamp-query"
+        ],
+        "deviceFeatures": [
+          "core-features-and-limits",
+          "shader-f16",
+          "subgroups"
+        ],
+        "stockFeatures": {
+          "shader-f16": {
+            "adapterSupported": true,
+            "deviceEnabled": true,
+            "required": true,
+            "requested": true
+          },
+          "subgroups": {
+            "adapterSupported": true,
+            "deviceEnabled": true,
+            "required": true,
+            "requested": true
+          },
+          "timestamp-query": {
+            "adapterSupported": true,
+            "deviceEnabled": false,
+            "required": false,
+            "requested": false
+          }
+        },
+        "requiredFeatures": [
+          "subgroups",
+          "shader-f16"
+        ],
+        "requestedOptionalFeatures": [],
+        "adapterLimits": {
+          "maxBufferSize": 4294967292,
+          "maxStorageBufferBindingSize": 4294967292,
+          "maxUniformBufferBindingSize": 65536,
+          "maxBindGroups": 4,
+          "maxBindingsPerBindGroup": 1000,
+          "maxStorageBuffersPerShaderStage": 10,
+          "maxUniformBuffersPerShaderStage": 12,
+          "maxDynamicStorageBuffersPerPipelineLayout": 8,
+          "maxDynamicUniformBuffersPerPipelineLayout": 10,
+          "maxComputeWorkgroupStorageSize": 32768,
+          "maxComputeInvocationsPerWorkgroup": 1024,
+          "maxComputeWorkgroupSizeX": 1024,
+          "maxComputeWorkgroupSizeY": 1024,
+          "maxComputeWorkgroupSizeZ": 64,
+          "maxComputeWorkgroupsPerDimension": 65535,
+          "minStorageBufferOffsetAlignment": 256,
+          "minUniformBufferOffsetAlignment": 256
+        },
+        "deviceLimits": {
+          "maxBufferSize": 1168834560,
+          "maxStorageBufferBindingSize": 1168834560,
+          "maxUniformBufferBindingSize": 65536,
+          "maxBindGroups": 4,
+          "maxBindingsPerBindGroup": 1000,
+          "maxStorageBuffersPerShaderStage": 8,
+          "maxUniformBuffersPerShaderStage": 12,
+          "maxDynamicStorageBuffersPerPipelineLayout": 4,
+          "maxDynamicUniformBuffersPerPipelineLayout": 8,
+          "maxComputeWorkgroupStorageSize": 16384,
+          "maxComputeInvocationsPerWorkgroup": 256,
+          "maxComputeWorkgroupSizeX": 256,
+          "maxComputeWorkgroupSizeY": 256,
+          "maxComputeWorkgroupSizeZ": 64,
+          "maxComputeWorkgroupsPerDimension": 65535,
+          "minStorageBufferOffsetAlignment": 256,
+          "minUniformBufferOffsetAlignment": 256
+        },
+        "requestedLimits": {
+          "maxBufferSize": 1168834560,
+          "maxStorageBufferBindingSize": 1168834560,
+          "maxStorageBuffersPerShaderStage": 8,
+          "maxComputeWorkgroupStorageSize": 16384,
+          "maxComputeInvocationsPerWorkgroup": 256
+        }
+      },
+      "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+      "plannerSourceRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80",
+      "parakeetReferenceRevision": "7ee112738262a6f5a0efd2f150748a4087432fbb"
+    },
+    "metrics": {
+      "totalMs": 94774.80000007153,
+      "stageTimings": [
+        {
+          "stage": "prepare",
+          "wallMs": 29.899999976158142
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1482.6000000238419
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 2214.7000000476837
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 31.899999976158142
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 2351.399999976158
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 54986.200000047684
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        },
+        {
+          "stage": "vae-load",
+          "wallMs": 627.7999999523163
+        },
+        {
+          "stage": "vae-decode",
+          "wallMs": 32586.700000047684
+        },
+        {
+          "stage": "wav-encode",
+          "wallMs": 463.60000002384186
+        },
+        {
+          "stage": "cleanup",
+          "wallMs": 0
+        },
+        {
+          "stage": "done",
+          "wallMs": 0
+        }
+      ],
+      "peakTrackedGpuBytes": 3826885376,
+      "cooperativeGpuQueueDrains": 3803,
+      "cooperativeIdleMs": 3800
+    }
+  },
+  "wavSha256": "e6a7f69b44639db177ac3f72cb2cba8d7027924795cffd3810daecec1cb87df8",
+  "receiptSha256": "c0e49a918f0cebe8984c46294dd32bd0965bc08f2624beeba9e1152b88daade6"
+}

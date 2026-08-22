@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 full M2250 completion epochs</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0080 — full M2250 completion-epoch confirmation</h1>
+    <p>
+      This separately authorized confirmation begins only after the passing
+      evaluation-slice gate. Preparation runs one untimed full depth1 control
+      and one untimed full depth2/epoch4 candidate. It captures all eight
+      evaluation taps inside their existing sampler commands, compares every
+      one of their 288,000 raw U32 words, verifies every accepted trajectory
+      hash and the ordinary final latent, and adds no command buffer or drain.
+      It then repeats actual candidate cancellation with exactly one successor
+      submitted and awaits terminal settlement and backend/device disposal.
+    </p>
+    <p>
+      Accepted timing is exactly one separately cooled A/B pair: A depth1,
+      then B depth2/epoch4. Every arm owns a fresh backend, device, package, and
+      graph. Timed arms disable all evaluation-tap captures and use only the
+      ordinary final readback. Start a new continuous ≥30-second nominal
+      notifyutil trace only after each READY boundary and keep it running
+      through all eight evaluations, final readback, cleanup, backend
+      destruction, and device disposal. B is not prepared until A's distinct
+      trace is authenticated.
+    </p>
+    <p>
+      Both profiles retain all 2,553 singleton graph command buffers and one
+      ordinary readback, with one cumulative fence per physical submission.
+      Control has 2,553 true graph drains and 2,552 graph idles. Candidate has
+      639 true graph drains and 638 graph idles, with at most two outstanding
+      command buffers and pending descriptors. Overlapping per-fence timings
+      are diagnostic and non-additive; the ≥1.04x and ≥2,500 ms gates use the
+      authoritative full graph wall. A 50 ms main-page heartbeat runs through
+      each arm's cleanup.
+    </p>
+    <button id="prepare" type="button">Prepare full preflights and arm A</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>Run current full arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's distinct trace through cleanup/device disposal JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record arm trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0080-dit-depth2-completion-epochs-full-graph.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0080-dit-depth2-completion-epochs-full-graph.ts"></script>
+  </body>
+</html>

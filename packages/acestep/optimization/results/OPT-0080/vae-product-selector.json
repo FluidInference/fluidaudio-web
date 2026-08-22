@@ -1,0 +1,270 @@
+{
+  "schema": "ace-opt-0080-vae-product-selector-result-v1",
+  "experimentId": "OPT-0080",
+  "stage": "post-integration-vae-product-selector",
+  "status": "passed",
+  "disposition": "integrated-product-exact",
+  "authority": {
+    "scope": "post-integration direct 96-second VAE selector exactness/topology plus ordinary product cancellation",
+    "timingClaim": false,
+    "thermalClaim": false,
+    "plannerClaim": false,
+    "plannerExecuted": false,
+    "selectorNegativeCasesCoveredByRuntimeUnitTests": true,
+    "ordinaryProductionArmWasSeamFree": true,
+    "unchangedRetryPerformed": false
+  },
+  "identity": {
+    "coreCommit": "8d443f6aff4f6a9b06df6db77b3f88b9401123a7",
+    "harnessCommit": "8d443f6aff4f6a9b06df6db77b3f88b9401123a7",
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "Codex in-app Chromium 151.0.0.0",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184
+  },
+  "artifact": {
+    "path": "optimization/artifacts/OPT-0080/vae-product-selector/raw-receipt.json",
+    "byteLength": 61752,
+    "sha256": "bc741387b20be1715eaf80af1661392add8b32318258acce5ff9a8e18cb09225"
+  },
+  "request": {
+    "durationSeconds": 96,
+    "seed": "0000000000c0ffee",
+    "plannerMode": "disabled",
+    "byteLength": 365,
+    "sha256": "ecc1d8d0fd7a87e14d0cf827563280fe35853526368becf883d98f4d42cb1ad4",
+    "latentFrames": 2400,
+    "audioFrames": 4608000,
+    "sampleRateHz": 48000,
+    "channelCount": 2
+  },
+  "runtime": {
+    "vaeRuntimeProfile": "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
+    "vaeKernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+    "vaeWindowRuntimeProfile": "opt-0070-c2378-overlap64-production-v1",
+    "vaeManifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+    "executionProfile": "reference-bf16-subgroups",
+    "schedulingProfile": "cooperative",
+    "quantaPerCommandBuffer": 64,
+    "chunkFrames": 2378,
+    "overlapFrames": 64,
+    "strideFrames": 2250
+  },
+  "armOrder": [
+    "control",
+    "candidate",
+    "production",
+    "cancellation"
+  ],
+  "selection": {
+    "productionPolicy": "opt-0080-c2314-depth2-phase-epoch4",
+    "control": {
+      "evidenceMode": "forced-retained-output",
+      "selectedProductionPolicy": null,
+      "benchmarkPolicyOverride": "depth1-epoch1",
+      "windowSchedulingProfiles": [
+        "depth1-epoch1",
+        "depth1-epoch1"
+      ]
+    },
+    "candidate": {
+      "evidenceMode": "forced-retained-output",
+      "selectedProductionPolicy": null,
+      "benchmarkPolicyOverride": "opt-0080-c2314-depth2-phase-epoch4",
+      "windowSchedulingProfiles": [
+        "depth2-phase-epoch4",
+        "depth1-epoch1"
+      ]
+    },
+    "production": {
+      "evidenceMode": "seam-free-ordinary",
+      "selectedProductionPolicy": "opt-0080-c2314-depth2-phase-epoch4",
+      "benchmarkPolicyOverride": null,
+      "windowSchedulingProfiles": [
+        "depth2-phase-epoch4",
+        "depth1-epoch1"
+      ],
+      "retainedFinalLatentOrRaw": false
+    }
+  },
+  "topology": {
+    "schema": "ace-opt-0080-vae-product-selector-topology-v1",
+    "ordinaryReceiptSchema": "ace-vae-window-scheduling-receipt-v1",
+    "windows": [
+      {
+        "windowIndex": 0,
+        "latentWindowFrames": 2314,
+        "decoderQuantumCount": 35498,
+        "decoderCommandBufferCount": 555,
+        "readbackCommandBufferCount": 1,
+        "totalCommandBufferCount": 556,
+        "commandBuffersSubmitted": 556,
+        "completionFenceRequestedCountInForcedArms": 556,
+        "completionFenceSettledCountInForcedArms": 556,
+        "completionFenceRejectedCountInForcedArms": 0,
+        "control": {
+          "schedulingProfile": "depth1-epoch1",
+          "queueDrains": 556,
+          "completionEpochs": 556,
+          "cooperativeIdleTurns": 555,
+          "maximumOutstandingCommandBuffers": 1
+        },
+        "candidate": {
+          "schedulingProfile": "depth2-phase-epoch4",
+          "queueDrains": 139,
+          "completionEpochs": 139,
+          "cooperativeIdleTurns": 138,
+          "maximumOutstandingCommandBuffers": 2
+        },
+        "production": {
+          "schedulingProfile": "depth2-phase-epoch4",
+          "queueDrains": 139,
+          "cooperativeIdleTurns": 138,
+          "maximumOutstandingCommandBuffers": 2
+        }
+      },
+      {
+        "windowIndex": 1,
+        "latentWindowFrames": 214,
+        "decoderQuantumCount": 3342,
+        "decoderCommandBufferCount": 53,
+        "readbackCommandBufferCount": 1,
+        "totalCommandBufferCount": 54,
+        "commandBuffersSubmitted": 54,
+        "completionFenceRequestedCountInForcedArms": 54,
+        "completionFenceSettledCountInForcedArms": 54,
+        "completionFenceRejectedCountInForcedArms": 0,
+        "control": {
+          "schedulingProfile": "depth1-epoch1",
+          "queueDrains": 54,
+          "completionEpochs": 54,
+          "cooperativeIdleTurns": 53,
+          "maximumOutstandingCommandBuffers": 1
+        },
+        "candidate": {
+          "schedulingProfile": "depth1-epoch1",
+          "queueDrains": 54,
+          "completionEpochs": 54,
+          "cooperativeIdleTurns": 53,
+          "maximumOutstandingCommandBuffers": 1
+        },
+        "production": {
+          "schedulingProfile": "depth1-epoch1",
+          "queueDrains": 54,
+          "cooperativeIdleTurns": 53,
+          "maximumOutstandingCommandBuffers": 1
+        }
+      }
+    ],
+    "forcedArmCommandCompletionOrderExact": true,
+    "forcedArmCompletionEpochTopologyExact": true,
+    "vaeQueueDrains": {
+      "control": 610,
+      "candidate": 193,
+      "production": 193,
+      "controlToCandidateReduction": 417
+    },
+    "wholeProductQueueDrains": {
+      "control": 1243,
+      "candidate": 826,
+      "production": 826,
+      "countsAreTopologyNotTimingEvidence": true
+    }
+  },
+  "correctness": {
+    "controlCandidate": {
+      "finalLatent": {
+        "wordCount": 153600,
+        "byteLength": 614400,
+        "exactU32MismatchCount": 0,
+        "sha256": "527cdc7e560691f21383f3b06a4a85f7f41ba92e93e6357b7be75f115a5c9e07"
+      },
+      "fullRawWaveform": {
+        "sampleCount": 9216000,
+        "byteLength": 36864000,
+        "exactU32MismatchCount": 0,
+        "nonFiniteCountPerArm": 0,
+        "maximumAbsoluteDifference": 0,
+        "meanAbsoluteDifference": 0,
+        "rootMeanSquareDifference": 0,
+        "sha256": "c4152aa56bcf81236b60cb2dbea3976b4a7f4d800af001b9bfbbbd52dda6e82b"
+      },
+      "seamRawWaveform": {
+        "seamLatentFrame": 2250,
+        "seamAudioFrame": 4320000,
+        "radiusLatentFrames": 64,
+        "startAudioFrame": 4197120,
+        "endAudioFrame": 4442880,
+        "sampleCount": 491520,
+        "byteLength": 1966080,
+        "exactU32MismatchCount": 0,
+        "nonFiniteCountPerArm": 0,
+        "sha256": "17540647f319a947860bf7402721e3e942f089cfc90a8d8aa20d8191ff889830"
+      },
+      "normalizedWav": {
+        "byteLength": 36864044,
+        "exactByteMismatchCount": 0,
+        "sha256": "c088385a6b4dabc30215d122b3a4da8406611f1a7d6d1255eba2846aa7e24e4a"
+      },
+      "stableRequestMetadataRuntimePlanAndDiagnosticsExact": true,
+      "passed": true
+    },
+    "candidateProduction": {
+      "ordinaryRetainedFinalLatentOrRaw": false,
+      "normalizedWav": {
+        "byteLength": 36864044,
+        "exactByteMismatchCount": 0,
+        "sha256": "c088385a6b4dabc30215d122b3a4da8406611f1a7d6d1255eba2846aa7e24e4a"
+      },
+      "stableRequestMetadataRuntimePlanAndDiagnosticsExact": true,
+      "passed": true
+    },
+    "passed": true
+  },
+  "responsiveness": {
+    "heartbeatIntervalMilliseconds": 50,
+    "maximumAllowedGapMilliseconds": 500,
+    "maximumObservedGapMilliseconds": 52.90000009536743,
+    "maximumObservedP99GapMilliseconds": 52.200000047683716,
+    "allFourArmsPassed": true
+  },
+  "cancellation": {
+    "ordinaryProductionSelector": true,
+    "opt0080ProductRunOmitted": true,
+    "triggerCount": 1,
+    "progressCountAtAbort": 72460,
+    "publicProgressAfterAbortCount": 0,
+    "abortReasonIdentityPreserved": true,
+    "postDitStageCount": 0,
+    "outputCount": 0,
+    "evidenceCount": 0,
+    "fatalDiagnosticCount": 0,
+    "unhandledRejectionCount": 0,
+    "workerReadyToTerminate": true,
+    "passed": true
+  },
+  "lifecycle": {
+    "freshWorkerCount": 4,
+    "terminatedWorkerCount": 4,
+    "maximumLargeArmPayloadsRetained": 2,
+    "explicitReleaseAfterComparison": true,
+    "largePayloadsReleasedBeforeCancellation": true,
+    "allSuccessArmsReleasedBeforeDispose": true,
+    "automaticRetryCount": 0,
+    "workerOrderWasOneWay": true,
+    "passed": true
+  },
+  "decision": {
+    "evidence": "positive",
+    "productionVaeSchedulerIntegrated": true,
+    "postIntegrationProductGatePassed": true,
+    "directProductExact": true,
+    "ordinarySelectorTopologyObserved": true,
+    "productTimingEvidence": false,
+    "productThermalEvidence": false,
+    "plannerProductEvidence": false,
+    "packageOrModelMathChangeAuthorized": false
+  }
+}

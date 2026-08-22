@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0038 dense FP16 K8/K16 bounded partials</title>
+  <style>
+    body { font: 14px system-ui; margin: 24px; max-width: 960px; }
+    button { font: inherit; padding: 8px 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0038 dense FP16 K8/K16 bounded partials</h1>
+  <p id="progress">preparing OPT-0009/K4/K8/K16 full outputs and bounded adversarial screens…</p>
+  <p>After READY, leave the machine nominal and idle for 30 seconds, then run the single balanced timing gate.</p>
+  <button id="run" type="button" disabled>Run balanced weighted timing</button>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0038-dit-dense-fp16-k8-k16-partials.ts"></script>
+</body>
+</html>

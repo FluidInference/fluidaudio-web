@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+  "sourceFile": "acestep/constrained_logits_processor.py",
+  "sourceFileSha256": "84cf84ad894130397ba53a4cbd8666961bf578c77295b79599b288a3825faa32",
+  "constantsFileSha256": "7b8d4ce49649c819d1b3be87a434be2d90768308768d4620639328f906209b22",
+  "sourceClass": "MetadataConstrainedLogitsProcessor",
+  "referencePython": "3.13",
+  "referenceTorch": "2.10.0",
+  "referenceTransformers": "4.57.6",
+  "tokenizerSha256": "35af56c3f5cb3ea2cc578aa28a8937770981d504f183ac5c8c38baf4bbd4af4d",
+  "profile": {
+    "maxDuration": 240,
+    "skipGenres": true,
+    "stopAtReasoning": true,
+    "generationPhase": "cot"
+  },
+  "injectedTrace": {
+    "metadata": {
+      "bpm": "120",
+      "caption": "Crisp drums.",
+      "duration": "12",
+      "keyscale": "C major",
+      "language": "en",
+      "timesignature": "4"
+    },
+    "emittedTokenIds": [
+      151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198,
+      23347, 25, 4553, 13090, 46289, 624, 17021, 25, 220, 16,
+      17, 198, 10563, 2246, 25, 356, 3598, 198, 11528, 25,
+      662, 198, 15136, 622, 1568, 25, 220, 19, 198, 151645
+    ],
+    "decoded": "<think>\nbpm: 120\ncaption: Crisp drums.\nduration: 12\nkeyscale: C major\nlanguage: en\ntimesignature: 4\n<|im_end|>"
+  },
+  "prefixes": {
+    "bpmRoot": {
+      "emittedTokenIds": [151667, 198, 17808, 76, 25],
+      "allowedTokenIds": [220]
+    },
+    "bpmAfterSpace": {
+      "emittedTokenIds": [151667, 198, 17808, 76, 25, 220],
+      "allowedTokenIds": [16, 17, 18, 19, 20, 21, 22, 23, 24]
+    },
+    "durationRoot": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25
+      ],
+      "allowedTokenIds": [220]
+    },
+    "durationAfterSpace": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25, 220
+      ],
+      "allowedTokenIds": [16, 17, 18, 19, 20, 21, 22, 23, 24]
+    },
+    "duration240Complete": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25,
+        220, 17, 19, 15
+      ],
+      "allowedTokenIds": [198]
+    },
+    "keyscaleRoot": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25,
+        220, 16, 17, 198, 10563, 2246, 25
+      ],
+      "allowedTokenIds": [356, 362, 422, 425, 434, 468, 479, 3680, 11988, 25570]
+    },
+    "keyscaleCMajorComplete": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25,
+        220, 16, 17, 198, 10563, 2246, 25, 356, 3598
+      ],
+      "allowedTokenIds": [198]
+    },
+    "timesignatureAfterSpace": {
+      "emittedTokenIds": [
+        151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25,
+        220, 16, 17, 198, 10563, 2246, 25, 356, 3598, 198,
+        15136, 622, 1568, 25, 220
+      ],
+      "allowedTokenIds": [17, 18, 19, 21]
+    }
+  },
+  "languageEqualLogits": {
+    "emittedTokenIds": [
+      151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 17021, 25,
+      220, 16, 17, 198, 10563, 2246, 25, 356, 3598, 198, 11528, 25
+    ],
+    "allowedTokenIds": [15236],
+    "decoded": " ko"
+  },
+  "captionMask": {
+    "emittedTokenIds": [
+      151667, 198, 17808, 76, 25, 220, 16, 17, 15, 198, 23347, 25
+    ],
+    "allowedTokenCount": 153203,
+    "sortedU32LeSha256": "9ec7a08d09dc67d8ef5d0543e53fe70c0458983fd1de0ce4830bbe4ff0068cc8"
+  }
+}

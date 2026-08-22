@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0054/0066 revision-7 C2378 long-waveform gate</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 88rem; }
+      button { margin: 0 0.75rem 0.75rem 0; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0054/0066 — revision-7 C2378 C4500 waveform gate</h1>
+    <p>
+      Nothing requests a GPU until <strong>Run isolated gate</strong> is
+      clicked. Use stock Chrome on the target 16&nbsp;GB Apple-silicon machine.
+      The C2378 arm requests an authenticated, explicitly bounded allocation
+      just under 4&nbsp;GB; close unrelated GPU-heavy tabs first.
+    </p>
+    <p>
+      The dedicated worker authenticates the exact deterministic C4500 latent
+      and both VAE packages, runs a revision-7 cancellation probe, then owns
+      exactly one VAE arm at a time: revision-6 OPT-0028 C512 control,
+      revision-7 OPT-0066 C2378 candidate, and the same candidate again.
+      Full pre-normalization stereo waveforms remain in temporary OPFS files;
+      bounded 1&nbsp;MiB blocks drive hashes, class/finite checks, seam
+      diagnostics, numerical metrics, and raw-U32 repeat determinism.
+    </p>
+    <p>
+      READY is a correctness checkpoint only. It performs no timing, makes no
+      under-60-second claim, does not authorize product selection, and leaves
+      the production runtime and its C512 default untouched. Temporary raw
+      artifacts and all GPU owners must be gone before a terminal receipt.
+    </p>
+    <button id="run" type="button">Run isolated gate</button>
+    <button id="cancel" type="button" disabled>Cancel and clean up</button>
+    <button id="dispose" type="button">Dispose worker</button>
+    <p id="progress" role="status" aria-live="polite">
+      idle — no GPU work has run
+    </p>
+    <pre id="result">not run</pre>
+    <script
+      type="module"
+      src="./opt-0054-0066-vae-revision7-c2378-long.ts"
+    ></script>
+  </body>
+</html>

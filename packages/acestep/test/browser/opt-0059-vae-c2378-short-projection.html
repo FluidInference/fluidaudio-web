@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0059 C2378 short projected-wall gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 86rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 70rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 32rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0059 — revision-7 dual-K4 C2378 geometry projection</h1>
+    <p>
+      No worker, WebGPU device, or GPU resource exists before the explicit
+      Initialize button. The dedicated worker first authenticates deterministic
+      C340/C448/C512/C2314 fixtures and the sole revision-7 VAE package. It then
+      creates one package owner and one C2314-capable guarded activation
+      allocation shared by all four exact dispatch shapes.
+    </p>
+    <p>
+      Preparation runs an untimed same-profile dual-K4 oracle, profile, and
+      deterministic repeat at every shape. K1, Add, and successor Snake remain
+      separate revision-7 dispatches so every live FP16 slot is materialized.
+      READY requires raw U32/U16 identity, deterministic hashes, finite complete
+      writes, untouched inactive output tails and all twelve storage canaries.
+      The six C128 K1 routes that exceed flat-X at C2314 use bounded
+      column-X/row-Y.
+    </p>
+    <p>
+      Once READY, leave the machine idle for at least 30 seconds. Run
+      <code>notifyutil -g com.apple.system.thermalpressurelevel</code> exactly
+      once, enter the observed level, and click Run within 5 seconds only if it
+      is level 0. Timing is main ABBA C512/C2314/C2314/C512, then edge ABBA
+      C340/C448/C448/C340, with batch 64, one outstanding command buffer, a real
+      1 ms queue-empty interval, and a separate drained readback command buffer.
+    </p>
+
+    <button id="initialize" type="button">
+      Initialize authenticated C340/C448/C512/C2314 gate
+    </button>
+    <div id="progress" role="status" aria-live="polite">idle</div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>One-check nominal launch gate</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Wait start (epoch ms; filled at READY)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" readonly />
+      </label>
+      <label>
+        Level-0 check time (epoch ms; blank uses click time)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal-pressure level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run main ABBA, then edge ABBA
+      </button>
+    </fieldset>
+
+    <pre id="result">not initialized</pre>
+    <a id="download" hidden download="opt-0059-vae-c2378-short-projection.json">
+      Download self-contained receipt
+    </a>
+    <script type="module" src="./opt-0059-vae-c2378-short-projection.ts"></script>
+  </body>
+</html>

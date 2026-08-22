@@ -1,0 +1,1076 @@
+{
+  "schema": "ace-opt-0035-vae-c2378-two-window-abba-v1",
+  "experimentId": "OPT-0035",
+  "status": "failed",
+  "classification": "revision6-exact-packed-nativeK7-C512vsC2378-sequential-ABBA",
+  "order": [
+    "c512",
+    "c2378",
+    "c2378",
+    "c512"
+  ],
+  "executions": [
+    {
+      "arm": "c512",
+      "wallMs": 81213.89999997616,
+      "stats": {
+        "peak": 0.9710559248924255,
+        "finiteSamples": 17280000,
+        "outputInterleavedElements": 17280000,
+        "windowsDecoded": 12,
+        "cooperativeIdleMs": 11
+      },
+      "memory": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 131072,
+        "decoderInputBufferBytes": 65536,
+        "workspaceBufferBytes": 251658240,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 7864320,
+        "readbackBufferBytes": 7864320,
+        "controlBufferBytes": 5117232,
+        "accountedGpuBytes": 944808752,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 7864320,
+        "boundedCpuBytes": 9016320,
+        "maximumWindowFrames": 512,
+        "quantaPerCommandBuffer": 64
+      },
+      "resources": {
+        "arm": "c512",
+        "createdBufferCount": 17,
+        "createdBufferBytes": 944808752,
+        "destroyedBufferCount": 17,
+        "totalDestroyCallCount": 17,
+        "liveBufferCountAfterArm": 0,
+        "liveBufferBytesAfterArm": 0,
+        "maximumLiveBufferCount": 17,
+        "maximumLiveBufferBytes": 944808752,
+        "everyBufferDestroyedExactlyOnce": true,
+        "passed": true
+      }
+    },
+    {
+      "arm": "c2378",
+      "wallMs": 131204.5,
+      "stats": {
+        "peak": 0.9710559248924255,
+        "finiteSamples": 17280000,
+        "outputInterleavedElements": 17280000,
+        "windowsDecoded": 2,
+        "cooperativeIdleMs": 1
+      },
+      "memory": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 608768,
+        "decoderInputBufferBytes": 304384,
+        "workspaceBufferBytes": 1168834560,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 36526080,
+        "readbackBufferBytes": 36526080,
+        "controlBufferBytes": 9087248,
+        "accountedGpuBytes": 3758347792,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 36526080,
+        "boundedCpuBytes": 37678080,
+        "maximumWindowFrames": 2378,
+        "quantaPerCommandBuffer": 64
+      },
+      "resources": {
+        "arm": "c2378",
+        "createdBufferCount": 15,
+        "createdBufferBytes": 3758347792,
+        "destroyedBufferCount": 15,
+        "totalDestroyCallCount": 15,
+        "liveBufferCountAfterArm": 0,
+        "liveBufferBytesAfterArm": 0,
+        "maximumLiveBufferCount": 15,
+        "maximumLiveBufferBytes": 3758347792,
+        "everyBufferDestroyedExactlyOnce": true,
+        "passed": true
+      }
+    },
+    {
+      "arm": "c2378",
+      "wallMs": 109622,
+      "stats": {
+        "peak": 0.9710559248924255,
+        "finiteSamples": 17280000,
+        "outputInterleavedElements": 17280000,
+        "windowsDecoded": 2,
+        "cooperativeIdleMs": 1
+      },
+      "memory": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 608768,
+        "decoderInputBufferBytes": 304384,
+        "workspaceBufferBytes": 1168834560,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 36526080,
+        "readbackBufferBytes": 36526080,
+        "controlBufferBytes": 9087248,
+        "accountedGpuBytes": 3758347792,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 36526080,
+        "boundedCpuBytes": 37678080,
+        "maximumWindowFrames": 2378,
+        "quantaPerCommandBuffer": 64
+      },
+      "resources": {
+        "arm": "c2378",
+        "createdBufferCount": 15,
+        "createdBufferBytes": 3758347792,
+        "destroyedBufferCount": 15,
+        "totalDestroyCallCount": 15,
+        "liveBufferCountAfterArm": 0,
+        "liveBufferBytesAfterArm": 0,
+        "maximumLiveBufferCount": 15,
+        "maximumLiveBufferBytes": 3758347792,
+        "everyBufferDestroyedExactlyOnce": true,
+        "passed": true
+      }
+    },
+    {
+      "arm": "c512",
+      "wallMs": 137486.29999995232,
+      "stats": {
+        "peak": 0.9710559248924255,
+        "finiteSamples": 17280000,
+        "outputInterleavedElements": 17280000,
+        "windowsDecoded": 12,
+        "cooperativeIdleMs": 11
+      },
+      "memory": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 131072,
+        "decoderInputBufferBytes": 65536,
+        "workspaceBufferBytes": 251658240,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 7864320,
+        "readbackBufferBytes": 7864320,
+        "controlBufferBytes": 5117232,
+        "accountedGpuBytes": 944808752,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 7864320,
+        "boundedCpuBytes": 9016320,
+        "maximumWindowFrames": 512,
+        "quantaPerCommandBuffer": 64
+      },
+      "resources": {
+        "arm": "c512",
+        "createdBufferCount": 17,
+        "createdBufferBytes": 944808752,
+        "destroyedBufferCount": 17,
+        "totalDestroyCallCount": 17,
+        "liveBufferCountAfterArm": 0,
+        "liveBufferBytesAfterArm": 0,
+        "maximumLiveBufferCount": 17,
+        "maximumLiveBufferBytes": 944808752,
+        "everyBufferDestroyedExactlyOnce": true,
+        "passed": true
+      }
+    }
+  ],
+  "aggregate": {
+    "controlMedianMs": 109350.09999996424,
+    "candidateMedianMs": 120413.25,
+    "speedup": 0.9081234830881505,
+    "savingMs": -11063.150000035763,
+    "requiredSpeedup": 1.15
+  },
+  "correctnessAuthority": {
+    "schema": "ace-opt-0035-vae-c2378-two-window-abba-v1",
+    "experimentId": "OPT-0035",
+    "status": "ready",
+    "classification": "revision6-exact-packed-nativeK7-C512vsC2378-sequential",
+    "fixture": {
+      "latentFrames": 4500,
+      "channels": 64,
+      "elementCount": 288000,
+      "byteLength": 1152000,
+      "sha256": "d4e09d07be457583ff8ed4bf420f2ae4a1e822b4f7d6e8a71c300e53123c5971"
+    },
+    "package": {
+      "manifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "manifestByteLength": 715301,
+      "converterRevision": 6,
+      "residentBytes": 168791552
+    },
+    "runtime": {
+      "runtimeProfileId": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+      "kernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+      "nativeExactK7": true,
+      "approximateK7Used": false,
+      "quantaPerCommandBuffer": 64,
+      "adapterInfo": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "isFallbackAdapter": false
+      },
+      "deviceLimits": {
+        "maxBufferSize": 1168834560,
+        "maxStorageBufferBindingSize": 1168834560,
+        "maxUniformBufferBindingSize": 65536,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxStorageBuffersPerShaderStage": 8,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxDynamicStorageBuffersPerPipelineLayout": 4,
+        "maxDynamicUniformBuffersPerPipelineLayout": 8,
+        "maxComputeWorkgroupStorageSize": 16384,
+        "maxComputeInvocationsPerWorkgroup": 256,
+        "maxComputeWorkgroupSizeX": 256,
+        "maxComputeWorkgroupSizeY": 256,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "minStorageBufferOffsetAlignment": 256,
+        "minUniformBufferOffsetAlignment": 256
+      },
+      "requestedLimits": {
+        "maxBufferSize": 1168834560,
+        "maxStorageBufferBindingSize": 1168834560,
+        "maxStorageBuffersPerShaderStage": 8,
+        "maxComputeWorkgroupStorageSize": 16384,
+        "maxComputeInvocationsPerWorkgroup": 256
+      }
+    },
+    "coverage": {
+      "control": {
+        "chunkFrames": 512,
+        "overlapFrames": 64,
+        "strideFrames": 384,
+        "windowCount": 12,
+        "maximumActualWindowFrames": 512,
+        "windows": [
+          {
+            "index": 0,
+            "latentWindow": [
+              0,
+              448
+            ],
+            "core": [
+              0,
+              384
+            ],
+            "discardPrefixLatentFrames": 0,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 1,
+            "latentWindow": [
+              320,
+              832
+            ],
+            "core": [
+              384,
+              768
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 2,
+            "latentWindow": [
+              704,
+              1216
+            ],
+            "core": [
+              768,
+              1152
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 3,
+            "latentWindow": [
+              1088,
+              1600
+            ],
+            "core": [
+              1152,
+              1536
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 4,
+            "latentWindow": [
+              1472,
+              1984
+            ],
+            "core": [
+              1536,
+              1920
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 5,
+            "latentWindow": [
+              1856,
+              2368
+            ],
+            "core": [
+              1920,
+              2304
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 6,
+            "latentWindow": [
+              2240,
+              2752
+            ],
+            "core": [
+              2304,
+              2688
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 7,
+            "latentWindow": [
+              2624,
+              3136
+            ],
+            "core": [
+              2688,
+              3072
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 8,
+            "latentWindow": [
+              3008,
+              3520
+            ],
+            "core": [
+              3072,
+              3456
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 9,
+            "latentWindow": [
+              3392,
+              3904
+            ],
+            "core": [
+              3456,
+              3840
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 10,
+            "latentWindow": [
+              3776,
+              4288
+            ],
+            "core": [
+              3840,
+              4224
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 11,
+            "latentWindow": [
+              4160,
+              4500
+            ],
+            "core": [
+              4224,
+              4500
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 0
+          }
+        ]
+      },
+      "candidate": {
+        "chunkFrames": 2378,
+        "overlapFrames": 64,
+        "strideFrames": 2250,
+        "windowCount": 2,
+        "maximumActualWindowFrames": 2314,
+        "windows": [
+          {
+            "index": 0,
+            "latentWindow": [
+              0,
+              2314
+            ],
+            "core": [
+              0,
+              2250
+            ],
+            "discardPrefixLatentFrames": 0,
+            "discardSuffixLatentFrames": 64
+          },
+          {
+            "index": 1,
+            "latentWindow": [
+              2186,
+              4500
+            ],
+            "core": [
+              2250,
+              4500
+            ],
+            "discardPrefixLatentFrames": 64,
+            "discardSuffixLatentFrames": 0
+          }
+        ]
+      },
+      "controlDecodedLatentFrames": 5908,
+      "candidateDecodedLatentFrames": 4628,
+      "decodedLatentFrameReduction": 1280,
+      "decodedLatentFrameReductionRatio": 0.2166553825321598,
+      "controlSeams": [
+        384,
+        768,
+        1152,
+        1536,
+        1920,
+        2304,
+        2688,
+        3072,
+        3456,
+        3840,
+        4224
+      ],
+      "candidateSeams": [
+        2250
+      ],
+      "exactOutputCoverageOnce": true
+    },
+    "memory": {
+      "control": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 131072,
+        "decoderInputBufferBytes": 65536,
+        "workspaceBufferBytes": 251658240,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 7864320,
+        "readbackBufferBytes": 7864320,
+        "controlBufferBytes": 5117232,
+        "accountedGpuBytes": 944808752,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 7864320,
+        "boundedCpuBytes": 9016320,
+        "maximumWindowFrames": 512,
+        "quantaPerCommandBuffer": 64
+      },
+      "candidate": {
+        "residentWeightBytes": 168791552,
+        "stagingInputBufferBytes": 608768,
+        "decoderInputBufferBytes": 304384,
+        "workspaceBufferBytes": 1168834560,
+        "workspaceBufferCount": 3,
+        "outputBufferBytes": 36526080,
+        "readbackBufferBytes": 36526080,
+        "controlBufferBytes": 9087248,
+        "accountedGpuBytes": 3758347792,
+        "latentSnapshotBytes": 1152000,
+        "maximumReturnedWindowBytes": 36526080,
+        "boundedCpuBytes": 37678080,
+        "maximumWindowFrames": 2378,
+        "quantaPerCommandBuffer": 64
+      }
+    },
+    "correctness": {
+      "controlSha256": "fb8aae85e21a8a93b39baf738d0f2577e18134c627a05562b710341d0d590f7c",
+      "candidateSha256": "fb8aae85e21a8a93b39baf738d0f2577e18134c627a05562b710341d0d590f7c",
+      "repeatSha256": "fb8aae85e21a8a93b39baf738d0f2577e18134c627a05562b710341d0d590f7c",
+      "deterministic": true,
+      "metrics": {
+        "joint": {
+          "count": 17280000,
+          "nrmse": 0,
+          "snrDb": null,
+          "pearson": 1,
+          "maximumAbsoluteError": 0,
+          "controlPeak": 0.9710559248924255,
+          "candidatePeak": 0.9710559248924255,
+          "finite": true,
+          "passed": true
+        },
+        "left": {
+          "count": 8640000,
+          "nrmse": 0,
+          "snrDb": null,
+          "pearson": 1,
+          "maximumAbsoluteError": 0,
+          "controlPeak": 0.9710559248924255,
+          "candidatePeak": 0.9710559248924255,
+          "finite": true,
+          "passed": true
+        },
+        "right": {
+          "count": 8640000,
+          "nrmse": 0,
+          "snrDb": null,
+          "pearson": 1,
+          "maximumAbsoluteError": 0,
+          "controlPeak": 0.8928634524345398,
+          "candidatePeak": 0.8928634524345398,
+          "finite": true,
+          "passed": true
+        }
+      },
+      "seamNeighborhoods": {
+        "control-384": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.9124535322189331,
+            "candidatePeak": 0.9124535322189331,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.9124535322189331,
+            "candidatePeak": 0.9124535322189331,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8928634524345398,
+            "candidatePeak": 0.8928634524345398,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-768": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8044291138648987,
+            "candidatePeak": 0.8044291138648987,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7930172085762024,
+            "candidatePeak": 0.7930172085762024,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8044291138648987,
+            "candidatePeak": 0.8044291138648987,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-1152": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.800275444984436,
+            "candidatePeak": 0.800275444984436,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.800275444984436,
+            "candidatePeak": 0.800275444984436,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7864084243774414,
+            "candidatePeak": 0.7864084243774414,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-1536": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7100644111633301,
+            "candidatePeak": 0.7100644111633301,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7100644111633301,
+            "candidatePeak": 0.7100644111633301,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.675196647644043,
+            "candidatePeak": 0.675196647644043,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-1920": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.743872344493866,
+            "candidatePeak": 0.743872344493866,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7220771312713623,
+            "candidatePeak": 0.7220771312713623,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.743872344493866,
+            "candidatePeak": 0.743872344493866,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-2304": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8237910270690918,
+            "candidatePeak": 0.8237910270690918,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8237910270690918,
+            "candidatePeak": 0.8237910270690918,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8091011047363281,
+            "candidatePeak": 0.8091011047363281,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-2688": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8045477271080017,
+            "candidatePeak": 0.8045477271080017,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8045477271080017,
+            "candidatePeak": 0.8045477271080017,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7876164317131042,
+            "candidatePeak": 0.7876164317131042,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-3072": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.9256346821784973,
+            "candidatePeak": 0.9256346821784973,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.9256346821784973,
+            "candidatePeak": 0.9256346821784973,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.834106981754303,
+            "candidatePeak": 0.834106981754303,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-3456": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7999351024627686,
+            "candidatePeak": 0.7999351024627686,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7999351024627686,
+            "candidatePeak": 0.7999351024627686,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.6712814569473267,
+            "candidatePeak": 0.6712814569473267,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-3840": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8014336228370667,
+            "candidatePeak": 0.8014336228370667,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8014336228370667,
+            "candidatePeak": 0.8014336228370667,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.6840190887451172,
+            "candidatePeak": 0.6840190887451172,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "control-4224": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8894142508506775,
+            "candidatePeak": 0.8894142508506775,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8894142508506775,
+            "candidatePeak": 0.8894142508506775,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.7709090709686279,
+            "candidatePeak": 0.7709090709686279,
+            "finite": true,
+            "passed": true
+          }
+        },
+        "candidate-2250": {
+          "joint": {
+            "count": 491520,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8237910270690918,
+            "candidatePeak": 0.8237910270690918,
+            "finite": true,
+            "passed": true
+          },
+          "left": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8237910270690918,
+            "candidatePeak": 0.8237910270690918,
+            "finite": true,
+            "passed": true
+          },
+          "right": {
+            "count": 245760,
+            "nrmse": 0,
+            "snrDb": null,
+            "pearson": 1,
+            "maximumAbsoluteError": 0,
+            "controlPeak": 0.8091011047363281,
+            "candidatePeak": 0.8091011047363281,
+            "finite": true,
+            "passed": true
+          }
+        }
+      },
+      "seamRadiusLatentFrames": 64,
+      "waveformPassed": true,
+      "seamsFinite": true,
+      "listeningArtifact": "normalized-float32-wav",
+      "resources": {
+        "control": {
+          "arm": "c512",
+          "createdBufferCount": 17,
+          "createdBufferBytes": 944808752,
+          "destroyedBufferCount": 17,
+          "totalDestroyCallCount": 17,
+          "liveBufferCountAfterArm": 0,
+          "liveBufferBytesAfterArm": 0,
+          "maximumLiveBufferCount": 17,
+          "maximumLiveBufferBytes": 944808752,
+          "everyBufferDestroyedExactlyOnce": true,
+          "passed": true
+        },
+        "candidate": {
+          "arm": "c2378",
+          "createdBufferCount": 15,
+          "createdBufferBytes": 3758347792,
+          "destroyedBufferCount": 15,
+          "totalDestroyCallCount": 15,
+          "liveBufferCountAfterArm": 0,
+          "liveBufferBytesAfterArm": 0,
+          "maximumLiveBufferCount": 15,
+          "maximumLiveBufferBytes": 3758347792,
+          "everyBufferDestroyedExactlyOnce": true,
+          "passed": true
+        },
+        "repeat": {
+          "arm": "c2378",
+          "createdBufferCount": 15,
+          "createdBufferBytes": 3758347792,
+          "destroyedBufferCount": 15,
+          "totalDestroyCallCount": 15,
+          "liveBufferCountAfterArm": 0,
+          "liveBufferBytesAfterArm": 0,
+          "maximumLiveBufferCount": 15,
+          "maximumLiveBufferBytes": 3758347792,
+          "everyBufferDestroyedExactlyOnce": true,
+          "passed": true
+        },
+        "aggregate": {
+          "activeArm": null,
+          "createdBufferCount": 47,
+          "createdBufferBytes": 8461504336,
+          "destroyedBufferCount": 47,
+          "totalDestroyCallCount": 47,
+          "liveBufferCount": 0,
+          "liveBufferBytes": 0,
+          "maximumLiveBufferCount": 17,
+          "maximumLiveBufferBytes": 3758347792,
+          "everyBufferDestroyedExactlyOnce": true,
+          "passed": true
+        }
+      }
+    },
+    "ownership": {
+      "activeArmOwners": 0,
+      "maximumSimultaneousArmOwners": 1,
+      "sequentialOwnershipPassed": true
+    },
+    "runtimeEvents": [],
+    "GPUWorkRanOnlyAfterExplicitPrepareButton": true,
+    "timingHasRun": false,
+    "externalNominalThermalGateRequiredBeforeTiming": true
+  },
+  "ownership": {
+    "activeArmOwners": 0,
+    "maximumSimultaneousArmOwners": 1,
+    "sequentialOwnershipPassed": true
+  },
+  "runtimeEvents": [],
+  "resources": {
+    "activeArm": null,
+    "createdBufferCount": 111,
+    "createdBufferBytes": 17867817424,
+    "destroyedBufferCount": 111,
+    "totalDestroyCallCount": 111,
+    "liveBufferCount": 0,
+    "liveBufferBytes": 0,
+    "maximumLiveBufferCount": 17,
+    "maximumLiveBufferBytes": 3758347792,
+    "everyBufferDestroyedExactlyOnce": true,
+    "passed": true
+  },
+  "performanceGatePassed": false,
+  "listeningApprovalRequiredForProduction": true,
+  "productionDefaultChanged": false,
+  "cleanup": {
+    "deviceContextDestroyed": true,
+    "allBackendAndWeightOwnersDestroyedBeforeResult": true,
+    "allActivationReadbackAndTemporaryRawFilesRemoved": true,
+    "listeningArtifactRemoved": true,
+    "ownership": {
+      "activeArmOwners": 0,
+      "maximumSimultaneousArmOwners": 1,
+      "sequentialOwnershipPassed": true
+    },
+    "resources": {
+      "activeArm": null,
+      "createdBufferCount": 111,
+      "createdBufferBytes": 17867817424,
+      "destroyedBufferCount": 111,
+      "totalDestroyCallCount": 111,
+      "liveBufferCount": 0,
+      "liveBufferBytes": 0,
+      "maximumLiveBufferCount": 17,
+      "maximumLiveBufferBytes": 3758347792,
+      "everyBufferDestroyedExactlyOnce": true,
+      "passed": true
+    },
+    "passed": true
+  }
+}

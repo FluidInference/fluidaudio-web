@@ -1,0 +1,455 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "OPT-0083",
+  "allocationBaselineCommit": "552e977be6b1b5c8b01c346d4aeaa7f63c0edbf2",
+  "registrationCommit": "7eec5a4f18ab002bb6f4fd6074cd6b42dbc21f2c",
+  "implementationCommits": [
+    "1ddb65e751529936b3ef3cd48a6360386c7dd205",
+    "be3e9a142bcf28db0a1669cbd6bb8f7393f0a8f5",
+    "4289adcddd26a91e11399dbd870917b96be9c0a9",
+    "818d0d3c2be7767db0369f47f4220a93f3f7a67f",
+    "9b96b9f73c70ac7f4aaaf62d6bcc7b4a43539d99",
+    "211e08aa626b957f44e80b8139690922dd4e037d"
+  ],
+  "riskClass": "exact-order-planner-dense-kernel-ownership",
+  "evidence": {
+    "conclusion": "negative",
+    "status": "stopped-primitive",
+    "passed": false,
+    "rationale": "Arm B was raw-U32 exact, won all 16 authoritative wall pairs, and reached 3.605206087416953x aggregate wall speedup, but its authoritative aggregate wall effective packed-weight bandwidth was only 10.917928005232424 GB/s versus the frozen 20 GB/s minimum. Diagnostic GPU timestamps cannot override the wall gate. Arm C also failed the aggregate wall speedup and bandwidth gates. The declared primitive stop condition therefore applies before package-native escalation or production integration."
+  },
+  "identity": {
+    "controlKernel": "AceCorrectnessGemmKernel-reference-bf16-source-row-major",
+    "armBKernelId": "opt-0083-planner-direct-m1-m2-n128-wg128-source-row-major-bf16-fp32-v1",
+    "armCKernelId": "opt-0083-planner-m1-m2-n128-k64-wg128-source-row-major-bf16-fp32-v1",
+    "sourceSha256": {
+      "A": "8922c2cebe36186b7cbf173e69126dd45a01fbc79a2cb2f84c34090880268928",
+      "BC": "9431ceef5f7b8c99ff0ea7b01ec7fa83c14a0378efb04711d9d11fc6c435dd39"
+    },
+    "weightLayout": "source-row-major-bf16-pairs-lsb-u32",
+    "weightSetCount": 8,
+    "weightSetBytes": 31457280,
+    "tiedHeadTailColumns": 20596,
+    "tiedHeadTailWeightBytes": 42180608,
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false,
+      "maxComputeWorkgroupStorageSize": 32768
+    },
+    "device": {
+      "requestedFeatures": [
+        "timestamp-query"
+      ],
+      "requestedLimits": {
+        "maxComputeWorkgroupStorageSize": 17024,
+        "maxComputeInvocationsPerWorkgroup": 128,
+        "maxComputeWorkgroupSizeX": 128,
+        "maxStorageBufferBindingSize": 42180608,
+        "maxBufferSize": 42181120
+      },
+      "reportedMaxComputeWorkgroupStorageSize": 17024,
+      "ordinaryProductionRequestedWorkgroupStorageBytesAtAllocation": 16384,
+      "armCRequiredWorkgroupStorageBytes": 17024,
+      "armCRequiresRaisedProductionWorkgroupStorageLimit": true
+    },
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "browserHardwareConcurrency": 8,
+    "stockWebGpuOnly": true
+  },
+  "artifacts": [
+    {
+      "role": "authoritative-primitive-wall-gate-receipt",
+      "location": "optimization/artifacts/OPT-0083/raw/primitive-wall-gate.json",
+      "sha256": "69822104f277df43d976a66e8e931db7e9d09621f20d5a56a6da4e05412bfa1e",
+      "byteLength": 207135
+    },
+    {
+      "role": "invalid-first-timestamp-attempt",
+      "location": "optimization/artifacts/OPT-0083/raw/invalid-first-timestamp-attempt.json",
+      "sha256": "aea1889c55b22dbd0634a902e460e49474f9920c1aa10a795f33421b2022328d",
+      "byteLength": 1492
+    },
+    {
+      "role": "thermal-trace",
+      "location": "optimization/artifacts/OPT-0083/raw/thermal-trace.jsonl",
+      "sha256": "67a19a8e94c896457c81a95ef0ac32bf892c4da164c8f5b28321fe009d72fa00",
+      "byteLength": 199954
+    }
+  ],
+  "invalidFirstAttempt": {
+    "classification": "invalid-measurement-attempt-not-performance-evidence",
+    "phase": "timing",
+    "errorName": "Error",
+    "errorMessage": "OPT-0083 timestamp was non-positive",
+    "completedTimingSampleCount": 0,
+    "reason": "The original harness treated a begin-equals-end diagnostic GPU timestamp as fatal before any timing sample completed, even though fenced wall time was the frozen authority.",
+    "followup": "The harness was corrected so invalid GPU timestamps remain nullable diagnostics and are never fabricated or substituted. The accepted receipt reports unchangedTimingRetryPerformed false because this was a protocol correction, not an unchanged retry for a favorable sample.",
+    "cleanup": {
+      "cleanupStartedAtEpochMilliseconds": 1787358850621,
+      "cleanupCompletedAtEpochMilliseconds": 1787358850622,
+      "createdBufferCount": 62,
+      "destroyedBufferCount": 62,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "maximumLiveBytes": 295096432,
+      "mapCount": 195,
+      "unmapCount": 195,
+      "activeMapCount": 0,
+      "createdEqualsDestroyed": true,
+      "zeroLiveBuffers": true,
+      "zeroLiveBytes": true,
+      "mapsBalanced": true,
+      "postDestroyBRejected": true,
+      "postDestroyCRejected": true,
+      "deviceDestroyed": true,
+      "repeatedCall": false,
+      "idempotent": true
+    }
+  },
+  "warmup": {
+    "warmupStartedAtEpochMilliseconds": 1787359165963,
+    "warmupCompletedAtEpochMilliseconds": 1787359165998,
+    "warmupExecutions": 6,
+    "warmupDispatchExecutions": 42,
+    "oneCompleteLayerWarmupPerArmPerRowCount": true,
+    "completedBeforeReady": true
+  },
+  "correctness": {
+    "fixtureVersion": "opt0083-production-cancellation-tail-raw-u32-v1",
+    "caseCount": 6,
+    "comparisonsPerCase": 6,
+    "comparedOutputWordsPerSixRuns": 101724,
+    "comparedOutputWordVisits": 610344,
+    "everyProductionRoleCovered": true,
+    "bothM1AndM2Covered": true,
+    "productionLikeFiniteDataCovered": true,
+    "adversarialLongKCancellationCovered": true,
+    "tiedHeadPhysicalTailColumns": 20596,
+    "deterministicRerunsCovered": true,
+    "completeWritesAndGuardsCovered": true,
+    "allRawU32Exact": true,
+    "cases": [
+      {
+        "id": "production-like-M1-complete-seven",
+        "rows": 1,
+        "outputCount": 7,
+        "outputWordCount": 12288,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      },
+      {
+        "id": "adversarial-pairwise-cancellation-K3072-M1",
+        "rows": 1,
+        "outputCount": 1,
+        "outputWordCount": 1024,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      },
+      {
+        "id": "tied-head-tail-N20596-M1",
+        "rows": 1,
+        "outputCount": 1,
+        "outputWordCount": 20596,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      },
+      {
+        "id": "production-like-M2-complete-seven",
+        "rows": 2,
+        "outputCount": 7,
+        "outputWordCount": 24576,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      },
+      {
+        "id": "adversarial-pairwise-cancellation-K3072-M2",
+        "rows": 2,
+        "outputCount": 1,
+        "outputWordCount": 2048,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      },
+      {
+        "id": "tied-head-tail-N20596-M2",
+        "rows": 2,
+        "outputCount": 1,
+        "outputWordCount": 41192,
+        "executionOrder": "A,A,B,B,C,C",
+        "allOutputsFiniteCompleteAndGuarded": true,
+        "allRawU32Exact": true,
+        "passed": true
+      }
+    ],
+    "rejectionContracts": {
+      "expectedRejectionCount": 12,
+      "observedRejectionCount": 12,
+      "shortBindingCovered": true,
+      "aliasCovered": true,
+      "wrongProfileCovered": true,
+      "biasCovered": true,
+      "rowCountCovered": true,
+      "deviceLimitCovered": true,
+      "cancellationCheckpointRejected": true,
+      "cancellationMechanism": "worker AbortSignal checked between bounded fills, drained executions, maps, and timing samples",
+      "maximumUninterruptibleGpuUnit": "one complete-layer command buffer and matching drain",
+      "passed": true
+    },
+    "uncapturedGpuErrors": [],
+    "deviceLosses": [],
+    "passed": true
+  },
+  "protocol": {
+    "allArmsCompiledBeforeTiming": true,
+    "timingRoundCount": 16,
+    "pairedRoundsPerRowCount": 8,
+    "distinctRotatingWeightSetCount": 8,
+    "balancedInterleavedArmOrders": true,
+    "maximumArmPositionImbalance": 1,
+    "completeSevenOperationLayerPerPrimarySample": true,
+    "oneComputePassCommandBufferSubmitDrainPerSample": true,
+    "oneTimestampPairPerSample": true,
+    "fencedWallIsAuthoritativeForAllPassGatesAndArmSelection": true,
+    "gpuTimestampMetricsAreDiagnostic": true,
+    "gpuTimestampDiagnosticsMayBeUnavailableWithoutInvalidatingWallTiming": true,
+    "gpuTimestampDiagnostics": {
+      "policy": "nullable-diagnostic-never-substituted-never-authoritative",
+      "primary": {
+        "sampleCount": 48,
+        "validSampleCount": 48,
+        "unavailableSampleCount": 0,
+        "unavailableReasonCounts": {},
+        "everyTimestampValid": true
+      },
+      "diagnostic": {
+        "sampleCount": 36,
+        "validSampleCount": 35,
+        "unavailableSampleCount": 1,
+        "unavailableReasonCounts": {
+          "webgpu-timestamp-end-not-greater-than-begin": 1
+        },
+        "everyTimestampValid": false
+      },
+      "complete": {
+        "sampleCount": 84,
+        "validSampleCount": 83,
+        "unavailableSampleCount": 1,
+        "unavailableReasonCounts": {
+          "webgpu-timestamp-end-not-greater-than-begin": 1
+        },
+        "everyTimestampValid": false
+      }
+    },
+    "outputReadbackInsideTiming": false,
+    "allocationUploadCompilationInsideTiming": false,
+    "perShapeTimingDiagnosticOnly": true,
+    "tiedHeadTailShapeIncluded": true,
+    "unchangedTimingRetryPerformed": false
+  },
+  "metrics": {
+    "primarySampleCount": 48,
+    "diagnosticSampleCount": 36,
+    "completeLayerPackedWeightBytes": 31457280,
+    "logicalLayerMultiplyAddsM1": 15728640,
+    "measurementStartedAtEpochMilliseconds": 1787359222495,
+    "measurementCompletedAtEpochMilliseconds": 1787359222905,
+    "rowStrata": [
+      {
+        "rows": 1,
+        "A": {
+          "medianGpuMilliseconds": 6.094848000000001,
+          "medianWallMilliseconds": 9.100000023841858
+        },
+        "B": {
+          "medianGpuMilliseconds": 0.917504,
+          "medianWallMilliseconds": 2.5,
+          "medianGpuSpeedup": 6.642857142857144,
+          "medianWallSpeedup": 3.640000009536743,
+          "medianGpuBandwidthGbPerSecond": 34.285714285714285,
+          "medianWallBandwidthGbPerSecond": 12.603076884553767
+        },
+        "C": {
+          "medianGpuMilliseconds": 3.473408,
+          "medianWallMilliseconds": 6.3500001430511475,
+          "medianGpuSpeedup": 1.7547169811320757,
+          "medianWallSpeedup": 1.4330708376125088,
+          "medianGpuBandwidthGbPerSecond": 9.085714285714285,
+          "medianWallBandwidthGbPerSecond": 5.023987006354972
+        }
+      },
+      {
+        "rows": 2,
+        "A": {
+          "medianGpuMilliseconds": 6.1931519999999995,
+          "medianWallMilliseconds": 7.649999976158142
+        },
+        "B": {
+          "medianGpuMilliseconds": 0.950272,
+          "medianWallMilliseconds": 2.3999998569488525,
+          "medianGpuSpeedup": 6.517241379310344,
+          "medianWallSpeedup": 3.1875001800557086,
+          "medianGpuBandwidthGbPerSecond": 33.14285714285714,
+          "medianWallBandwidthGbPerSecond": 13.107200781250047
+        },
+        "C": {
+          "medianGpuMilliseconds": 3.244032,
+          "medianWallMilliseconds": 4.800000071525574,
+          "medianGpuSpeedup": 1.9090909090909092,
+          "medianWallSpeedup": 1.5937499712842211,
+          "medianGpuBandwidthGbPerSecond": 9.697959183673468,
+          "medianWallBandwidthGbPerSecond": 6.556445583122433
+        }
+      }
+    ],
+    "candidateSummaries": [
+      {
+        "arm": "B",
+        "wallPairWins": 16,
+        "requiredWallPairWins": 14,
+        "everyM1M2WallMedianFaster": true,
+        "aggregateWallSpeedup": 3.605206087416953,
+        "requiredAggregateWallSpeedup": 1.75,
+        "authoritativeAggregateWallSpeedupPassed": true,
+        "aggregateEffectivePackedWeightWallBandwidthGbPerSecond": 10.917928005232424,
+        "requiredEffectivePackedWeightWallBandwidthGbPerSecond": 20,
+        "authoritativeAggregateWallBandwidthPassed": false,
+        "gpuPairWinsDiagnostic": 16,
+        "aggregateGpuSpeedupDiagnostic": 7.612403100775194,
+        "aggregateEffectivePackedWeightGpuBandwidthGbPerSecondDiagnostic": 29.767441860465116,
+        "passed": false
+      },
+      {
+        "arm": "C",
+        "wallPairWins": 16,
+        "requiredWallPairWins": 14,
+        "everyM1M2WallMedianFaster": true,
+        "aggregateWallSpeedup": 1.6358267683275975,
+        "requiredAggregateWallSpeedup": 1.75,
+        "authoritativeAggregateWallSpeedupPassed": false,
+        "aggregateEffectivePackedWeightWallBandwidthGbPerSecond": 4.953902343604687,
+        "requiredEffectivePackedWeightWallBandwidthGbPerSecond": 20,
+        "authoritativeAggregateWallBandwidthPassed": false,
+        "gpuPairWinsDiagnostic": 16,
+        "aggregateGpuSpeedupDiagnostic": 1.8389513108614237,
+        "aggregateEffectivePackedWeightGpuBandwidthGbPerSecondDiagnostic": 7.191011235955058,
+        "passed": false
+      }
+    ],
+    "selectedArm": null,
+    "passed": false
+  },
+  "lifecycle": {
+    "memoryBeforeCleanup": {
+      "createdBufferCount": 62,
+      "destroyedBufferCount": 0,
+      "liveBufferCount": 62,
+      "liveBytes": 295096432,
+      "maximumLiveBytes": 295096432,
+      "mapCount": 220,
+      "unmapCount": 220,
+      "activeMapCount": 0
+    },
+    "firstCleanup": {
+      "cleanupStartedAtEpochMilliseconds": 1787359222909,
+      "cleanupCompletedAtEpochMilliseconds": 1787359222910,
+      "createdBufferCount": 62,
+      "destroyedBufferCount": 62,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "maximumLiveBytes": 295096432,
+      "mapCount": 220,
+      "unmapCount": 220,
+      "activeMapCount": 0,
+      "createdEqualsDestroyed": true,
+      "zeroLiveBuffers": true,
+      "zeroLiveBytes": true,
+      "mapsBalanced": true,
+      "postDestroyBRejected": true,
+      "postDestroyCRejected": true,
+      "deviceDestroyed": true,
+      "repeatedCall": false,
+      "idempotent": true
+    },
+    "secondCleanup": {
+      "cleanupStartedAtEpochMilliseconds": 1787359222909,
+      "cleanupCompletedAtEpochMilliseconds": 1787359222910,
+      "createdBufferCount": 62,
+      "destroyedBufferCount": 62,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "maximumLiveBytes": 295096432,
+      "mapCount": 220,
+      "unmapCount": 220,
+      "activeMapCount": 0,
+      "createdEqualsDestroyed": true,
+      "zeroLiveBuffers": true,
+      "zeroLiveBytes": true,
+      "mapsBalanced": true,
+      "postDestroyBRejected": true,
+      "postDestroyCRejected": true,
+      "deviceDestroyed": true,
+      "repeatedCall": true,
+      "idempotent": true
+    },
+    "cleanupCompletedAtEpochMilliseconds": 1787359222910,
+    "passed": true
+  },
+  "thermal": {
+    "launch": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "traceStartedAtEpochMilliseconds": 1787358101744,
+      "gateStartedAtEpochMilliseconds": 1787359187757,
+      "gateCompletedAtEpochMilliseconds": 1787359218757,
+      "observationCount": 32,
+      "pollMilliseconds": 1000,
+      "maximumPollGapMilliseconds": 1008,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "readyToGateDelayMilliseconds": 21759,
+      "launchDelayMilliseconds": 3733
+    },
+    "completion": {
+      "schema": "jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1",
+      "sha256": "67a19a8e94c896457c81a95ef0ac32bf892c4da164c8f5b28321fe009d72fa00",
+      "byteLength": 199954,
+      "completedAtEpochMilliseconds": 1787359326754,
+      "observationCount": 1226,
+      "maximumPollGapMilliseconds": 1018,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "initialLevel": 0,
+      "finalLevel": 0,
+      "transitions": [],
+      "coversCleanup": true,
+      "laterNonNominalDisclosed": false
+    },
+    "passed": true
+  },
+  "disposition": {
+    "state": "abandoned",
+    "decision": "negative-stop-primitive-gate",
+    "selectedArm": null,
+    "packageNativeEscalationAuthorized": false,
+    "packageNativeEscalationPerformed": false,
+    "productionIntegrationAuthorized": false,
+    "productionIntegrationPerformed": false,
+    "unchangedTimingRetryAuthorized": false,
+    "rationale": "The frozen wall-authoritative 20 GB/s primitive bandwidth stop condition failed for both candidates. Diagnostic GPU bandwidth, including Arm B's 29.767441860465116 GB/s, does not authorize escalation.",
+    "revisitWhen": [
+      "Under a newly allocated experiment only, a materially changed package-native graph measures the direct low-row mechanism inside real planner token scheduling without one submit-and-drain boundary per GEMM-layer sample."
+    ]
+  }
+}

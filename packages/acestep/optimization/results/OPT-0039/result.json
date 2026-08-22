@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "experiment": "OPT-0039",
+  "passed": true,
+  "identity": {
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "wgslSha256": {
+      "query8": "82accd0b6b8e1d7d72c2b2eabd988a729c23e0aec031c87df68a9f333ad840c7",
+      "dualQuery16": "601d42eaa4f44e319464f50f29915c7c1289fe5b84cce7111cdd308ec59c0a6f"
+    }
+  },
+  "shape": {
+    "batch": 1,
+    "queryHeads": 16,
+    "keyValueHeads": 8,
+    "queryTokens": 2250,
+    "keyValueTokens": 2250,
+    "headDimension": 128,
+    "mode": "full"
+  },
+  "capabilities": {
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "subgroups"
+    ],
+    "limits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupStorageSize": 16384
+    }
+  },
+  "deterministicInputs": {
+    "generator": "lcg1664525-u24-f32-v1",
+    "querySeed": 324508639,
+    "keySeed": 610839776,
+    "valueSeed": 270544960,
+    "sha256": {
+      "query": "a9b3a0b9a2b44173d4943567053981bc900a963b27e765de34ebfe88b86edc91",
+      "key": "3aca97c626b259c7b083cee4e2a764fc7514cba7546b73217cf82a68c92634b5",
+      "value": "96d77cccd9f30a9332a1a3a06166fcaf5df0e31ecb4be82858501957253e4653"
+    }
+  },
+  "plans": {
+    "query8": {
+      "queryTokensPerTile": 4,
+      "queriesPerWorkgroup": 8,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "barriersPerWorkgroup": 4500,
+      "barrierEvents": 20268000,
+      "workgroupStorageBytes": 1024
+    },
+    "dualQuery16": {
+      "queryTokensPerTile": 8,
+      "queryTokensPerSubgroup": 2,
+      "queriesPerWorkgroup": 16,
+      "workgroupSize": 256,
+      "workgroupCount": 2256,
+      "keyValueScalarLoads": 1299456000,
+      "keyValueLoadReductionVersusQuery8": 1.99645390070922,
+      "barriersPerWorkgroup": 4500,
+      "barrierEvents": 10152000,
+      "barrierEventReductionVersusQuery8": 1.99645390070922,
+      "workgroupStorageBytes": 1024
+    }
+  },
+  "correctness": {
+    "outputElements": 4608000,
+    "comparedElementsPerCheck": 4608000,
+    "totalComparedElements": 13824000,
+    "query8NonFiniteCount": 0,
+    "dualQuery16NonFiniteCount": 0,
+    "candidateBitMismatchCount": 0,
+    "query8RepeatBitMismatchCount": 0,
+    "dualQuery16RepeatBitMismatchCount": 0,
+    "completeWritesAcrossFourRuns": true,
+    "canariesUntouchedAcrossFourRuns": true,
+    "deterministic": true,
+    "bitExact": true,
+    "outputSha256": {
+      "query8A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "query8B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "dualQuery16A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "dualQuery16B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892"
+    }
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "startedAtEpochMilliseconds": 1786832995847,
+      "checkedAtEpochMilliseconds": 1786833025902,
+      "durationMilliseconds": 30055,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 30055,
+      "launchDelayMilliseconds": 6624
+    },
+    "compileOutsideTiming": true,
+    "fullCorrectnessOutsideTiming": true,
+    "correctnessAlsoServesAsTwoWarmupsPerArm": true,
+    "timedGpuWorkBeforeButton": false,
+    "rounds": 4,
+    "balancedOrders": [
+      [
+        "query8",
+        "dualQuery16"
+      ],
+      [
+        "dualQuery16",
+        "query8"
+      ],
+      [
+        "query8",
+        "dualQuery16"
+      ],
+      [
+        "dualQuery16",
+        "query8"
+      ]
+    ],
+    "samplesPerArm": 4,
+    "oneCommandBufferPerSample": true,
+    "oneQueueDrainPerSample": true,
+    "outputReadbackInsideTiming": false
+  },
+  "timing": {
+    "samplesPerArm": 4,
+    "mediansMilliseconds": {
+      "query8": 132.19999998807907,
+      "dualQuery16": 97.40000003576279
+    },
+    "speedupVersusQuery8": 1.3572895270999858,
+    "requiredSpeedupVersusQuery8": 1.25,
+    "passed": true,
+    "decision": "positive-primitive-qualifier"
+  },
+  "decision": {
+    "disposition": "positive-primitive-qualifier",
+    "productionIntegrationAuthorized": false,
+    "productClaimAuthorized": false
+  },
+  "cleanup": {
+    "createdBufferCount": 8,
+    "preTimingBuffersDestroyed": 2,
+    "finalBuffersDestroyed": 6,
+    "totalBuffersDestroyed": 8,
+    "deviceDestroyed": true
+  }
+}
+

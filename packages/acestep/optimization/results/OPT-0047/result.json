@@ -1,0 +1,139 @@
+{
+  "schema": "ace-opt-0047-k7-output-major-k4-v1",
+  "experimentId": "OPT-0047",
+  "status": "completed",
+  "passed": false,
+  "disposition": "negative-universal-owner-shape-selector-follow-up",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "stockWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "webNn": false
+  },
+  "kernels": {
+    "control": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "candidate": "ace-vae-fp16-opt-0047-output-major-k4-fp16-dot4-k7-conv1d-v1",
+    "opt0024ControlUnchanged": true
+  },
+  "identity": {
+    "opt0024CoreSha256": "fe3bf8110cef1a3bb791006e9d376fe549e9f00fe30e4738d7429cb0daf65841",
+    "candidateCoreSha256": "664a6786e12b6e03dab9857783ea29c7bd49f3ce55795dc918fdf20a229c30cc",
+    "decoderCoreSha256": "07f294e2aadd615c0a8b840884f43205bc00c146362f54048a39a85440da1d3e",
+    "generatedShaderAggregateSha256": "5506d0619347ae0f6ad5d4ee50af73e6ee69e90d19e5849bf6684d649da7f89c",
+    "authenticated": true
+  },
+  "correctness": {
+    "caseCount": 16,
+    "productionBiasedK7OperationCount": 16,
+    "channelTiers": [1024, 512, 256, 128],
+    "dilations": [1, 3, 9],
+    "fixedInputFramesPerPrimitive": 512,
+    "packedWeightU16Words": 30507008,
+    "exhaustivePackInverseMismatchCount": 0,
+    "executionsPerArmPerCase": 2,
+    "comparedU16Words": 16777216,
+    "mismatchCount": 0,
+    "rawU16Exact": true,
+    "deterministicBothArms": true,
+    "qNaNPrefillCompleteWrites": true,
+    "allOutputsFinite": true,
+    "guardsUntouched": true,
+    "completedBeforeReady": true
+  },
+  "timing": {
+    "tiers": [
+      {
+        "id": "block-0-res-1-conv1",
+        "weight": 282,
+        "opt0024SamplesMilliseconds": [12.112499997019768, 12.287500008940697, 9.0625, 11.637500002980232],
+        "outputMajorSamplesMilliseconds": [5.25, 5.112500011920929, 4.674999997019768, 5.737499997019768],
+        "opt0024MedianMilliseconds": 11.875,
+        "outputMajorMedianMilliseconds": 5.1812500059604645,
+        "speedup": 2.2919179708254003,
+        "nonSlower": true
+      },
+      {
+        "id": "block-1-res-2-conv1",
+        "weight": 423,
+        "opt0024SamplesMilliseconds": [2.2999999970197678, 2.4375, 1.9749999940395355, 2.0625],
+        "outputMajorSamplesMilliseconds": [1.4500000029802322, 1.375, 1.300000011920929, 1.5750000029802322],
+        "opt0024MedianMilliseconds": 2.181249998509884,
+        "outputMajorMedianMilliseconds": 1.4125000014901161,
+        "speedup": 1.5442477849265666,
+        "nonSlower": true
+      },
+      {
+        "id": "block-2-res-1-conv1",
+        "weight": 423,
+        "opt0024SamplesMilliseconds": [0.4625000059604645, 2.1124999970197678, 0.48750001192092896, 0.48749999701976776],
+        "outputMajorSamplesMilliseconds": [0.5874999910593033, 1.1124999970197678, 0.4000000059604645, 0.5625],
+        "opt0024MedianMilliseconds": 0.48750000447034836,
+        "outputMajorMedianMilliseconds": 0.5749999955296516,
+        "speedup": 0.8478261013224807,
+        "nonSlower": false
+      },
+      {
+        "id": "block-4-res-3-conv1",
+        "weight": 1269,
+        "opt0024SamplesMilliseconds": [0.15000000596046448, 0.13750000298023224, 0.13750000298023224, 0.6124999970197678],
+        "outputMajorSamplesMilliseconds": [0.14999999105930328, 0.15000000596046448, 0.13749998807907104, 1.7374999970197678],
+        "opt0024MedianMilliseconds": 0.14375000447034836,
+        "outputMajorMedianMilliseconds": 0.14999999850988388,
+        "speedup": 0.9583333726558424,
+        "nonSlower": false
+      }
+    ],
+    "weightTotal": 2397,
+    "weightedOpt0024Milliseconds": 4660.05000693351,
+    "weightedOutputMajorK4Milliseconds": 2492.1749985292554,
+    "weightedSpeedup": 1.869872705441478,
+    "everyTierNonSlower": false,
+    "requiredWeightedSpeedup": 1.2,
+    "passed": false,
+    "decision": "negative-stop-primitive-gate"
+  },
+  "derivedShapeSelector": {
+    "authority": "planning-only-follow-up-not-part-of-this-decision",
+    "route": {"c1024": "output-major", "c512": "output-major", "c256": "opt0024", "c128": "opt0024"},
+    "weightedMilliseconds": 2447.2312598749995,
+    "speedupOverOpt0024": 1.9042131748396913,
+    "opt0024LongK7ProjectionSeconds": 34.966,
+    "candidateLongK7ProjectionSeconds": 18.362439910617496,
+    "projectedSavingSeconds": 16.603560089382505
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "startedAtEpochMilliseconds": 1786836962108,
+      "checkedAtEpochMilliseconds": 1786837004737,
+      "durationMilliseconds": 42629,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 42629,
+      "launchDelayMilliseconds": 63
+    },
+    "oneButtonAction": true,
+    "timingRepeatsPerSample": 8,
+    "samplesPerArmPerTier": 4,
+    "balancedOrder": [
+      ["opt0024", "outputMajor"],
+      ["outputMajor", "opt0024"],
+      ["outputMajor", "opt0024"],
+      ["opt0024", "outputMajor"]
+    ],
+    "timedRetryPerformed": false
+  },
+  "cleanup": {
+    "createdBufferCount": 176,
+    "destroyedBufferCount": 176,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "deviceDestroyed": true,
+    "queueDrainedBeforeRelease": true,
+    "destroyIdempotenceExercised": true,
+    "zeroLiveResources": true
+  },
+  "productionIntegrationAuthorized": false
+}

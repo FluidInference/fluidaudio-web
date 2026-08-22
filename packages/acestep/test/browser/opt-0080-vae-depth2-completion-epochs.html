@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 C2314 VAE depth-two completion epochs</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0080 — C2314 VAE depth-two completion epochs</h1>
+    <p>
+      Preparation authenticates the frozen C2314 xorshift fixture and physical
+      OPT-0066 revision-7 VAE package, then creates one persistent WebGPU
+      device, package phase, backend, activation allocation, dispatch graph,
+      FIFO owner, and readback. Untimed depth-one and depth-two decodes compare
+      all 8,885,760 waveform words exactly. An actual candidate cancellation
+      must settle with no later callback or output, and the same owner must
+      subsequently reproduce the oracle exactly. Preparation is excluded from
+      timing. Six physical activation/output buffers carry both a C2314-active-
+      end guard inside the otherwise unused C2314-to-C2378 slack and an
+      allocation-end suffix guard; all twelve regions are checked after every
+      decode and cancellation outside scheduler timing.
+    </p>
+    <p>
+      Timing is exactly A1 depth1, B1 depth2/epoch4, B2 depth2/epoch4, A2
+      depth1 on that same persistent owner. Every arm submits the same 555
+      singleton decoder command buffers plus one ordinary readback and retains
+      556 completion fences. The candidate must expose 139 true drains, 138
+      queue-empty idles, and at most two outstanding buffers. Start a fresh
+      continuous ≥30-second nominal notifyutil trace only after each READY and
+      retain it through arm settlement; A2 settlement includes backend and
+      device cleanup. A 50 ms main-page heartbeat spans each timed arm through
+      settlement.
+    </p>
+    <p>
+      The performance gate requires B1&lt;A1 and B2&lt;A2 for both scheduling and
+      whole decodeWindow wall, plus at least 800 ms projected saving across two
+      production windows. Failure retains the already valid DiT-only selection
+      and the depth-one VAE scheduler. The raw receipt belongs at
+      <code>optimization/artifacts/OPT-0080/vae-scheduler/</code> and remains
+      ignored; this page does not make a product, listening, or under-one-minute
+      claim.
+    </p>
+
+    <button id="prepare" type="button">Prepare preflights and A1</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>Run current arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's distinct continuous trace through settlement JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record arm trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0080-vae-scheduler-raw.json">
+      Download ignored raw receipt
+    </a>
+    <script type="module" src="./opt-0080-vae-depth2-completion-epochs.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0081 DiT representative two-layer gate</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    body { margin: 1rem; max-width: 90rem; }
+    p { max-width: 84rem; line-height: 1.45; }
+    fieldset { display: grid; gap: 0.45rem; margin-block: 1rem; max-width: 78rem; }
+    label { display: grid; grid-template-columns: 40rem minmax(18rem, 1fr); gap: 0.5rem; }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="idle">
+  <h1>OPT-0081 representative two-layer gate</h1>
+  <p>
+    This benchmark-only screen executes the canonical direct M2250/C98 fixture
+    through condition/cross-cache precompute, evaluation-0 timestep and input
+    projection, sliding layer 0, and full-attention layer 1. Layer 1 consumes
+    the actual layer-0 output. A is the current FP32-activation OPT-0009 path;
+    B is the exact six-role scalar-F16 storage profile with the OPT-0081 WG128
+    owner. Both retain OPT-0070 attention and the OPT-0080 depth-two scheduler.
+    No layer 2, output projection, sampler, VAE, planner, conversion dispatch,
+    duplicate candidate activation, timestamp query, or timed readback runs.
+  </p>
+  <p>
+    Preparation performs A/A/B/B raw checkpoints for twelve producer
+    boundaries, eighteen dense outputs, and both layer outputs; the candidate
+    cancellation preflight; the ordinary 25-command precompute; and one
+    terminally drained warmup per arm. After READY, use one continuous external
+    absolute-cadence 1,000 ms thermal trace, enter a fresh nominal level-0
+    interval of at least 30 seconds, and run once. The exact paired order is
+    AB, BA, BA, AB, AB, BA, BA, AB. Every occurrence is commands 25–52:
+    28 submits and fences, seven true drains, six real idle turns, and maximum
+    depth two. Keep the same trace and the in-page 50 ms heartbeat running
+    through final cleanup. Disclose every later thermal transition. Under the
+    repository thermal rule, a later non-nominal transition does not by itself
+    invalidate a large, directionally consistent balanced comparison, and it
+    never authorizes an unchanged retry just to obtain an all-nominal trace. A
+    pass authorizes only a separately cooled complete evaluation diagnostic;
+    production remains unchanged.
+  </p>
+
+  <button id="prepare" type="button">Prepare canonical package and correctness</button>
+  <div id="progress" role="status" aria-live="polite">idle; no GPU work has started</div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch interval from the continuous external trace</legend>
+    <label>Source
+      <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run the one registered eight-round AB/BA gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same external trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Every level transition as JSON
+      <input name="thermalTraceTransitionsJson" spellcheck="false"
+        value="[]" placeholder='[{"atEpochMilliseconds":123,"level":1}]'>
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize the stable receipt without rerunning timing
+    </button>
+  </fieldset>
+
+  <a id="download" hidden download="opt-0081-dit-f16-representative-layers-receipt.json">
+    Download complete raw receipt
+  </a>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0081-dit-f16-representative-layers.ts"></script>
+</body>
+</html>

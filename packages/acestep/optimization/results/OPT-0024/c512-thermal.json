@@ -1,0 +1,19 @@
+{
+  "schema": "ace-opt-0024-c512-simple-thermal-gate-v1",
+  "experimentId": "OPT-0024",
+  "source": "notifyutil-com.apple.system.thermalpressurelevel",
+  "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+  "gateStartedAt": "2026-08-15T20:04:21Z",
+  "gateCompletedAt": "2026-08-15T20:04:51Z",
+  "waitMilliseconds": 30000,
+  "observedLevel": 0,
+  "classification": "nominal",
+  "timedActionCount": 1,
+  "retryCount": 0,
+  "timedOrder": [
+    "shipped",
+    "candidate",
+    "candidate",
+    "shipped"
+  ]
+}

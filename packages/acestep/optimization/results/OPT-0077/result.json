@@ -1,0 +1,1195 @@
+{
+  "schema": "ace-opt-0077-vae-k7-rfft16-result-v1",
+  "experiment": "OPT-0077",
+  "status": "negative",
+  "disposition": "abandoned",
+  "passed": false,
+  "identity": {
+    "allocationBaselineCommit": "47c4dfed1a2b4826cafda14123282ce72d852cb2",
+    "registrationCommit": "3539a87",
+    "candidateAndHarnessCommit": "f78d0d24c9b205a9614703e17b7e870793d6107e",
+    "machineModel": "Mac15,12",
+    "chip": "Apple M3",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "browserSurface": "Codex in-app Browser",
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapterInfoReported": {},
+    "stockWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "sourceSha256": {
+      "currentSelector": "c05c95b69f45b0abf859a33b05ebe27abf21ac93c45797b3ab8f8e8a0c72f209",
+      "currentRowReuse": "59e144c1316d642d362d206222888177cd4e792743b3e23631ca415e923d770a",
+      "scalarK7": "7d218516d6b2c8d6e3332a53101be5fdeae1142096c442433915bfa58941ce32",
+      "candidate": "5c6bc1fa774e7f57325fe714bba6fd53cb54255202e61d7167f1136dbcca04cf",
+      "candidateMath": "054e58e8a8333bffb3a3bd32356cca8fb0ef8b7336f3eb61c60edf9a2a1b5ef8",
+      "experimentRecord": "2b164945749ced71d8984963b3054d2336aac117ab61bb3ee44f18cb66b78082",
+      "harness": "9b2044fcce8f05f1b5227ff4b314d6f9a89bcf0565a9e5ce0ec66aca5127914a",
+      "html": "f6e3fb521ad7d0988c5274b776e8ed83d8e6f820158f2e2291b6cf81f5c968d8"
+    },
+    "generatedWgslAggregateSha256": "c7488565c1aadc3fc23cf4c2215fe26e3eecc9cf17c31c12906a550ca7f187ab",
+    "caseTopologySha256": "7a2a7832f78b55dec5bc7409c7024fc18f3e10543d0a27d63a3cb887131a0e0b",
+    "mathProofSha256": "cb903d07beb5a7b903ebd33e4bf03833278ce0eb025fbc7428b230d84db77f82"
+  },
+  "artifacts": {
+    "authoritativeBrowserReceipt": {
+      "committed": false,
+      "sha256": "724b9983e314ff68ec4060254914feaf5b9e8005e3ba2af49a00fe352dd35e4a",
+      "byteLength": 898231
+    },
+    "externalThermalTrace": {
+      "committed": false,
+      "schema": "jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1",
+      "sha256": "1e6c451123330b377fb7d44ba3c3f4e3b7183dc3eb9c9b67a19703d63cf8f21f",
+      "byteLength": 66632
+    },
+    "note": "The compact result is committed; the large authoritative browser receipt and raw JSONL thermal trace are retained externally and bound by SHA-256."
+  },
+  "setupOnlyRejectedPreflight": {
+    "classification": "operator-setup-preflight-not-experiment-evidence",
+    "receiptPersisted": false,
+    "receiptSha256": null,
+    "stage": "thermal-launch",
+    "error": "OPT-0077 fresh continuous nominal thermal launch gate failed",
+    "rootCause": "The external trace started after the first page had already reached its internal READY timestamp, so the parser correctly rejected traceStartedAt > ready.",
+    "traceStartedAtEpochMilliseconds": 1787309001845,
+    "enteredGate": {
+      "gateStartedAtEpochMilliseconds": 1787309086853,
+      "gateCompletedAtEpochMilliseconds": 1787309183855,
+      "observationCount": 98,
+      "maximumPollGapMilliseconds": 1010,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0
+    },
+    "timingDispatchCount": 0,
+    "timingSampleCount": 0,
+    "cleanup": {
+      "createdBufferCount": 717,
+      "destroyedBufferCount": 717,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "maximumLiveBytes": 313105520,
+      "mapCount": 628,
+      "unmapCount": 628,
+      "activeMapCount": 0,
+      "cleanupStartedAtEpochMilliseconds": 1787309184914,
+      "cleanupCompletedAtEpochMilliseconds": 1787309184915,
+      "queueDrained": true,
+      "ownersDestroyedIdempotently": true,
+      "postDestroyRejected": true,
+      "passed": true
+    },
+    "unchangedTimingRetryPerformed": false,
+    "followup": "The authoritative run reused the same continuously running external trace but performed a fresh page preparation so READY followed trace start."
+  },
+  "correctness": {
+    "passed": true,
+    "caseCount": 29,
+    "productionStratumCount": 9,
+    "adversarialCaseCount": 20,
+    "productionProbeCount": 27,
+    "totalProbeCount": 47,
+    "spectralCaseCount": 16,
+    "candidateScalarComparedU16Count": 888448,
+    "candidateRepeatComparedU16Count": 888448,
+    "candidateRepeatDifferingU16Count": 0,
+    "mathProof": {
+      "transform": "orthonormal-radix2-rfft16-real-basis",
+      "coordinateOrder": [
+        "dc",
+        "nyquist",
+        "cos1",
+        "sin1",
+        "cos2",
+        "sin2",
+        "cos3",
+        "sin3",
+        "cos4",
+        "sin4",
+        "cos5",
+        "sin5",
+        "cos6",
+        "sin6",
+        "cos7",
+        "sin7"
+      ],
+      "comparedForwardCoordinates": 256,
+      "comparedWeightCoordinates": 112,
+      "comparedCorrelationOutputs": 1120,
+      "maximumForwardBasisError": 1.6083291198842886E-8,
+      "maximumWeightBasisError": 1.608329092128713E-8,
+      "maximumCorrelationBasisError": 1.1920928955078125E-7,
+      "noExtraOverallScaleFactor": true,
+      "correlationSigns": "R=Xc*Gc+Xs*Gs; I=Xc*Gs-Xs*Gc",
+      "residueAndRangeMapping": {
+        "plannerDomains": 192,
+        "ranges": 137280,
+        "selectedRows": 2299440,
+        "sourceCoordinateChecks": 43680,
+        "dilations": [
+          1,
+          3,
+          9
+        ],
+        "maximumFrames": 64,
+        "exactOnceCoverage": true,
+        "partialFinalTilesCovered": true,
+        "passed": true
+      },
+      "passed": true
+    },
+    "resultHashes": {
+      "hashDefinition": "sha256-selected-u16-per-probe-then-id-ordered-sha256-manifest",
+      "allCaseAggregate": {
+        "current": "47aa8ba6a62e90b7713f7c04150e20f07ee09c21ac337a63c551f6f670db6c3a",
+        "candidate": "a9b69d7bf91da1c3f9232bafcc336e1ff7a9f40c70b1dc383b825c8212870547",
+        "scalarOracle": "979ce3eb0a7b19383ef2c9d0850887911c6e70f1f280a8fc32bec8e8d849066a",
+        "candidateRepeat": "a9b69d7bf91da1c3f9232bafcc336e1ff7a9f40c70b1dc383b825c8212870547"
+      },
+      "productionAggregate": {
+        "current": "720e6e4487fc7ae866a00bc31ad403cf25961cc233722c9625b11d5bb69f4bf0",
+        "candidate": "79a2fbfd80dbaa5193468b1160c0a066181986ce58e70d802fd3776f78e37b60",
+        "scalarOracle": "2ba706b3e0ee95fc7814f125ca1db64b1fe00a60a7bec9c05545cbdbe7279110",
+        "candidateRepeat": "79a2fbfd80dbaa5193468b1160c0a066181986ce58e70d802fd3776f78e37b60"
+      }
+    },
+    "numericalEnvelope": {
+      "thresholds": {
+        "nrmseMaximum": 0.001,
+        "snrMinimumDb": 60,
+        "pearsonMinimum": 0.99999,
+        "relativeMaximumAbsoluteErrorMaximum": 0.01
+      },
+      "candidateVersusScalarOracleAggregate": {
+        "comparedValueCount": 888448,
+        "rawU16MismatchCount": 428576,
+        "signedZeroDifferenceCount": 0,
+        "finiteClassChangeCount": 6907,
+        "finiteClassTransitionDistribution": {
+          "normal->subnormal": 102,
+          "subnormal->normal": 79,
+          "subnormal->zero": 35,
+          "zero->subnormal": 6691
+        },
+        "finiteClassTransitionDistributionCount": 6907,
+        "meanError": -4.347066528222486E-9,
+        "meanAbsoluteError": 0.00036145076949990393,
+        "rmsError": 0.04948954248631919,
+        "oracleRms": 630.4631028045991,
+        "nrmse": 0.000078497127375363,
+        "snrDb": 82.10292472187346,
+        "pearson": 0.999999996937326,
+        "maximumAbsoluteError": 8,
+        "relativeMaximumAbsoluteError": 0.0008223684210526315,
+        "oraclePeak": 9728,
+        "oracleRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "candidateRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "fp16UlpDistribution": {
+          "0": 459872,
+          "1": 261999,
+          "2": 64704,
+          "3": 27881,
+          "4": 15972,
+          "5": 10195,
+          "6": 7848,
+          "7": 5131,
+          "8": 4145,
+          "9": 3420,
+          "10": 3041,
+          "11": 2324,
+          "12": 1875,
+          "13": 1701,
+          "14": 1695,
+          "15": 982,
+          "16": 1154,
+          "17": 956,
+          "18": 861,
+          "19": 754,
+          "20": 784,
+          "21": 790,
+          "22": 1600,
+          "23": 596,
+          "24": 407,
+          "25": 776,
+          "26": 402,
+          "27": 354,
+          "28": 331,
+          "29": 336,
+          "30": 328,
+          "31": 210,
+          "32": 259,
+          "33": 280,
+          "34": 232,
+          "35": 251,
+          "36": 259,
+          "37": 195,
+          "38": 165,
+          "39": 134,
+          "40": 148,
+          "41": 148,
+          "42": 147,
+          "43": 206,
+          "44": 219,
+          "45": 106,
+          "46": 96,
+          "47": 59,
+          "48": 117,
+          "49": 146,
+          "50": 109,
+          "51": 186,
+          "52": 65,
+          "53": 49,
+          "54": 97,
+          "55": 23,
+          "56": 66,
+          "57": 70,
+          "58": 39,
+          "59": 34,
+          "60": 12,
+          "61": 24,
+          "62": 12,
+          "63": 35,
+          "64": 18,
+          "65": 29,
+          "66": 273,
+          "67": 14,
+          "68": 26,
+          "69": 15,
+          "70": 31,
+          "71": 45,
+          "72": 31,
+          "73": 23,
+          "74": 266,
+          "75": 12,
+          "76": 8,
+          "77": 4,
+          "78": 7,
+          "79": 32,
+          "80": 6,
+          "81": 15,
+          "82": 12,
+          "83": 19,
+          "84": 9,
+          "85": 15,
+          "86": 5,
+          "87": 3,
+          "88": 9,
+          "89": 3,
+          "90": 14,
+          "91": 2,
+          "92": 5,
+          "93": 1,
+          "94": 2,
+          "95": 5,
+          "96": 5,
+          "97": 6,
+          "98": 5,
+          "99": 3,
+          "100": 2,
+          "101": 3,
+          "102": 4,
+          "103": 1,
+          "104": 1,
+          "105": 3,
+          "106": 1,
+          "109": 1,
+          "110": 2,
+          "112": 2,
+          "113": 1,
+          "116": 9,
+          "120": 2,
+          "121": 1,
+          "124": 1,
+          "126": 20,
+          "130": 1,
+          "131": 1,
+          "135": 1,
+          "146": 1
+        },
+        "fp16UlpDistributionCount": 888448,
+        "firstDifference": {
+          "caseId": "c1024-d1",
+          "probeId": "first",
+          "outputIndex": 0,
+          "outputRow": 0,
+          "outputChannel": 0,
+          "oracleBits": 7758,
+          "candidateBits": 7759,
+          "oracle": 0.00615692138671875,
+          "candidate": 0.006160736083984375,
+          "absoluteError": 0.000003814697265625
+        },
+        "worstDifference": {
+          "caseId": "bounded-finite-transform-amplification",
+          "probeId": "full",
+          "outputIndex": 3842,
+          "outputRow": 30,
+          "outputChannel": 2,
+          "oracleBits": 61568,
+          "candidateBits": 61569,
+          "oracle": -9216,
+          "candidate": -9224,
+          "absoluteError": 8
+        }
+      },
+      "candidateVersusScalarOracleProduction": {
+        "comparedValueCount": 793728,
+        "rawU16MismatchCount": 415430,
+        "signedZeroDifferenceCount": 0,
+        "finiteClassChangeCount": 182,
+        "finiteClassTransitionDistribution": {
+          "normal->subnormal": 102,
+          "subnormal->normal": 79,
+          "zero->subnormal": 1
+        },
+        "finiteClassTransitionDistributionCount": 182,
+        "meanError": -3.615877543163192E-9,
+        "meanAbsoluteError": 0.0000013991992261607385,
+        "rmsError": 0.0000023342770630576556,
+        "oracleRms": 0.005484528125681205,
+        "nrmse": 0.00042561128497590247,
+        "snrDb": 67.4197373070333,
+        "pearson": 0.9999999094568852,
+        "maximumAbsoluteError": 0.0000152587890625,
+        "relativeMaximumAbsoluteError": 0.0007283321194464676,
+        "oraclePeak": 0.0209503173828125,
+        "oracleRange": {
+          "minimum": -0.0196685791015625,
+          "maximum": 0.0209503173828125
+        },
+        "candidateRange": {
+          "minimum": -0.0196685791015625,
+          "maximum": 0.0209503173828125
+        },
+        "fp16UlpDistributionCount": 793728,
+        "firstDifference": {
+          "caseId": "c1024-d1",
+          "probeId": "first",
+          "outputIndex": 0,
+          "outputRow": 0,
+          "outputChannel": 0,
+          "oracleBits": 7758,
+          "candidateBits": 7759,
+          "oracle": 0.00615692138671875,
+          "candidate": 0.006160736083984375,
+          "absoluteError": 0.000003814697265625
+        },
+        "worstDifference": {
+          "caseId": "c1024-d9",
+          "probeId": "tail",
+          "outputIndex": 505495,
+          "outputRow": 493,
+          "outputChannel": 663,
+          "oracleBits": 42054,
+          "candidateBits": 42053,
+          "oracle": -0.016693115234375,
+          "candidate": -0.0166778564453125,
+          "absoluteError": 0.0000152587890625
+        }
+      },
+      "candidateVersusScalarOracleAdversarialAndSpectral": {
+        "comparedValueCount": 94720,
+        "rawU16MismatchCount": 13146,
+        "signedZeroDifferenceCount": 0,
+        "finiteClassChangeCount": 6725,
+        "finiteClassTransitionDistribution": {
+          "subnormal->zero": 35,
+          "zero->subnormal": 6690
+        },
+        "finiteClassTransitionDistributionCount": 6725,
+        "meanError": -1.0474232604374756E-8,
+        "meanAbsoluteError": 0.0033785856171586626,
+        "rmsError": 0.1515683772223899,
+        "oracleRms": 1930.8780134476874,
+        "nrmse": 0.0000784971273000081,
+        "snrDb": 82.10292473021164,
+        "pearson": 0.9999999969373258,
+        "maximumAbsoluteError": 8,
+        "relativeMaximumAbsoluteError": 0.0008223684210526315,
+        "oraclePeak": 9728,
+        "oracleRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "candidateRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "fp16UlpDistributionCount": 94720,
+        "firstDifference": {
+          "caseId": "bounded-signed-zero-subnormal",
+          "probeId": "full",
+          "outputIndex": 0,
+          "outputRow": 0,
+          "outputChannel": 0,
+          "oracleBits": 11,
+          "candidateBits": 6,
+          "oracle": 6.556510925292969E-7,
+          "candidate": 3.5762786865234375E-7,
+          "absoluteError": 2.980232238769531E-7
+        },
+        "worstDifference": {
+          "caseId": "bounded-finite-transform-amplification",
+          "probeId": "full",
+          "outputIndex": 3842,
+          "outputRow": 30,
+          "outputChannel": 2,
+          "oracleBits": 61568,
+          "candidateBits": 61569,
+          "oracle": -9216,
+          "candidate": -9224,
+          "absoluteError": 8
+        }
+      },
+      "candidateVersusCurrentAggregate": {
+        "comparedValueCount": 888448,
+        "rawU16MismatchCount": 475757,
+        "signedZeroDifferenceCount": 0,
+        "finiteClassChangeCount": 6916,
+        "finiteClassTransitionDistribution": {
+          "normal->subnormal": 119,
+          "subnormal->normal": 78,
+          "subnormal->zero": 33,
+          "zero->subnormal": 6686
+        },
+        "finiteClassTransitionDistributionCount": 6916,
+        "meanError": 6.8101537638104905E-9,
+        "meanAbsoluteError": 0.0003617844541533384,
+        "rmsError": 0.04948954250527345,
+        "oracleRms": 630.4631028045992,
+        "nrmse": 0.00007849712740542702,
+        "snrDb": 82.1029247185468,
+        "pearson": 0.999999996937326,
+        "maximumAbsoluteError": 8,
+        "relativeMaximumAbsoluteError": 0.0008223684210526315,
+        "oraclePeak": 9728,
+        "oracleRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "candidateRange": {
+          "minimum": -9728,
+          "maximum": 9728
+        },
+        "fp16UlpDistributionCount": 888448,
+        "firstDifference": {
+          "caseId": "c1024-d1",
+          "probeId": "first",
+          "outputIndex": 0,
+          "outputRow": 0,
+          "outputChannel": 0,
+          "oracleBits": 7758,
+          "candidateBits": 7759,
+          "oracle": 0.00615692138671875,
+          "candidate": 0.006160736083984375,
+          "absoluteError": 0.000003814697265625
+        },
+        "worstDifference": {
+          "caseId": "bounded-finite-transform-amplification",
+          "probeId": "full",
+          "outputIndex": 3842,
+          "outputRow": 30,
+          "outputChannel": 2,
+          "oracleBits": 61568,
+          "candidateBits": 61569,
+          "oracle": -9216,
+          "candidate": -9224,
+          "absoluteError": 8
+        }
+      },
+      "everyProbePassed": true,
+      "passed": true
+    },
+    "writesAndGuards": {
+      "snapshotCount": 188,
+      "nonFiniteOutputCount": 0,
+      "qNaNPrefillRemainingCount": 0,
+      "outOfRangeWriteCount": 0,
+      "everyPrefixGuardIntact": true,
+      "everySuffixGuardIntact": true,
+      "everyAdjacentBeforeGuardIntact": true,
+      "everyAdjacentAfterGuardIntact": true,
+      "everySelectedTailWritten": true,
+      "everyCandidateScratchFiniteCompleteAndGuarded": true,
+      "passed": true
+    },
+    "allCasesPassed": true,
+    "uncapturedGpuErrorCount": 0,
+    "deviceLossCount": 0,
+    "completedBeforeReady": true
+  },
+  "timing": {
+    "protocol": {
+      "correctnessAndWarmupBeforeReady": true,
+      "rounds": 6,
+      "balancedOrders": [
+        [
+          "current",
+          "candidate"
+        ],
+        [
+          "candidate",
+          "current"
+        ],
+        [
+          "candidate",
+          "current"
+        ],
+        [
+          "current",
+          "candidate"
+        ],
+        [
+          "current",
+          "candidate"
+        ],
+        [
+          "candidate",
+          "current"
+        ]
+      ],
+      "completeOutputFramesPerStratum": 512,
+      "perStratumInstancesPerSample": 1,
+      "perStratumCurrentDispatches": 1,
+      "perStratumCandidateDispatches": 3,
+      "multiplicities": {
+        "c1024": 2,
+        "c512": 3,
+        "c128": 9
+      },
+      "c128OperationMultiplicitySplit": {
+        "block3": 3,
+        "block4": 6
+      },
+      "productionOperationWeightBindingCount": 12,
+      "distinctNativeCurrentAndTransformedBuffersPerOperation": true,
+      "productionWorkingSetProofIncluded": true,
+      "currentAggregateDispatches": 42,
+      "candidateAggregateDispatches": 126,
+      "onePassOneCommandBufferOneSubmitOneDrainPerSample": true,
+      "outputReadbackInsideTiming": false,
+      "transformedWeightInsideTiming": false,
+      "unchangedTimingRetryPerformed": false
+    },
+    "warmup": {
+      "warmupStartedAtEpochMilliseconds": 1787309224168,
+      "warmupCompletedAtEpochMilliseconds": 1787309224260,
+      "currentAggregateDispatches": 42,
+      "candidateAggregateDispatches": 126,
+      "productionWeightBindingCount": 12,
+      "distinctProductionWeightKeys": 12,
+      "c128MultiplicitySplit": {
+        "block3": 3,
+        "block4": 6
+      },
+      "symmetric": true,
+      "completedBeforeReady": true
+    },
+    "sampleCountPerArm": 6,
+    "currentAggregateDispatches": 42,
+    "candidateAggregateDispatches": 126,
+    "strata": [
+      {
+        "id": "c1024-d1",
+        "currentGpuMilliseconds": [
+          9.764864,
+          4.194304,
+          4.063232,
+          4.128768,
+          4.128768,
+          4.128768
+        ],
+        "candidateGpuMilliseconds": [
+          4.849664,
+          4.128768,
+          4.128768,
+          4.128768,
+          5.701632,
+          7.405568
+        ],
+        "currentMedianGpuMilliseconds": 4.128768,
+        "candidateMedianGpuMilliseconds": 4.489216,
+        "gpuSpeedup": 0.9197080291970803,
+        "nonSlower": false
+      },
+      {
+        "id": "c1024-d3",
+        "currentGpuMilliseconds": [
+          12.845056,
+          4.128768,
+          4.063232,
+          7.012352,
+          4.063232,
+          4.58752
+        ],
+        "candidateGpuMilliseconds": [
+          5.111808,
+          4.063232,
+          4.128768,
+          4.128768,
+          5.111808,
+          4.128768
+        ],
+        "currentMedianGpuMilliseconds": 4.358143999999999,
+        "candidateMedianGpuMilliseconds": 4.128768,
+        "gpuSpeedup": 1.0555555555555554,
+        "nonSlower": true
+      },
+      {
+        "id": "c1024-d9",
+        "currentGpuMilliseconds": [
+          11.993088,
+          6.619136,
+          4.063232,
+          4.063232,
+          4.063232,
+          4.063232
+        ],
+        "candidateGpuMilliseconds": [
+          4.849664,
+          4.128768,
+          4.063232,
+          4.128768,
+          4.063232,
+          8.388608
+        ],
+        "currentMedianGpuMilliseconds": 4.063232,
+        "candidateMedianGpuMilliseconds": 4.128768,
+        "gpuSpeedup": 0.9841269841269842,
+        "nonSlower": false
+      },
+      {
+        "id": "c512-d1",
+        "currentGpuMilliseconds": [
+          1.900544,
+          1.114112,
+          1.114112,
+          1.114112,
+          1.114112,
+          1.179648
+        ],
+        "candidateGpuMilliseconds": [
+          1.245184,
+          1.048576,
+          1.048576,
+          1.114112,
+          4.25984,
+          1.179648
+        ],
+        "currentMedianGpuMilliseconds": 1.114112,
+        "candidateMedianGpuMilliseconds": 1.14688,
+        "gpuSpeedup": 0.9714285714285715,
+        "nonSlower": false
+      },
+      {
+        "id": "c512-d3",
+        "currentGpuMilliseconds": [
+          1.835008,
+          1.114112,
+          1.179648,
+          1.114112,
+          1.179648,
+          1.179648
+        ],
+        "candidateGpuMilliseconds": [
+          1.376256,
+          1.048576,
+          1.114112,
+          1.114112,
+          1.114112,
+          1.114112
+        ],
+        "currentMedianGpuMilliseconds": 1.179648,
+        "candidateMedianGpuMilliseconds": 1.114112,
+        "gpuSpeedup": 1.0588235294117647,
+        "nonSlower": true
+      },
+      {
+        "id": "c512-d9",
+        "currentGpuMilliseconds": [
+          2.555904,
+          1.114112,
+          1.179648,
+          1.114112,
+          1.114112,
+          1.114112
+        ],
+        "candidateGpuMilliseconds": [
+          4.849664,
+          1.048576,
+          1.048576,
+          1.048576,
+          1.048576,
+          1.114112
+        ],
+        "currentMedianGpuMilliseconds": 1.114112,
+        "candidateMedianGpuMilliseconds": 1.048576,
+        "gpuSpeedup": 1.0625,
+        "nonSlower": true
+      },
+      {
+        "id": "c128-d1",
+        "currentGpuMilliseconds": [
+          0.196608,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072
+        ],
+        "candidateGpuMilliseconds": [
+          0.065536,
+          0.065536,
+          0.065536,
+          0.131072,
+          0.065536,
+          0.131072
+        ],
+        "currentMedianGpuMilliseconds": 0.131072,
+        "candidateMedianGpuMilliseconds": 0.065536,
+        "gpuSpeedup": 2,
+        "nonSlower": true
+      },
+      {
+        "id": "c128-d3",
+        "currentGpuMilliseconds": [
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072
+        ],
+        "candidateGpuMilliseconds": [
+          0.131072,
+          0.065536,
+          0.065536,
+          0.131072,
+          0.065536,
+          0.065536
+        ],
+        "currentMedianGpuMilliseconds": 0.131072,
+        "candidateMedianGpuMilliseconds": 0.065536,
+        "gpuSpeedup": 2,
+        "nonSlower": true
+      },
+      {
+        "id": "c128-d9",
+        "currentGpuMilliseconds": [
+          0.196608,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072,
+          0.131072
+        ],
+        "candidateGpuMilliseconds": [
+          0.065536,
+          0.065536,
+          0.131072,
+          0.065536,
+          0.065536,
+          0.065536
+        ],
+        "currentMedianGpuMilliseconds": 0.131072,
+        "candidateMedianGpuMilliseconds": 0.065536,
+        "gpuSpeedup": 2,
+        "nonSlower": true
+      }
+    ],
+    "arms": {
+      "current": {
+        "samples": [
+          {
+            "gpuMilliseconds": 61.865984,
+            "wallMilliseconds": 62.800000071525574,
+            "gpuElapsedNanoseconds": 61865984,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283148.2,
+            "fenceAtEpochMilliseconds": 1787309283211,
+            "timestampBeginNanoseconds": "1063118129659904",
+            "timestampEndNanoseconds": "1063118191525888"
+          },
+          {
+            "gpuMilliseconds": 41.025536,
+            "wallMilliseconds": 41.60000002384186,
+            "gpuElapsedNanoseconds": 41025536,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283384.7,
+            "fenceAtEpochMilliseconds": 1787309283426.3,
+            "timestampBeginNanoseconds": "1063118365917184",
+            "timestampEndNanoseconds": "1063118406942720"
+          },
+          {
+            "gpuMilliseconds": 39.845888,
+            "wallMilliseconds": 40.40000009536743,
+            "gpuElapsedNanoseconds": 39845888,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283517.7,
+            "fenceAtEpochMilliseconds": 1787309283558.1,
+            "timestampBeginNanoseconds": "1063118498824192",
+            "timestampEndNanoseconds": "1063118538670080"
+          },
+          {
+            "gpuMilliseconds": 40.697856,
+            "wallMilliseconds": 41.40000009536743,
+            "gpuElapsedNanoseconds": 40697856,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283584.7,
+            "fenceAtEpochMilliseconds": 1787309283626.1,
+            "timestampBeginNanoseconds": "1063118565867520",
+            "timestampEndNanoseconds": "1063118606565376"
+          },
+          {
+            "gpuMilliseconds": 43.58144,
+            "wallMilliseconds": 46,
+            "gpuElapsedNanoseconds": 43581440,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283719.6,
+            "fenceAtEpochMilliseconds": 1787309283765.6,
+            "timestampBeginNanoseconds": "1063118702444544",
+            "timestampEndNanoseconds": "1063118746025984"
+          },
+          {
+            "gpuMilliseconds": 43.58144,
+            "wallMilliseconds": 44.60000002384186,
+            "gpuElapsedNanoseconds": 43581440,
+            "dispatchCount": 42,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283966.5,
+            "fenceAtEpochMilliseconds": 1787309284011.1,
+            "timestampBeginNanoseconds": "1063118947942400",
+            "timestampEndNanoseconds": "1063118991523840"
+          }
+        ],
+        "meanGpuMilliseconds": 45.09969066666667,
+        "medianGpuMilliseconds": 42.303488,
+        "meanWallMilliseconds": 46.13333338499069,
+        "medianWallMilliseconds": 43.10000002384186,
+        "minimumGpuMilliseconds": 39.845888,
+        "maximumGpuMilliseconds": 61.865984,
+        "minimumWallMilliseconds": 40.40000009536743,
+        "maximumWallMilliseconds": 62.800000071525574
+      },
+      "candidate": {
+        "samples": [
+          {
+            "gpuMilliseconds": 45.023232,
+            "wallMilliseconds": 45.90000009536743,
+            "gpuElapsedNanoseconds": 45023232,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283244.7,
+            "fenceAtEpochMilliseconds": 1787309283290.6,
+            "timestampBeginNanoseconds": "1063118226128896",
+            "timestampEndNanoseconds": "1063118271152128"
+          },
+          {
+            "gpuMilliseconds": 41.680896,
+            "wallMilliseconds": 42.59999990463257,
+            "gpuElapsedNanoseconds": 41680896,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283315.6,
+            "fenceAtEpochMilliseconds": 1787309283358.2,
+            "timestampBeginNanoseconds": "1063118296973312",
+            "timestampEndNanoseconds": "1063118338654208"
+          },
+          {
+            "gpuMilliseconds": 45.940736,
+            "wallMilliseconds": 46.699999928474426,
+            "gpuElapsedNanoseconds": 45940736,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283449.5,
+            "fenceAtEpochMilliseconds": 1787309283496.2,
+            "timestampBeginNanoseconds": "1063118430863360",
+            "timestampEndNanoseconds": "1063118476804096"
+          },
+          {
+            "gpuMilliseconds": 41.811968,
+            "wallMilliseconds": 43,
+            "gpuElapsedNanoseconds": 41811968,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283649.7,
+            "fenceAtEpochMilliseconds": 1787309283692.7,
+            "timestampBeginNanoseconds": "1063118631206912",
+            "timestampEndNanoseconds": "1063118673018880"
+          },
+          {
+            "gpuMilliseconds": 50.528256,
+            "wallMilliseconds": 51.60000002384186,
+            "gpuElapsedNanoseconds": 50528256,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283799.2,
+            "fenceAtEpochMilliseconds": 1787309283850.8,
+            "timestampBeginNanoseconds": "1063118780760064",
+            "timestampEndNanoseconds": "1063118831288320"
+          },
+          {
+            "gpuMilliseconds": 45.8752,
+            "wallMilliseconds": 46.799999952316284,
+            "gpuElapsedNanoseconds": 45875200,
+            "dispatchCount": 126,
+            "commandBufferCount": 1,
+            "queueDrainCount": 1,
+            "submitAtEpochMilliseconds": 1787309283884.6,
+            "fenceAtEpochMilliseconds": 1787309283931.4,
+            "timestampBeginNanoseconds": "1063118866022400",
+            "timestampEndNanoseconds": "1063118911897600"
+          }
+        ],
+        "meanGpuMilliseconds": 45.14338133333333,
+        "medianGpuMilliseconds": 45.449216,
+        "meanWallMilliseconds": 46.09999998410543,
+        "medianWallMilliseconds": 46.30000001192093,
+        "minimumGpuMilliseconds": 41.680896,
+        "maximumGpuMilliseconds": 50.528256,
+        "minimumWallMilliseconds": 42.59999990463257,
+        "maximumWallMilliseconds": 51.60000002384186
+      }
+    },
+    "pairedRounds": [
+      {
+        "roundIndex": 0,
+        "currentGpuMilliseconds": 61.865984,
+        "candidateGpuMilliseconds": 45.023232,
+        "gpuSpeedup": 1.3740902474526928,
+        "gpuWin": true,
+        "currentWallMilliseconds": 62.800000071525574,
+        "candidateWallMilliseconds": 45.90000009536743,
+        "wallSpeedup": 1.3681917198484672,
+        "wallWin": true
+      },
+      {
+        "roundIndex": 1,
+        "currentGpuMilliseconds": 41.025536,
+        "candidateGpuMilliseconds": 41.680896,
+        "gpuSpeedup": 0.9842767295597485,
+        "gpuWin": false,
+        "currentWallMilliseconds": 41.60000002384186,
+        "candidateWallMilliseconds": 42.59999990463257,
+        "wallSpeedup": 0.9765258243420333,
+        "wallWin": false
+      },
+      {
+        "roundIndex": 2,
+        "currentGpuMilliseconds": 39.845888,
+        "candidateGpuMilliseconds": 45.940736,
+        "gpuSpeedup": 0.8673323823109843,
+        "gpuWin": false,
+        "currentWallMilliseconds": 40.40000009536743,
+        "candidateWallMilliseconds": 46.699999928474426,
+        "wallSpeedup": 0.8650963631101487,
+        "wallWin": false
+      },
+      {
+        "roundIndex": 3,
+        "currentGpuMilliseconds": 40.697856,
+        "candidateGpuMilliseconds": 41.811968,
+        "gpuSpeedup": 0.9733542319749217,
+        "gpuWin": false,
+        "currentWallMilliseconds": 41.40000009536743,
+        "candidateWallMilliseconds": 43,
+        "wallSpeedup": 0.9627906998922658,
+        "wallWin": false
+      },
+      {
+        "roundIndex": 4,
+        "currentGpuMilliseconds": 43.58144,
+        "candidateGpuMilliseconds": 50.528256,
+        "gpuSpeedup": 0.8625162127107653,
+        "gpuWin": false,
+        "currentWallMilliseconds": 46,
+        "candidateWallMilliseconds": 51.60000002384186,
+        "wallSpeedup": 0.8914728678051479,
+        "wallWin": false
+      },
+      {
+        "roundIndex": 5,
+        "currentGpuMilliseconds": 43.58144,
+        "candidateGpuMilliseconds": 45.8752,
+        "gpuSpeedup": 0.9500000000000001,
+        "gpuWin": false,
+        "currentWallMilliseconds": 44.60000002384186,
+        "candidateWallMilliseconds": 46.799999952316284,
+        "wallSpeedup": 0.952991454471881,
+        "wallWin": false
+      }
+    ],
+    "speedup": {
+      "meanGpu": 0.9990321800145174,
+      "medianGpu": 0.9307858687815429,
+      "meanWall": 1.0007230672645717,
+      "medianWall": 0.9308855294329339
+    },
+    "gates": {
+      "everyStratumMedianGpuNonSlower": false,
+      "requiredPairWins": 5,
+      "gpuPairWins": 1,
+      "wallPairWins": 1,
+      "gpuPairWinsPassed": false,
+      "wallPairWinsPassed": false,
+      "requiredMeanAndMedianSpeedup": 1.35,
+      "meanGpuSpeedupPassed": false,
+      "medianGpuSpeedupPassed": false,
+      "meanWallSpeedupPassed": false,
+      "medianWallSpeedupPassed": false,
+      "scopedPlanningMilliseconds": 16125.2,
+      "lowerWallSpeedup": 0.9308855294329339,
+      "projectedSavingMilliseconds": -1197.2306213278046,
+      "requiredProjectedSavingMilliseconds": 4000,
+      "projectedSavingPassed": false
+    },
+    "measurementStartedAtEpochMilliseconds": 1787309283094,
+    "measurementCompletedAtEpochMilliseconds": 1787309284011,
+    "passed": false
+  },
+  "resources": {
+    "persistentPayload": {
+      "routeCount": 12,
+      "currentBytes": 56426496,
+      "candidateBytes": 128974848,
+      "increaseBytes": 72548352,
+      "candidateToCurrentRatio": 2.2857142857142856,
+      "productionPackagePolicy": "replace-native-do-not-duplicate",
+      "nativeAndTransformedDuplicateSurvives": false
+    },
+    "scratch": {
+      "maximumInputSpectrumBytes": 1769472,
+      "maximumContractionSpectrumBytes": 3538944,
+      "maximumTotalScratchBytes": 5308416,
+      "maximumScratchBindingBytes": 3538944,
+      "maximumScratchBindingCount": 2,
+      "nominalInputSpectrumBytesPerLogicalOutputBeforeTail": 3.2,
+      "nominalContractionSpectrumBytesPerLogicalOutputBeforeTail": 6.4,
+      "authenticatedLimits": {
+        "maxStorageBufferBindingSize": 4294967292,
+        "maxBufferSize": 4294967292,
+        "maximumScratchBindingBytes": 3538944,
+        "storageBindingHeadroomBytes": 4291428348,
+        "bufferHeadroomBytes": 4291427836,
+        "everyScratchBindingWithinAuthenticatedLimits": true
+      },
+      "passed": true
+    },
+    "productionWorkingSet": {
+      "schema": "twelve-operation-distinct-native-current-transformed-v1",
+      "bindingCount": 12,
+      "distinctWeightKeyCount": 12,
+      "distinctNativeBufferCount": 12,
+      "distinctCurrentPackedBufferCount": 12,
+      "distinctCandidateTransformedBufferCount": 12,
+      "c128PerDilationMultiplicity": {
+        "block3": 3,
+        "block4": 6,
+        "total": 9
+      },
+      "currentAggregateDispatches": 42,
+      "candidateAggregateDispatches": 126,
+      "nativeBytes": 56426496,
+      "currentPackedBytes": 56426496,
+      "candidateTransformedBytes": 128974848,
+      "passed": true
+    }
+  },
+  "memoryAndLifecycle": {
+    "beforeCleanup": {
+      "createdBufferCount": 717,
+      "destroyedBufferCount": 556,
+      "liveBufferCount": 161,
+      "liveBytes": 312915296,
+      "maximumLiveBytes": 313105520,
+      "mapCount": 748,
+      "unmapCount": 748,
+      "activeMapCount": 0
+    },
+    "cleanup": {
+      "createdBufferCount": 717,
+      "destroyedBufferCount": 717,
+      "liveBufferCount": 0,
+      "liveBytes": 0,
+      "maximumLiveBytes": 313105520,
+      "mapCount": 748,
+      "unmapCount": 748,
+      "activeMapCount": 0,
+      "cleanupStartedAtEpochMilliseconds": 1787309284013,
+      "cleanupCompletedAtEpochMilliseconds": 1787309284014,
+      "queueDrained": true,
+      "ownersDestroyedIdempotently": true,
+      "postDestroyRejected": true,
+      "zeroLiveBuffers": true,
+      "zeroLiveBytes": true,
+      "createdEqualsDestroyed": true,
+      "mapsBalanced": true
+    },
+    "uncapturedGpuErrorCount": 0,
+    "deviceLossCount": 0,
+    "passed": true
+  },
+  "thermal": {
+    "launch": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "traceStartedAtEpochMilliseconds": 1787309001845,
+      "gateStartedAtEpochMilliseconds": 1787309229855,
+      "gateCompletedAtEpochMilliseconds": 1787309282854,
+      "observationCount": 54,
+      "pollMilliseconds": 1000,
+      "maximumPollGapMilliseconds": 1010,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "readyToGateDelayMilliseconds": 5595,
+      "launchDelayMilliseconds": 240
+    },
+    "completion": {
+      "schema": "jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1",
+      "sha256": "1e6c451123330b377fb7d44ba3c3f4e3b7183dc3eb9c9b67a19703d63cf8f21f",
+      "byteLength": 66632,
+      "completedAtEpochMilliseconds": 1787309302849,
+      "observationCount": 302,
+      "maximumPollGapMilliseconds": 1010,
+      "nonNominalObservationCount": 0,
+      "missingObservationCount": 0,
+      "initialLevel": 0,
+      "finalLevel": 0,
+      "coversCleanup": true
+    },
+    "passed": true
+  },
+  "decision": {
+    "disposition": "negative-stop-exact-rfft16-mechanism",
+    "interpretation": "Correctness, resources, lifecycle, and thermal gates passed, but the three-stage transform pipeline was approximately neutral overall and failed every frozen performance threshold. It was slower by median GPU and wall time, won only one of six pairs, and regressed three of nine stratum medians.",
+    "packageC512FollowupAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false,
+    "trajectoryOrListeningRunAuthorized": false,
+    "productSpeedClaim": false,
+    "qualityOrListeningClaim": false,
+    "revisitCondition": "Do not retry this unchanged RFFT16 overlap-save mechanism. Revisit only after materially different transform/dataflow or changed browser/GPU compiler behavior; the declared next target is exact DiT head-layout fusion."
+  }
+}

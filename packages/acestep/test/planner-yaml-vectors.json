@@ -1,0 +1,50 @@
+{
+  "pyyamlVersion": "6.0.3",
+  "cases": [
+    {
+      "id": "standard",
+      "metadata": {"bpm":120,"caption":"Bright neo-soul with elastic bass, clipped guitar, crisp drums and warm keys.","duration":12,"keyscale":"G major","language":"en","timesignature":"4"},
+      "expected": "<think>\nbpm: 120\ncaption: Bright neo-soul with elastic bass, clipped guitar, crisp drums and warm keys.\nduration: 12\nkeyscale: G major\nlanguage: en\ntimesignature: 4\n</think>"
+    },
+    {
+      "id": "long-quoted",
+      "metadata": {"caption":"word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word "},
+      "expected": "<think>\ncaption: 'word word word word word word word word word word word word word word word\n  word word word word word word word word word word word word word word word word\n  word word word word word word word word word '\n</think>"
+    },
+    {
+      "id": "resolvers",
+      "metadata": {"caption":"2026-08-13","keyscale":"0x10","language":"yes","timesignature":"12:34"},
+      "expected": "<think>\ncaption: '2026-08-13'\nkeyscale: '0x10'\nlanguage: 'yes'\ntimesignature: '12:34'\n</think>"
+    },
+    {
+      "id": "leading-zero-decimals",
+      "metadata": {"bpm":"00","duration":"012","timesignature":"004/4"},
+      "expected": "<think>\nbpm: 0\nduration: 12\ntimesignature: 4\n</think>"
+    },
+    {
+      "id": "indicators",
+      "metadata": {"caption":"rock: hard # loud","keyscale":"---abc","language":"<<","timesignature":"="},
+      "expected": "<think>\ncaption: 'rock: hard # loud'\nkeyscale: '---abc'\nlanguage: '<<'\ntimesignature: '='\n</think>"
+    },
+    {
+      "id": "unicode-apostrophe",
+      "metadata": {"caption":"it's fine 🎵 café","keyscale":"B♭ major","language":"yue","timesignature":"6/4"},
+      "expected": "<think>\ncaption: it's fine 🎵 café\nkeyscale: B♭ major\nlanguage: yue\ntimesignature: 6\n</think>"
+    },
+    {
+      "id": "double-spaces",
+      "metadata": {"caption":"a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b"},
+      "expected": "<think>\ncaption: a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b a  b\n  a  b a  b a  b a  b a  b a  b a  b a  b\n</think>"
+    },
+    {
+      "id": "plain-boundary",
+      "metadata": {"caption":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx word tail"},
+      "expected": "<think>\ncaption: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n  word tail\n</think>"
+    },
+    {
+      "id": "quoted-boundary",
+      "metadata": {"caption":"rock: word word word word word word word word word word word word word word word word word word word word word word "},
+      "expected": "<think>\ncaption: 'rock: word word word word word word word word word word word word word word\n  word word word word word word word word '\n</think>"
+    }
+  ]
+}

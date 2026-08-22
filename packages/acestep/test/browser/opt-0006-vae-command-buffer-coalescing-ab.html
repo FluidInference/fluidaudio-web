@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0006 bounded VAE command-buffer coalescing A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 72rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      This page exercises the exact OPT-0006 batch-size set 1, 2, 4, 8, and
+      16 on a bounded mixed Oobleck decoder graph. Correctness runs require no
+      thermal metadata. Timing runs require an explicit continuous-nominal
+      thermal gate and use the same integrated decoder kernels; this page does
+      not decode a production window or song.
+    </p>
+    <button id="start" type="button">Run bounded VAE coalescing A/B</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0006-vae-command-buffer-coalescing-ab.ts"></script>
+  </body>
+</html>

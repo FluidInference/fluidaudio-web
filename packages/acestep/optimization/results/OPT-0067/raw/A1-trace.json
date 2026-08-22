@@ -1,0 +1,432 @@
+{
+  "source": "notifyutil-com.apple.system.thermalpressurelevel",
+  "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+  "rawTraceSha256": "ce56e0d5fb22ad5a7bdc9c0151d38e4cbc5afe2d6371e731b9d392efa03898d7",
+  "completedAtEpochMilliseconds": 1786853388024,
+  "observationCount": 83,
+  "maximumPollGapMilliseconds": 956,
+  "nonNominalObservationCount": 0,
+  "observations": [
+    {
+      "atEpochMilliseconds": 1786853313786,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853314697,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853315602,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853316518,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853317425,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853318339,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853319243,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853320153,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853321066,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853321979,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853322897,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853323812,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853324722,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853325634,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853326547,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853327458,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853328370,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853329281,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853330191,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853331100,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853332013,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853332925,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853333843,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853334752,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853335662,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853336570,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853337480,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853338396,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853339309,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853340226,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853341143,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853342048,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853342959,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853343879,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853344790,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853345711,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853346615,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853347521,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853348428,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853349348,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853350266,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853351181,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853352095,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853353006,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853353924,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853354837,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853355743,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853356659,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853357571,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853358480,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853359396,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853360309,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853361229,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853362139,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853363048,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853364004,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853364912,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853365825,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853366728,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853367634,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853368546,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853369450,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853370363,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853371269,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853372174,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853373085,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853373996,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853374905,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853375821,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853376732,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853377644,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853378557,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853379468,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853380384,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853381297,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853382211,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853383127,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853384044,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853384957,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853385868,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853386784,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853387691,
+      "level": 0,
+      "rawValue": "0"
+    },
+    {
+      "atEpochMilliseconds": 1786853388024,
+      "level": 0,
+      "rawValue": "0"
+    }
+  ],
+  "transitions": [
+    {
+      "atEpochMilliseconds": 1786853363048,
+      "level": 0
+    }
+  ]
+}

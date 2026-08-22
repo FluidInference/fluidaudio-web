@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0025 VAE K1 subgroup-GEMM A/B</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0025 VAE K1 subgroup-GEMM A/B</h1>
+    <p>
+      Preparation compares every raw FP16 output and warms both kernels once
+      at all five exact C512-window production shapes. Timing is four balanced
+      paired rounds, one dispatch and one queue drain per operation.
+    </p>
+    <p id="progress">preparing</p>
+    <button id="run" type="button" disabled>Run paired benchmark once</button>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0025-vae-k1-subgroup-gemm.ts"></script>
+  </body>
+</html>

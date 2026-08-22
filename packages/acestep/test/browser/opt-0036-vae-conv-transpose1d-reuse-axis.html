@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0036 ConvTranspose reuse-axis A/B/C</title>
+    <style>
+      body { font: 14px/1.45 system-ui, sans-serif; margin: 1.5rem; }
+      button { font: inherit; padding: 0.5rem 0.8rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0036 ConvTranspose reuse-axis split</h1>
+    <p>
+      Preparation compiles OPT-0026, R8×C4, and R4×C8 for all five full C512
+      production shapes. It compares every candidate output FP16 bit against
+      OPT-0026 while all arms read the same revision-6 polyphase weight bytes.
+      Once READY, leave the machine nominal and idle for 30 seconds, confirm
+      thermal level 0, then run the balanced A/B/C timing exactly once.
+    </p>
+    <p id="progress" role="status">preparing</p>
+    <button id="run" type="button" disabled>Run balanced A/B/C timing</button>
+    <pre id="result">not run</pre>
+    <script
+      type="module"
+      src="./opt-0036-vae-conv-transpose1d-reuse-axis.ts"
+    ></script>
+  </body>
+</html>

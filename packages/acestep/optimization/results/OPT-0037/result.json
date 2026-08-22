@@ -1,0 +1,345 @@
+{
+  "schema": "ace-opt-0037-rev7-vs-rev8-final-latent-gate-v1",
+  "experimentId": "OPT-0037",
+  "status": "failed-final-latent-gate",
+  "fixedExecutionOrder": [
+    "rev7-control",
+    "rev8-candidate"
+  ],
+  "identity": {
+    "request": {
+      "canonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":180,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+      "byteLength": 366,
+      "sha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+      "durationSeconds": 180,
+      "seed": "0000000000c0ffee",
+      "conditionTokenCount": 98
+    },
+    "controlPackage": {
+      "role": "rev7-control",
+      "manifestPath": "/model/files-fp16-dit-rev7-oracle/manifest.json",
+      "manifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "manifestByteLength": 254357,
+      "runtimeProfile": "opt-0009-fp16-fp32-dense-v1",
+      "kernelSetId": "opt-0009-n256-k32-fp16-fp32-v1"
+    },
+    "candidatePackage": {
+      "role": "rev8-candidate",
+      "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+      "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+      "manifestByteLength": 257789,
+      "runtimeProfile": "opt-0037-k4-fp16-partials-v1",
+      "kernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1"
+    },
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949"
+  },
+  "arms": {
+    "control": {
+      "role": "rev7-control",
+      "authenticatedPackage": {
+        "role": "rev7-control",
+        "manifestPath": "/model/files-fp16-dit-rev7-oracle/manifest.json",
+        "manifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+        "manifestByteLength": 254357,
+        "runtimeProfile": "opt-0009-fp16-fp32-dense-v1",
+        "kernelSetId": "opt-0009-n256-k32-fp16-fp32-v1"
+      },
+      "runtimeDiagnostics": {
+        "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+        "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+        "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+        "ditDenseManifestUrl": "http://127.0.0.1:5174/model/files-fp16-dit-rev7-oracle/manifest.json",
+        "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+        "ditDenseManifestByteLength": 254357,
+        "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+        "ditDenseKernelSetId": "opt-0009-n256-k32-fp16-fp32-v1",
+        "ditDenseLayerBytes": 3020808192,
+        "ditResidentWeightBytes": 3150917888,
+        "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "vaeManifestByteLength": 715301,
+        "vaeRuntimeProfile": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+        "vaeKernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "packedTimbreRowCount": 1,
+        "conditionTokenCount": 98
+      },
+      "finalLatentElementCount": 288000,
+      "finalLatentByteLength": 1152000,
+      "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentNonzeroCount": 288000,
+      "finalLatentMaxAbs": 6.882339954376221,
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 121691.69999873638,
+        "graphWallMs": 125601.39999997616
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 28.09999990463257
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1252.7000000476837
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 2093.899999976158
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 33.300000071525574
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 2067.7999999523163
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 125673.39999997616
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 1,
+        "initializedOrdinal": 2,
+        "checkpointOrdinal": 3,
+        "generationCleanupCompletedOrdinal": 4,
+        "disposeStartedOrdinal": 5,
+        "disposeCompletedOrdinal": 6
+      },
+      "evidence": {
+        "initializationProgressEventCount": 158,
+        "generationProgressEventCount": 76201,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_M2250_FAMILY_PROFILE"
+        ],
+        "checkpointCallbackCount": 1,
+        "privateStopMatched": true,
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false,
+        "vaeBackendCreated": false
+      }
+    },
+    "candidate": {
+      "role": "rev8-candidate",
+      "authenticatedPackage": {
+        "role": "rev8-candidate",
+        "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+        "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "manifestByteLength": 257789,
+        "runtimeProfile": "opt-0037-k4-fp16-partials-v1",
+        "kernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1"
+      },
+      "runtimeDiagnostics": {
+        "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+        "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+        "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "ditDenseManifestUrl": "http://127.0.0.1:5174/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+        "ditDenseManifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "ditDenseManifestByteLength": 257789,
+        "ditDenseRuntimeProfile": "opt-0037-k4-fp16-partials-v1",
+        "ditDenseKernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1",
+        "ditDenseLayerBytes": 3020808192,
+        "ditResidentWeightBytes": 3150917888,
+        "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "vaeManifestByteLength": 715301,
+        "vaeRuntimeProfile": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+        "vaeKernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "packedTimbreRowCount": 1,
+        "conditionTokenCount": 98
+      },
+      "finalLatentElementCount": 288000,
+      "finalLatentByteLength": 1152000,
+      "finalLatentSha256": "7da2b7a03fcad61547d56400ba2c499af34fe5459f002a8ab2a998b9214e9943",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentNonzeroCount": 288000,
+      "finalLatentMaxAbs": 6.882054328918457,
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 115350.19999802113,
+        "graphWallMs": 119277.10000002384
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 31.300000071525574
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1603.6999999284744
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 3853
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 24.5
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 3202
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 119362.20000004768
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 7,
+        "initializedOrdinal": 8,
+        "checkpointOrdinal": 9,
+        "generationCleanupCompletedOrdinal": 10,
+        "disposeStartedOrdinal": 11,
+        "disposeCompletedOrdinal": 12
+      },
+      "evidence": {
+        "initializationProgressEventCount": 9789,
+        "generationProgressEventCount": 70564,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_M2250_FAMILY_PROFILE"
+        ],
+        "checkpointCallbackCount": 1,
+        "privateStopMatched": true,
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false,
+        "vaeBackendCreated": false
+      }
+    }
+  },
+  "correctness": {
+    "deterministicCanonicalRequest": true,
+    "fullFinalLatentsCompared": true,
+    "elementCount": 288000,
+    "byteLengthPerArm": 1152000,
+    "controlFinalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+    "candidateFinalLatentSha256": "7da2b7a03fcad61547d56400ba2c499af34fe5459f002a8ab2a998b9214e9943",
+    "comparison": {
+      "count": 288000,
+      "finitePairCount": 288000,
+      "differingU32Count": 287999,
+      "signedZeroDifferenceCount": 0,
+      "classChangeCount": 802,
+      "classChanges": {
+        "negative-finite->positive-finite": 412,
+        "positive-finite->negative-finite": 390
+      },
+      "controlNonFiniteCount": 0,
+      "candidateNonFiniteCount": 0,
+      "signedMeanError": 0.00002450548873029056,
+      "meanAbsoluteError": 0.007045904014310846,
+      "rmsError": 0.016886645813062637,
+      "relativeRmsError": 6.038731786170261,
+      "nrmse": 0.01658430115994917,
+      "snrDecibels": 35.60605648683608,
+      "pearsonCorrelation": 0.9998616362142014,
+      "maximumAbsoluteControl": 6.882339954376221,
+      "maximumAbsoluteCandidate": 6.882054328918457,
+      "maximumAbsoluteError": 0.995576024055481,
+      "relativeMaximumAbsoluteError": 0.14465661833842305,
+      "maximumRelativeError": 2697.9857606655514,
+      "firstDifference": {
+        "index": 0,
+        "control": 0.5339322686195374,
+        "candidate": 0.5321939587593079,
+        "controlU32": 1057533897,
+        "candidateU32": 1057504733
+      },
+      "worstDifference": {
+        "index": 273508,
+        "control": -1.101751685142517,
+        "candidate": -2.097327709197998,
+        "error": -0.995576024055481,
+        "absoluteError": 0.995576024055481,
+        "relativeError": 0.903630135066867
+      },
+      "thresholds": {
+        "nrmseMaximum": 0.02,
+        "snrDecibelsMinimum": 34,
+        "pearsonMinimum": 0.999,
+        "maximumAbsoluteErrorMaximum": 0.25
+      },
+      "passed": false
+    }
+  },
+  "lifecycle": {
+    "control": {
+      "backendCreatedOrdinal": 1,
+      "initializedOrdinal": 2,
+      "checkpointOrdinal": 3,
+      "generationCleanupCompletedOrdinal": 4,
+      "disposeStartedOrdinal": 5,
+      "disposeCompletedOrdinal": 6
+    },
+    "candidate": {
+      "backendCreatedOrdinal": 7,
+      "initializedOrdinal": 8,
+      "checkpointOrdinal": 9,
+      "generationCleanupCompletedOrdinal": 10,
+      "disposeStartedOrdinal": 11,
+      "disposeCompletedOrdinal": 12
+    },
+    "controlDisposedBeforeCandidateCreated": true,
+    "gpuPackageRuntimeCoResidency": false,
+    "onlyDetachedCpuFinalLatentRetainedBetweenArms": true
+  },
+  "timingContext": {
+    "fixedOrder": "rev7-control-then-rev8-candidate",
+    "orderConfounded": true,
+    "graphAndStageWallsRecorded": true,
+    "speedupCalculated": false,
+    "performanceDecisionAuthorized": false,
+    "thermalProtocolApplied": false
+  },
+  "scope": {
+    "singleSequentialCorrectnessRun": true,
+    "vaeManifestAuthenticatedPerArm": true,
+    "vaeWeightsAcquired": false,
+    "vaeExecuted": false,
+    "audioExecuted": false,
+    "productionDemoDefaultChanged": false,
+    "performanceClaim": false,
+    "listeningApproval": false
+  }
+}

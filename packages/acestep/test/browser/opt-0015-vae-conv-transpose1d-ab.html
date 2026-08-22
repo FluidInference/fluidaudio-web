@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0015 FP16 ConvTranspose1D A/B</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      fieldset { display: grid; gap: 0.4rem; max-width: 56rem; }
+      label { display: grid; grid-template-columns: 26rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0015 production FP16 ConvTranspose1D A/B</h1>
+    <p>
+      Preparation first compares every selected raw U16 from the portable and
+      congruent kernels twice over the exact five C300 production shapes and
+      first, interior, and tail graph ranges. After the page reports ready,
+      observe one continuous 30-second nominal interval, enter that trace, and
+      run the balanced weighted primitive timing once. There is no thermal
+      retry and this gate makes no integrated-decoder wall-time claim.
+    </p>
+    <p id="progress" role="status" aria-live="polite">
+      preparing exact C300 correctness
+    </p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run balanced portable/congruent timing once
+      </button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script
+      type="module"
+      src="./opt-0015-vae-conv-transpose1d-ab.ts"
+    ></script>
+  </body>
+</html>

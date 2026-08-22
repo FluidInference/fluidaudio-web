@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 production FP16 ConvTranspose1D correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #result, #raw-result-chunk {
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+      #raw-result-retrieval { margin-block-start: 1rem; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only: authenticate the promoted production shader-f16
+      ConvTranspose1D source and generated WGSL, authenticate all five
+      canonical B-256 operations and all 322 unchanged graph quanta, and run
+      bounded representative complete-row ranges for every canonical shape.
+      Every selected raw FP16 output bit is compared with an independent
+      kernel-ascending then input-channel-ascending FP32 CPU oracle and rerun
+      deterministically. A complete 65-input-channel, 9-output-channel
+      arithmetic fixture covers stride, padding, channel, and time tails. The
+      run also validates qNaN prefills, canaries, guards, real multi-range
+      cancellation, heartbeat responsiveness, and idempotent cleanup/device
+      loss. It performs no timing and makes no thermal, throughput, quality,
+      listening, or production-selector claim.
+    </p>
+    <button id="start" type="button">
+      Run OPT-0011 production FP16 ConvTranspose1D correctness
+    </button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <fieldset id="raw-result-retrieval">
+      <legend>Bounded restartable raw-result retrieval</legend>
+      <p>
+        Available from page start. Before completion, retrieval reports that
+        the receipt is not ready and remains retryable.
+      </p>
+      <label>
+        Next code-unit offset
+        <input name="rawResultOffset" inputmode="numeric" value="0" />
+      </label>
+      <button id="publish-raw-result-chunk" type="button">
+        Publish raw-result chunk
+      </button>
+      <pre id="raw-result-chunk" data-state="ready"></pre>
+    </fieldset>
+    <script
+      type="module"
+      src="./opt-0011-vae-conv-transpose1d-fp16-production.ts"
+    ></script>
+  </body>
+</html>

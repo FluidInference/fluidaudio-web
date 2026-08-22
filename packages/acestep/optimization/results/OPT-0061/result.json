@@ -1,0 +1,212 @@
+{
+  "schema": "ace-opt-0061-attention-multi-query-v1",
+  "experimentId": "OPT-0061",
+  "passed": true,
+  "identity": {
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "wgslSha256": {
+      "query8": "82accd0b6b8e1d7d72c2b2eabd988a729c23e0aec031c87df68a9f333ad840c7",
+      "dualQuery16": "601d42eaa4f44e319464f50f29915c7c1289fe5b84cce7111cdd308ec59c0a6f",
+      "tripleQuery24": "b4fe82ccdbfd22967f8af2f2c9fff79d8303b8883a35097431518e766d7b6139",
+      "quadQuery32": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6"
+    }
+  },
+  "shape": {
+    "batch": 1,
+    "queryHeads": 16,
+    "keyValueHeads": 8,
+    "queryTokens": 2250,
+    "keyValueTokens": 2250,
+    "headDimension": 128,
+    "mode": "full"
+  },
+  "capabilities": {
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "subgroups"
+    ],
+    "limits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupStorageSize": 16384
+    }
+  },
+  "deterministicInputs": {
+    "generator": "lcg1664525-u24-f32-v1",
+    "querySeed": 324508639,
+    "keySeed": 610839776,
+    "valueSeed": 270544960,
+    "sha256": {
+      "query": "a9b3a0b9a2b44173d4943567053981bc900a963b27e765de34ebfe88b86edc91",
+      "key": "3aca97c626b259c7b083cee4e2a764fc7514cba7546b73217cf82a68c92634b5",
+      "value": "96d77cccd9f30a9332a1a3a06166fcaf5df0e31ecb4be82858501957253e4653"
+    }
+  },
+  "plans": {
+    "query8": {
+      "queryTokensPerTile": 4,
+      "queriesPerWorkgroup": 8,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "barrierEvents": 20268000,
+      "workgroupStorageBytes": 1024
+    },
+    "dualQuery16": {
+      "queryTokensPerTile": 8,
+      "queriesPerWorkgroup": 16,
+      "workgroupSize": 256,
+      "workgroupCount": 2256,
+      "keyValueScalarLoads": 1299456000,
+      "barrierEvents": 10152000,
+      "workgroupStorageBytes": 1024
+    },
+    "tripleQuery24": {
+      "streamCount": 3,
+      "queryTokensPerTile": 12,
+      "queriesPerWorkgroup": 24,
+      "workgroupSize": 256,
+      "workgroupCount": 1504,
+      "keyValueScalarLoads": 866304000,
+      "keyValueLoadReductionVersusQuery8": 2.99468085106383,
+      "keyValueLoadReductionVersusDual": 1.5,
+      "barrierEvents": 6768000,
+      "retainedPrivateFp32ValuesPerLane": 30,
+      "workgroupStorageBytes": 1024
+    },
+    "quadQuery32": {
+      "streamCount": 4,
+      "queryTokensPerTile": 16,
+      "queriesPerWorkgroup": 32,
+      "workgroupSize": 256,
+      "workgroupCount": 1128,
+      "keyValueScalarLoads": 649728000,
+      "keyValueLoadReductionVersusQuery8": 3.99290780141844,
+      "keyValueLoadReductionVersusDual": 2,
+      "barrierEvents": 5076000,
+      "retainedPrivateFp32ValuesPerLane": 40,
+      "workgroupStorageBytes": 1024
+    }
+  },
+  "correctness": {
+    "outputElements": 4608000,
+    "completeRunCount": 8,
+    "totalComparedElements": 32256000,
+    "nonFiniteCount": 0,
+    "mismatchCounts": {
+      "query8VersusQuery8": 0,
+      "query8Repeat": 0,
+      "dualQuery16VersusQuery8": 0,
+      "dualQuery16Repeat": 0,
+      "tripleQuery24VersusQuery8": 0,
+      "tripleQuery24Repeat": 0,
+      "quadQuery32VersusQuery8": 0,
+      "quadQuery32Repeat": 0
+    },
+    "completeWritesAcrossEightRuns": true,
+    "canariesUntouchedAcrossEightRuns": true,
+    "deterministic": true,
+    "bitExact": true,
+    "outputSha256": {
+      "query8A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "dualQuery16A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "tripleQuery24A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "quadQuery32A": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "quadQuery32B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "tripleQuery24B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "dualQuery16B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "query8B": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892"
+    }
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "startedAtEpochMilliseconds": 1786843192233,
+      "checkedAtEpochMilliseconds": 1786843223292,
+      "durationMilliseconds": 31059,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 31059,
+      "launchDelayMilliseconds": 8554
+    },
+    "compileOutsideTiming": true,
+    "fullCorrectnessOutsideTiming": true,
+    "correctnessAlsoServesAsTwoWarmupsPerArm": true,
+    "timedGpuWorkBeforeButton": false,
+    "rounds": 8,
+    "balancedForwardReverseLatinOrders": [
+      ["query8", "dualQuery16", "tripleQuery24", "quadQuery32"],
+      ["dualQuery16", "tripleQuery24", "quadQuery32", "query8"],
+      ["tripleQuery24", "quadQuery32", "query8", "dualQuery16"],
+      ["quadQuery32", "query8", "dualQuery16", "tripleQuery24"],
+      ["quadQuery32", "tripleQuery24", "dualQuery16", "query8"],
+      ["query8", "quadQuery32", "tripleQuery24", "dualQuery16"],
+      ["dualQuery16", "query8", "quadQuery32", "tripleQuery24"],
+      ["tripleQuery24", "dualQuery16", "query8", "quadQuery32"]
+    ],
+    "samplesPerArm": 8,
+    "oneCommandBufferPerSample": true,
+    "oneQueueDrainPerSample": true,
+    "outputReadbackInsideTiming": false
+  },
+  "timing": {
+    "samplesPerArm": 8,
+    "samplesMilliseconds": {
+      "query8": [110.89999997615814, 116.10000002384186, 153, 106.29999995231628, 138.19999992847443, 137.20000004768372, 135.70000004768372, 132.19999992847443],
+      "dualQuery16": [114.20000004768372, 102.5, 117.20000004768372, 119.10000002384186, 109.40000009536743, 102.79999995231628, 118.5, 109.60000002384186],
+      "tripleQuery24": [77.69999992847443, 103.10000002384186, 99.60000002384186, 115, 92.60000002384186, 71.5, 89.39999997615814, 90.89999997615814],
+      "quadQuery32": [70.10000002384186, 99.29999995231628, 81.60000002384186, 69.39999997615814, 77.5, 77, 84.30000007152557, 75.70000004768372]
+    },
+    "mediansMilliseconds": {
+      "query8": 133.94999998807907,
+      "dualQuery16": 111.90000003576279,
+      "tripleQuery24": 91.75,
+      "quadQuery32": 77.25
+    },
+    "dualQuerySpeedupVersusQuery8": 1.197050937848697,
+    "candidates": [
+      {
+        "arm": "tripleQuery24",
+        "speedupVersusQuery8": 1.459945503957265,
+        "speedupVersusDual": 1.2196185290001393,
+        "eligible": false
+      },
+      {
+        "arm": "quadQuery32",
+        "speedupVersusQuery8": 1.7339805823699557,
+        "speedupVersusDual": 1.448543689783337,
+        "eligible": true
+      }
+    ],
+    "requiredSpeedupVersusDual": 1.12,
+    "requiredSpeedupVersusQuery8": 1.5,
+    "winner": "quadQuery32",
+    "passed": true,
+    "decision": "positive-primitive-qualifier"
+  },
+  "decision": {
+    "disposition": "positive-primitive-qualifier",
+    "productionIntegrationAuthorized": false,
+    "productClaimAuthorized": false
+  },
+  "cleanup": {
+    "createdBufferCount": 8,
+    "preTimingBuffersDestroyed": 2,
+    "finalBuffersDestroyed": 6,
+    "totalBuffersDestroyed": 8,
+    "deviceDestroyed": true
+  }
+}

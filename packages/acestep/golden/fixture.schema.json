@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/narcotic-sh/ace-step-1.5.wgsl/golden/fixture.schema.json",
+  "title": "ACE-Step 1.5 deterministic golden fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "fixtureId", "contractSha256", "contract"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "fixtureId": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "contractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "contract": {"$ref": "#/$defs/contract"}
+  },
+  "$defs": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverage", "source", "request", "planner", "diffusion", "postprocess", "random", "expected"],
+      "properties": {
+        "coverage": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "source": {"$ref": "#/$defs/source"},
+        "request": {"$ref": "#/$defs/request"},
+        "planner": {"$ref": "#/$defs/planner"},
+        "diffusion": {"$ref": "#/$defs/diffusion"},
+        "postprocess": {"$ref": "#/$defs/postprocess"},
+        "random": {"$ref": "#/$defs/random"},
+        "expected": {"$ref": "#/$defs/expected"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["aceRepositoryCommit", "mainModelId", "mainModelRevision", "mainModelVariant", "plannerModelId", "plannerModelRevision"],
+      "properties": {
+        "aceRepositoryCommit": {"const": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0"},
+        "mainModelId": {"const": "ACE-Step/Ace-Step1.5"},
+        "mainModelRevision": {"const": "19671f406d603126926c1b7e2adc169acbcade22"},
+        "mainModelVariant": {"const": "acestep-v15-turbo"},
+        "plannerModelId": {"const": "ACE-Step/acestep-5Hz-lm-0.6B"},
+        "plannerModelRevision": {"const": "148d8ea0225bdab342ee1ae3a354275ccd60ca80"}
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["batchSize", "taskType", "resolvedTaskType", "instruction", "caption", "lyrics", "instrumental", "vocalLanguage", "bpm", "keyScale", "timeSignature", "durationSeconds", "referenceAudio", "sourceAudio", "audioCodes", "audioCoverStrength", "coverNoiseStrength", "chunkMaskMode", "repaintingStart", "repaintingEnd", "retakeVariance", "retakeSeed"],
+      "properties": {
+        "batchSize": {"const": 1},
+        "taskType": {"const": "text2music"},
+        "resolvedTaskType": {"enum": ["text2music", "cover"]},
+        "instruction": {"type": "string", "minLength": 1},
+        "caption": {"type": "string", "minLength": 1, "maxLength": 512},
+        "lyrics": {"type": "string", "maxLength": 4096},
+        "instrumental": {"type": "boolean"},
+        "vocalLanguage": {"type": "string"},
+        "bpm": {"type": ["integer", "null"], "minimum": 30, "maximum": 300},
+        "keyScale": {"type": "string"},
+        "timeSignature": {"type": "string"},
+        "durationSeconds": {"type": "integer", "minimum": 10, "maximum": 240},
+        "referenceAudio": {"type": "null"},
+        "sourceAudio": {"type": "null"},
+        "audioCodes": {"type": ["string", "null"]},
+        "audioCoverStrength": {"const": 1.0},
+        "coverNoiseStrength": {"const": 0.0},
+        "chunkMaskMode": {"const": "auto"},
+        "repaintingStart": {"const": 0.0},
+        "repaintingEnd": {"type": "null"},
+        "retakeVariance": {"const": 0.0},
+        "retakeSeed": {"type": "null"}
+      }
+    },
+    "planner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "thinking", "useCotMetas", "useCotCaption", "useCotLyrics", "useCotLanguage", "useConstrainedDecoding", "temperature", "cfgScale", "topK", "topP", "repetitionPenalty", "negativePrompt"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "thinking": {"type": "boolean"},
+        "useCotMetas": {"type": "boolean"},
+        "useCotCaption": {"type": "boolean"},
+        "useCotLyrics": {"type": "boolean"},
+        "useCotLanguage": {"type": "boolean"},
+        "useConstrainedDecoding": {"const": true},
+        "temperature": {"const": 0.85},
+        "cfgScale": {"const": 2.0},
+        "topK": {"const": 0},
+        "topP": {"const": 0.9},
+        "repetitionPenalty": {"const": 1.0},
+        "negativePrompt": {"const": "NO USER INPUT"},
+        "semanticRateHz": {"const": 5},
+        "codeVocabularySize": {"const": 64000},
+        "samplingBatchRows": {"const": 2},
+        "userMetadataWins": {"const": true}
+      }
+    },
+    "diffusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inferenceSteps", "shift", "customTimesteps", "resolvedTimesteps", "effectiveTimestepsBfloat16", "inferMethod", "samplerMode", "guidanceScale", "useAdg", "cfgIntervalStart", "cfgIntervalEnd", "velocityNormThreshold", "velocityEmaFactor", "dcw", "latentShift", "latentRescale"],
+      "properties": {
+        "inferenceSteps": {"const": 8},
+        "shift": {"const": 3.0},
+        "customTimesteps": {"type": "null"},
+        "resolvedTimesteps": {"const": [1.0, 0.9545454545454546, 0.9, 0.8333333333333334, 0.75, 0.6428571428571429, 0.5, 0.3]},
+        "effectiveTimestepsBfloat16": {"const": [1.0, 0.953125, 0.8984375, 0.83203125, 0.75, 0.64453125, 0.5, 0.30078125]},
+        "inferMethod": {"const": "ode"},
+        "samplerMode": {"const": "euler"},
+        "guidanceScale": {"const": 1.0},
+        "useAdg": {"const": false},
+        "cfgIntervalStart": {"const": 0.0},
+        "cfgIntervalEnd": {"const": 1.0},
+        "velocityNormThreshold": {"const": 0.0},
+        "velocityEmaFactor": {"const": 0.0},
+        "dcw": {"$ref": "#/$defs/dcw"},
+        "latentShift": {"const": 0.0},
+        "latentRescale": {"const": 1.0}
+      }
+    },
+    "dcw": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "mode", "lowScaler", "highScaler", "wavelet", "levels", "boundaryMode", "computeDtype"],
+      "properties": {
+        "enabled": {"const": true},
+        "mode": {"const": "double"},
+        "lowScaler": {"enum": [0.05, 0.02]},
+        "highScaler": {"enum": [0.02, 0.06]},
+        "wavelet": {"const": "haar"},
+        "levels": {"const": 1},
+        "boundaryMode": {"const": "zero"},
+        "computeDtype": {"const": "float32"}
+      }
+    },
+    "postprocess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vaeDtype", "sampleRate", "channels", "normalize", "normalizationDb", "fadeInSeconds", "fadeOutSeconds", "captureRawBeforeNormalization"],
+      "properties": {
+        "vaeDtype": {"const": "float32"},
+        "sampleRate": {"const": 48000},
+        "channels": {"const": 2},
+        "normalize": {"const": true},
+        "normalizationDb": {"const": -1.0},
+        "fadeInSeconds": {"const": 0.0},
+        "fadeOutSeconds": {"const": 0.0},
+        "captureRawBeforeNormalization": {"const": true}
+      }
+    },
+    "random": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["userSeed", "useRandomSeed", "algorithmId", "generator", "diffusionStream", "plannerStream", "gaussianMapping", "categoricalMapping", "initialNoise", "referenceInitialNoiseInjectionRequired", "randomTransformCaptureStatus"],
+      "properties": {
+        "userSeed": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "useRandomSeed": {"const": false},
+        "algorithmId": {"const": "ace-seed-v1"},
+        "generator": {"const": "philox4x32-10"},
+        "diffusionStream": {"const": "diffusion-noise"},
+        "plannerStream": {"const": "planner-sampling"},
+        "gaussianMapping": {"const": "probit-acklam-binary64-f32-v1"},
+        "categoricalMapping": {"const": "u32-midpoint-binary64-cdf-v1"},
+        "initialNoise": {"$ref": "#/$defs/initialNoise"},
+        "referenceInitialNoiseInjectionRequired": {"const": true},
+        "randomTransformCaptureStatus": {"const": "ready-for-native-capture"},
+        "referencePlannerWordsInjectionRequired": {"const": true}
+      }
+    },
+    "initialNoise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tapId", "dtype", "shape", "layout", "sha256"],
+      "properties": {
+        "tapId": {"const": "diffusion.initial-noise"},
+        "dtype": {"const": "float32"},
+        "shape": {"type": "array", "prefixItems": [{"const": 1}, {"type": "integer", "minimum": 128}, {"const": 64}], "items": false},
+        "layout": {"const": "row-major-little-endian"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latentFrames", "patchedTokens", "semanticCodes", "audioSamplesPerChannel"],
+      "properties": {
+        "latentFrames": {"type": "integer", "minimum": 128},
+        "patchedTokens": {"type": "integer", "minimum": 64},
+        "semanticCodes": {"type": "integer", "minimum": 0},
+        "semanticFrames": {"type": "integer", "minimum": 0},
+        "audioSamplesPerChannel": {"type": "integer", "minimum": 480000}
+      }
+    }
+  }
+}

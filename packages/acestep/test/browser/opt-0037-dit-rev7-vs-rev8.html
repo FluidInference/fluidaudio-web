@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0037 rev7 / rev8 final-latent gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 82rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0037 — authenticated rev7 / rev8 M2250 final-latent gate</h1>
+    <p>
+      One click runs the exact OPT-0018 direct 180-second C98 fixture. The
+      authenticated rev7 oracle runs first, reaches the detached 288,000-F32
+      final latent, and is completely disposed before rev8 is initialized.
+      Rev8 then runs the same request. VAE weights are never acquired and no
+      audio is decoded.
+    </p>
+    <p>
+      This is a single fixed-order numerical integration gate, not a performance
+      experiment. Graph and stage walls are recorded only as order-confounded
+      context; no speedup, timing pass/fail decision, or production-default
+      change is made here. No worker, WebGPU device, or model load exists before
+      the explicit button action.
+    </p>
+    <button id="run" type="button">Run rev7 then rev8 once</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0037-dit-rev7-vs-rev8.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0037-dit-rev7-vs-rev8.ts"></script>
+  </body>
+</html>

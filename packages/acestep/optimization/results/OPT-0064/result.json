@@ -1,0 +1,340 @@
+{
+  "schema": "ace-opt-0064-page-failure-v1",
+  "experimentId": "OPT-0064",
+  "status": "failed",
+  "error": {
+    "name": "AggregateError",
+    "message": "OPT-0064 capture/run/cleanup failed",
+    "stack": "AggregateError: OPT-0064 capture/run/cleanup failed\n    at executeCapture (http://127.0.0.1:5173/test/browser/opt-0064-direct-request-capture-worker.ts?worker_file&type=module:311:9)",
+    "errorCount": 1,
+    "errors": [
+      {
+        "name": "Error",
+        "message": "OPT-0064 direct WAV identity changed",
+        "stack": "Error: OPT-0064 direct WAV identity changed\n    at executeCapture (http://127.0.0.1:5173/test/browser/opt-0064-direct-request-capture-worker.ts?worker_file&type=module:193:120)"
+      }
+    ],
+    "evidence": {
+      "schema": "ace-opt-0064-worker-failure-evidence-v1",
+      "primaryFailurePhase": "output-hash",
+      "activePhaseAtFailureSerialization": "cleanup",
+      "modelSource": "cache-only",
+      "initializationProgressEventCount": 158,
+      "initializationStages": [
+        "webgpu",
+        "storage",
+        "manifest",
+        "weights",
+        "tokenizers",
+        "wasm",
+        "ready"
+      ],
+      "lastInitializationProgress": {
+        "stage": "ready",
+        "completedUnits": 1,
+        "totalUnits": 1,
+        "unit": "items",
+        "overallFraction": 1,
+        "elapsedMs": 29310,
+        "message": "ACE runtime ready"
+      },
+      "generationProgressEventCount": 77338,
+      "generationStages": [
+        "prepare",
+        "text-encoder",
+        "semantic-detokenizer",
+        "condition-encoder",
+        "release-conditioning",
+        "dit-load",
+        "dit-denoise",
+        "release-dit",
+        "vae-load",
+        "vae-decode",
+        "wav-encode",
+        "cleanup",
+        "done"
+      ],
+      "lastGenerationProgress": {
+        "stage": "done",
+        "completedUnits": 1,
+        "totalUnits": 1,
+        "unit": "items",
+        "stageIndex": 12,
+        "stageCount": 13,
+        "overallFraction": 1,
+        "elapsedMs": 16437.100000023842,
+        "message": "Generation complete"
+      },
+      "diagnosticCodes": [],
+      "fatalDiagnosticCodes": [],
+      "captureEventCount": 459,
+      "captureTail": [
+        {
+          "scope": "generation",
+          "category": "upload",
+          "operation": "vae-vae-file-upload",
+          "wallMs": 2.5
+        },
+        {
+          "scope": "generation",
+          "category": "upload",
+          "operation": "vae-vae-file-upload",
+          "wallMs": 1
+        },
+        {
+          "scope": "generation",
+          "category": "upload",
+          "operation": "vae-vae-file-upload",
+          "wallMs": 1.600000023841858
+        },
+        {
+          "scope": "generation",
+          "category": "upload",
+          "operation": "vae-vae-file-upload",
+          "wallMs": 2.200000047683716
+        },
+        {
+          "scope": "generation",
+          "category": "upload",
+          "operation": "vae-vae-phase-upload",
+          "outcome": "success",
+          "wallMs": 103.60000002384186
+        },
+        {
+          "scope": "generation",
+          "category": "construction",
+          "operation": "vae-backend-pipeline-and-graph-construction",
+          "outcome": "success",
+          "wallMs": 112.69999992847443
+        },
+        {
+          "scope": "generation",
+          "category": "construction",
+          "operation": "vae-gpu-api-construction-summary",
+          "wallMs": 112.69999992847443
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "vae-decode-raw-scan-and-opfs-write",
+          "wallMs": 3722.5
+        },
+        {
+          "scope": "generation",
+          "category": "execution",
+          "operation": "vae-decode-and-raw-stream",
+          "outcome": "success",
+          "wallMs": 3722.7000000476837
+        },
+        {
+          "scope": "generation",
+          "category": "cleanup",
+          "operation": "vae-drain-and-destroy",
+          "outcome": "success",
+          "wallMs": 0.20000004768371582
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "audio-raw-finish-and-flush",
+          "wallMs": 4.100000023841858
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "bounded-wav-normalize-encode-write",
+          "wallMs": 21.200000047683716
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "audio-raw-remove",
+          "wallMs": 1.1999999284744263
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "audio-wav-snapshot-validation",
+          "wallMs": 0.30000007152557373
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "audio-durable-publish-markers",
+          "wallMs": 0.3999999761581421
+        },
+        {
+          "scope": "generation",
+          "category": "finalization",
+          "operation": "normalize-encode-and-durable-wav-commit",
+          "outcome": "success",
+          "wallMs": 27.799999952316284
+        }
+      ],
+      "failedCaptureOperations": [],
+      "captureSummary": {
+        "schema": "ace-opt-0064-capture-summary-v1",
+        "eventCount": 459,
+        "cacheAuthenticationEventCount": 156,
+        "proofReuseEventCount": 158,
+        "acquisitionPlanCount": 3,
+        "phaseUploads": [
+          {
+            "id": "text",
+            "fileCount": 31,
+            "bytes": 1191553024,
+            "queueDrains": 34,
+            "queueEmptyGaps": 3,
+            "timing": {
+              "createBufferMs": 0.40000009536743164,
+              "streamReadMs": 510.30000269412994,
+              "ownedCopyMs": 0,
+              "incrementalHashMs": 0,
+              "writeBufferMs": 81.79999828338623,
+              "queueDrainMs": 33.299999833106995,
+              "queueEmptyGapMs": 3.799999952316284,
+              "errorScopeMs": 2.399999737739563,
+              "fileWallMs": 711.2000000476837
+            }
+          },
+          {
+            "id": "conditioner-constants",
+            "fileCount": 14,
+            "bytes": 1220575232,
+            "queueDrains": 26,
+            "queueEmptyGaps": 12,
+            "timing": {
+              "createBufferMs": 0.30000007152557373,
+              "streamReadMs": 495.3000007867813,
+              "ownedCopyMs": 0,
+              "incrementalHashMs": 0,
+              "writeBufferMs": 100.09999918937683,
+              "queueDrainMs": 12.699999809265137,
+              "queueEmptyGapMs": 14.700000047683716,
+              "errorScopeMs": 1.0000001192092896,
+              "fileWallMs": 702
+            }
+          },
+          {
+            "id": "dit",
+            "fileCount": 50,
+            "bytes": 3150917888,
+            "queueDrains": 75,
+            "queueEmptyGaps": 25,
+            "timing": {
+              "createBufferMs": 0.10000002384185791,
+              "streamReadMs": 1324.0000009536743,
+              "ownedCopyMs": 0,
+              "incrementalHashMs": 0,
+              "writeBufferMs": 199.09999883174896,
+              "queueDrainMs": 72.20000052452087,
+              "queueEmptyGapMs": 33.00000011920929,
+              "errorScopeMs": 4.300000190734863,
+              "fileWallMs": 1814.799999833107
+            }
+          },
+          {
+            "id": "vae",
+            "fileCount": 7,
+            "bytes": 168791552,
+            "queueDrains": 8,
+            "queueEmptyGaps": 1,
+            "timing": {
+              "createBufferMs": 0.10000002384185791,
+              "streamReadMs": 51.700000166893005,
+              "ownedCopyMs": 0,
+              "incrementalHashMs": 0,
+              "writeBufferMs": 8.50000011920929,
+              "queueDrainMs": 31.200000047683716,
+              "queueEmptyGapMs": 1.3000000715255737,
+              "errorScopeMs": 0.39999985694885254,
+              "fileWallMs": 103.10000026226044
+            }
+          }
+        ],
+        "aggregateUpload": {
+          "fileCount": 102,
+          "bytes": 5731837696,
+          "queueDrains": 143,
+          "queueEmptyGaps": 41,
+          "timing": {
+            "createBufferMs": 0.9000002145767212,
+            "streamReadMs": 2381.3000046014786,
+            "ownedCopyMs": 0,
+            "incrementalHashMs": 0,
+            "writeBufferMs": 389.4999964237213,
+            "queueDrainMs": 149.40000021457672,
+            "queueEmptyGapMs": 52.80000019073486,
+            "errorScopeMs": 8.099999904632568,
+            "fileWallMs": 3331.100000143051
+          }
+        },
+        "construction": {
+          "conditioning": {
+            "wallMs": 2356.8000000715256,
+            "shaderModuleCount": 67,
+            "pipelineCount": 67,
+            "bindGroupCount": 918,
+            "bufferCount": 119,
+            "shaderModuleCreationMs": 0.2999999523162842,
+            "pipelineCompilationMs": 200.39999771118164,
+            "bindGroupAndLayoutConstructionMs": 1.899999737739563,
+            "bufferAllocationMs": 0.20000004768371582
+          },
+          "dit": {
+            "wallMs": 141.89999997615814,
+            "shaderModuleCount": 58,
+            "pipelineCount": 58,
+            "bindGroupCount": 6449,
+            "bufferCount": 105,
+            "shaderModuleCreationMs": 0.3999999761581421,
+            "pipelineCompilationMs": 60.10000026226044,
+            "bindGroupAndLayoutConstructionMs": 9.399999380111694,
+            "bufferAllocationMs": 0.10000002384185791
+          },
+          "vae": {
+            "wallMs": 112.69999992847443,
+            "shaderModuleCount": 39,
+            "pipelineCount": 39,
+            "bindGroupCount": 84,
+            "bufferCount": 8,
+            "shaderModuleCreationMs": 0.7999999523162842,
+            "pipelineCompilationMs": 54.19999980926514,
+            "bindGroupAndLayoutConstructionMs": 0.5999999046325684,
+            "bufferAllocationMs": 0.10000002384185791
+          }
+        },
+        "execution": {
+          "conditioningMs": 2266.100000023842,
+          "ditMs": 6724.5,
+          "vaeDecodeAndRawStreamMs": 3722.7000000476837
+        },
+        "finalization": {
+          "rawStreamMs": 3722.5,
+          "wavWriteMs": 21.200000047683716,
+          "durableCommitMs": 27.799999952316284
+        }
+      },
+      "outputIdentity": {
+        "configuredVaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "configuredVaeRuntimeProfile": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+        "expected": {
+          "authority": "owner-approved-stage1-packed-bf16-fp32-candidate-a",
+          "sha256": "d085b6907c9872667412d6dcecfeee47b76c8038eb2bfbec615931b2d7365477",
+          "byteLength": 4608044
+        },
+        "actual": {
+          "sha256": "409b7157ac428910fae17776b1abbd9b42db7509984bcc0aac41871f95152ec2",
+          "byteLength": 4608044,
+          "streamReadCount": 5,
+          "maximumStreamChunkBytes": 2097152
+        },
+        "sha256Matches": false,
+        "byteLengthMatches": true
+      },
+      "resultReleaseFailed": false,
+      "backendDisposeFailed": false,
+      "cleanupCompletedAtEpochMilliseconds": 1786859599569
+    }
+  }
+}

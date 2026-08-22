@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "OPT-0084",
+  "allocationBaselineCommit": "7a078faee2ba2644394663863f73f80e5544e358",
+  "candidateSeamCommit": "245b5fe3347c370390eff990aa1ed45cb2b869ba",
+  "harnessCommit": "2aaa0454587f24ede91a62dcccb702ba9c06cf62",
+  "riskClass": "exact-browser-v1-sampler-implementation",
+  "evidence": {
+    "conclusion": "positive",
+    "status": "passed-standalone-browser-sampler-gate",
+    "passed": true,
+    "productionIntegrationStatus": "pending-compound-trajectory-and-product-gates",
+    "rationale": "The reusable candidate-domain radix sampler was exact on all eight authenticated semantic/CoT states and every one of 224 timed arm samples. It won 16/16 balanced rounds, reduced aggregate seven-state sampler median from 297.90000009536743 to 73.60000002384186 ms (4.047554347810682x), and projects 28.394999957084657 seconds saved over the default 900 semantic draws. This clears every frozen standalone gate and requires the declared compact-head compound escalation before integration."
+  },
+  "identity": {
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "151.0.7922.173",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "modelProfile": "reference-bf16",
+    "isolatedDetachedWorktreeCommit": "2aaa0454587f24ede91a62dcccb702ba9c06cf62",
+    "isolatedViteOrigin": "http://127.0.0.1:5174"
+  },
+  "protocol": {
+    "actualImmutableProductionBf16Logits": true,
+    "correctnessStateCount": 8,
+    "timedStateCount": 7,
+    "balancedInterleavedPairCount": 16,
+    "timedArmSampleCount": 224,
+    "samplerOnlyTiming": true,
+    "modelExecutionExcludedFromTiming": true,
+    "bothArmsInitializedAndWarmedOutsideTiming": true,
+    "productionChangedAtMeasurement": false,
+    "timingRetryPerformed": false
+  },
+  "correctness": {
+    "stateIds": [
+      "semantic-prefill",
+      "semantic-early",
+      "semantic-middle",
+      "semantic-late",
+      "cot-singleton",
+      "cot-small",
+      "cot-caption",
+      "cot-all"
+    ],
+    "completeLogicalFilteredLogitRawU32Exact": true,
+    "completeLogicalWeightRawU32Exact": true,
+    "sampleTokenWordPositiveCountExact": true,
+    "philoxCursorExact": true,
+    "fullInputValidationRetained": true,
+    "forcedTerminalExact": true,
+    "allocationReuseExact": true,
+    "runtimeEventCount": 0,
+    "cancellationCursorNonCommitExact": true,
+    "idempotentCleanup": true,
+    "passed": true
+  },
+  "performance": {
+    "pairWins": 16,
+    "requiredPairWins": 14,
+    "aggregateControlMedianMilliseconds": 297.90000009536743,
+    "aggregateCandidateMedianMilliseconds": 73.60000002384186,
+    "aggregateSamplerSpeedup": 4.047554347810682,
+    "requiredSamplerSpeedup": 1.5,
+    "projected900SemanticDrawSavingSeconds": 28.394999957084657,
+    "requiredProjectedSavingSeconds": 10,
+    "noRegressingDenseStateMedian": true,
+    "stateMediansMilliseconds": {
+      "semantic-early": { "control": 41.15000009536743, "candidate": 9.950000047683716 },
+      "semantic-middle": { "control": 41.25, "candidate": 9.800000190734863 },
+      "semantic-late": { "control": 41.60000002384186, "candidate": 9.600000023841858 },
+      "cot-singleton": { "control": 17.700000047683716, "candidate": 2.6000001430511475 },
+      "cot-small": { "control": 15.650000095367432, "candidate": 2.6000001430511475 },
+      "cot-caption": { "control": 60.14999997615814, "candidate": 16.399999976158142 },
+      "cot-all": { "control": 79.39999997615814, "candidate": 22.699999928474426 }
+    },
+    "passed": true
+  },
+  "thermal": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "pollMilliseconds": 1000,
+    "traceStartedAtEpochMilliseconds": 1787361595895,
+    "gateStartedAtEpochMilliseconds": 1787362046894,
+    "gateCompletedAtEpochMilliseconds": 1787362125899,
+    "gateObservationCount": 80,
+    "launchDelayMilliseconds": 3914,
+    "throughCleanupCompletedAtEpochMilliseconds": 1787362148899,
+    "throughCleanupObservationCount": 554,
+    "maximumPollGapMilliseconds": 1009,
+    "nonNominalObservationCount": 0,
+    "missingObservationCount": 0,
+    "continuousNominalCoverageValidated": true
+  },
+  "artifacts": [
+    {
+      "role": "authoritative-browser-gate-receipt",
+      "location": "optimization/artifacts/OPT-0084/raw/browser-gate.json",
+      "sha256": "34f0e10aab5a4a6b222f33b11df6b16e13b798e6c220f453b803411b53e8c572",
+      "byteLength": 119002
+    },
+    {
+      "role": "continuous-thermal-trace",
+      "location": "optimization/artifacts/OPT-0084/raw/thermal-trace.jsonl",
+      "sha256": "2967c3258a0a2b861207c75170ccc1ae2e4e73e6751bf3e54e07b0abd0ca2ec0",
+      "byteLength": 90192
+    }
+  ],
+  "nextGate": "Run the registered package-native compact-head plus fused-sampler compound comparison, then complete default-CoT, 150-code-plus-EOS, and planner-enabled product exactness gates before production integration."
+}

@@ -1,0 +1,143 @@
+{
+  "schema": "ace-opt-0050-dense-k4-output-vector-fma-compact-result-v1",
+  "experimentId": "OPT-0050",
+  "status": "negative",
+  "decision": "abandon-output-vector-fma-layout",
+  "control": {
+    "kernelId": "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+    "weightLayout": "ace-opt-0032-b-n128-k4-output4-lane32-k4-v1"
+  },
+  "candidate": {
+    "kernelId": "ace-opt-0050-dense-fp16-k4-output-vector-fma-fixed32-wg128-m32-n128-v1",
+    "weightLayout": "ace-opt-0050-b-n128-k4-k4-lane32-output4-v1"
+  },
+  "correctness": {
+    "passed": true,
+    "packingOutsideTimedRegion": true,
+    "fullOutputCount": 25344000,
+    "fullDifferingU32Count": 0,
+    "fullSignedZeroDifferenceCount": 0,
+    "fullClassChangeCount": 0,
+    "fullControlNonFiniteCount": 0,
+    "fullCandidateNonFiniteCount": 0,
+    "fullCandidateDeterministicRawU32": true,
+    "fullCompleteWritesFiniteGuardsAndTails": true,
+    "fullPackInverseMismatchCount": 0,
+    "fullLogicalAndPackedWordsByShape": [
+      { "id": "h-h", "words": 4194304, "outputU32Count": 4608000 },
+      { "id": "h-1024", "words": 2097152, "outputU32Count": 2304000 },
+      { "id": "h-6144", "words": 12582912, "outputU32Count": 13824000 },
+      { "id": "6144-h", "words": 12582912, "outputU32Count": 4608000 }
+    ],
+    "adversarialOutputCount": 17408,
+    "adversarialDifferingU32Count": 0,
+    "adversarialSignedZeroDifferenceCount": 0,
+    "adversarialClassChangeCount": 0,
+    "adversarialControlNonFiniteCount": 0,
+    "adversarialCandidateNonFiniteCount": 0,
+    "adversarialCases": [
+      { "id": "signed-zero", "outputU32Count": 1024 },
+      { "id": "k4-cancellation", "outputU32Count": 8192 },
+      { "id": "finite-range", "outputU32Count": 4096 },
+      { "id": "long-k6144", "outputU32Count": 4096 }
+    ],
+    "uncapturedGpuErrorCount": 0
+  },
+  "thermal": {
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "waitStartedAtEpochMilliseconds": 1786838565666,
+    "checkedAtEpochMilliseconds": 1786838607775,
+    "waitDurationMilliseconds": 42109,
+    "checkCount": 1,
+    "thermalLevel": 0,
+    "launchDelayMilliseconds": 50
+  },
+  "timing": {
+    "weightedProductionMultiplicities": "4/2/2/1",
+    "weightedDotK4Milliseconds": 168.49999994039536,
+    "weightedOutputVectorFmaMilliseconds": 170.54999995231628,
+    "weightedSpeedup": 0.9879800644239572,
+    "requiredWeightedSpeedup": 1.15,
+    "everyProductionShapeNonSlower": false,
+    "strata": [
+      {
+        "id": "h-h",
+        "shape": { "rows": 2250, "inner": 2048, "columns": 2048 },
+        "multiplicity": 4,
+        "dotK4SamplesMilliseconds": [11.899999976158142, 11.899999976158142],
+        "candidateSamplesMilliseconds": [13.299999952316284, 10.600000023841858],
+        "dotK4MeanMilliseconds": 11.899999976158142,
+        "candidateMeanMilliseconds": 11.949999988079071,
+        "speedup": 0.9958158985798488,
+        "nonSlower": false
+      },
+      {
+        "id": "h-1024",
+        "shape": { "rows": 2250, "inner": 2048, "columns": 1024 },
+        "multiplicity": 2,
+        "dotK4SamplesMilliseconds": [5, 6.5],
+        "candidateSamplesMilliseconds": [6.899999976158142, 9],
+        "dotK4MeanMilliseconds": 5.75,
+        "candidateMeanMilliseconds": 7.949999988079071,
+        "speedup": 0.7232704413361076,
+        "nonSlower": false
+      },
+      {
+        "id": "h-6144",
+        "shape": { "rows": 2250, "inner": 2048, "columns": 6144 },
+        "multiplicity": 2,
+        "dotK4SamplesMilliseconds": [37.700000047683716, 35.89999997615814],
+        "candidateSamplesMilliseconds": [37.90000009536743, 30.399999976158142],
+        "dotK4MeanMilliseconds": 36.80000001192093,
+        "candidateMeanMilliseconds": 34.15000003576279,
+        "speedup": 1.0775988279175108,
+        "nonSlower": true
+      },
+      {
+        "id": "6144-h",
+        "shape": { "rows": 2250, "inner": 6144, "columns": 2048 },
+        "multiplicity": 1,
+        "dotK4SamplesMilliseconds": [36.800000071525574, 34.799999952316284],
+        "candidateSamplesMilliseconds": [35.699999928474426, 41.39999997615814],
+        "dotK4MeanMilliseconds": 35.80000001192093,
+        "candidateMeanMilliseconds": 38.549999952316284,
+        "speedup": 0.9286640740908711,
+        "nonSlower": false
+      }
+    ],
+    "balancedOrders": [
+      { "shapeOrder": [0, 1, 2, 3], "armOrder": ["dotK4", "outputVectorFma"] },
+      { "shapeOrder": [3, 2, 1, 0], "armOrder": ["outputVectorFma", "dotK4"] }
+    ],
+    "oneSubmitAndOneMatchingDrainPerSample": true,
+    "outputReadbackInsideTiming": false,
+    "passed": false
+  },
+  "environment": {
+    "browser": "Google Chrome 151.0.0.0",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "subgroupMinSize": 32,
+    "subgroupMaxSize": 32,
+    "features": ["core-features-and-limits", "shader-f16", "subgroups"],
+    "maxComputeInvocationsPerWorkgroup": 256,
+    "maxComputeWorkgroupSizeX": 256
+  },
+  "cleanup": {
+    "createdBufferCount": 48,
+    "destroyedBufferCount": 48,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "maximumLiveBytes": 388230656,
+    "deviceDestroyed": true,
+    "idempotent": true
+  },
+  "preflightRejectedAttempt": {
+    "timedDispatchStarted": false,
+    "reason": "thermal form launch-delay validation after tool latency",
+    "createdBufferCount": 48,
+    "destroyedBufferCount": 48,
+    "liveBufferCount": 0,
+    "deviceDestroyed": true
+  }
+}

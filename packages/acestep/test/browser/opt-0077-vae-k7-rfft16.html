@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0077 VAE K7 RFFT16 primitive gate</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    body { margin: 1rem; max-width: 88rem; }
+    p { max-width: 82rem; }
+    fieldset { display: grid; gap: 0.45rem; margin-block: 1rem; max-width: 76rem; }
+    label { display: grid; grid-template-columns: 38rem minmax(18rem, 1fr); gap: 0.5rem; }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0077 selected-K7 orthonormal RFFT16 gate</h1>
+  <p>
+    Preparation proves the fixed radix-2 transform against an independent
+    direct DFT, authenticates all nine C1024/C512/C128 × d1/d3/d9 strata,
+    and completes first/interior/tail plus spectral/adversarial correctness.
+    Timing remains disabled until every scalar-oracle numerical, range-write,
+    guard, determinism, GPU-error, and lifecycle precondition has passed.
+  </p>
+  <p>
+    Start one absolute-cadence external 1,000 ms logger before preparation.
+    After READY, enter a fresh continuous level-0 slice of at least 30 seconds
+    and run exactly once. Each aggregate control sample contains 42 complete
+    512-frame dispatches; each candidate sample contains the corresponding
+    126 forward/domain/inverse dispatches in one pass, command buffer, submit,
+    and drain. Keep the trace running through cleanup; unchanged work is not
+    retried.
+  </p>
+  <div id="progress" role="status" aria-live="polite">
+    preparing transform proof and bounded browser correctness
+  </div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch slice from the continuous trace</legend>
+    <label>Source
+      <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run one balanced six-round RFFT16 primitive gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize the authenticated receipt without retry
+    </button>
+  </fieldset>
+
+  <pre id="result">not run</pre>
+  <script type="module" src="./opt-0077-vae-k7-rfft16.ts"></script>
+</body>
+</html>

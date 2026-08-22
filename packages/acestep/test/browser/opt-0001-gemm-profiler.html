@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0001 exact-shape GEMM profiler</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body {
+        margin: 1rem;
+      }
+      #progress {
+        margin-block-end: 1rem;
+      }
+      #result {
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body data-status="ready">
+    <button id="start" type="button">Run profiler</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0001-gemm-profiler.ts"></script>
+  </body>
+</html>

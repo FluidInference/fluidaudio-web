@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0004 VAE Conv1D paired A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 72rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Run only after a 30-second continuous-nominal thermal gate. Keep this
+      page visible for the complete balanced scalar/tiled Conv1D AB/BA probe.
+      The default uses a production-geometry representative; append
+      <code>fullProduction=1</code> only for the explicitly approved complete
+      491,520-frame operation.
+    </p>
+    <button id="start" type="button">Run paired VAE Conv1D A/B</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0004-vae-conv1d-ab.ts"></script>
+  </body>
+</html>

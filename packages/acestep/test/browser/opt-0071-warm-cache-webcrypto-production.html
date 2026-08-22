@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0071 warm-cache WebCrypto production gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 92rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 9rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      code, pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+      #result { max-height: 62rem; overflow: auto; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0071 — full-pipeline warm-cache WebCrypto production gate</h1>
+    <p>
+      Prime the exact current OPT-0072 demo tuple first. This gate is strictly
+      cache-only: main reference manifest
+      <code>18f36c64…db6</code>, revision-7 exact dense manifest
+      <code>d3fc0020…52f</code>, revision-7 exact VAE manifest
+      <code>36a54d79…da7</code>, production dual-K4 VAE identity, production
+      quad full-self attention, and production C2378/64 VAE geometry. A
+      missing or mismatched entry fails;
+      no benchmark arm downloads or mutates a package.
+    </p>
+    <p>
+      Each fresh worker first performs an untimed, read-only proof over all 158
+      logical records / 156 unique digests / 7,325,999,133 physical bytes,
+      including the seven VAE payloads, and runs the bounded memory and
+      file-boundary cancellation screens. Only after that work ends do you
+      start the arm's fresh nominal thermal gate. Timed authority then starts
+      immediately before the unchanged cache-only production
+      <code>backend.initialize()</code> call and ends at its ordinary READY
+      return. That real READY path authenticates 151 logical records / 149
+      unique main+dense payloads; VAE payload authentication is deferred until
+      generation and is explicitly not counted inside READY.
+    </p>
+    <p>
+      The fixed balanced order is A1 scalar, B1 WebCrypto, B2 WebCrypto, A2
+      scalar. Every arm owns a fresh worker, backend, WebGPU device, thermal
+      gate, and thermal trace. Keep the same arm's poll alive through ordinary
+      READY, backend/device disposal, and worker termination. A pass requires
+      both A1−B1 and A2−B2 READY savings to be at least 15 seconds, both
+      authentication savings to be at least 15 seconds, candidate median
+      authentication at most 8 seconds, throughput at least 915,749,892 B/s,
+      and no unrelated initialization stage or aggregate regression above 2%.
+    </p>
+    <p>
+      Before opening the gate, run
+      <code>pnpm exec vite --host 127.0.0.1</code>. Use this URL, replacing every
+      placeholder with frozen run identity values:
+      <code>http://127.0.0.1:5173/test/browser/opt-0071-warm-cache-webcrypto-production.html?coreCommit=CORE40&amp;harnessCommit=HARNESS40&amp;machineModel=Mac15%2C12&amp;osVersion=26.5.2&amp;osBuild=25F84&amp;browserVersion=Chrome-151.0.7922.138&amp;cpuCoreCount=8&amp;memoryBytes=17179869184</code>.
+      Do not run a build, browser benchmark, GPU task, or other heavy process in
+      parallel.
+    </p>
+    <p>
+      For each PRE-FLIGHT READY arm, start a new poll in Terminal:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py poll /tmp/opt71-ARM.jsonl</code>.
+      After at least 30 continuous nominal seconds, build its gate in a second
+      Terminal:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py gate /tmp/opt71-ARM.jsonl /tmp/opt71-ARM-gate.json /tmp/opt71-ARM-index.json</code>.
+      Paste stdout below and run immediately. After the page reports worker
+      termination, stop the original poll with Ctrl-C and build its trace:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py trace /tmp/opt71-ARM.jsonl /tmp/opt71-ARM-gate.json /tmp/opt71-ARM-index.json /tmp/opt71-ARM-trace.json /tmp/opt71-ARM-selected.jsonl</code>.
+      Paste stdout below. Replace ARM with A1, B1, B2, or A2 and use fresh paths
+      every time; never reuse a gate or trace.
+    </p>
+
+    <button id="prepare" type="button">Prepare untimed full-inventory A1 preflight</button>
+    <div id="progress" role="status" aria-live="polite">
+      idle — no package read, device request, or GPU work
+    </div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal ≥30-second pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>
+        Time cache-only production initialize through READY
+      </button>
+      <button id="cancel-arm" type="button" disabled>Cancel current arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's trace through backend/device disposal and worker termination</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>
+        Record arm trace and continue
+      </button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0071-warm-cache-webcrypto-production.json">
+      Download complete receipt
+    </a>
+    <script
+      type="module"
+      src="./opt-0071-warm-cache-webcrypto-production.ts"
+    ></script>
+  </body>
+</html>

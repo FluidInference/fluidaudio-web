@@ -1,0 +1,769 @@
+import { ACE_DIT_DENSE_FP16_TILE_LAYOUT } from "../../model/manifest.js";
+import { requireAceDisjointOutput } from "./correctness-utils.js";
+import type {
+  AceCooperativeGemmPlan,
+  AceGemmBufferBindings,
+  AceGemmDispatch,
+  AceGemmKernel,
+  AceGemmOutputRange,
+  AceGemmShape,
+} from "./gemm.js";
+
+export const ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID =
+  "opt-0031-m128-n128-k32-wg512-panels-fp16-fp32-v1" as const;
+export const ACE_OPT_0031_DENSE_TILE_ROWS = 128;
+export const ACE_OPT_0031_DENSE_TILE_COLUMNS = 128;
+export const ACE_OPT_0031_DENSE_TILE_INNER = 32;
+export const ACE_OPT_0031_DENSE_WORKGROUP_SIZE = 512;
+export const ACE_OPT_0031_DENSE_SUBGROUP_SIZE = 32;
+export const ACE_OPT_0031_DENSE_SUBGROUPS_PER_WORKGROUP = 16;
+export const ACE_OPT_0031_DENSE_ROWS_PER_SUBGROUP = 8;
+export const ACE_OPT_0031_DENSE_ROWS_PER_THREAD = 8;
+export const ACE_OPT_0031_DENSE_COLUMNS_PER_THREAD = 4;
+export const ACE_OPT_0031_DENSE_ACCUMULATORS_PER_THREAD = 32;
+export const ACE_OPT_0031_DENSE_INPUT_PANEL_STRIDE = 33;
+export const ACE_OPT_0031_DENSE_WEIGHT_PANEL_STRIDE = 132;
+export const ACE_OPT_0031_DENSE_BARRIERS_PER_INNER_TILE = 2;
+
+const FLOAT16_BYTES = 2;
+const FLOAT32_BYTES = 4;
+const GPU_BUFFER_ALIGNMENT = 4;
+const PACKED_TILE_COLUMNS = 256;
+const PACKED_TILE_INNER = 32;
+const PACKED_COLUMNS_PER_RECORD = 8;
+const PACKED_RECORDS_PER_ROW =
+  PACKED_TILE_COLUMNS / PACKED_COLUMNS_PER_RECORD;
+const INPUT_PANEL_ELEMENTS =
+  ACE_OPT_0031_DENSE_TILE_ROWS * ACE_OPT_0031_DENSE_INPUT_PANEL_STRIDE;
+const WEIGHT_PANEL_ELEMENTS =
+  ACE_OPT_0031_DENSE_TILE_INNER * ACE_OPT_0031_DENSE_WEIGHT_PANEL_STRIDE;
+export const ACE_OPT_0031_DENSE_WORKGROUP_STORAGE_BYTES =
+  (INPUT_PANEL_ELEMENTS + WEIGHT_PANEL_ELEMENTS) * FLOAT16_BYTES;
+const MAX_WGSL_U32 = 0xffff_ffff;
+
+const PRODUCTION_DENSE_SHAPES = new Set([
+  "2048x2048",
+  "2048x1024",
+  "2048x6144",
+  "6144x2048",
+]);
+
+export interface AceOpt0031DenseWg512PanelsPlan
+  extends AceCooperativeGemmPlan {
+  readonly kernelSetId: typeof ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID;
+  readonly tileRows: typeof ACE_OPT_0031_DENSE_TILE_ROWS;
+  readonly tileColumns: typeof ACE_OPT_0031_DENSE_TILE_COLUMNS;
+  readonly tileInner: typeof ACE_OPT_0031_DENSE_TILE_INNER;
+  readonly workgroupSize: typeof ACE_OPT_0031_DENSE_WORKGROUP_SIZE;
+  readonly subgroupSize: typeof ACE_OPT_0031_DENSE_SUBGROUP_SIZE;
+  readonly subgroupsPerWorkgroup:
+    typeof ACE_OPT_0031_DENSE_SUBGROUPS_PER_WORKGROUP;
+  readonly rowsPerSubgroup: typeof ACE_OPT_0031_DENSE_ROWS_PER_SUBGROUP;
+  readonly rowsPerThread: typeof ACE_OPT_0031_DENSE_ROWS_PER_THREAD;
+  readonly columnsPerThread: typeof ACE_OPT_0031_DENSE_COLUMNS_PER_THREAD;
+  readonly accumulatorsPerThread:
+    typeof ACE_OPT_0031_DENSE_ACCUMULATORS_PER_THREAD;
+  readonly rowTiles: number;
+  readonly columnTiles: number;
+  readonly innerTiles: number;
+  readonly workgroupCount: number;
+  readonly scheduledRows: number;
+  readonly scheduledMultiplyAdds: number;
+  readonly validMultiplyAdds: number;
+  readonly activationElements: number;
+  readonly weightElements: number;
+  readonly outputElements: number;
+  readonly inputPanelStride: typeof ACE_OPT_0031_DENSE_INPUT_PANEL_STRIDE;
+  readonly inputPanelElements: typeof INPUT_PANEL_ELEMENTS;
+  readonly weightPanelStride: typeof ACE_OPT_0031_DENSE_WEIGHT_PANEL_STRIDE;
+  readonly weightPanelElements: typeof WEIGHT_PANEL_ELEMENTS;
+  readonly workgroupStorageBytes:
+    typeof ACE_OPT_0031_DENSE_WORKGROUP_STORAGE_BYTES;
+  readonly barriersPerWorkgroup: number;
+  readonly barrierEvents: number;
+  readonly estimatedGlobalActivationBytes: number;
+  readonly estimatedGlobalWeightBytes: number;
+  readonly estimatedGlobalOperandBytes: number;
+  readonly estimatedGlobalOutputBytes: number;
+  readonly packedWeightStorageShape: readonly [number, number, 32, 256];
+}
+
+export interface AceOpt0031DenseWg512PanelsDispatch
+  extends AceGemmDispatch {
+  readonly kernelSetId: typeof ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID;
+  readonly weightLayout: typeof ACE_DIT_DENSE_FP16_TILE_LAYOUT;
+  readonly plan: AceOpt0031DenseWg512PanelsPlan;
+}
+
+interface CompiledKernel {
+  readonly pipeline: GPUComputePipeline;
+  readonly bindGroupLayout: GPUBindGroupLayout;
+}
+
+/** Isolated OPT-0031 owner. It is deliberately absent from production. */
+export class AceOpt0031DenseWg512PanelsKernel implements AceGemmKernel {
+  private readonly pipelines = new Map<string, Promise<CompiledKernel>>();
+  private readonly bindGroups = new Map<string, GPUBindGroup>();
+  private readonly bufferIds = new WeakMap<GPUBuffer, number>();
+  private nextBufferId = 0;
+  private destroyed = false;
+
+  private constructor(private readonly device: GPUDevice) {}
+
+  static create(
+    device: GPUDevice,
+    capability: Readonly<{
+      subgroupMinSize?: number;
+      subgroupMaxSize?: number;
+    }>,
+  ): AceOpt0031DenseWg512PanelsKernel {
+    requireKernelDevice(device, capability);
+    return new AceOpt0031DenseWg512PanelsKernel(device);
+  }
+
+  async createDispatch(
+    label: string,
+    shape: AceGemmShape,
+    bindings: AceGemmBufferBindings,
+  ): Promise<AceOpt0031DenseWg512PanelsDispatch> {
+    this.requireLive();
+    if (bindings.bias !== undefined) {
+      throw new RangeError("OPT-0031 repeated-layer dense GEMMs reject bias");
+    }
+    const plan = planAceOpt0031DenseWg512Panels(shape);
+    requireDispatchDimensions(this.device, plan.workgroupsX, plan.workgroupsY);
+    const activationBytes = checkedProduct(
+      plan.activationElements,
+      FLOAT32_BYTES,
+      "activation bytes",
+    );
+    const weightBytes = checkedProduct(
+      plan.weightElements,
+      FLOAT16_BYTES,
+      "weight bytes",
+    );
+    const outputBytes = checkedProduct(
+      plan.outputElements,
+      FLOAT32_BYTES,
+      "output bytes",
+    );
+    requireBufferLimits(this.device, [
+      ["activation", activationBytes],
+      ["weight", weightBytes],
+      ["output", outputBytes],
+    ]);
+    const activation = requireStorageBinding(
+      this.device,
+      bindings.activation,
+      activationBytes,
+      `${label} activation`,
+    );
+    const weight = requireStorageBinding(
+      this.device,
+      bindings.weight,
+      weightBytes,
+      `${label} weight`,
+    );
+    const output = requireStorageBinding(
+      this.device,
+      bindings.output,
+      outputBytes,
+      `${label} output`,
+    );
+    requireAceDisjointOutput(output, [activation, weight], label);
+
+    const compiled = await this.pipelineFor(plan);
+    this.requireLive();
+    const resources = Object.freeze([activation, weight, output]);
+    const bindGroup = this.bindGroupFor(
+      shapeKey(plan),
+      `${label}-opt-0031-bindings`,
+      compiled.bindGroupLayout,
+      resources,
+    );
+    const owner = this;
+    const encode = (pass: GPUComputePassEncoder): void => {
+      owner.requireLive();
+      pass.setPipeline(compiled.pipeline);
+      pass.setBindGroup(0, bindGroup);
+      pass.dispatchWorkgroups(plan.columnTiles, plan.rowTiles, 1);
+    };
+    return Object.freeze({
+      label,
+      kernelSetId: ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID,
+      weightLayout: ACE_DIT_DENSE_FP16_TILE_LAYOUT,
+      plan,
+      rangeCount: 1,
+      encodeRange(pass: GPUComputePassEncoder, rangeIndex: number): void {
+        if (rangeIndex !== 0) {
+          throw new RangeError(`${label} OPT-0031 dense range must be zero`);
+        }
+        encode(pass);
+      },
+      encode,
+    });
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.pipelines.clear();
+    this.bindGroups.clear();
+  }
+
+  private pipelineFor(
+    plan: AceOpt0031DenseWg512PanelsPlan,
+  ): Promise<CompiledKernel> {
+    const key = shapeKey(plan);
+    const existing = this.pipelines.get(key);
+    if (existing !== undefined) return existing;
+    const created = compileWg512Panels(this.device, plan);
+    this.pipelines.set(key, created);
+    void created.catch(() => {
+      if (this.pipelines.get(key) === created) this.pipelines.delete(key);
+    });
+    return created;
+  }
+
+  private bindGroupFor(
+    shape: string,
+    label: string,
+    layout: GPUBindGroupLayout,
+    resources: readonly GPUBufferBinding[],
+  ): GPUBindGroup {
+    const key = `${shape}:${resources.map((binding) =>
+      this.bindingKey(binding)
+    ).join("|")}`;
+    let bindGroup = this.bindGroups.get(key);
+    if (bindGroup === undefined) {
+      bindGroup = this.device.createBindGroup({
+        label,
+        layout,
+        entries: resources.map((resource, binding) => ({ binding, resource })),
+      });
+      this.bindGroups.set(key, bindGroup);
+    }
+    return bindGroup;
+  }
+
+  private bindingKey(binding: GPUBufferBinding): string {
+    let id = this.bufferIds.get(binding.buffer);
+    if (id === undefined) {
+      id = this.nextBufferId;
+      this.nextBufferId += 1;
+      this.bufferIds.set(binding.buffer, id);
+    }
+    return `${id}:${binding.offset ?? 0}:${binding.size ?? -1}`;
+  }
+
+  private requireLive(): void {
+    if (this.destroyed) {
+      throw new Error("OPT-0031 WG512 dense kernel was destroyed");
+    }
+  }
+}
+
+export function planAceOpt0031DenseWg512Panels(
+  shape: AceGemmShape,
+): AceOpt0031DenseWg512PanelsPlan {
+  const { rows, inner, columns } = shape;
+  requirePositiveSafeInteger(rows, "rows");
+  requirePositiveSafeInteger(inner, "inner");
+  requirePositiveSafeInteger(columns, "columns");
+  if (rows !== 2_250) {
+    throw new RangeError("OPT-0031 WG512 dense requires exact M2250");
+  }
+  if (!PRODUCTION_DENSE_SHAPES.has(`${inner}x${columns}`)) {
+    throw new RangeError(
+      `OPT-0031 WG512 dense rejects non-production K${inner}/N${columns}`,
+    );
+  }
+  if (
+    inner % ACE_OPT_0031_DENSE_TILE_INNER !== 0 ||
+    inner % PACKED_TILE_INNER !== 0 ||
+    columns % ACE_OPT_0031_DENSE_TILE_COLUMNS !== 0 ||
+    columns % PACKED_TILE_COLUMNS !== 0
+  ) {
+    throw new RangeError(
+      "OPT-0031 WG512 dense requires exact K32/N128 panel multiples and N256/K32 packed tiles",
+    );
+  }
+
+  const activationElements = checkedProduct(rows, inner, "activation elements");
+  const weightElements = checkedProduct(inner, columns, "weight elements");
+  const outputElements = checkedProduct(rows, columns, "output elements");
+  requireWgslIndexable(activationElements, "activation");
+  requireWgslIndexable(weightElements, "weight");
+  requireWgslIndexable(outputElements, "output");
+  const rowTiles = Math.ceil(rows / ACE_OPT_0031_DENSE_TILE_ROWS);
+  const columnTiles = columns / ACE_OPT_0031_DENSE_TILE_COLUMNS;
+  const innerTiles = inner / ACE_OPT_0031_DENSE_TILE_INNER;
+  const workgroupCount = checkedProduct(rowTiles, columnTiles, "workgroups");
+  const scheduledRows = checkedProduct(
+    rowTiles,
+    ACE_OPT_0031_DENSE_TILE_ROWS,
+    "scheduled rows",
+  );
+  const scheduledMultiplyAdds = checkedProduct(
+    checkedProduct(scheduledRows, inner, "scheduled row-inner"),
+    columns,
+    "scheduled multiply-adds",
+  );
+  const validMultiplyAdds = checkedProduct(
+    activationElements,
+    columns,
+    "valid multiply-adds",
+  );
+  const barriersPerWorkgroup = checkedProduct(
+    innerTiles,
+    ACE_OPT_0031_DENSE_BARRIERS_PER_INNER_TILE,
+    "barriers per workgroup",
+  );
+  const barrierEvents = checkedProduct(
+    workgroupCount,
+    barriersPerWorkgroup,
+    "barrier events",
+  );
+  const estimatedGlobalActivationBytes = checkedProduct(
+    checkedProduct(activationElements, FLOAT32_BYTES, "activation request bytes"),
+    columnTiles,
+    "global activation request bytes",
+  );
+  const estimatedGlobalWeightBytes = checkedProduct(
+    checkedProduct(weightElements, FLOAT16_BYTES, "weight request bytes"),
+    rowTiles,
+    "global weight request bytes",
+  );
+  const estimatedGlobalOperandBytes = checkedSum(
+    estimatedGlobalActivationBytes,
+    estimatedGlobalWeightBytes,
+    "global operand request bytes",
+  );
+  const estimatedGlobalOutputBytes = checkedProduct(
+    outputElements,
+    FLOAT32_BYTES,
+    "global output bytes",
+  );
+  const outputRanges: readonly AceGemmOutputRange[] = Object.freeze([
+    Object.freeze({
+      firstOutput: 0,
+      outputCount: outputElements,
+      firstWorkgroup: 0,
+      workgroupCount,
+      multiplyAdds: scheduledMultiplyAdds,
+    }),
+  ]);
+  return Object.freeze({
+    kernelSetId: ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID,
+    rows,
+    inner,
+    columns,
+    workgroupsX: columnTiles,
+    workgroupsY: rowTiles,
+    tileRows: ACE_OPT_0031_DENSE_TILE_ROWS,
+    tileColumns: ACE_OPT_0031_DENSE_TILE_COLUMNS,
+    tileInner: ACE_OPT_0031_DENSE_TILE_INNER,
+    workgroupSize: ACE_OPT_0031_DENSE_WORKGROUP_SIZE,
+    subgroupSize: ACE_OPT_0031_DENSE_SUBGROUP_SIZE,
+    subgroupsPerWorkgroup: ACE_OPT_0031_DENSE_SUBGROUPS_PER_WORKGROUP,
+    rowsPerSubgroup: ACE_OPT_0031_DENSE_ROWS_PER_SUBGROUP,
+    rowsPerThread: ACE_OPT_0031_DENSE_ROWS_PER_THREAD,
+    columnsPerThread: ACE_OPT_0031_DENSE_COLUMNS_PER_THREAD,
+    accumulatorsPerThread: ACE_OPT_0031_DENSE_ACCUMULATORS_PER_THREAD,
+    rowTiles,
+    columnTiles,
+    innerTiles,
+    workgroupCount,
+    scheduledRows,
+    scheduledMultiplyAdds,
+    validMultiplyAdds,
+    activationElements,
+    weightElements,
+    outputElements,
+    outputRangeCount: 1,
+    outputRanges,
+    inputPanelStride: ACE_OPT_0031_DENSE_INPUT_PANEL_STRIDE,
+    inputPanelElements: INPUT_PANEL_ELEMENTS,
+    weightPanelStride: ACE_OPT_0031_DENSE_WEIGHT_PANEL_STRIDE,
+    weightPanelElements: WEIGHT_PANEL_ELEMENTS,
+    workgroupStorageBytes: ACE_OPT_0031_DENSE_WORKGROUP_STORAGE_BYTES,
+    barriersPerWorkgroup,
+    barrierEvents,
+    estimatedGlobalActivationBytes,
+    estimatedGlobalWeightBytes,
+    estimatedGlobalOperandBytes,
+    estimatedGlobalOutputBytes,
+    packedWeightStorageShape: Object.freeze([
+      columns / PACKED_TILE_COLUMNS,
+      inner / PACKED_TILE_INNER,
+      32,
+      256,
+    ]) as readonly [number, number, 32, 256],
+  });
+}
+
+export function aceOpt0031DenseWg512PanelsWgsl(shape: AceGemmShape): string {
+  const plan = planAceOpt0031DenseWg512Panels(shape);
+  const accumulators = Array.from(
+    { length: ACE_OPT_0031_DENSE_ROWS_PER_THREAD },
+    (_, row) => `  var acc${row} = vec4<f32>(0.0);`,
+  ).join("\n");
+  const broadcasts = Array.from(
+    { length: ACE_OPT_0031_DENSE_ROWS_PER_THREAD },
+    (_, row) => `      let a${row} = subgroupBroadcast(lane_a, ${row}u);`,
+  ).join("\n");
+  const contractions = Array.from(
+    { length: ACE_OPT_0031_DENSE_ROWS_PER_THREAD },
+    (_, row) =>
+      `      acc${row} = acc${row} + vec4<f32>(f32(a${row})) * b;`,
+  ).join("\n");
+  const stores = Array.from(
+    { length: ACE_OPT_0031_DENSE_ROWS_PER_THREAD },
+    (_, row) => /* wgsl */ `
+  {
+    let row = row_base + ${row}u;
+    if (row < ROWS) {
+      output[row * (COLUMNS / 4u) + column_base / 4u] = acc${row};
+    }
+  }`,
+  ).join("");
+  return /* wgsl */ `
+// kernel-id: ${ACE_OPT_0031_DENSE_WG512_KERNEL_SET_ID}
+// reduction-semantics: strict-increasing-k-fp32-sum-plus-product
+// existing payload: N256/K32; cooperative panel: M128/N128/K32
+enable f16;
+enable subgroups;
+
+const ROWS: u32 = ${plan.rows}u;
+const INNER: u32 = ${plan.inner}u;
+const COLUMNS: u32 = ${plan.columns}u;
+const INNER_TILES: u32 = ${plan.innerTiles}u;
+const TILE_ROWS: u32 = ${ACE_OPT_0031_DENSE_TILE_ROWS}u;
+const TILE_COLUMNS: u32 = ${ACE_OPT_0031_DENSE_TILE_COLUMNS}u;
+const TILE_INNER: u32 = ${ACE_OPT_0031_DENSE_TILE_INNER}u;
+const INPUT_PANEL_STRIDE: u32 = ${ACE_OPT_0031_DENSE_INPUT_PANEL_STRIDE}u;
+const WEIGHT_PANEL_STRIDE: u32 = ${ACE_OPT_0031_DENSE_WEIGHT_PANEL_STRIDE}u;
+
+@group(0) @binding(0) var<storage, read> activation: array<f32>;
+@group(0) @binding(1) var<storage, read> weight: array<vec4<u32>>;
+@group(0) @binding(2) var<storage, read_write> output: array<vec4<f32>>;
+
+var<workgroup> input_panel: array<f16, ${INPUT_PANEL_ELEMENTS}>;
+var<workgroup> weight_panel: array<f16, ${WEIGHT_PANEL_ELEMENTS}>;
+
+fn unpack_f16x4(low: u32, high: u32) -> vec4<f16> {
+  let low_pair = unpack2x16float(low);
+  let high_pair = unpack2x16float(high);
+  return vec4<f16>(
+    f16(low_pair.x), f16(low_pair.y), f16(high_pair.x), f16(high_pair.y)
+  );
+}
+
+@compute @workgroup_size(${ACE_OPT_0031_DENSE_WORKGROUP_SIZE}, 1, 1)
+fn main(
+  @builtin(workgroup_id) group: vec3<u32>,
+  @builtin(local_invocation_index) local_index: u32,
+  @builtin(subgroup_invocation_id) subgroup_lane: u32,
+  @builtin(subgroup_id) subgroup: u32,
+  @builtin(subgroup_size) subgroup_size: u32,
+) {
+  if (
+    subgroup_size != ${ACE_OPT_0031_DENSE_SUBGROUP_SIZE}u ||
+    group.x >= ${plan.columnTiles}u ||
+    group.y >= ${plan.rowTiles}u ||
+    group.z != 0u
+  ) {
+    return;
+  }
+  let row_base = group.y * TILE_ROWS + subgroup * 8u;
+  let column_base = group.x * TILE_COLUMNS + subgroup_lane * 4u;
+${accumulators}
+
+  // Every iteration stages one complete K32 panel. Both barriers are uniform,
+  // and every accumulator executes K=0..31 in exactly increasing order.
+  for (var inner_tile = 0u; inner_tile < INNER_TILES; inner_tile += 1u) {
+    // The 512 invocations cooperatively load 1,024 contiguous vec4s: two each.
+    for (
+      var panel_vector = local_index;
+      panel_vector < 1024u;
+      panel_vector += ${ACE_OPT_0031_DENSE_WORKGROUP_SIZE}u
+    ) {
+      let panel_row = panel_vector / 8u;
+      let panel_k4 = (panel_vector % 8u) * 4u;
+      let global_row = group.y * TILE_ROWS + panel_row;
+      var a = vec4<f16>(0.0h);
+      if (global_row < ROWS) {
+        let activation_base =
+          global_row * INNER + inner_tile * TILE_INNER + panel_k4;
+        a = vec4<f16>(
+          f16(activation[activation_base]),
+          f16(activation[activation_base + 1u]),
+          f16(activation[activation_base + 2u]),
+          f16(activation[activation_base + 3u])
+        );
+      }
+      let input_base = panel_row * INPUT_PANEL_STRIDE + panel_k4;
+      input_panel[input_base] = a.x;
+      input_panel[input_base + 1u] = a.y;
+      input_panel[input_base + 2u] = a.z;
+      input_panel[input_base + 3u] = a.w;
+    }
+
+    // One invocation owns one packed eight-column record. The N128 workgroup
+    // selects one exact half of the converter-native N256/K32 tile.
+    let packed_k = local_index / 16u;
+    let packed_n8 = local_index % 16u;
+    let packed_n256_tile = group.x / 2u;
+    let packed_n128_half = group.x % 2u;
+    let packed_n8_record = packed_n128_half * 16u + packed_n8;
+    let packed_record_index =
+      ((packed_n256_tile * INNER_TILES + inner_tile) * 32u + packed_k) *
+        ${PACKED_RECORDS_PER_ROW}u + packed_n8_record;
+    let packed = weight[packed_record_index];
+    let packed_low = unpack_f16x4(packed.x, packed.y);
+    let packed_high = unpack_f16x4(packed.z, packed.w);
+    let weight_base = packed_k * WEIGHT_PANEL_STRIDE + packed_n8 * 8u;
+    weight_panel[weight_base] = packed_low.x;
+    weight_panel[weight_base + 1u] = packed_low.y;
+    weight_panel[weight_base + 2u] = packed_low.z;
+    weight_panel[weight_base + 3u] = packed_low.w;
+    weight_panel[weight_base + 4u] = packed_high.x;
+    weight_panel[weight_base + 5u] = packed_high.y;
+    weight_panel[weight_base + 6u] = packed_high.z;
+    weight_panel[weight_base + 7u] = packed_high.w;
+
+    workgroupBarrier();
+    for (var inner_in_tile = 0u; inner_in_tile < TILE_INNER; inner_in_tile += 1u) {
+      let owned_weight =
+        inner_in_tile * WEIGHT_PANEL_STRIDE + subgroup_lane * 4u;
+      let b = vec4<f32>(
+        f32(weight_panel[owned_weight]),
+        f32(weight_panel[owned_weight + 1u]),
+        f32(weight_panel[owned_weight + 2u]),
+        f32(weight_panel[owned_weight + 3u])
+      );
+      var lane_a = 0.0h;
+      if (subgroup_lane < 8u) {
+        lane_a = input_panel[
+          (subgroup * 8u + subgroup_lane) * INPUT_PANEL_STRIDE + inner_in_tile
+        ];
+      }
+${broadcasts}
+${contractions}
+    }
+    workgroupBarrier();
+  }
+${stores}
+}
+`;
+}
+
+async function compileWg512Panels(
+  device: GPUDevice,
+  plan: AceOpt0031DenseWg512PanelsPlan,
+): Promise<CompiledKernel> {
+  const label = `ace-opt-0031-dense-${plan.rows}x${plan.inner}x${plan.columns}`;
+  const module = await checkedShaderModule(
+    device,
+    label,
+    aceOpt0031DenseWg512PanelsWgsl(plan),
+  );
+  const bindingBytes = [
+    checkedProduct(plan.activationElements, FLOAT32_BYTES, "activation bytes"),
+    checkedProduct(plan.weightElements, FLOAT16_BYTES, "weight bytes"),
+    checkedProduct(plan.outputElements, FLOAT32_BYTES, "output bytes"),
+  ];
+  const bindGroupLayout = device.createBindGroupLayout({
+    label: `${label}-bindings`,
+    entries: bindingBytes.map((minBindingSize, binding) => ({
+      binding,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: {
+        type: binding === 2 ? "storage" as const : "read-only-storage" as const,
+        minBindingSize,
+      },
+    })),
+  });
+  const pipelineLayout = device.createPipelineLayout({
+    label: `${label}-layout`,
+    bindGroupLayouts: [bindGroupLayout],
+  });
+  const pipeline = await device.createComputePipelineAsync({
+    label,
+    layout: pipelineLayout,
+    compute: { module, entryPoint: "main" },
+  });
+  return Object.freeze({ pipeline, bindGroupLayout });
+}
+
+async function checkedShaderModule(
+  device: GPUDevice,
+  label: string,
+  code: string,
+): Promise<GPUShaderModule> {
+  const module = device.createShaderModule({ label, code });
+  const compilation = await module.getCompilationInfo();
+  const errors = compilation.messages.filter(({ type }) => type === "error");
+  if (errors.length > 0) {
+    throw new Error(
+      `OPT-0031 WG512 dense WGSL failed: ${errors.map((message) =>
+        `${message.lineNum}:${message.linePos} ${message.message}`
+      ).join("; ")}`,
+    );
+  }
+  return module;
+}
+
+function requireKernelDevice(
+  device: GPUDevice,
+  capability: Readonly<{
+    subgroupMinSize?: number;
+    subgroupMaxSize?: number;
+  }>,
+): void {
+  if (
+    !device.features.has("shader-f16") ||
+    !device.features.has("subgroups") ||
+    capability.subgroupMinSize !== ACE_OPT_0031_DENSE_SUBGROUP_SIZE ||
+    capability.subgroupMaxSize !== ACE_OPT_0031_DENSE_SUBGROUP_SIZE
+  ) {
+    throw new Error(
+      "OPT-0031 WG512 dense requires shader-f16 and fixed 32-lane subgroups",
+    );
+  }
+  const invocations = device.limits.maxComputeInvocationsPerWorkgroup;
+  const sizeX = device.limits.maxComputeWorkgroupSizeX;
+  const storage = device.limits.maxComputeWorkgroupStorageSize;
+  if (
+    !Number.isSafeInteger(invocations) ||
+    !Number.isSafeInteger(sizeX) ||
+    invocations < ACE_OPT_0031_DENSE_WORKGROUP_SIZE ||
+    sizeX < ACE_OPT_0031_DENSE_WORKGROUP_SIZE
+  ) {
+    throw new Error("OPT-0031 WG512 dense requires a 512x1 workgroup");
+  }
+  if (
+    !Number.isSafeInteger(storage) ||
+    storage < ACE_OPT_0031_DENSE_WORKGROUP_STORAGE_BYTES
+  ) {
+    throw new Error(
+      `OPT-0031 WG512 dense requires ${ACE_OPT_0031_DENSE_WORKGROUP_STORAGE_BYTES} workgroup-storage bytes`,
+    );
+  }
+}
+
+function requireDispatchDimensions(
+  device: GPUDevice,
+  workgroupsX: number,
+  workgroupsY: number,
+): void {
+  const maximum = device.limits.maxComputeWorkgroupsPerDimension;
+  if (
+    !Number.isSafeInteger(maximum) ||
+    maximum < 1 ||
+    workgroupsX > maximum ||
+    workgroupsY > maximum
+  ) {
+    throw new RangeError("OPT-0031 WG512 dense exceeds the dispatch dimension");
+  }
+}
+
+function requireBufferLimits(
+  device: GPUDevice,
+  resources: readonly (readonly [string, number])[],
+): void {
+  const maximumBinding = Number(device.limits.maxStorageBufferBindingSize);
+  const maximumBuffer = Number(device.limits.maxBufferSize);
+  if (
+    !Number.isSafeInteger(maximumBinding) ||
+    maximumBinding < 1 ||
+    !Number.isSafeInteger(maximumBuffer) ||
+    maximumBuffer < 1
+  ) {
+    throw new RangeError("OPT-0031 WG512 dense device reported invalid buffer limits");
+  }
+  for (const [name, bytes] of resources) {
+    if (bytes > maximumBinding || bytes > maximumBuffer) {
+      throw new RangeError(
+        `OPT-0031 WG512 dense ${name} exceeds the device buffer limits`,
+      );
+    }
+  }
+}
+
+function requireStorageBinding(
+  device: GPUDevice,
+  binding: GPUBufferBinding,
+  requiredBytes: number,
+  label: string,
+): GPUBufferBinding {
+  const alignment = device.limits.minStorageBufferOffsetAlignment;
+  if (!isValidGpuAlignment(alignment)) {
+    throw new Error("OPT-0031 WG512 dense device reported invalid alignment");
+  }
+  const bufferBytes = Number(binding.buffer.size);
+  const offset = binding.offset ?? 0;
+  const available = binding.size ?? bufferBytes - offset;
+  if (
+    !Number.isSafeInteger(bufferBytes) ||
+    bufferBytes < requiredBytes ||
+    bufferBytes % GPU_BUFFER_ALIGNMENT !== 0 ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset % alignment !== 0 ||
+    !Number.isSafeInteger(available) ||
+    available < requiredBytes ||
+    available % GPU_BUFFER_ALIGNMENT !== 0 ||
+    !Number.isSafeInteger(offset + available) ||
+    offset + available > bufferBytes
+  ) {
+    throw new RangeError(
+      `${label} does not expose an aligned ${requiredBytes}-byte binding`,
+    );
+  }
+  return Object.freeze({ buffer: binding.buffer, offset, size: requiredBytes });
+}
+
+function shapeKey(shape: AceGemmShape): string {
+  return `${shape.rows}x${shape.inner}x${shape.columns}`;
+}
+
+function requirePositiveSafeInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(
+      `OPT-0031 WG512 dense ${label} must be a positive safe integer`,
+    );
+  }
+}
+
+function checkedProduct(left: number, right: number, label: string): number {
+  const product = left * right;
+  if (!Number.isSafeInteger(product)) {
+    throw new RangeError(
+      `OPT-0031 WG512 dense ${label} is not a safe integer`,
+    );
+  }
+  return product;
+}
+
+function checkedSum(left: number, right: number, label: string): number {
+  const sum = left + right;
+  if (!Number.isSafeInteger(sum)) {
+    throw new RangeError(`OPT-0031 WG512 dense ${label} is not a safe integer`);
+  }
+  return sum;
+}
+
+function requireWgslIndexable(elements: number, label: string): void {
+  if (elements > MAX_WGSL_U32) {
+    throw new RangeError(
+      `OPT-0031 WG512 dense ${label} exceeds WGSL's u32 indexing domain`,
+    );
+  }
+}
+
+function isValidGpuAlignment(value: number): boolean {
+  return Number.isSafeInteger(value) &&
+    value >= GPU_BUFFER_ALIGNMENT &&
+    Number.isInteger(Math.log2(value));
+}

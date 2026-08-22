@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0067 quad-query evaluation-0 thermal screen</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0067 — thermally isolated quad-query evaluation-0 screen</h1>
+    <p>
+      The first explicit button runs one untimed correctness preparation. It
+      executes only evaluation 0 and compares query8 with quad as raw U32 at
+      all 12 selected actual-layer outputs (55,296,000 words), then requires
+      the frozen 288,000-word evaluation-result hash. This doubled-owner work
+      is never part of an accepted timing arm.
+    </p>
+    <p>
+      Timing then runs exactly A1 query8, B1 quad, B2 quad, A2 query8. Every
+      arm creates a fresh backend/device and independently authenticates the
+      same package and inputs. The worker pauses only after its DiT weights,
+      inputs, and graph are ready. Start that arm's fresh continuous ≥30-second
+      nominal notifyutil trace at READY, keep it running through the one
+      evaluation, ordinary result readback, graph cleanup, backend disposal,
+      and device disposal, then stop and paste the trace. The next arm is not
+      prepared until the current trace is authenticated.
+    </p>
+    <p>
+      Each arm submits exactly 341 unchanged graph command buffers (25
+      precompute plus 316 evaluation-0 buffers) and one ordinary result
+      readback. Evaluations 1–7, VAE weights, audio, and planner execution are
+      forbidden. Query8 remains the public production default.
+    </p>
+    <button id="prepare" type="button">Prepare correctness and A1</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>Run current arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's distinct trace through cleanup/device disposal JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record arm trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0067-dit-quad-query-evaluation-slice.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0067-dit-quad-query-evaluation-slice.ts"></script>
+  </body>
+</html>

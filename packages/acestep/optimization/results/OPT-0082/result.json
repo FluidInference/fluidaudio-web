@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "OPT-0082",
+  "baselineCommit": "7eec5a4f18ab002bb6f4fd6074cd6b42dbc21f2c",
+  "candidateCommit": "0a63635a01880aac1b019ffb9f38c027bb5d4d87",
+  "riskClass": "exact-constrained-domain-elimination",
+  "evidence": {
+    "conclusion": "inconclusive",
+    "rationale": "The current reference-BF16 developer screen was raw-U32 exact and exceeded the median ratio and projected-saving thresholds, but compact won only 26 of 36 complete-token pairs versus the frozen 30-of-36 requirement. The screen also intentionally carried no attached thermal trace. The literal fast gate therefore failed and no production integration or costly trajectory/product escalation ran."
+  },
+  "correctness": {
+    "passed": true,
+    "initialFullReplayComparedElements": 1303224,
+    "initialCompactComparedElements": 384000,
+    "initialEosComparedElements": 6,
+    "timedArmCount": 72,
+    "timedRetainedLogitComparedElements": 9216000,
+    "rawU32MismatchCount": 0,
+    "filteredLogitMismatchCount": 0,
+    "sampleAndCursorMismatchCount": 0,
+    "nanCount": 0,
+    "runtimeEventCount": 0,
+    "executorDestroyed": true,
+    "deviceDestroyed": true
+  },
+  "identity": {
+    "modelProfile": "reference-bf16",
+    "executionProfile": "reference-bf16-subgroups",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+    "plannerSnapshotRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80",
+    "plannerResidentBytes": 1325768704,
+    "fixtureSemanticCodeSha256": "42c83500063bf85d7856940620f7d8e7b97307e9584cd9ebd03e0b7ae7b8a3be"
+  },
+  "metrics": {
+    "pairCount": 36,
+    "compactWins": 26,
+    "requiredCompactWins": 30,
+    "everyCachePositionCompactMedianBelowFull": true,
+    "fullCompleteMedianMilliseconds": 379.15000009536743,
+    "compactCompleteMedianMilliseconds": 340.5,
+    "medianCompleteSpeedup": 1.1135095450671584,
+    "medianCompleteSavingMilliseconds": 38.65000009536743,
+    "projected900TokenSavingSeconds": 34.78500008583069,
+    "cachePositions": [
+      {
+        "id": "semantic-short",
+        "compactWins": 9,
+        "medianCompleteSpeedup": 1.1224367608663397,
+        "medianCompleteSavingMilliseconds": 40.89999997615814
+      },
+      {
+        "id": "semantic-middle",
+        "compactWins": 10,
+        "medianCompleteSpeedup": 1.1775318376556323,
+        "medianCompleteSavingMilliseconds": 58.550000071525574
+      },
+      {
+        "id": "semantic-long",
+        "compactWins": 7,
+        "medianCompleteSpeedup": 1.0365024291335667,
+        "medianCompleteSavingMilliseconds": 13.150000095367432
+      }
+    ]
+  },
+  "protocol": {
+    "sameOwner": true,
+    "timedArmsUseActualSequentialDecode": true,
+    "oppositeHeadReplayExcludedFromTimedWall": true,
+    "balancedAdjacentPositionPairs": true,
+    "thermalTraceAttached": false,
+    "complete150CodeTrajectoryRun": false,
+    "productGateRun": false
+  },
+  "artifacts": [
+    {
+      "location": "optimization/artifacts/OPT-0082/raw/developer-ab-receipt.json",
+      "sha256": "95f705daef899fb8ebf27cfb1c47664cc8bcaaa75a91486408ba650329ef8556",
+      "byteLength": 104521
+    }
+  ],
+  "disposition": {
+    "state": "benchmark-only",
+    "productionIntegrationPerformed": false,
+    "rationale": "Preserve the exact positive mechanism evidence, but obey the frozen 30-of-36 stop rule. The ordinary production selector remains full-vocabulary.",
+    "revisitWhen": [
+      "a materially changed exact sampler or planner kernel compounds the compact-domain saving under a newly allocated experiment",
+      "a changed browser, GPU, package, or scheduling topology invalidates this result"
+    ]
+  }
+}

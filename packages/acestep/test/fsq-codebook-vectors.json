@@ -1,0 +1,831 @@
+{
+  "schema": "ace-fsq-bfloat16-codebook-v1",
+  "sourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+  "vectorQuantizePytorchVersion": "1.27.20",
+  "construction": "ideal-f32-implicit-codebook then model.to(bfloat16); raw-fp16 converts those bfloat16 values",
+  "levels": [
+    8,
+    8,
+    8,
+    5,
+    5,
+    5
+  ],
+  "bases": [
+    1,
+    8,
+    64,
+    512,
+    2560,
+    12800
+  ],
+  "codebookSize": 64000,
+  "scalarValues": {
+    "level8": [
+      {
+        "digit": 0,
+        "idealF32Bits": "bf800000",
+        "bfloat16Bits": "bf80",
+        "bfloat16Value": -1.0,
+        "fp16BitsFromBfloat16": "bc00"
+      },
+      {
+        "digit": 1,
+        "idealF32Bits": "bf36db6e",
+        "bfloat16Bits": "bf37",
+        "bfloat16Value": -0.71484375,
+        "fp16BitsFromBfloat16": "b9b8"
+      },
+      {
+        "digit": 2,
+        "idealF32Bits": "bedb6db6",
+        "bfloat16Bits": "bedb",
+        "bfloat16Value": -0.427734375,
+        "fp16BitsFromBfloat16": "b6d8"
+      },
+      {
+        "digit": 3,
+        "idealF32Bits": "be124920",
+        "bfloat16Bits": "be12",
+        "bfloat16Value": -0.142578125,
+        "fp16BitsFromBfloat16": "b090"
+      },
+      {
+        "digit": 4,
+        "idealF32Bits": "3e124928",
+        "bfloat16Bits": "3e12",
+        "bfloat16Value": 0.142578125,
+        "fp16BitsFromBfloat16": "3090"
+      },
+      {
+        "digit": 5,
+        "idealF32Bits": "3edb6db8",
+        "bfloat16Bits": "3edb",
+        "bfloat16Value": 0.427734375,
+        "fp16BitsFromBfloat16": "36d8"
+      },
+      {
+        "digit": 6,
+        "idealF32Bits": "3f36db70",
+        "bfloat16Bits": "3f37",
+        "bfloat16Value": 0.71484375,
+        "fp16BitsFromBfloat16": "39b8"
+      },
+      {
+        "digit": 7,
+        "idealF32Bits": "3f800000",
+        "bfloat16Bits": "3f80",
+        "bfloat16Value": 1.0,
+        "fp16BitsFromBfloat16": "3c00"
+      }
+    ],
+    "level5": [
+      {
+        "digit": 0,
+        "idealF32Bits": "bf800000",
+        "bfloat16Bits": "bf80",
+        "bfloat16Value": -1.0,
+        "fp16BitsFromBfloat16": "bc00"
+      },
+      {
+        "digit": 1,
+        "idealF32Bits": "bf000000",
+        "bfloat16Bits": "bf00",
+        "bfloat16Value": -0.5,
+        "fp16BitsFromBfloat16": "b800"
+      },
+      {
+        "digit": 2,
+        "idealF32Bits": "00000000",
+        "bfloat16Bits": "0000",
+        "bfloat16Value": 0.0,
+        "fp16BitsFromBfloat16": "0000"
+      },
+      {
+        "digit": 3,
+        "idealF32Bits": "3f000000",
+        "bfloat16Bits": "3f00",
+        "bfloat16Value": 0.5,
+        "fp16BitsFromBfloat16": "3800"
+      },
+      {
+        "digit": 4,
+        "idealF32Bits": "3f800000",
+        "bfloat16Bits": "3f80",
+        "bfloat16Value": 1.0,
+        "fp16BitsFromBfloat16": "3c00"
+      }
+    ]
+  },
+  "vectors": [
+    {
+      "code": 0,
+      "digits": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 1,
+      "digits": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf37",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -0.71484375,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "b9b8",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 2,
+      "digits": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bedb",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -0.427734375,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "b6d8",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 3,
+      "digits": [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "be12",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -0.142578125,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "b090",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 4,
+      "digits": [
+        4,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3e12",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        0.142578125,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3090",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 5,
+      "digits": [
+        5,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3edb",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        0.427734375,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "36d8",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 6,
+      "digits": [
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f37",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        0.71484375,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "39b8",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 7,
+      "digits": [
+        7,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 8,
+      "digits": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf37",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -0.71484375,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "b9b8",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 63,
+      "digits": [
+        7,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "3f80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "3c00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 64,
+      "digits": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf37",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -0.71484375,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "b9b8",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 511,
+      "digits": [
+        7,
+        7,
+        7,
+        0,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "3f80",
+        "3f80",
+        "bf80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        1.0,
+        1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "3c00",
+        "3c00",
+        "bc00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 512,
+      "digits": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf00",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -0.5,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "bc00",
+        "b800",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 1536,
+      "digits": [
+        0,
+        0,
+        0,
+        3,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf80",
+        "3f00",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        0.5,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "bc00",
+        "3800",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 2559,
+      "digits": [
+        7,
+        7,
+        7,
+        4,
+        0,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80",
+        "bf80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        -1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00",
+        "bc00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 2560,
+      "digits": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf00",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -0.5,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "b800",
+        "bc00"
+      ]
+    },
+    {
+      "code": 12799,
+      "digits": [
+        7,
+        7,
+        7,
+        4,
+        4,
+        0
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80",
+        "bf80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        -1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00",
+        "bc00"
+      ]
+    },
+    {
+      "code": 12800,
+      "digits": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "bfloat16Bits": [
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf80",
+        "bf00"
+      ],
+      "bfloat16Values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -0.5
+      ],
+      "fp16BitsFromBfloat16": [
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "bc00",
+        "b800"
+      ]
+    },
+    {
+      "code": 27763,
+      "digits": [
+        3,
+        6,
+        1,
+        4,
+        0,
+        2
+      ],
+      "bfloat16Bits": [
+        "be12",
+        "3f37",
+        "bf37",
+        "3f80",
+        "bf80",
+        "0000"
+      ],
+      "bfloat16Values": [
+        -0.142578125,
+        0.71484375,
+        -0.71484375,
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "b090",
+        "39b8",
+        "b9b8",
+        "3c00",
+        "bc00",
+        "0000"
+      ]
+    },
+    {
+      "code": 63999,
+      "digits": [
+        7,
+        7,
+        7,
+        4,
+        4,
+        4
+      ],
+      "bfloat16Bits": [
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80",
+        "3f80"
+      ],
+      "bfloat16Values": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "fp16BitsFromBfloat16": [
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00",
+        "3c00"
+      ]
+    }
+  ],
+  "fullCodebook": {
+    "shape": [
+      64000,
+      6
+    ],
+    "elementOrder": "row-major-code-then-dimension",
+    "bfloat16LittleEndianSha256": "368cfc217ff17d9c3a87f66488f67b13d5a3ff16fc11ab2a43bd082dfa57ce1c",
+    "fp16LittleEndianFromBfloat16Sha256": "d1ba8fed5f32390647416340be61ec96755065ae1d7c142a98eeef691820e083"
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "planner-lyrics-short",
+  "contractSha256": "73886939f8d60c6f5744ab1f0bd880deaea02913a81cac6a8a0231558d774cf2",
+  "contract": {
+    "coverage": [
+      "planner",
+      "supplied-lyrics",
+      "short-conditioning",
+      "short-duration",
+      "two-row-cfg",
+      "dcw-think-default"
+    ],
+    "source": {
+      "aceRepositoryCommit": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+      "mainModelId": "ACE-Step/Ace-Step1.5",
+      "mainModelRevision": "19671f406d603126926c1b7e2adc169acbcade22",
+      "mainModelVariant": "acestep-v15-turbo",
+      "plannerModelId": "ACE-Step/acestep-5Hz-lm-0.6B",
+      "plannerModelRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80"
+    },
+    "request": {
+      "batchSize": 1,
+      "taskType": "text2music",
+      "resolvedTaskType": "cover",
+      "instruction": "Generate audio semantic tokens based on the given conditions:",
+      "caption": "Bright neo-soul with elastic bass, clipped rhythm guitar, crisp pocket drums, warm keys, and a confident mezzo-soprano vocal.",
+      "lyrics": "[Verse]\nOpen the curtains, let the whole day in\nDust in the sunlight starts to spin\n\n[Chorus]\nWe found the rhythm under our feet\nTurn up the room and follow the beat",
+      "instrumental": false,
+      "vocalLanguage": "unknown",
+      "bpm": null,
+      "keyScale": "",
+      "timeSignature": "",
+      "durationSeconds": 12,
+      "referenceAudio": null,
+      "sourceAudio": null,
+      "audioCodes": null,
+      "audioCoverStrength": 1.0,
+      "coverNoiseStrength": 0.0,
+      "chunkMaskMode": "auto",
+      "repaintingStart": 0.0,
+      "repaintingEnd": null,
+      "retakeVariance": 0.0,
+      "retakeSeed": null
+    },
+    "planner": {
+      "enabled": true,
+      "thinking": true,
+      "useCotMetas": true,
+      "useCotCaption": true,
+      "useCotLyrics": false,
+      "useCotLanguage": true,
+      "useConstrainedDecoding": true,
+      "temperature": 0.85,
+      "cfgScale": 2.0,
+      "topK": 0,
+      "topP": 0.9,
+      "repetitionPenalty": 1.0,
+      "negativePrompt": "NO USER INPUT",
+      "semanticRateHz": 5,
+      "codeVocabularySize": 64000,
+      "samplingBatchRows": 2,
+      "userMetadataWins": true
+    },
+    "diffusion": {
+      "inferenceSteps": 8,
+      "shift": 3.0,
+      "customTimesteps": null,
+      "resolvedTimesteps": [
+        1.0,
+        0.9545454545454546,
+        0.9,
+        0.8333333333333334,
+        0.75,
+        0.6428571428571429,
+        0.5,
+        0.3
+      ],
+      "effectiveTimestepsBfloat16": [
+        1.0,
+        0.953125,
+        0.8984375,
+        0.83203125,
+        0.75,
+        0.64453125,
+        0.5,
+        0.30078125
+      ],
+      "inferMethod": "ode",
+      "samplerMode": "euler",
+      "guidanceScale": 1.0,
+      "useAdg": false,
+      "cfgIntervalStart": 0.0,
+      "cfgIntervalEnd": 1.0,
+      "velocityNormThreshold": 0.0,
+      "velocityEmaFactor": 0.0,
+      "dcw": {
+        "enabled": true,
+        "mode": "double",
+        "lowScaler": 0.02,
+        "highScaler": 0.06,
+        "wavelet": "haar",
+        "levels": 1,
+        "boundaryMode": "zero",
+        "computeDtype": "float32"
+      },
+      "latentShift": 0.0,
+      "latentRescale": 1.0
+    },
+    "postprocess": {
+      "vaeDtype": "float32",
+      "sampleRate": 48000,
+      "channels": 2,
+      "normalize": true,
+      "normalizationDb": -1.0,
+      "fadeInSeconds": 0.0,
+      "fadeOutSeconds": 0.0,
+      "captureRawBeforeNormalization": true
+    },
+    "random": {
+      "userSeed": "000000000badc0de",
+      "useRandomSeed": false,
+      "algorithmId": "ace-seed-v1",
+      "generator": "philox4x32-10",
+      "diffusionStream": "diffusion-noise",
+      "plannerStream": "planner-sampling",
+      "gaussianMapping": "probit-acklam-binary64-f32-v1",
+      "categoricalMapping": "u32-midpoint-binary64-cdf-v1",
+      "initialNoise": {
+        "tapId": "diffusion.initial-noise",
+        "dtype": "float32",
+        "shape": [
+          1,
+          300,
+          64
+        ],
+        "layout": "row-major-little-endian",
+        "sha256": "c60e0c8886e32109a6d1317280f95d2406a6b9aa0e440f76fddac36766af3edd"
+      },
+      "referenceInitialNoiseInjectionRequired": true,
+      "randomTransformCaptureStatus": "ready-for-native-capture",
+      "referencePlannerWordsInjectionRequired": true
+    },
+    "expected": {
+      "latentFrames": 300,
+      "patchedTokens": 150,
+      "semanticCodes": 60,
+      "semanticFrames": 300,
+      "audioSamplesPerChannel": 576000
+    }
+  }
+}

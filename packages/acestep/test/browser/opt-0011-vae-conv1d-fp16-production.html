@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 production FP16 Conv1D correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only: authenticate the promoted production shader-f16
+      Conv1D source, execute bounded exact B-256 decoder graph quanta, compare
+      every selected K7 output bit with the audited scalar authority, and
+      compare every selected biased-K1 FP16 output bit with an independent
+      scalar shader plus a source-order CPU oracle. The run includes qNaN
+      prefills, guards, deterministic reruns, post-drain cancellation, and
+      complete cleanup/device-loss validation. It makes no timing, thermal,
+      throughput, quality, listening, or production-selector claim.
+    </p>
+    <button id="start" type="button">
+      Run OPT-0011 production Conv1D correctness
+    </button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script
+      type="module"
+      src="./opt-0011-vae-conv1d-fp16-production.ts"
+    ></script>
+  </body>
+</html>

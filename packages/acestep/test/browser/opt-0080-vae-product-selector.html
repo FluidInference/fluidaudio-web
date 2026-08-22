@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 VAE product selector gate</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 88rem; }
+      button { margin-block: 0.75rem; padding: 0.55rem 0.8rem; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle" data-product-gate="vae-selector">
+    <h1>OPT-0080 — VAE post-integration product selector gate</h1>
+    <p>
+      This is an exactness, topology, lifecycle, and responsiveness gate. It is
+      not a timing or thermal comparison and performs no automatic retry.
+    </p>
+    <p>
+      Three fresh-device 96-second direct arms run in one fixed order: forced
+      depth one, forced exact-C2314 candidate selection, and seam-free ordinary
+      production. Control and candidate compare the final latent, full raw
+      waveform, real C2378 stitch neighborhood, and normalized WAV. The
+      ordinary arm must reproduce the candidate WAV and report C2314 depth two
+      followed by a C214 depth-one remainder. A fourth fresh worker checks
+      ordinary cancellation and cleanup.
+    </p>
+    <p>
+      Supply the frozen run identity in the URL query: <code>coreCommit</code>,
+      <code>harnessCommit</code>, <code>machineModel</code>,
+      <code>osVersion</code>, <code>osBuild</code>,
+      <code>browserVersion</code>, <code>gpuCoreCount</code>, and
+      <code>memoryBytes</code>.
+    </p>
+    <button id="run" type="button" disabled>
+      Run VAE control → candidate → production → cancellation
+    </button>
+    <div id="progress" role="status" aria-live="polite">
+      validating frozen run identity
+    </div>
+    <pre id="result">not started</pre>
+    <a
+      id="download"
+      hidden
+      download="opt-0080-vae-product-selector.json"
+    >Download compact VAE product-selector receipt</a>
+    <script type="module" src="./opt-0080-product-integration.ts"></script>
+  </body>
+</html>

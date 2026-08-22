@@ -1,0 +1,147 @@
+{
+  "schema": "ace-opt-0051-k7-k4-row-reuse-16x64-v1",
+  "experimentId": "OPT-0051",
+  "status": "completed",
+  "passed": false,
+  "disposition": "negative-universal-owner-shape-selector-follow-up",
+  "kernels": {
+    "control": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "candidate": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1",
+    "opt0024ControlUnchanged": true
+  },
+  "identity": {
+    "opt0024CoreSha256": "fe3bf8110cef1a3bb791006e9d376fe549e9f00fe30e4738d7429cb0daf65841",
+    "candidateCoreSha256": "59e144c1316d642d362d206222888177cd4e792743b3e23631ca415e923d770a",
+    "decoderCoreSha256": "07f294e2aadd615c0a8b840884f43205bc00c146362f54048a39a85440da1d3e",
+    "generatedShaderAggregateSha256": "4418f590a9407f1f2385d4435ee425d78db29442e928897b84dd082b0f92ff0f",
+    "authenticated": true
+  },
+  "correctness": {
+    "caseCount": 16,
+    "productionTierDilationCaseCount": 12,
+    "adversarialCaseCount": 4,
+    "adversarialKinds": ["signed-zero", "cancellation", "finite-range", "tail-cin"],
+    "channelTiers": [1024, 512, 256, 128],
+    "dilations": [1, 3, 9],
+    "productionInputFrames": 512,
+    "packedWeightU16Words": 29707776,
+    "exhaustivePackInverseMismatchCount": 0,
+    "executionsPerArmPerCase": 2,
+    "comparedU16Words": 11870208,
+    "mismatchCount": 0,
+    "rawU16Exact": true,
+    "numericalEnvelope": {
+      "nrmse": 0,
+      "snrDecibels": "Infinity",
+      "pearsonCorrelation": 1,
+      "relativeMaximumAbsoluteError": 0,
+      "opt0024EnvelopePassed": true
+    },
+    "deterministicBothArms": true,
+    "qNaNPrefillCompleteWrites": true,
+    "allOutputsFinite": true,
+    "guardsUntouched": true,
+    "completedBeforeReady": true
+  },
+  "timing": {
+    "tiers": [
+      {
+        "id": "c1024-d1",
+        "weight": 282,
+        "opt0024SamplesMilliseconds": [10.8, 11.4125000089, 11.5625, 11.924999997],
+        "rowReuseSamplesMilliseconds": [5.012500003, 4.899999991, 4.950000003, 4.274999991],
+        "opt0024MedianMilliseconds": 11.4875000045,
+        "rowReuseMedianMilliseconds": 4.924999997,
+        "speedup": 2.332487312,
+        "nonSlower": true
+      },
+      {
+        "id": "c512-d3",
+        "weight": 423,
+        "opt0024SamplesMilliseconds": [2.3125, 2.212500006, 2.212500006, 2.9375],
+        "rowReuseSamplesMilliseconds": [1.387500003, 1.362500012, 1.412499994, 1.337500006],
+        "opt0024MedianMilliseconds": 2.262500003,
+        "rowReuseMedianMilliseconds": 1.375000007,
+        "speedup": 1.645454539,
+        "nonSlower": true
+      },
+      {
+        "id": "c256-d1",
+        "weight": 423,
+        "opt0024SamplesMilliseconds": [0.412499994, 0.625, 0.462500006, 0.399999991],
+        "rowReuseSamplesMilliseconds": [1.0625, 0.462500006, 0.537499994, 0.375],
+        "opt0024MedianMilliseconds": 0.4375,
+        "rowReuseMedianMilliseconds": 0.5,
+        "speedup": 0.875,
+        "nonSlower": false
+      },
+      {
+        "id": "c128-d9",
+        "weight": 1269,
+        "opt0024SamplesMilliseconds": [1.75, 0.287499994, 0.150000006, 0.299999997],
+        "rowReuseSamplesMilliseconds": [0.287500009, 0.174999997, 0.174999997, 0.137500003],
+        "opt0024MedianMilliseconds": 0.293749996,
+        "rowReuseMedianMilliseconds": 0.174999997,
+        "speedup": 1.678571432,
+        "nonSlower": true
+      }
+    ],
+    "weightTotal": 2397,
+    "weightedOpt0024Milliseconds": 4754.34374685,
+    "weightedK4RowReuse16x64Milliseconds": 2404.04999853,
+    "weightedSpeedup": 1.977639296,
+    "everyTierNonSlower": false,
+    "requiredWeightedSpeedup": 1.25,
+    "passed": false,
+    "decision": "negative-stop-primitive-gate"
+  },
+  "derivedShapeSelector": {
+    "authority": "planning-only-follow-up-not-part-of-this-decision",
+    "route": {
+      "c1024": "row-reuse-16x64",
+      "c512": "row-reuse-16x64",
+      "c256": "opt0024",
+      "c128": "row-reuse-16x64"
+    },
+    "weightedMilliseconds": 2377.61249853,
+    "speedupOverOpt0024": 1.9996293549892823,
+    "opt0024LongK7ProjectionSeconds": 34.966,
+    "candidateLongK7ProjectionSeconds": 17.486240593916172,
+    "projectedSavingSeconds": 17.47975940608383
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "durationMilliseconds": 46002,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 46002,
+      "launchDelayMilliseconds": 15305,
+      "maximumAllowedLaunchDelayMilliseconds": 30000,
+      "launchDelayWithinFrozenMaximum": true
+    },
+    "oneButtonAction": true,
+    "timingRepeatsPerSample": 8,
+    "samplesPerArmPerTier": 4,
+    "balancedOrder": [
+      ["opt0024", "rowReuse"],
+      ["rowReuse", "opt0024"],
+      ["rowReuse", "opt0024"],
+      ["opt0024", "rowReuse"]
+    ],
+    "timedRetryPerformed": false
+  },
+  "cleanup": {
+    "createdBufferCount": 176,
+    "destroyedBufferCount": 176,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "deviceDestroyed": true,
+    "queueDrainedBeforeRelease": true,
+    "destroyIdempotenceExercised": true,
+    "zeroLiveResources": true
+  },
+  "productionIntegrationAuthorized": false
+}

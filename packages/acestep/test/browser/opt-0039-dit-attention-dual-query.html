@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPT-0039 fixed-WG256 dual-query attention</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 900px; }
+      fieldset { display: grid; gap: 0.4rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      button { font: inherit; padding: 8px 12px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0039 fixed-WG256 dual-query attention</h1>
+    <p>
+      Preparation compiles current query8 and the fixed-WG256 dual-query16
+      candidate, then runs each twice and compares all 4,608,000 F32 output
+      words with qNaN prefill and adjacent canaries. No timed GPU work runs
+      before the button.
+    </p>
+    <p>
+      After READY, wait 30 seconds, run one notifyutil thermal check, and
+      continue only if it reports level 0.
+      The button runs four balanced A/B rounds through queue drain. Dual-query16
+      must reach at least 1.25x query8; this primitive cannot select production.
+    </p>
+    <p id="progress" role="status">preparing exact M2250 gate…</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external level-0 check after a 30-second wait</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Wait start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Check time (epoch ms)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" readonly />
+      </label>
+      <label>
+        Maximum observation gap (ms; blank derives exact wait)
+        <input name="thermalMaximumObservationGapMilliseconds" inputmode="decimal" />
+      </label>
+      <button id="run" type="button" disabled>Run balanced A/B timing</button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0039-dit-attention-dual-query.ts"></script>
+  </body>
+</html>

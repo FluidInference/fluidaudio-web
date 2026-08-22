@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPT-0061 fixed-WG256 multi-query attention</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 940px; }
+      fieldset { display: grid; gap: 0.4rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      button { font: inherit; padding: 8px 12px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body id="opt-0061" data-status="preparing">
+    <h1>OPT-0061 fixed-WG256 multi-query attention</h1>
+    <p>
+      Preparation compiles query8, the positive dual-query owner, and new
+      triple/quad-query owners without widening WG256. It runs every arm twice
+      and compares all 4,608,000 F32 words with qNaN prefill and adjacent
+      canaries. No timed GPU work runs before the button.
+    </p>
+    <p>
+      After READY, wait 30 seconds and run exactly one notifyutil thermal
+      check. Continue only at level 0. The button runs eight forward/reverse
+      Latin-balanced rounds. A new arm must reach both 1.12x dual-query and
+      1.50x query8; this isolated primitive cannot change production.
+    </p>
+    <p id="progress" role="status">preparing exact M2250 four-arm gate…</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external level-0 check after a 30-second wait</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Wait start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Check time (epoch ms)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" readonly />
+      </label>
+      <label>
+        Maximum observation gap (ms; blank derives exact wait)
+        <input name="thermalMaximumObservationGapMilliseconds" inputmode="decimal" />
+      </label>
+      <button id="run" type="button" disabled>Run eight balanced rounds</button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0061-dit-attention-multi-query.ts"></script>
+  </body>
+</html>

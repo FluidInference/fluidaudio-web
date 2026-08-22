@@ -1,0 +1,328 @@
+{
+  "schema": "ace-opt-0079-dense-decoded-half-tile-result-v1",
+  "experiment": "OPT-0079",
+  "status": "inconclusive",
+  "disposition": "benchmark-only",
+  "passed": false,
+  "identity": {
+    "allocationBaselineCommit": "4084610c5e43dff2d388361965750b0f603400dd",
+    "registrationCommit": "6313bfbaa61dee91f065d1652ee8eb1446f987b8",
+    "candidateAndHarnessCommit": "aade2c0223383bab99cf477e7697e2394c05a380",
+    "machineModel": "Mac15,12",
+    "chip": "Apple M3",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "browserSurface": "Codex in-app Browser",
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapterInfoReported": {},
+    "stockWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "requestedFeatures": [
+      "shader-f16",
+      "subgroups",
+      "timestamp-query"
+    ],
+    "deviceFeatures": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups",
+      "timestamp-query"
+    ],
+    "authenticatedLimits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupStorageSize": 16384
+    },
+    "currentKernel": "OPT-0009",
+    "candidateKernel": "OPT-0079",
+    "sharedWeightLayout": "dit-gemm-n256-k32-tile-major-v1",
+    "fixtureVersion": "opt0079-full-m2250-five-edge-families-v1",
+    "sourceSha256": {
+      "currentKernel": "a238f67da07c6ba1097da9d9e9e97960ae97d2e1d5c129fcbabf69e962cbb6b3",
+      "candidateKernel": "d49bec88da60b8fb16331a900b6d9622245f9b3fcc1a502ddc564b393b2f419a",
+      "kernelContractTest": "07900c0266f4c0605c55d7ca83b6ce56be0f1ed302f5d77ec9e4f3554c6f5732",
+      "browserHarness": "e0e656902ddcdbf25be24144771adeb6533afdfe4d280aa287f15817f7986ffb",
+      "browserHtml": "922e0d5ad6b4a8e0ed2c3e54ab5417abab54fbaba8ae439189c973e2a3875888",
+      "browserContractTest": "15edb1233a4df419cc4ef9757f94e12aa9cb41a9fe8cc7c49d39f9d727ef8a00"
+    },
+    "generatedShaderAggregateSha256": "6817dd152bed6475509c1a84c42ccd4554957f0c31749f3186d62f9ca8d8d58c"
+  },
+  "artifacts": {
+    "authoritativeBrowserReceipt": {
+      "committed": false,
+      "location": "optimization/artifacts/OPT-0079/raw/opt-0079-dense-decoded-half-tile-receipt.json",
+      "sha256": "ed4033518620efc5404ef0416238de84bf16631193f330f16e391e5f2b4a1842",
+      "byteLength": 133315
+    },
+    "externalThermalTrace": {
+      "committed": false,
+      "location": "optimization/artifacts/OPT-0079/raw/thermal-trace.jsonl",
+      "schema": "jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1",
+      "sha256": "499c3ebe469567c81232b2d30707dca65fc550d794eca9d34dc41ccd82a3b9ea",
+      "byteLength": 17276
+    },
+    "note": "The compact result is committed. The complete browser receipt and every external thermal observation are retained under ignored optimization/artifacts and bound here by path, byte length, and SHA-256."
+  },
+  "mechanism": {
+    "geometry": "M64xN128xK32/WG256/eight-fixed32-subgroups",
+    "rowsPerSubgroup": 8,
+    "columnsPerLane": 4,
+    "fp32AccumulatorsPerLane": 32,
+    "packedRecordsPerInnerTile": 512,
+    "packedRecordsPerLane": 2,
+    "decodedVectorsPerInnerTile": 1024,
+    "workgroupStorageBytes": 8192,
+    "barriersPerK32Tile": 2,
+    "weightedWorkgroupsPerLayerEvaluation": 6912,
+    "weightedScheduledMultiplyAddsPerLayerEvaluation": 135291469824,
+    "modeledCurrentOperandRequestBytes": 35437674496,
+    "modeledCandidateOperandRequestBytes": 8455716864,
+    "packageBytesChanged": false,
+    "productionSelectorChanged": false
+  },
+  "correctness": {
+    "passed": true,
+    "shapeCount": 4,
+    "comparedU32CountPerArmComparison": 25344000,
+    "armComparisonCount": 3,
+    "perShapeArmComparisonCount": 12,
+    "totalComparedU32Count": 76032000,
+    "currentCandidateDifferingU32Count": 0,
+    "currentRerunDifferingU32Count": 0,
+    "candidateRerunDifferingU32Count": 0,
+    "boundedAdversarialFixtureCount": 5,
+    "boundedAdversarialFixtureIds": [
+      "signed-zero",
+      "subnormal-normal-boundary",
+      "alternating-cancellation",
+      "maximum-finite-fp16-bounded",
+      "activation-rounding-boundary"
+    ],
+    "everyOutputRawU32Exact": true,
+    "finiteClassIdentity": true,
+    "allOutputsFiniteAndComplete": true,
+    "qnanPrefillCompletelyOverwritten": true,
+    "guardsAndPartialMTailsIntact": true,
+    "malformedBindingSetupFailureRejectedBeforeAllocationOrSubmission": true,
+    "uncapturedGpuErrorCount": 0,
+    "deviceLossCount": 0,
+    "completedBeforeReady": true,
+    "resultSha256ByShape": {
+      "h-h": "06fd9f24b337d2b8031d1ed56d48c896a9f280c0063ae9645b11eb84406edf33",
+      "h-1024": "86e0b44db6903280534062590dc72b612ce43ff7aff5d7d1a160913971b6d994",
+      "h-6144": "e28ca0f527929fbc2e0bd83ea1cc4d338c83132d7f8fe63974ba1e6dc3b8e1d2",
+      "6144-h": "09652e3e5b5f505e5f391651c4c2e5ce1cbc7ec7958dfcc09bf49cc2007ce81f"
+    }
+  },
+  "protocol": {
+    "correctnessAndWarmupBeforeReady": true,
+    "roundCount": 8,
+    "samplesPerArmPerShape": 8,
+    "balancedAlternatingArmOrders": true,
+    "rotatedFourShapeOrders": true,
+    "completeMultiplicities": "4/2/2/1",
+    "feedForwardMultiplicities": "0/0/2/1",
+    "onePassOneCommandBufferOneSubmitOneDrainPerSample": true,
+    "oneTimestampQueryPairPerSample": true,
+    "outputReadbackInsideTiming": false,
+    "allocationUploadCompilationInsideTiming": false,
+    "measurementStartedAtEpochMilliseconds": 1787312269657,
+    "measurementCompletedAtEpochMilliseconds": 1787312271521,
+    "unchangedTimingRetryPerformed": false
+  },
+  "timing": {
+    "shapeSummaries": [
+      {
+        "id": "h-h",
+        "shape": "M2250/K2048/N2048",
+        "multiplicity": 4,
+        "currentMeanGpuMilliseconds": 16.498688,
+        "candidateMeanGpuMilliseconds": 16.62976,
+        "currentMedianGpuMilliseconds": 14.7456,
+        "candidateMedianGpuMilliseconds": 11.829248,
+        "meanGpuSpeedup": 0.9921182266009853,
+        "medianGpuSpeedup": 1.2465373961218837,
+        "currentMeanWallMilliseconds": 17.86250001192093,
+        "candidateMeanWallMilliseconds": 17.662499994039536,
+        "currentMedianWallMilliseconds": 15.950000047683716,
+        "candidateMedianWallMilliseconds": 13.149999976158142,
+        "meanWallSpeedup": 1.0113234263523785,
+        "medianWallSpeedup": 1.2129277624792523
+      },
+      {
+        "id": "h-1024",
+        "shape": "M2250/K2048/N1024",
+        "multiplicity": 2,
+        "currentMeanGpuMilliseconds": 8.31488,
+        "candidateMeanGpuMilliseconds": 7.135232,
+        "currentMedianGpuMilliseconds": 7.569408,
+        "candidateMedianGpuMilliseconds": 7.667712,
+        "meanGpuSpeedup": 1.1653272101033296,
+        "medianGpuSpeedup": 0.9871794871794872,
+        "currentMeanWallMilliseconds": 10.775000005960464,
+        "candidateMeanWallMilliseconds": 8.262500017881393,
+        "currentMedianWallMilliseconds": 10.600000023841858,
+        "candidateMedianWallMilliseconds": 8.5,
+        "meanWallSpeedup": 1.304084718020165,
+        "medianWallSpeedup": 1.2470588263343363
+      },
+      {
+        "id": "h-6144",
+        "shape": "M2250/K2048/N6144",
+        "multiplicity": 2,
+        "currentMeanGpuMilliseconds": 43.802624,
+        "candidateMeanGpuMilliseconds": 41.582592000000005,
+        "currentMedianGpuMilliseconds": 43.614208,
+        "candidateMedianGpuMilliseconds": 42.041343999999995,
+        "meanGpuSpeedup": 1.0533884948778565,
+        "medianGpuSpeedup": 1.0374123148869836,
+        "currentMeanWallMilliseconds": 45.6000000089407,
+        "candidateMeanWallMilliseconds": 42.875,
+        "currentMedianWallMilliseconds": 45,
+        "candidateMedianWallMilliseconds": 42.75,
+        "meanWallSpeedup": 1.0635568515204827,
+        "medianWallSpeedup": 1.0526315789473684
+      },
+      {
+        "id": "6144-h",
+        "shape": "M2250/K6144/N2048",
+        "multiplicity": 1,
+        "currentMeanGpuMilliseconds": 44.228607999999994,
+        "candidateMeanGpuMilliseconds": 40.312832,
+        "currentMedianGpuMilliseconds": 45.973504,
+        "candidateMedianGpuMilliseconds": 40.075264,
+        "meanGpuSpeedup": 1.097134728713676,
+        "medianGpuSpeedup": 1.1471790678659035,
+        "currentMeanWallMilliseconds": 45.98749999701977,
+        "candidateMeanWallMilliseconds": 41.52499997615814,
+        "currentMedianWallMilliseconds": 47.84999996423721,
+        "candidateMedianWallMilliseconds": 41.25,
+        "meanWallSpeedup": 1.1074653828639085,
+        "medianWallSpeedup": 1.1599999991330234
+      }
+    ],
+    "completeWeightedScore": {
+      "rawSamples": {
+        "currentGpuMilliseconds": [319.291392, 176.881664, 224.657408, 216.334336, 214.499328, 184.549376, 172.94950400000002, 206.503936],
+        "candidateGpuMilliseconds": [318.963712, 181.075968, 197.197824, 182.714368, 198.770688, 198.836224, 171.37664, 185.20473600000003],
+        "currentWallMilliseconds": [342.60000026226044, 185.00000035762787, 244.40000009536743, 238.30000007152557, 230.80000019073486, 202.99999976158142, 182.80000019073486, 214.599999666214],
+        "candidateWallMilliseconds": [330.69999980926514, 187.60000014305115, 206.79999947547913, 196, 213.10000014305115, 210.69999992847443, 178.90000021457672, 191.80000019073486]
+      },
+      "mean": {
+        "currentGpuMilliseconds": 214.45836799999998,
+        "candidateGpuMilliseconds": 204.26752,
+        "gpuSpeedup": 1.0498897132544616,
+        "gpuSavingMilliseconds": 10.190847999999988,
+        "currentWallMilliseconds": 230.1875000745058,
+        "candidateWallMilliseconds": 214.44999998807907,
+        "wallSpeedup": 1.073385404930294,
+        "wallSavingMilliseconds": 15.737500086426735
+      },
+      "median": {
+        "currentGpuMilliseconds": 210.501632,
+        "candidateGpuMilliseconds": 191.20128,
+        "gpuSpeedup": 1.100942587832048,
+        "gpuSavingMilliseconds": 19.300352000000004,
+        "currentWallMilliseconds": 222.69999992847443,
+        "candidateWallMilliseconds": 201.39999973773956,
+        "wallSpeedup": 1.105759683309193,
+        "wallSavingMilliseconds": 21.300000190734863
+      }
+    },
+    "feedForwardWeightedScore": {
+      "rawSamples": {
+        "currentGpuMilliseconds": [150.86387200000001, 104.39884799999999, 140.24704, 140.050432, 145.8176, 126.615552, 114.491392, 132.186112],
+        "candidateGpuMilliseconds": [117.112832, 124.19072, 138.215424, 120.84838400000001, 131.006464, 124.12518399999999, 109.11744, 123.20768000000001],
+        "currentWallMilliseconds": [157.39999997615814, 106.40000021457672, 147.40000009536743, 153.89999997615814, 152.40000009536743, 129.59999990463257, 116.20000004768372, 134.19999980926514],
+        "candidateWallMilliseconds": [120.29999995231628, 126.40000009536743, 140.39999985694885, 126.39999985694885, 136.5, 131.89999997615814, 110.90000021457672, 125.39999985694885]
+      },
+      "mean": {
+        "gpuSpeedup": 1.067670669408877,
+        "gpuSavingMilliseconds": 8.35584,
+        "wallSpeedup": 1.0778825381308181,
+        "wallSavingMilliseconds": 9.912500038743019
+      },
+      "median": {
+        "gpuSpeedup": 1.100688924218336,
+        "gpuSavingMilliseconds": 12.45183999999999,
+        "wallSpeedup": 1.1139240504657777,
+        "wallSavingMilliseconds": 14.399999976158142
+      }
+    },
+    "frozenGate": {
+      "everyShapeMeanAndMedianFaster": false,
+      "requiredWeightedPairWins": 7,
+      "gpuWeightedPairWins": 6,
+      "wallWeightedPairWins": 6,
+      "gpuWeightedPairWinsPassed": false,
+      "wallWeightedPairWinsPassed": false,
+      "requiredMeanAndMedianSpeedup": 1.15,
+      "meanGpuSpeedupPassed": false,
+      "medianGpuSpeedupPassed": false,
+      "meanWallSpeedupPassed": false,
+      "medianWallSpeedupPassed": false,
+      "requiredMeanAndMedianSavingMilliseconds": 25,
+      "meanGpuSavingPassed": false,
+      "medianGpuSavingPassed": false,
+      "meanWallSavingPassed": false,
+      "medianWallSavingPassed": false,
+      "meanWallGpuSavingRatio": 1.5442777761405875,
+      "medianWallGpuSavingRatio": 1.1036068249291442,
+      "wallGpuSavingsAgree": false,
+      "projectedMeanGpuSavingMillisecondsAcross24LayersAnd8Evaluations": 1956.6428159999978,
+      "projectedMedianGpuSavingMillisecondsAcross24LayersAnd8Evaluations": 3705.6675840000007,
+      "projectedMeanWallSavingMillisecondsAcross24LayersAnd8Evaluations": 3021.600016593933,
+      "projectedMedianWallSavingMillisecondsAcross24LayersAnd8Evaluations": 4089.6000366210938,
+      "requiredProjectedSavingMilliseconds": 4800,
+      "projectedSavingPassed": false,
+      "passed": false
+    }
+  },
+  "thermal": {
+    "passed": true,
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "traceStartedAtEpochMilliseconds": 1787312214148,
+    "gateStartedAtEpochMilliseconds": 1787312238153,
+    "gateCompletedAtEpochMilliseconds": 1787312269158,
+    "measurementStartedAtEpochMilliseconds": 1787312269657,
+    "measurementCompletedAtEpochMilliseconds": 1787312271521,
+    "cleanupCompletedAtEpochMilliseconds": 1787312271522,
+    "traceCompletedAtEpochMilliseconds": 1787312280158,
+    "gateObservationCount": 32,
+    "traceObservationCount": 67,
+    "maximumPollGapMilliseconds": 1010,
+    "nonNominalObservationCount": 0,
+    "missingObservationCount": 0,
+    "launchDelayMilliseconds": 499,
+    "coversCleanup": true
+  },
+  "lifecycle": {
+    "passed": true,
+    "createdBufferCount": 22,
+    "destroyedBufferCount": 22,
+    "maximumLiveBytes": 293317664,
+    "liveBufferCountAfterCleanup": 0,
+    "liveBytesAfterCleanup": 0,
+    "mapCount": 92,
+    "unmapCount": 92,
+    "activeMapCountAfterCleanup": 0,
+    "queueDrained": true,
+    "idempotentDestroy": true,
+    "postDestroyRejected": true,
+    "postCleanupGpuErrorCount": 0,
+    "postCleanupDeviceLossCount": 0
+  },
+  "decision": {
+    "evidence": "inconclusive",
+    "disposition": "benchmark-only",
+    "rationale": "Correctness, thermal, and lifecycle gates passed, and the exact candidate was directionally faster in the complete weighted means and medians. The literal frozen primitive gate failed broadly: h-h mean GPU and h-1024 median GPU regressed, only 6/8 complete-score GPU and wall pairs won, all four 1.15x speedup conjuncts and all four 25 ms saving conjuncts failed, no projection reached 4800 ms, and the mean wall/GPU saving ratio was 1.5442777761 outside 0.75x..1.25x. The mixed literal outcome is inconclusive and authorizes no follow-up or retry.",
+    "diagnosticProfileFollowUpAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false,
+    "trajectoryOrListeningClaim": false,
+    "unchangedTimingRetryAuthorized": false,
+    "productionDefault": "OPT-0073 accepted path with OPT-0009 dense owner retained"
+  }
+}

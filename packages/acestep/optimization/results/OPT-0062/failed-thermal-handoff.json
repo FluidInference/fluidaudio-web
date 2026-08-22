@@ -1,0 +1,42 @@
+{
+  "schema": "ace-opt-0062-failed-thermal-handoff-v1",
+  "experimentId": "OPT-0062",
+  "status": "failed-setup",
+  "timedGpuWorkStarted": false,
+  "correctnessPreparationReachedReady": true,
+  "pageFailure": {
+    "schema": "ace-opt-0062-page-failure-v1",
+    "experimentId": "OPT-0062",
+    "status": "failed",
+    "error": {
+      "name": "Error",
+      "message": "OPT-0062 rejected the direction thermal gate"
+    }
+  },
+  "submittedGate": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "startedAtEpochMilliseconds": 1786847212791,
+    "completedAtEpochMilliseconds": 1786847243394,
+    "observationCount": 35,
+    "maximumPollGapMilliseconds": 910,
+    "nonNominalObservationCount": 0
+  },
+  "stoppedTrace": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "rawTraceSha256": "a99eb114a05881e868a86aaafe1e1ab1232bb5811b0627a6c4ea1f075aa16196",
+    "completedAtEpochMilliseconds": 1786847270401,
+    "observationCount": 65,
+    "maximumPollGapMilliseconds": 910,
+    "nonNominalObservationCount": 0,
+    "transitions": [
+      {
+        "atEpochMilliseconds": 1786847243394,
+        "level": 0
+      }
+    ]
+  },
+  "diagnosis": "The browser received the otherwise-valid gate more than the five-second handoff limit after its final observation because the manual tool round trip delayed submission. The page rejected it before posting a timing request to the worker.",
+  "revisitChange": "Consume a continuously refreshed logger snapshot and submit it from the same browser automation call, keeping the final observation less than one poll interval old."
+}

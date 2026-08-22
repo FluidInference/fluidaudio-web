@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0031 dense WG512 panel gate</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      fieldset { display: grid; gap: 0.4rem; max-width: 62rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0031 dense WG512 cooperative-panel gate</h1>
+    <p>
+      Preparation compiles OPT-0009 and the WG512 candidate, then compares two
+      complete executions per arm as raw U32 on all four exact M2250 shapes.
+      qNaN prefill, the M tail, finite writes, and adjacent canaries are gated
+      before READY. No timed work runs automatically.
+    </p>
+    <p>
+      After READY, collect one continuous 30-second nominal thermal interval
+      and press the button once. Four rotated AB/BA rounds produce median-4
+      scores. Qualification requires every shape to be no slower and the
+      weighted 4/2/2/1 score to reach 1.25x. This page cannot select production.
+    </p>
+    <p id="progress" role="status" aria-live="polite">
+      preparing complete raw-U32 correctness
+    </p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run the four-shape balanced A/B once
+      </button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0031-dit-dense-wg512-panels.ts"></script>
+  </body>
+</html>

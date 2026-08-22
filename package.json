@@ -31,8 +31,14 @@
   "engines": {
     "node": ">=20"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
+    "acestep:build": "npm run build --workspace ace-step-1.5.wgsl",
+    "acestep:check": "npm run check --workspace ace-step-1.5.wgsl",
+    "acestep:test": "npm run test --workspace ace-step-1.5.wgsl",
     "verify": "vite --open /verify.html",
     "build": "tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
     "preview": "vite preview",
@@ -57,6 +63,7 @@
     "conformance:numeric": "node scripts/backend-conformance.mjs"
   },
   "dependencies": {
+    "ace-step-1.5.wgsl": "*",
     "pinyin-pro": "^3.28.2"
   },
   "devDependencies": {

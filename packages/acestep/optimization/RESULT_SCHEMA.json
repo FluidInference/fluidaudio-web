@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/narcotic-sh/ace-step-1.5.wgsl/optimization/result.schema.json",
+  "title": "ACE-Step WebGPU optimization result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "experimentId",
+    "hypothesis",
+    "riskClass",
+    "baselineCommit",
+    "candidateCommit",
+    "identity",
+    "protocol",
+    "metrics",
+    "correctness",
+    "evidence",
+    "disposition"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "experimentId": { "type": "string", "pattern": "^OPT-[0-9]{4}$" },
+    "hypothesis": { "type": "string", "minLength": 1 },
+    "riskClass": { "enum": ["exact", "reordered-rounding", "approximate"] },
+    "baselineCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidateCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "modelManifestSha256",
+        "fixtureManifestSha256",
+        "browserVersion",
+        "osBuild",
+        "machineModel",
+        "gpuCores",
+        "memoryBytes",
+        "executionProfile"
+      ],
+      "properties": {
+        "modelManifestSha256": { "$ref": "#/$defs/sha256" },
+        "fixtureManifestSha256": { "$ref": "#/$defs/sha256" },
+        "browserVersion": { "type": "string", "minLength": 1 },
+        "osBuild": { "type": "string", "minLength": 1 },
+        "machineModel": { "type": "string", "minLength": 1 },
+        "gpuCores": { "type": "integer", "minimum": 1 },
+        "memoryBytes": { "type": "integer", "minimum": 1 },
+        "executionProfile": { "type": "string", "minLength": 1 }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["thermalGateSeconds", "thermalPollMilliseconds", "samples"],
+      "properties": {
+        "thermalGateSeconds": { "type": "number", "minimum": 30 },
+        "thermalPollMilliseconds": { "type": "integer", "minimum": 100 },
+        "samples": { "type": "integer", "minimum": 1 },
+        "pairedOrder": {
+          "type": "array",
+          "items": { "enum": ["A", "B"] }
+        },
+        "memorySamplingEnabled": { "type": "boolean" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["baseline", "candidate", "delta"],
+      "properties": {
+        "baseline": { "type": "object" },
+        "candidate": { "type": "object" },
+        "delta": { "type": "object" },
+        "logicalGpuPeakBytes": { "type": "integer", "minimum": 0 },
+        "physicalTreePeakBytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "correctness": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["passed"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "oracleManifestSha256": { "$ref": "#/$defs/sha256" },
+        "listeningRequired": { "type": "boolean" },
+        "listeningDecision": { "type": ["string", "null"] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conclusion", "rationale"],
+      "properties": {
+        "conclusion": { "enum": ["positive", "negative", "inconclusive"] },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "rationale", "revisitWhen"],
+      "properties": {
+        "state": {
+          "enum": [
+            "benchmark-only",
+            "pending-integration",
+            "integrated",
+            "superseded",
+            "abandoned"
+          ]
+        },
+        "rationale": { "type": "string", "minLength": 1 },
+        "revisitWhen": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sha256", "location"],
+        "properties": {
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "location": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "disposition": {
+            "properties": { "state": { "const": "integrated" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["disposition"]
+      },
+      "then": {
+        "properties": {
+          "correctness": {
+            "properties": { "passed": { "const": true } },
+            "required": ["passed"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "disposition": {
+            "properties": { "state": { "const": "integrated" } },
+            "required": ["state"]
+          },
+          "correctness": {
+            "properties": { "listeningRequired": { "const": true } },
+            "required": ["listeningRequired"]
+          }
+        },
+        "required": ["disposition", "correctness"]
+      },
+      "then": {
+        "properties": {
+          "correctness": {
+            "properties": {
+              "listeningDecision": { "type": "string", "minLength": 1 }
+            },
+            "required": ["listeningDecision"]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

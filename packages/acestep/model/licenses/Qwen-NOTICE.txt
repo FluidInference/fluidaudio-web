@@ -1,0 +1,8 @@
+Qwen3 architecture, tokenizer assets, and derivative weight data originate
+from the Qwen project by the Qwen Team and are licensed under Apache License
+2.0. Preserve all applicable copyright, attribution, NOTICE, patent, and
+license terms when redistributing this package or derivatives.
+
+Project: https://github.com/QwenLM/Qwen3
+Model: https://huggingface.co/Qwen/Qwen3-Embedding-0.6B
+License: https://www.apache.org/licenses/LICENSE-2.0

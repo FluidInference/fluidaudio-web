@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OPT-0048 VAE ConvTranspose K4 partials</title>
+  <style>
+    body { font: 14px/1.45 system-ui, sans-serif; margin: 2rem; max-width: 74rem; }
+    fieldset { display: grid; gap: .55rem; margin: 1rem 0; }
+    label { display: grid; grid-template-columns: 24rem 1fr; gap: .75rem; }
+    input, button { font: inherit; }
+    button { padding: .55rem 1rem; }
+    pre { background: #111; color: #eee; padding: 1rem; overflow: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0048 — VAE ConvTranspose FP16 K4 partials</h1>
+  <p>
+    Preparation exhaustively proves the benchmark weight pack and inverse,
+    then runs complete exact/K4/deterministic outputs for all five production
+    shapes. It checks tails, finite classes, numerical error, and storage
+    canaries before timing is enabled. Packing is never timed and no production
+    profile is changed.
+  </p>
+  <p id="progress">preparing</p>
+  <fieldset id="thermal-gate" disabled>
+    <legend>Single ordinary thermal check</legend>
+    <p>
+      After READY, leave the machine idle for at least 30 seconds, then run
+      <code>notifyutil -g com.apple.system.thermalpressurelevel</code> exactly
+      once. Enter that one level-0 observation and immediately click Run. Do
+      not poll or make a second observation.
+    </p>
+    <input name="thermalCommand" type="hidden"
+      value="notifyutil -g com.apple.system.thermalpressurelevel" />
+    <label>Wait started (epoch ms)
+      <input name="waitStartedAtEpochMilliseconds" inputmode="numeric" />
+    </label>
+    <label>One check completed (epoch ms)
+      <input name="checkedAtEpochMilliseconds" inputmode="numeric" />
+    </label>
+    <label>Check count (must be 1)
+      <input name="checkCount" inputmode="numeric" value="1" readonly />
+    </label>
+    <label>Observed thermal level (must be 0)
+      <input name="thermalLevel" inputmode="numeric" value="0" />
+    </label>
+  </fieldset>
+  <button id="run" type="button" disabled>
+    Run six balanced exact/K4 permutations
+  </button>
+  <pre id="result"></pre>
+  <script type="module"
+    src="./opt-0048-vae-convtranspose-k4-partials.ts"></script>
+</body>
+</html>

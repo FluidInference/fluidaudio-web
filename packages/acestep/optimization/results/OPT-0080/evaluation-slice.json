@@ -1,0 +1,921 @@
+{
+  "schema": "ace-opt-0080-evaluation-slice-evidence-v1",
+  "experiment": "OPT-0080",
+  "stage": "evaluation-slice",
+  "status": "passed",
+  "disposition": "full-graph-confirmation-active",
+  "passed": true,
+  "identity": {
+    "run": {
+      "coreCommit": "ce14bece806ca66ca9567326686fb79ee1646228",
+      "harnessCommit": "0dbbe27cb5b486b91fd40355a04a1106f4740ce0",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Codex in-app Chromium 151.0.0.0",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "requestCanonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":180,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+    "requestSha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+    "requestByteLength": 366,
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "denseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "denseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+    "attentionRuntimeProfile": "opt-0070-fixed32-quad-query32-full-self-production-v1",
+    "expectedEvaluation0Sha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+  },
+  "artifacts": {
+    "committedCompactResult": "optimization/results/OPT-0080/evaluation-slice.json",
+    "authoritativeBrowserReceipt": "evaluation-slice-result.json",
+    "identicalReceiptAlias": "result.json",
+    "ignoredArtifactDirectory": "optimization/artifacts/OPT-0080",
+    "files": {
+      "A1-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/A1-gate.json",
+        "byteLength": 6949,
+        "sha256": "1cc8e019fa7c35e63e26c91196a51915507e8dadbbce46901c4af3e417c797fa"
+      },
+      "A1-index.json": {
+        "location": "optimization/artifacts/OPT-0080/A1-index.json",
+        "byteLength": 106,
+        "sha256": "1fe9644a73a28a82b716dcc3a2bc6327e50bfcc9a8972830f83aef1ae9f04293"
+      },
+      "A1-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/A1-selected.jsonl",
+        "byteLength": 5796,
+        "sha256": "57b02e7cf402dd7f90ac87d1eef489dee64337dff3f8cd50271f712fbcb1a7a4"
+      },
+      "A1-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/A1-thermal.jsonl",
+        "byteLength": 7812,
+        "sha256": "6f51b5ccef00270f4187fbf1d2548a52cb482bf14e999086ea72d5fd044fc7ba"
+      },
+      "A1-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/A1-trace.json",
+        "byteLength": 9415,
+        "sha256": "fcaaf4e10a007abb90be5423b49eeecb79c63e6c881ddc88ff2caa80ba470d8c"
+      },
+      "A2-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/A2-gate.json",
+        "byteLength": 5979,
+        "sha256": "7844fe22aff9f733d67a1830846a6b75c55a1c016cd085dae6422af3b7545171"
+      },
+      "A2-index.json": {
+        "location": "optimization/artifacts/OPT-0080/A2-index.json",
+        "byteLength": 105,
+        "sha256": "e7011c19a5fe387910526c030bf690675059a3d843d5ef8395e28d4b9132d1a1"
+      },
+      "A2-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/A2-selected.jsonl",
+        "byteLength": 5229,
+        "sha256": "ed870464e1fb8b55de82149a447dd64c0aa39b9944ecf3d0d1866f21fa3993cb"
+      },
+      "A2-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/A2-thermal.jsonl",
+        "byteLength": 5229,
+        "sha256": "ed870464e1fb8b55de82149a447dd64c0aa39b9944ecf3d0d1866f21fa3993cb"
+      },
+      "A2-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/A2-trace.json",
+        "byteLength": 8542,
+        "sha256": "57cfae6c4dde730525c4fdb4c677958b8404f6da73563857015c141196ad3df3"
+      },
+      "B1-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/B1-gate.json",
+        "byteLength": 5300,
+        "sha256": "2fcd7ac2cce211c72415fa5bb3493783e85401defe2269e67ddd732cc8eab39f"
+      },
+      "B1-index.json": {
+        "location": "optimization/artifacts/OPT-0080/B1-index.json",
+        "byteLength": 105,
+        "sha256": "f4a6965ecbde632e722ff3ee7892a134a5e79f9bd7391cd96e5ce5a09934c97a"
+      },
+      "B1-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/B1-selected.jsonl",
+        "byteLength": 4473,
+        "sha256": "55c79469ed14677bf09394a286c237054faee9017fc47db47e496a70c09c410a"
+      },
+      "B1-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/B1-thermal.jsonl",
+        "byteLength": 4473,
+        "sha256": "55c79469ed14677bf09394a286c237054faee9017fc47db47e496a70c09c410a"
+      },
+      "B1-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/B1-trace.json",
+        "byteLength": 7378,
+        "sha256": "8a29dc44d3d4a9ba1e3e39baec7e70a7e62fe935a83f3f6ca119d93559f0cfcf"
+      },
+      "B2-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/B2-gate.json",
+        "byteLength": 5591,
+        "sha256": "862b27b42f83c3e8982f4e180566f8f2f4e4c7a4cba13a900ff53672edbe3b0b"
+      },
+      "B2-index.json": {
+        "location": "optimization/artifacts/OPT-0080/B2-index.json",
+        "byteLength": 105,
+        "sha256": "b6006ba08b152a11f493ed2f9c5dba2e4a45e225cea9994ce161204cbd1b8617"
+      },
+      "B2-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/B2-selected.jsonl",
+        "byteLength": 4725,
+        "sha256": "538b321f34eb6668c64d9fed8a22d796a20b3059a9059d90846403134c4a3330"
+      },
+      "B2-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/B2-thermal.jsonl",
+        "byteLength": 4725,
+        "sha256": "538b321f34eb6668c64d9fed8a22d796a20b3059a9059d90846403134c4a3330"
+      },
+      "B2-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/B2-trace.json",
+        "byteLength": 7766,
+        "sha256": "8936722866f0ed5f11c8b4f8c9a70f3710d9216312613e90906f28b7667d3f21"
+      },
+      "evaluation-slice-result.json": {
+        "location": "optimization/artifacts/OPT-0080/evaluation-slice-result.json",
+        "byteLength": 1294609,
+        "sha256": "5ff8c941c4b6a2347914dcef4dddeac7b9adcba7cd9d57a6e339a05463dd81f4"
+      },
+      "result.json": {
+        "location": "optimization/artifacts/OPT-0080/result.json",
+        "byteLength": 1294609,
+        "sha256": "5ff8c941c4b6a2347914dcef4dddeac7b9adcba7cd9d57a6e339a05463dd81f4"
+      }
+    },
+    "note": "The full browser receipt, its identical result alias, every per-arm gate/index/selected/raw thermal trace, and every parsed trace remain ignored but are bound here by byte length and SHA-256. The compact committed result deliberately omits thermal observations, heartbeat gaps, and per-fence/per-epoch arrays."
+  },
+  "correctness": {
+    "passed": true,
+    "excludedFromTiming": true,
+    "resultElementCount": 288000,
+    "rawU32MismatchCount": 0,
+    "deterministicRepeatMismatchCount": 0,
+    "descriptorTableMemberCount": 6833,
+    "descriptorSequenceExact": true,
+    "graphCommandBufferCount": 341,
+    "preflightRuns": [
+      {
+        "id": "control-first",
+        "armId": null,
+        "order": -1,
+        "schedulingProfile": "depth1-epoch1",
+        "timed": false,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "depth1-epoch1",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 341,
+          "totalTrueQueueDrainCount": 342,
+          "graphCompletionEpochCount": 341,
+          "graphCooperativeIdleTurns": 340,
+          "totalCooperativeIdleTurns": 341,
+          "graphRequestedCooperativeIdleMs": 340,
+          "totalRequestedCooperativeIdleMs": 341,
+          "maximumOutstandingCommandBuffers": 1,
+          "maximumPendingDescriptorCount": 1,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 76.60000002384186
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 1,
+          "checkpointOrdinal": 2,
+          "cleanupCompletedOrdinal": 3,
+          "cleanupCompletedAtEpochMilliseconds": 1787314803423,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": false,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      {
+        "id": "control-repeat",
+        "armId": null,
+        "order": -1,
+        "schedulingProfile": "depth1-epoch1",
+        "timed": false,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "depth1-epoch1",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 341,
+          "totalTrueQueueDrainCount": 342,
+          "graphCompletionEpochCount": 341,
+          "graphCooperativeIdleTurns": 340,
+          "totalCooperativeIdleTurns": 341,
+          "graphRequestedCooperativeIdleMs": 340,
+          "totalRequestedCooperativeIdleMs": 341,
+          "maximumOutstandingCommandBuffers": 1,
+          "maximumPendingDescriptorCount": 1,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 54.700000047683716
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 4,
+          "checkpointOrdinal": 5,
+          "cleanupCompletedOrdinal": 6,
+          "cleanupCompletedAtEpochMilliseconds": 1787314822469,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": false,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      {
+        "id": "candidate-first",
+        "armId": null,
+        "order": -1,
+        "schedulingProfile": "opt-0080-depth2-epoch4",
+        "timed": false,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 86,
+          "totalTrueQueueDrainCount": 87,
+          "graphCompletionEpochCount": 86,
+          "graphCooperativeIdleTurns": 85,
+          "totalCooperativeIdleTurns": 86,
+          "graphRequestedCooperativeIdleMs": 85,
+          "totalRequestedCooperativeIdleMs": 86,
+          "maximumOutstandingCommandBuffers": 2,
+          "maximumPendingDescriptorCount": 2,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 60.800000071525574
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 7,
+          "checkpointOrdinal": 8,
+          "cleanupCompletedOrdinal": 9,
+          "cleanupCompletedAtEpochMilliseconds": 1787314840814,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": false,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      {
+        "id": "candidate-repeat",
+        "armId": null,
+        "order": -1,
+        "schedulingProfile": "opt-0080-depth2-epoch4",
+        "timed": false,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 86,
+          "totalTrueQueueDrainCount": 87,
+          "graphCompletionEpochCount": 86,
+          "graphCooperativeIdleTurns": 85,
+          "totalCooperativeIdleTurns": 86,
+          "graphRequestedCooperativeIdleMs": 85,
+          "totalRequestedCooperativeIdleMs": 86,
+          "maximumOutstandingCommandBuffers": 2,
+          "maximumPendingDescriptorCount": 2,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 53.799999952316284
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 10,
+          "checkpointOrdinal": 11,
+          "cleanupCompletedOrdinal": 12,
+          "cleanupCompletedAtEpochMilliseconds": 1787314859225,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": false,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      }
+    ]
+  },
+  "cancellation": {
+    "scope": "actual-dit-evaluation0-graph",
+    "schedulingProfile": "opt-0080-depth2-epoch4",
+    "abortedCommandBufferIndex": 0,
+    "abortObservedFromCompletionCallback": true,
+    "outstandingSuccessorsAtAbort": 1,
+    "prefetchedTailCommandCount": 1,
+    "backfillAfterAbortCount": 0,
+    "publicProgressAfterAbortCount": 0,
+    "specializedCompletionCallbackCount": 1,
+    "specializedCompletionCallbackCountAfterAbort": 0,
+    "completedCommandBufferCountAtAbort": 1,
+    "completionFenceRequestedCountAtAbort": 2,
+    "checkpointCount": 0,
+    "unhandledRejectionCount": 0,
+    "unhandledRejectionListenerRemoved": true,
+    "generationRejectedWithAbortReason": true,
+    "terminalSettlementBeforeGenerationRejection": true,
+    "graphAndModelDestroyAwaitedBeforeGenerationRejection": true,
+    "backendDisposeAwaitedAfterGenerationRejection": true,
+    "abortObservationThroughRejectionAndCleanupMs": 15.899999976158142
+  },
+  "performance": {
+    "fixedOrder": [
+      "A1-depth1-epoch1",
+      "B1-opt-0080-depth2-epoch4",
+      "B2-opt-0080-depth2-epoch4",
+      "A2-depth1-epoch1"
+    ],
+    "forwardEvaluationImproved": true,
+    "reverseEvaluationImproved": true,
+    "forwardGraphImproved": true,
+    "reverseGraphImproved": true,
+    "forwardBackendImproved": true,
+    "reverseBackendImproved": true,
+    "aggregateEvaluationSpeedup": 1.249539733802839,
+    "forwardEvaluationSavingMs": 921.1000000238419,
+    "reverseEvaluationSavingMs": 2386.100000023842,
+    "projectedFullGraphSavingMs": 13410.850000143051,
+    "heartbeatAbsolutePassed": true,
+    "heartbeatRelativePassed": true,
+    "mixedPairedDirections": false,
+    "crossMetricDirectionConsistent": true,
+    "wallBoundaryConsistent": true,
+    "cleanReproducibleThresholdMiss": false,
+    "classification": "passed",
+    "passed": true
+  },
+  "arms": {
+    "A1": {
+      "receipt": {
+        "id": "A1",
+        "armId": "A1",
+        "order": 0,
+        "schedulingProfile": "depth1-epoch1",
+        "timed": true,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "depth1-epoch1",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 341,
+          "totalTrueQueueDrainCount": 342,
+          "graphCompletionEpochCount": 341,
+          "graphCooperativeIdleTurns": 340,
+          "totalCooperativeIdleTurns": 341,
+          "graphRequestedCooperativeIdleMs": 340,
+          "totalRequestedCooperativeIdleMs": 341,
+          "maximumOutstandingCommandBuffers": 1,
+          "maximumPendingDescriptorCount": 1,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 55.59999990463257
+        },
+        "timing": {
+          "armId": "A1",
+          "order": 0,
+          "schedulingProfile": "depth1-epoch1",
+          "precomputeWallMs": 283.59999990463257,
+          "evaluationWallMs": 7428.900000095367,
+          "graphWallMs": 7712.5,
+          "graphToReadbackObservedIdleMs": 1.399999976158142,
+          "readbackFenceMs": 55.59999990463257,
+          "readbackMapMs": 0.5,
+          "backendWallMs": 7770.199999928474,
+          "graphEpochWallSumMs": 7146.499999880791
+        },
+        "lifecycle": {
+          "backendCreatedOrdinal": 13,
+          "checkpointOrdinal": 14,
+          "cleanupCompletedOrdinal": 15,
+          "cleanupCompletedAtEpochMilliseconds": 1787314994271,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": true,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "heartbeat": {
+        "intervalMilliseconds": 50,
+        "startedAtEpochMilliseconds": 1787314986478,
+        "completedAtEpochMilliseconds": 1787314994272,
+        "gapObservationCount": 156,
+        "maximumGapMilliseconds": 52.10000002384186,
+        "p99GapMilliseconds": 52.10000002384186
+      },
+      "thermal": {
+        "gate": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "startedAtEpochMilliseconds": 1787314924598,
+          "completedAtEpochMilliseconds": 1787314985886,
+          "observationCount": 68,
+          "maximumPollGapMilliseconds": 923,
+          "nonNominalObservationCount": 0
+        },
+        "trace": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "rawTraceSha256": "57b02e7cf402dd7f90ac87d1eef489dee64337dff3f8cd50271f712fbcb1a7a4",
+          "completedAtEpochMilliseconds": 1787315007124,
+          "observationCount": 92,
+          "maximumPollGapMilliseconds": 923,
+          "nonNominalObservationCount": 0,
+          "transitions": [
+            {
+              "atEpochMilliseconds": 1787314985886,
+              "level": 0
+            }
+          ]
+        }
+      }
+    },
+    "B1": {
+      "receipt": {
+        "id": "B1",
+        "armId": "B1",
+        "order": 1,
+        "schedulingProfile": "opt-0080-depth2-epoch4",
+        "timed": true,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 86,
+          "totalTrueQueueDrainCount": 87,
+          "graphCompletionEpochCount": 86,
+          "graphCooperativeIdleTurns": 85,
+          "totalCooperativeIdleTurns": 86,
+          "graphRequestedCooperativeIdleMs": 85,
+          "totalRequestedCooperativeIdleMs": 86,
+          "maximumOutstandingCommandBuffers": 2,
+          "maximumPendingDescriptorCount": 2,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 54.60000002384186
+        },
+        "timing": {
+          "armId": "B1",
+          "order": 1,
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "precomputeWallMs": 253.39999997615814,
+          "evaluationWallMs": 6507.800000071526,
+          "graphWallMs": 6761.200000047684,
+          "graphToReadbackObservedIdleMs": 1.1999999284744263,
+          "readbackFenceMs": 54.60000002384186,
+          "readbackMapMs": 0.5,
+          "backendWallMs": 6817.800000071526,
+          "graphEpochWallSumMs": 6617.900000214577
+        },
+        "lifecycle": {
+          "backendCreatedOrdinal": 16,
+          "checkpointOrdinal": 17,
+          "cleanupCompletedOrdinal": 18,
+          "cleanupCompletedAtEpochMilliseconds": 1787315085250,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": true,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "heartbeat": {
+        "intervalMilliseconds": 50,
+        "startedAtEpochMilliseconds": 1787315078415,
+        "completedAtEpochMilliseconds": 1787315085250,
+        "gapObservationCount": 137,
+        "maximumGapMilliseconds": 52.199999928474426,
+        "p99GapMilliseconds": 52.10000002384186
+      },
+      "thermal": {
+        "gate": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "startedAtEpochMilliseconds": 1787315032425,
+          "completedAtEpochMilliseconds": 1787315078216,
+          "observationCount": 51,
+          "maximumPollGapMilliseconds": 922,
+          "nonNominalObservationCount": 0
+        },
+        "trace": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "rawTraceSha256": "55c79469ed14677bf09394a286c237054faee9017fc47db47e496a70c09c410a",
+          "completedAtEpochMilliseconds": 1787315096199,
+          "observationCount": 71,
+          "maximumPollGapMilliseconds": 922,
+          "nonNominalObservationCount": 0,
+          "transitions": [
+            {
+              "atEpochMilliseconds": 1787315078216,
+              "level": 0
+            }
+          ]
+        }
+      }
+    },
+    "B2": {
+      "receipt": {
+        "id": "B2",
+        "armId": "B2",
+        "order": 2,
+        "schedulingProfile": "opt-0080-depth2-epoch4",
+        "timed": true,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 86,
+          "totalTrueQueueDrainCount": 87,
+          "graphCompletionEpochCount": 86,
+          "graphCooperativeIdleTurns": 85,
+          "totalCooperativeIdleTurns": 86,
+          "graphRequestedCooperativeIdleMs": 85,
+          "totalRequestedCooperativeIdleMs": 86,
+          "maximumOutstandingCommandBuffers": 2,
+          "maximumPendingDescriptorCount": 2,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 53.799999952316284
+        },
+        "timing": {
+          "armId": "B2",
+          "order": 2,
+          "schedulingProfile": "opt-0080-depth2-epoch4",
+          "precomputeWallMs": 211,
+          "evaluationWallMs": 6745.399999976158,
+          "graphWallMs": 6956.399999976158,
+          "graphToReadbackObservedIdleMs": 1.600000023841858,
+          "readbackFenceMs": 53.799999952316284,
+          "readbackMapMs": 0.3999999761581421,
+          "backendWallMs": 7012.399999976158,
+          "graphEpochWallSumMs": 6815.000000238419
+        },
+        "lifecycle": {
+          "backendCreatedOrdinal": 19,
+          "checkpointOrdinal": 20,
+          "cleanupCompletedOrdinal": 21,
+          "cleanupCompletedAtEpochMilliseconds": 1787315179082,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": true,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "heartbeat": {
+        "intervalMilliseconds": 50,
+        "startedAtEpochMilliseconds": 1787315172047,
+        "completedAtEpochMilliseconds": 1787315179082,
+        "gapObservationCount": 142,
+        "maximumGapMilliseconds": 52.10000002384186,
+        "p99GapMilliseconds": 52.10000002384186
+      },
+      "thermal": {
+        "gate": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "startedAtEpochMilliseconds": 1787315122511,
+          "completedAtEpochMilliseconds": 1787315171055,
+          "observationCount": 54,
+          "maximumPollGapMilliseconds": 922,
+          "nonNominalObservationCount": 0
+        },
+        "trace": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "rawTraceSha256": "538b321f34eb6668c64d9fed8a22d796a20b3059a9059d90846403134c4a3330",
+          "completedAtEpochMilliseconds": 1787315189868,
+          "observationCount": 75,
+          "maximumPollGapMilliseconds": 923,
+          "nonNominalObservationCount": 0,
+          "transitions": [
+            {
+              "atEpochMilliseconds": 1787315171055,
+              "level": 0
+            }
+          ]
+        }
+      }
+    },
+    "A2": {
+      "receipt": {
+        "id": "A2",
+        "armId": "A2",
+        "order": 3,
+        "schedulingProfile": "depth1-epoch1",
+        "timed": true,
+        "resultSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+        "resultElementCount": 288000,
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "descriptorTableMemberCount": 6833,
+        "topology": {
+          "schedulingProfile": "depth1-epoch1",
+          "descriptorTableMemberCount": 6833,
+          "graphCommandBufferCount": 341,
+          "readbackCommandBufferCount": 1,
+          "totalCommandBufferCount": 342,
+          "commandBuffersSubmitted": 342,
+          "completionFenceRequestedCount": 342,
+          "completionFenceSettledCount": 342,
+          "completionFenceRejectedCount": 0,
+          "graphTrueQueueDrainCount": 341,
+          "totalTrueQueueDrainCount": 342,
+          "graphCompletionEpochCount": 341,
+          "graphCooperativeIdleTurns": 340,
+          "totalCooperativeIdleTurns": 341,
+          "graphRequestedCooperativeIdleMs": 340,
+          "totalRequestedCooperativeIdleMs": 341,
+          "maximumOutstandingCommandBuffers": 1,
+          "maximumPendingDescriptorCount": 1,
+          "pendingDescriptorCountAfterCleanup": 0,
+          "graphToReadbackRequestedIdleMs": 1,
+          "readbackSubmitThroughCompletionFenceMs": 59.5
+        },
+        "timing": {
+          "armId": "A2",
+          "order": 3,
+          "schedulingProfile": "depth1-epoch1",
+          "precomputeWallMs": 544.8999999761581,
+          "evaluationWallMs": 9131.5,
+          "graphWallMs": 9676.399999976158,
+          "graphToReadbackObservedIdleMs": 1.4000000953674316,
+          "readbackFenceMs": 59.5,
+          "readbackMapMs": 0.40000009536743164,
+          "backendWallMs": 9737.800000071526,
+          "graphEpochWallSumMs": 9108.299999117851
+        },
+        "lifecycle": {
+          "backendCreatedOrdinal": 22,
+          "checkpointOrdinal": 23,
+          "cleanupCompletedOrdinal": 24,
+          "cleanupCompletedAtEpochMilliseconds": 1787315278058,
+          "terminalSettlementBeforeCleanup": true,
+          "allBackendAndDeviceDisposalAwaited": true
+        },
+        "evidence": {
+          "graphPreparedBeforeTimingAuthorization": true,
+          "physicalCommandBufferContentsUnchanged": true,
+          "commandBufferCoalescing": false,
+          "overlappingFenceLatenciesAreNonAdditive": true,
+          "epochWallsAreDisjoint": true,
+          "laterEvaluationEncodeCount": 0,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "heartbeat": {
+        "intervalMilliseconds": 50,
+        "startedAtEpochMilliseconds": 1787315268300,
+        "completedAtEpochMilliseconds": 1787315278059,
+        "gapObservationCount": 196,
+        "maximumGapMilliseconds": 52.10000002384186,
+        "p99GapMilliseconds": 52.10000002384186
+      },
+      "thermal": {
+        "gate": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "startedAtEpochMilliseconds": 1787315215694,
+          "completedAtEpochMilliseconds": 1787315267843,
+          "observationCount": 58,
+          "maximumPollGapMilliseconds": 925,
+          "nonNominalObservationCount": 0
+        },
+        "trace": {
+          "source": "notifyutil-com.apple.system.thermalpressurelevel",
+          "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+          "rawTraceSha256": "ed870464e1fb8b55de82149a447dd64c0aa39b9944ecf3d0d1866f21fa3993cb",
+          "completedAtEpochMilliseconds": 1787315290323,
+          "observationCount": 83,
+          "maximumPollGapMilliseconds": 925,
+          "nonNominalObservationCount": 0,
+          "transitions": [
+            {
+              "atEpochMilliseconds": 1787315267843,
+              "level": 0
+            }
+          ]
+        }
+      }
+    }
+  },
+  "thermal": {
+    "startPassed": true,
+    "throughCleanupTransitions": {
+      "A1": {
+        "nonNominalObservationCount": 0,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1787314985886,
+            "level": 0
+          }
+        ]
+      },
+      "B1": {
+        "nonNominalObservationCount": 0,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1787315078216,
+            "level": 0
+          }
+        ]
+      },
+      "B2": {
+        "nonNominalObservationCount": 0,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1787315171055,
+            "level": 0
+          }
+        ]
+      },
+      "A2": {
+        "nonNominalObservationCount": 0,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1787315267843,
+            "level": 0
+          }
+        ]
+      }
+    },
+    "rejectedSetupAttempts": [
+      {
+        "kind": "thermal-gate",
+        "armId": "A1",
+        "rejectedAtEpochMilliseconds": 1787314975634,
+        "error": {
+          "name": "Error",
+          "message": "OPT-0067 rejected the arm thermal gate",
+          "stack": "Error: OPT-0067 rejected the arm thermal gate\n    at requireOpt0067ThermalGate (http://127.0.0.1:5173/test/browser/opt-0067-dit-quad-query-evaluation-slice-contract.ts:40:969)\n    at requireOpt0080ThermalGate (http://127.0.0.1:5173/test/browser/opt-0080-dit-depth2-completion-epochs-contract.ts?t=1787314502051:57:9)\n    at http://127.0.0.1:5173/test/browser/opt-0080-dit-depth2-completion-epochs-worker.ts?worker_file&type=module:51:18"
+        },
+        "timedGpuWorkStarted": false
+      }
+    ]
+  },
+  "lifecycle": {
+    "oneFifoGraphOwnerPerArm": true,
+    "sequentialNonOverlappingPackageOwnership": true,
+    "noCrossArmBackendOrDeviceReuse": true,
+    "graphCompiledBeforeEveryThermalGate": true,
+    "distinctThermalTracePerArm": true,
+    "oneCompletionFencePerPhysicalCommandBuffer": true,
+    "terminalSettlementBeforeRelease": true,
+    "allBackendsAndDevicesDisposed": true,
+    "executedEvaluationCountPerArm": 1,
+    "laterEvaluationEncodeCount": 0
+  },
+  "metrics": {
+    "overlappingFenceLatenciesAreNonAdditive": true,
+    "performanceClaimsUseAuthoritativeWalls": true,
+    "graphEpochWallsAreDisjoint": true,
+    "controlGraphTrueDrains": 341,
+    "candidateGraphTrueDrains": 86,
+    "controlGraphIdleTurns": 340,
+    "candidateGraphIdleTurns": 85,
+    "maximumCandidateOutstandingCommandBuffers": 2
+  },
+  "scope": {
+    "productionDefaultChanged": false,
+    "packageBytesChanged": false,
+    "modelMathChanged": false,
+    "commandBufferContentsChanged": false,
+    "commandBufferCoalescing": false,
+    "uniformPoolUsedByCandidate": false,
+    "vaeExecuted": false,
+    "plannerExecuted": false,
+    "laterEvaluationsExecuted": false,
+    "fullGraphClaim": false,
+    "listeningClaim": false,
+    "underOneMinuteClaim": false
+  },
+  "decision": "evaluation-slice-pass-authorize-separate-full-graph-confirmation",
+  "omissions": {
+    "decisionCriticalDataOmitted": false,
+    "intentionallyOmittedBulkyArrays": [
+      "correctness.*.topology.graphCompletionEpochs",
+      "correctness.*.topology.submitThroughCompletionFenceMs",
+      "arms.*.receipt.topology.graphCompletionEpochs",
+      "arms.*.receipt.topology.submitThroughCompletionFenceMs",
+      "arms.*.heartbeat.gapsMilliseconds",
+      "arms.*.gate.observations",
+      "arms.*.thermalTrace.observations"
+    ],
+    "authoritativeWallPolicy": "Overlapping per-fence intervals are non-additive; all performance claims use evaluation, graph, and backend fenced walls."
+  }
+}
