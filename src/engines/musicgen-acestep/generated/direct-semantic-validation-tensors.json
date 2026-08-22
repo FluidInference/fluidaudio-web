@@ -1,0 +1,651 @@
+{
+  "ace.detokenizer.embed_tokens.bias": {
+    "byteLength": 4096,
+    "byteOffset": 0,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.embed_tokens.bias",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.embed_tokens.bias",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.embed_tokens.weight": {
+    "byteLength": 8388608,
+    "byteOffset": 4096,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.embed_tokens.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.embed_tokens.weight",
+    "storageShape": [
+      2097152
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.input_layernorm.weight": {
+    "byteLength": 4096,
+    "byteOffset": 0,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.input_layernorm.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.input_layernorm.weight",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.mlp.down_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 4096,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      6144
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.mlp.down_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.mlp.down_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.mlp.gate_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 25169920,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      6144,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.mlp.gate_proj.weight",
+    "partAxis": 0,
+    "partEnd": 6144,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.mlp.gate_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.mlp.up_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 50335744,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      6144,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.mlp.up_proj.weight",
+    "partAxis": 0,
+    "partEnd": 6144,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.mlp.up_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.post_attention_layernorm.weight": {
+    "byteLength": 4096,
+    "byteOffset": 75501568,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.post_attention_layernorm.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.post_attention_layernorm.weight",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.k_norm.weight": {
+    "byteLength": 256,
+    "byteOffset": 75505664,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      128
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.k_norm.weight",
+    "partAxis": 0,
+    "partEnd": 128,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.k_norm.weight",
+    "storageShape": [
+      64
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.k_proj.weight": {
+    "byteLength": 4194304,
+    "byteOffset": 75505920,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      1024,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.k_proj.weight",
+    "partAxis": 0,
+    "partEnd": 1024,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.k_proj.weight",
+    "storageShape": [
+      1048576
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.o_proj.weight": {
+    "byteLength": 8388608,
+    "byteOffset": 79700224,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.o_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.o_proj.weight",
+    "storageShape": [
+      2097152
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.q_norm.weight": {
+    "byteLength": 256,
+    "byteOffset": 88088832,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      128
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.q_norm.weight",
+    "partAxis": 0,
+    "partEnd": 128,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.q_norm.weight",
+    "storageShape": [
+      64
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.q_proj.weight": {
+    "byteLength": 8388608,
+    "byteOffset": 88089088,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.q_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.q_proj.weight",
+    "storageShape": [
+      2097152
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.0.self_attn.v_proj.weight": {
+    "byteLength": 4194304,
+    "byteOffset": 96477696,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      1024,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.0.self_attn.v_proj.weight",
+    "partAxis": 0,
+    "partEnd": 1024,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-00-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.0.self_attn.v_proj.weight",
+    "storageShape": [
+      1048576
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.input_layernorm.weight": {
+    "byteLength": 4096,
+    "byteOffset": 0,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.input_layernorm.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.input_layernorm.weight",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.mlp.down_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 4096,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      6144
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.mlp.down_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.mlp.down_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.mlp.gate_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 25169920,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      6144,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.mlp.gate_proj.weight",
+    "partAxis": 0,
+    "partEnd": 6144,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.mlp.gate_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.mlp.up_proj.weight": {
+    "byteLength": 25165824,
+    "byteOffset": 50335744,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      6144,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.mlp.up_proj.weight",
+    "partAxis": 0,
+    "partEnd": 6144,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.mlp.up_proj.weight",
+    "storageShape": [
+      6291456
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.post_attention_layernorm.weight": {
+    "byteLength": 4096,
+    "byteOffset": 75501568,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.post_attention_layernorm.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.post_attention_layernorm.weight",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.k_norm.weight": {
+    "byteLength": 256,
+    "byteOffset": 75505664,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      128
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.k_norm.weight",
+    "partAxis": 0,
+    "partEnd": 128,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.k_norm.weight",
+    "storageShape": [
+      64
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.k_proj.weight": {
+    "byteLength": 4194304,
+    "byteOffset": 75505920,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      1024,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.k_proj.weight",
+    "partAxis": 0,
+    "partEnd": 1024,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.k_proj.weight",
+    "storageShape": [
+      1048576
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.o_proj.weight": {
+    "byteLength": 8388608,
+    "byteOffset": 79700224,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.o_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.o_proj.weight",
+    "storageShape": [
+      2097152
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.q_norm.weight": {
+    "byteLength": 256,
+    "byteOffset": 88088832,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      128
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.q_norm.weight",
+    "partAxis": 0,
+    "partEnd": 128,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.q_norm.weight",
+    "storageShape": [
+      64
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.q_proj.weight": {
+    "byteLength": 8388608,
+    "byteOffset": 88089088,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.q_proj.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.q_proj.weight",
+    "storageShape": [
+      2097152
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.layers.1.self_attn.v_proj.weight": {
+    "byteLength": 4194304,
+    "byteOffset": 96477696,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      1024,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.layers.1.self_attn.v_proj.weight",
+    "partAxis": 0,
+    "partEnd": 1024,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/layer-01-00.bin",
+    "source": "ace-turbo-weights:detokenizer.layers.1.self_attn.v_proj.weight",
+    "storageShape": [
+      1048576
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.norm.weight": {
+    "byteLength": 4096,
+    "byteOffset": 8392704,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.norm.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.norm.weight",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.proj_out.bias": {
+    "byteLength": 128,
+    "byteOffset": 8396800,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      64
+    ],
+    "logicalTensor": "ace.detokenizer.proj_out.bias",
+    "partAxis": 0,
+    "partEnd": 64,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.proj_out.bias",
+    "storageShape": [
+      32
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.proj_out.weight": {
+    "byteLength": 262144,
+    "byteOffset": 8397056,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      64,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.proj_out.weight",
+    "partAxis": 0,
+    "partEnd": 64,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.proj_out.weight",
+    "storageShape": [
+      65536
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.detokenizer.special_tokens": {
+    "byteLength": 20480,
+    "byteOffset": 8659200,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      1,
+      5,
+      2048
+    ],
+    "logicalTensor": "ace.detokenizer.special_tokens",
+    "partAxis": 0,
+    "partEnd": 1,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:detokenizer.special_tokens",
+    "storageShape": [
+      5120
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.tokenizer.quantizer.project_out.bias": {
+    "byteLength": 4096,
+    "byteOffset": 8679680,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048
+    ],
+    "logicalTensor": "ace.tokenizer.quantizer.project_out.bias",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:tokenizer.quantizer.project_out.bias",
+    "storageShape": [
+      1024
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  },
+  "ace.tokenizer.quantizer.project_out.weight": {
+    "byteLength": 24576,
+    "byteOffset": 8683776,
+    "dtype": "uint32-bf16-pairs",
+    "layout": "source-row-major-bf16-pairs-lsb-u32",
+    "lifetime": "semantic",
+    "logicalShape": [
+      2048,
+      6
+    ],
+    "logicalTensor": "ace.tokenizer.quantizer.project_out.weight",
+    "partAxis": 0,
+    "partEnd": 2048,
+    "partStart": 0,
+    "phase": "semantic",
+    "shard": "weights/semantic/shared-00.bin",
+    "source": "ace-turbo-weights:tokenizer.quantizer.project_out.weight",
+    "storageShape": [
+      6144
+    ],
+    "transformation": "preserve-bf16-bits-pack-u32-pairs"
+  }
+}

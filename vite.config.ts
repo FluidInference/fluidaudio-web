@@ -23,6 +23,7 @@ export default defineConfig({
         verify: resolve(__dirname, "verify.html"),
         live: resolve(__dirname, "live.html"),
         bench: resolve(__dirname, "bench.html"),
+        music: resolve(__dirname, "music.html"),
       },
     },
   },

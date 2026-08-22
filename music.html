@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>FluidAudio Web — music generation (ACE-Step, WebGPU)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        max-width: 860px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 0.5rem 0;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      select,
+      button,
+      input,
+      textarea {
+        font: inherit;
+        padding: 0.4rem 0.6rem;
+      }
+      textarea {
+        width: 100%;
+        min-height: 4rem;
+      }
+      label.field {
+        display: block;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+      }
+      input.short {
+        width: 7rem;
+      }
+      #status {
+        font-size: 0.85rem;
+        opacity: 0.8;
+        min-height: 1.2rem;
+      }
+      #metrics {
+        white-space: pre-wrap;
+        background: color-mix(in srgb, Canvas 92%, CanvasText);
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        max-height: 18rem;
+        overflow: auto;
+      }
+      progress {
+        width: 100%;
+      }
+      .badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        background: color-mix(in srgb, Canvas 85%, CanvasText);
+      }
+      .note {
+        font-size: 0.85rem;
+        opacity: 0.8;
+      }
+      .error {
+        color: color-mix(in srgb, red 70%, CanvasText);
+      }
+      audio {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FluidAudio Web <span class="badge">Music generation</span></h1>
+    <nav class="row" style="font-size: 0.85rem">
+      <a href="./index.html">← Playground</a> · <a href="./verify.html">Verify all engines</a> ·
+      <a href="./live.html">🎤 Live captions</a>
+    </nav>
+    <p class="note">
+      ACE-Step 1.5 Turbo running entirely in your browser on WebGPU — no server.
+      Direct generation, stereo 48 kHz WAV, up to 4 minutes. Requires
+      <code>shader-f16</code> (Chrome on Apple Silicon or similar). First
+      generation downloads ~5.7 GB of model packages into browser storage.
+    </p>
+    <p id="support-warning" class="note error" hidden></p>
+
+    <h2>Song</h2>
+    <label class="field">
+      Prompt
+      <textarea id="prompt" placeholder="e.g. dreamy synthwave with a driving bass line, female vocals"></textarea>
+    </label>
+    <label class="field">
+      Lyrics <span class="note">(leave empty for instrumental)</span>
+      <textarea id="lyrics" placeholder="[verse]&#10;..."></textarea>
+    </label>
+    <div class="row">
+      <label class="field">Duration (seconds)
+        <input id="duration" class="short" type="number" min="10" max="240" step="1" value="60" />
+      </label>
+      <label class="field">Seed <span class="note">(blank = random)</span>
+        <input id="seed" class="short" type="text" inputmode="numeric" />
+      </label>
+      <label class="field">BPM
+        <input id="bpm" class="short" type="number" min="30" max="300" step="1" />
+      </label>
+      <label class="field">Key/scale
+        <input id="key-scale" class="short" type="text" placeholder="C major" />
+      </label>
+      <label class="field">Time sig.
+        <input id="time-signature" class="short" type="text" placeholder="4/4" />
+      </label>
+      <label class="field">Vocal lang.
+        <input id="vocal-language" class="short" type="text" placeholder="en" />
+      </label>
+    </div>
+    <div class="row">
+      <button id="generate" disabled>Generate</button>
+      <button id="cancel" disabled>Cancel</button>
+      <span id="cache-status" class="note"></span>
+      <button id="delete-model" disabled>Delete downloaded model</button>
+    </div>
+    <p id="form-error" class="note error" hidden></p>
+    <div id="progress-panel" hidden>
+      <div class="row" style="justify-content: space-between">
+        <strong id="progress-title"></strong><span id="progress-percent"></span>
+      </div>
+      <progress id="progress" max="1"></progress>
+      <p id="progress-detail" class="note"></p>
+    </div>
+
+    <h2 id="result-heading" hidden>Result</h2>
+    <div id="result-panel" hidden>
+      <audio id="audio-player" controls></audio>
+      <p class="row">
+        <a id="download" download>Download WAV</a>
+        <span id="summary" class="note"></span>
+      </p>
+    </div>
+
+    <h2>Runtime</h2>
+    <p id="status"></p>
+    <pre id="metrics"></pre>
+
+    <script type="module" src="/src/music.ts"></script>
+  </body>
+</html>
