@@ -24,6 +24,21 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run build
 
+  # Vendored ACE-Step runtime (packages/acestep): typecheck + weight-free
+  # vitest suite (artifact-dependent contract tests self-exclude on machines
+  # without the gitignored model packages / raw benchmark artifacts).
+  acestep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run acestep:check
+      - run: npm run acestep:test
+
   # Prettier — style is enforced, not suggested.
   format:
     runs-on: ubuntu-latest
