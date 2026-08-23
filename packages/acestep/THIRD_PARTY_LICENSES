@@ -1,0 +1,63 @@
+================================================================================================
+    THIRD-PARTY LICENSES AND NOTICES
+================================================================================================
+
+ace-step-1.5.wgsl itself is distributed under the MIT license in `LICENSE`.
+The model preparation tool downloads separately licensed upstream artifacts;
+generated browser packages are modified forms of those artifacts. Generated
+weights are not included in this source repository.
+
+================================================================================================
+    ACE-STEP 1.5 — MIT
+================================================================================================
+
+Source code and model artifacts:
+
+https://github.com/ace-step/ACE-Step-1.5
+https://huggingface.co/ACE-Step/Ace-Step1.5
+https://huggingface.co/ACE-Step/acestep-5Hz-lm-0.6B
+
+Pinned identities are recorded in `PLAN.md`, `AGENTS.md`, and the model source
+contract. Attribution: ACE-Step 1.5 by the ACE-Step project, co-led by ACE
+Studio and StepFun.
+
+MIT License
+
+Copyright (c) 2026 ACEStep
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================================
+    QWEN3 / QWEN3-EMBEDDING — APACHE LICENSE 2.0
+================================================================================================
+
+ACE-Step's text encoder and 0.6B semantic planner are derived from Qwen3 family
+models. The upstream Qwen open-weight models are licensed under Apache License
+2.0.
+
+Attribution: Qwen3 and Qwen3-Embedding by the Qwen Team, Alibaba Cloud.
+
+https://huggingface.co/Qwen/Qwen3-0.6B
+https://huggingface.co/Qwen/Qwen3-Embedding-0.6B
+https://www.apache.org/licenses/LICENSE-2.0
+
+The complete Apache License 2.0 text is committed at
+`model/licenses/Apache-2.0-LICENSE` and is copied into every generated browser
+model package together with the Qwen notice. Before an npm release, include
+the same applicable license and notice material in the distributed bundle.

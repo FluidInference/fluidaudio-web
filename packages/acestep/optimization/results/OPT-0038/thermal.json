@@ -1,0 +1,12 @@
+{
+  "schema": "ace-external-thermal-gate-v1",
+  "experimentId": "OPT-0038",
+  "startedAtEpochMilliseconds": 1786829410627,
+  "completedAtEpochMilliseconds": 1786829440701,
+  "durationMilliseconds": 30074,
+  "observationCommand": "notifyutil -g com.apple.system.thermalpressurelevel",
+  "observedLevel": 0,
+  "nominal": true,
+  "timingLaunchCount": 1,
+  "browserWarningsOrErrors": []
+}

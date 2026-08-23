@@ -1,0 +1,528 @@
+{
+  "schema": "ace-opt-0027-vae-batch64-c512-ab-v1",
+  "status": "passed",
+  "experimentId": "OPT-0027",
+  "classification": "balanced-ABBA-exact-production-C512-batch8-vs-batch64-stock-Chrome",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "executionProfile": {
+      "id": "raw-fp16-portable",
+      "modelProfile": "raw-fp16",
+      "weightStorage": "float16",
+      "matrixArithmetic": "float16",
+      "sensitiveReductions": "float32",
+      "vaeArithmetic": "float32",
+      "kernelBackend": "portable",
+      "requiredFeatures": [
+        "shader-f16"
+      ]
+    },
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "deviceFeatures": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "deviceLimits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 268435456,
+      "maxUniformBufferBindingSize": 65536,
+      "maxBindGroups": 4,
+      "maxBindingsPerBindGroup": 1000,
+      "maxStorageBuffersPerShaderStage": 8,
+      "maxUniformBuffersPerShaderStage": 12,
+      "maxDynamicStorageBuffersPerPipelineLayout": 4,
+      "maxDynamicUniformBuffersPerPipelineLayout": 8,
+      "maxComputeWorkgroupStorageSize": 16384,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupSizeY": 256,
+      "maxComputeWorkgroupSizeZ": 64,
+      "maxComputeWorkgroupsPerDimension": 65535,
+      "minStorageBufferOffsetAlignment": 256,
+      "minUniformBufferOffsetAlignment": 256
+    }
+  },
+  "fixture": {
+    "frames": 512,
+    "elements": 32768,
+    "byteLength": 131072,
+    "sha256": "eff0005ae48353fbc0a9ec86a5b2824b49e6fff6e899ea89af7d1c6e5870e899"
+  },
+  "package": {
+    "manifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+    "manifestByteLength": 715301,
+    "converterRevision": 6,
+    "residentBytesPerArm": {
+      "batch8": 168791552,
+      "batch64": 168791552
+    },
+    "independentOwnedWeightPhases": true
+  },
+  "production": {
+    "runtimeProfileId": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+    "kernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+    "kernelTopology": {
+      "id": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+      "backend": "fixed32-subgroup-exact-packed",
+      "ingress": "ace-vae-fp16-portable-ingress-v1",
+      "conv1dK1": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+      "conv1dK7": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+      "convTranspose1d": "ace-vae-fp16-fixed32-subgroup-4row-128channel-conv-transpose1d-v1",
+      "snake": "ace-vae-fp16-portable-snake-v1",
+      "add": "ace-vae-fp16-portable-add-v1"
+    },
+    "nativeK7KernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+    "opt0024ApproximateK7Used": false,
+    "backendContracts": {
+      "batch8": {
+        "arm": "batch8",
+        "runtimeProfileId": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+        "kernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+        "kernelTopology": {
+          "id": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+          "backend": "fixed32-subgroup-exact-packed",
+          "ingress": "ace-vae-fp16-portable-ingress-v1",
+          "conv1dK1": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+          "conv1dK7": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "convTranspose1d": "ace-vae-fp16-fixed32-subgroup-4row-128channel-conv-transpose1d-v1",
+          "snake": "ace-vae-fp16-portable-snake-v1",
+          "add": "ace-vae-fp16-portable-add-v1"
+        },
+        "quantaPerCommandBuffer": 8,
+        "accountedGpuBytes": 941702160,
+        "boundedCpuBytes": 7995392
+      },
+      "batch64": {
+        "arm": "batch64",
+        "runtimeProfileId": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+        "kernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+        "kernelTopology": {
+          "id": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+          "backend": "fixed32-subgroup-exact-packed",
+          "ingress": "ace-vae-fp16-portable-ingress-v1",
+          "conv1dK1": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+          "conv1dK7": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "convTranspose1d": "ace-vae-fp16-fixed32-subgroup-4row-128channel-conv-transpose1d-v1",
+          "snake": "ace-vae-fp16-portable-snake-v1",
+          "add": "ace-vae-fp16-portable-add-v1"
+        },
+        "quantaPerCommandBuffer": 64,
+        "accountedGpuBytes": 941702160,
+        "boundedCpuBytes": 7995392
+      }
+    }
+  },
+  "protocol": {
+    "warmupOrder": [
+      "batch8",
+      "batch64"
+    ],
+    "timedOrder": [
+      "batch8",
+      "batch64",
+      "batch64",
+      "batch8"
+    ],
+    "completeUntimedWarmupsPerArm": 1,
+    "completeTimedRunsPerArm": 2,
+    "exactSameDispatchMathAndBindings": true,
+    "onlyQuantaPerCommandBufferDiffers": true,
+    "quantaPerCommandBuffer": {
+      "batch8": 8,
+      "batch64": 64
+    },
+    "oneOutstandingCommandBuffer": true,
+    "queueDrainAfterEveryCommandBuffer": true,
+    "realQueueEmptyMillisecondsBetweenCommandBuffers": 1,
+    "outerWindowWallIncludesUploadSubmissionDrainReadbackAndMap": true,
+    "decoderSubmitThroughDrainExcludesReadbackAndMap": true,
+    "externalNominalThermalGateRequiredBeforeTimedAction": true,
+    "dedicatedWorker": true,
+    "stockChromeWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "timestampQueries": false,
+    "webNn": false
+  },
+  "executions": [
+    {
+      "index": 0,
+      "arm": "batch8",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToWarmReference": {
+        "comparedU32WordCount": 1966080,
+        "mismatchCount": 0,
+        "firstMismatchIndex": null,
+        "firstControlWord": null,
+        "firstCandidateWord": null,
+        "rawFp32U32Exact": true
+      },
+      "receipt": {
+        "arm": "batch8",
+        "measured": true,
+        "scan": {
+          "elementCount": 1966080,
+          "byteLength": 7864320,
+          "nonFiniteCount": 0,
+          "nonzeroCount": 1966080,
+          "stereoDifferenceFrameCount": 983039,
+          "minimum": -0.9420424103736877,
+          "maximum": 0.9584733843803406,
+          "peak": 0.9584733843803406
+        },
+        "timing": {
+          "outerWindowWallMs": 8561.200000047684,
+          "decoderSubmitThroughDrainMs": 7063.199997186661,
+          "decoderCommandBufferCount": 982,
+          "totalCommandBufferCount": 983,
+          "queueDrainCount": 983,
+          "requestedCooperativeIdleMs": 982
+        },
+        "familyProfile": {
+          "windowIndex": 0,
+          "inputFrames": 512,
+          "quantaPerCommandBuffer": 8,
+          "decoderBatchCount": 982,
+          "decoderQuantumCount": 7855,
+          "decoderSubmitThroughDrainMs": 7063.199997186661,
+          "homogeneousBatchCount": 911,
+          "homogeneousQuantumCount": 7287,
+          "homogeneousSubmitThroughDrainMs": 6749.399997115135,
+          "mixedBatchCount": 71,
+          "mixedQuantumCount": 568,
+          "mixedSubmitThroughDrainMs": 313.8000000715256,
+          "families": {
+            "k7-conv1d": {
+              "batchCount": 500,
+              "quantumCount": 3999,
+              "submitThroughDrainMs": 4821.999998450279
+            },
+            "k1-conv1d": {
+              "batchCount": 89,
+              "quantumCount": 712,
+              "submitThroughDrainMs": 292.7000002861023
+            },
+            "conv-transpose1d": {
+              "batchCount": 78,
+              "quantumCount": 624,
+              "submitThroughDrainMs": 1219.2999995946884
+            },
+            "snake": {
+              "batchCount": 170,
+              "quantumCount": 1360,
+              "submitThroughDrainMs": 285.09999918937683
+            },
+            "add": {
+              "batchCount": 74,
+              "quantumCount": 592,
+              "submitThroughDrainMs": 130.29999959468842
+            }
+          }
+        }
+      }
+    },
+    {
+      "index": 1,
+      "arm": "batch64",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToWarmReference": {
+        "comparedU32WordCount": 1966080,
+        "mismatchCount": 0,
+        "firstMismatchIndex": null,
+        "firstControlWord": null,
+        "firstCandidateWord": null,
+        "rawFp32U32Exact": true
+      },
+      "receipt": {
+        "arm": "batch64",
+        "measured": true,
+        "scan": {
+          "elementCount": 1966080,
+          "byteLength": 7864320,
+          "nonFiniteCount": 0,
+          "nonzeroCount": 1966080,
+          "stereoDifferenceFrameCount": 983039,
+          "minimum": -0.9420424103736877,
+          "maximum": 0.9584733843803406,
+          "peak": 0.9584733843803406
+        },
+        "timing": {
+          "outerWindowWallMs": 6188.600000023842,
+          "decoderSubmitThroughDrainMs": 5997.800000190735,
+          "decoderCommandBufferCount": 123,
+          "totalCommandBufferCount": 124,
+          "queueDrainCount": 124,
+          "requestedCooperativeIdleMs": 123
+        },
+        "familyProfile": {
+          "windowIndex": 0,
+          "inputFrames": 512,
+          "quantaPerCommandBuffer": 64,
+          "decoderBatchCount": 123,
+          "decoderQuantumCount": 7855,
+          "decoderSubmitThroughDrainMs": 5997.800000190735,
+          "homogeneousBatchCount": 68,
+          "homogeneousQuantumCount": 4352,
+          "homogeneousSubmitThroughDrainMs": 4159.100000500679,
+          "mixedBatchCount": 55,
+          "mixedQuantumCount": 3503,
+          "mixedSubmitThroughDrainMs": 1838.6999996900558,
+          "families": {
+            "k7-conv1d": {
+              "batchCount": 52,
+              "quantumCount": 3328,
+              "submitThroughDrainMs": 3504.8000004291534
+            },
+            "k1-conv1d": {
+              "batchCount": 3,
+              "quantumCount": 192,
+              "submitThroughDrainMs": 42.89999997615814
+            },
+            "conv-transpose1d": {
+              "batchCount": 6,
+              "quantumCount": 384,
+              "submitThroughDrainMs": 576.2000000476837
+            },
+            "snake": {
+              "batchCount": 4,
+              "quantumCount": 256,
+              "submitThroughDrainMs": 19.40000009536743
+            },
+            "add": {
+              "batchCount": 3,
+              "quantumCount": 192,
+              "submitThroughDrainMs": 15.799999952316284
+            }
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "arm": "batch64",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToWarmReference": {
+        "comparedU32WordCount": 1966080,
+        "mismatchCount": 0,
+        "firstMismatchIndex": null,
+        "firstControlWord": null,
+        "firstCandidateWord": null,
+        "rawFp32U32Exact": true
+      },
+      "receipt": {
+        "arm": "batch64",
+        "measured": true,
+        "scan": {
+          "elementCount": 1966080,
+          "byteLength": 7864320,
+          "nonFiniteCount": 0,
+          "nonzeroCount": 1966080,
+          "stereoDifferenceFrameCount": 983039,
+          "minimum": -0.9420424103736877,
+          "maximum": 0.9584733843803406,
+          "peak": 0.9584733843803406
+        },
+        "timing": {
+          "outerWindowWallMs": 6219.899999976158,
+          "decoderSubmitThroughDrainMs": 6030.399999976158,
+          "decoderCommandBufferCount": 123,
+          "totalCommandBufferCount": 124,
+          "queueDrainCount": 124,
+          "requestedCooperativeIdleMs": 123
+        },
+        "familyProfile": {
+          "windowIndex": 0,
+          "inputFrames": 512,
+          "quantaPerCommandBuffer": 64,
+          "decoderBatchCount": 123,
+          "decoderQuantumCount": 7855,
+          "decoderSubmitThroughDrainMs": 6030.399999976158,
+          "homogeneousBatchCount": 68,
+          "homogeneousQuantumCount": 4352,
+          "homogeneousSubmitThroughDrainMs": 4186.700000047684,
+          "mixedBatchCount": 55,
+          "mixedQuantumCount": 3503,
+          "mixedSubmitThroughDrainMs": 1843.6999999284744,
+          "families": {
+            "k7-conv1d": {
+              "batchCount": 52,
+              "quantumCount": 3328,
+              "submitThroughDrainMs": 3535.100000023842
+            },
+            "k1-conv1d": {
+              "batchCount": 3,
+              "quantumCount": 192,
+              "submitThroughDrainMs": 44.89999985694885
+            },
+            "conv-transpose1d": {
+              "batchCount": 6,
+              "quantumCount": 384,
+              "submitThroughDrainMs": 571.6000000238419
+            },
+            "snake": {
+              "batchCount": 4,
+              "quantumCount": 256,
+              "submitThroughDrainMs": 19.00000011920929
+            },
+            "add": {
+              "batchCount": 3,
+              "quantumCount": 192,
+              "submitThroughDrainMs": 16.100000023841858
+            }
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "arm": "batch8",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToWarmReference": {
+        "comparedU32WordCount": 1966080,
+        "mismatchCount": 0,
+        "firstMismatchIndex": null,
+        "firstControlWord": null,
+        "firstCandidateWord": null,
+        "rawFp32U32Exact": true
+      },
+      "receipt": {
+        "arm": "batch8",
+        "measured": true,
+        "scan": {
+          "elementCount": 1966080,
+          "byteLength": 7864320,
+          "nonFiniteCount": 0,
+          "nonzeroCount": 1966080,
+          "stereoDifferenceFrameCount": 983039,
+          "minimum": -0.9420424103736877,
+          "maximum": 0.9584733843803406,
+          "peak": 0.9584733843803406
+        },
+        "timing": {
+          "outerWindowWallMs": 8397.399999976158,
+          "decoderSubmitThroughDrainMs": 6904.599998474121,
+          "decoderCommandBufferCount": 982,
+          "totalCommandBufferCount": 983,
+          "queueDrainCount": 983,
+          "requestedCooperativeIdleMs": 982
+        },
+        "familyProfile": {
+          "windowIndex": 0,
+          "inputFrames": 512,
+          "quantaPerCommandBuffer": 8,
+          "decoderBatchCount": 982,
+          "decoderQuantumCount": 7855,
+          "decoderSubmitThroughDrainMs": 6904.599998474121,
+          "homogeneousBatchCount": 911,
+          "homogeneousQuantumCount": 7287,
+          "homogeneousSubmitThroughDrainMs": 6603.999998211861,
+          "mixedBatchCount": 71,
+          "mixedQuantumCount": 568,
+          "mixedSubmitThroughDrainMs": 300.60000026226044,
+          "families": {
+            "k7-conv1d": {
+              "batchCount": 500,
+              "quantumCount": 3999,
+              "submitThroughDrainMs": 4756.299998283386
+            },
+            "k1-conv1d": {
+              "batchCount": 89,
+              "quantumCount": 712,
+              "submitThroughDrainMs": 285.40000009536743
+            },
+            "conv-transpose1d": {
+              "batchCount": 78,
+              "quantumCount": 624,
+              "submitThroughDrainMs": 1152.9999998807907
+            },
+            "snake": {
+              "batchCount": 170,
+              "quantumCount": 1360,
+              "submitThroughDrainMs": 279.099999666214
+            },
+            "add": {
+              "batchCount": 74,
+              "quantumCount": 592,
+              "submitThroughDrainMs": 130.2000002861023
+            }
+          }
+        }
+      }
+    }
+  ],
+  "pairs": {
+    "forward": {
+      "order": "batch8-batch64",
+      "batch8OuterWindowWallMs": 8561.200000047684,
+      "batch64OuterWindowWallMs": 6188.600000023842,
+      "outerWindowWallSpeedup": 1.3833823481909804,
+      "outerWindowWallSavingMs": 2372.600000023842,
+      "batch8DecoderSubmitThroughDrainMs": 7063.199997186661,
+      "batch64DecoderSubmitThroughDrainMs": 5997.800000190735,
+      "decoderSubmitThroughDrainSpeedup": 1.1776317978195414,
+      "decoderSubmitThroughDrainSavingMs": 1065.399996995926,
+      "decoderCommandBufferReduction": 859,
+      "requestedCooperativeIdleReductionMs": 859
+    },
+    "reverse": {
+      "order": "batch64-batch8",
+      "batch8OuterWindowWallMs": 8397.399999976158,
+      "batch64OuterWindowWallMs": 6219.899999976158,
+      "outerWindowWallSpeedup": 1.3500860142459439,
+      "outerWindowWallSavingMs": 2177.5,
+      "batch8DecoderSubmitThroughDrainMs": 6904.599998474121,
+      "batch64DecoderSubmitThroughDrainMs": 6030.399999976158,
+      "decoderSubmitThroughDrainSpeedup": 1.144965507843828,
+      "decoderSubmitThroughDrainSavingMs": 874.199998497963,
+      "decoderCommandBufferReduction": 859,
+      "requestedCooperativeIdleReductionMs": 859
+    }
+  },
+  "aggregate": {
+    "batch8": {
+      "sampleCount": 2,
+      "meanOuterWindowWallMs": 8479.300000011921,
+      "meanDecoderSubmitThroughDrainMs": 6983.899997830391,
+      "decoderCommandBufferCount": 982,
+      "totalCommandBufferCount": 983,
+      "requestedCooperativeIdleMs": 982
+    },
+    "batch64": {
+      "sampleCount": 2,
+      "meanOuterWindowWallMs": 6204.25,
+      "meanDecoderSubmitThroughDrainMs": 6014.1000000834465,
+      "decoderCommandBufferCount": 123,
+      "totalCommandBufferCount": 124,
+      "requestedCooperativeIdleMs": 123
+    }
+  },
+  "correctness": {
+    "acceptedOutputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+    "rawFp32U32ExactForEveryWarmupAndTimedRun": true,
+    "comparedU32WordsPerExecution": 1966080,
+    "performanceChangesArithmetic": false,
+    "listeningRequired": false,
+    "passed": true
+  },
+  "runtimeEvents": [],
+  "performanceGate": null,
+  "cleanup": {
+    "passed": true,
+    "bothBackendOwnersDestroyed": true,
+    "bothOwnedWeightPhasesDestroyedByBackends": true,
+    "activationAndReadbackBuffersDestroyedByBackends": true,
+    "deviceContextDestroyed": true,
+    "idempotentDestroyPromise": true,
+    "failureMessages": [],
+    "wallMs": 0.10000002384185791
+  }
+}
+

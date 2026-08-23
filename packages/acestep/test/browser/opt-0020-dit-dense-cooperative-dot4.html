@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0020 cooperative dense dot4 A/B/C gate</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      fieldset { display: grid; gap: 0.4rem; max-width: 64rem; }
+      label { display: grid; grid-template-columns: 28rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0020 cooperative dense dot4 A/B/C gate</h1>
+    <p>
+      Preparation authenticates all three kernel owners and every deterministic
+      fixture byte, then checks every output on all four complete M2250 shapes.
+      A and B must be raw-U32 exact, C must rerun exactly, and C must pass all
+      frozen full-vector numerical limits before timing is enabled.
+    </p>
+    <p>
+      After the page reports ready, collect one continuous 30-second nominal
+      thermal interval and run once. Six rounds use every A/B/C permutation,
+      rotate shape order, and retain one submit-through-matching-drain sample
+      per dispatch. This benchmark-only gate does not alter production.
+    </p>
+    <p id="progress" role="status" aria-live="polite">
+      preparing bounded full-output correctness
+    </p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run the bounded four-shape A/B/C gate once
+      </button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0020-dit-dense-cooperative-dot4.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "experiment": "OPT-0030",
+  "passed": false,
+  "identity": {
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "wgslSha256": {
+      "query8": "1a6fc027b3c65711a8dc7ce8379e2f72770f8544e4a9268d5202a982c770caad",
+      "query16": "d53fdc7909fc66136e0897bfe04e3e8b6df1f242e8f96e1b3baa1369c423a1bd",
+      "query32": "8ce3b5ba6ee43837d7f4c2e08808386f8565bb56a274ed18dc33c8fc0b7a9868"
+    }
+  },
+  "shape": {
+    "batch": 1,
+    "queryHeads": 16,
+    "keyValueHeads": 8,
+    "queryTokens": 2250,
+    "keyValueTokens": 2250,
+    "headDimension": 128,
+    "mode": "full"
+  },
+  "capabilities": {
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "subgroups"
+    ],
+    "limits": {
+      "maxComputeInvocationsPerWorkgroup": 1024,
+      "maxComputeWorkgroupSizeX": 1024,
+      "maxComputeWorkgroupStorageSize": 16384,
+      "maxComputeWorkgroupsPerDimension": 65535
+    }
+  },
+  "deterministicInputs": {
+    "generator": "lcg1664525-u24-f32-v1",
+    "querySeed": 324508639,
+    "keySeed": 610839776,
+    "valueSeed": 270544960,
+    "sha256": {
+      "query": "a9b3a0b9a2b44173d4943567053981bc900a963b27e765de34ebfe88b86edc91",
+      "key": "3aca97c626b259c7b083cee4e2a764fc7514cba7546b73217cf82a68c92634b5",
+      "value": "96d77cccd9f30a9332a1a3a06166fcaf5df0e31ecb4be82858501957253e4653"
+    }
+  },
+  "correctness": {
+    "comparedElementsPerCandidate": 4608000,
+    "referenceNonFiniteCount": 0,
+    "query16NonFiniteCount": 0,
+    "query32NonFiniteCount": 0,
+    "query16BitMismatchCount": 0,
+    "query32BitMismatchCount": 0,
+    "query16MaximumAbsoluteError": 0,
+    "query32MaximumAbsoluteError": 0,
+    "outputSha256": {
+      "query8": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "query16": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "query32": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892"
+    },
+    "bitExact": true
+  },
+  "plans": {
+    "query8": {
+      "queriesPerWorkgroup": 8,
+      "queryTokensPerTile": 4,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "loadReductionVersusQuery8": 1
+    },
+    "query16": {
+      "queriesPerWorkgroup": 16,
+      "queryTokensPerTile": 8,
+      "workgroupSize": 512,
+      "workgroupCount": 2256,
+      "keyValueScalarLoads": 1299456000,
+      "loadReductionVersusQuery8": 2
+    },
+    "query32": {
+      "queriesPerWorkgroup": 32,
+      "queryTokensPerTile": 16,
+      "workgroupSize": 1024,
+      "workgroupCount": 1128,
+      "keyValueScalarLoads": 649728000,
+      "loadReductionVersusQuery8": 4
+    }
+  },
+  "protocol": {
+    "compileOutsideTiming": true,
+    "fullCorrectnessOutsideTiming": true,
+    "correctnessAlsoServesAsOneWarmupPerArm": true,
+    "rounds": 3,
+    "balancedOrders": [
+      [
+        8,
+        16,
+        32
+      ],
+      [
+        16,
+        32,
+        8
+      ],
+      [
+        32,
+        8,
+        16
+      ]
+    ],
+    "samplesPerArm": 3,
+    "oneCommandBufferPerSample": true,
+    "oneQueueDrainPerSample": true,
+    "outputReadbackInsideTiming": false
+  },
+  "timing": {
+    "samplesMilliseconds": {
+      "query8": [
+        139.60000002384186,
+        135.60000002384186,
+        140.80000007152557
+      ],
+      "query16": [
+        219.19999992847443,
+        222.70000004768372,
+        202.59999990463257
+      ],
+      "query32": [
+        173,
+        220.69999992847443,
+        167.89999997615814
+      ]
+    },
+    "mediansMilliseconds": {
+      "query8": 139.60000002384186,
+      "query16": 219.19999992847443,
+      "query32": 173
+    },
+    "fastestCandidate": "query32",
+    "fastestCandidateMilliseconds": 173,
+    "speedupVersusQuery8": 0.8069364163227853,
+    "requiredSpeedupVersusQuery8": 1.35
+  },
+  "cleanup": {
+    "ownedBufferCount": 6,
+    "buffersDestroyed": true,
+    "deviceDestroyed": true
+  }
+}
+

@@ -1,0 +1,661 @@
+{
+  "schema": "ace-opt-0080-product-integration-result-v1",
+  "experimentId": "OPT-0080",
+  "status": "passed",
+  "disposition": "integrated",
+  "authority": {
+    "scope": "post-integration direct 96-second product correctness and cancellation",
+    "timingClaim": false,
+    "thermalClaim": false,
+    "plannerClaim": false,
+    "unchangedRetryPerformed": false,
+    "selectorScope": "authenticated direct requests only",
+    "plannerEnabledRequestsRemainDepthOne": true
+  },
+  "identity": {
+    "coreCommit": "dfb2a24c979f840f13909b6baee0742bd7ee4f40",
+    "harnessCommit": "dfb2a24c979f840f13909b6baee0742bd7ee4f40",
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "Codex in-app Chromium 151.0.0.0",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "integrationCommit": "7d9ae463aa580d0290421b067467f799cf1b0b75",
+    "directOnlySelectorCommit": "023bdecbf670b9309db37b6ac3030293ffe3b463",
+    "evidenceSeamCommit": "023bdecbf670b9309db37b6ac3030293ffe3b463",
+    "cacheStageCommit": "d522e768ad2c687209a8f6a989af98942cac54fa"
+  },
+  "cacheStage": {
+    "manifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+    "manifestBytes": 716185,
+    "converterRevision": 7,
+    "fileCount": 7,
+    "runtimeBytes": 168791552,
+    "cachedBytesBeforeStage": 0,
+    "downloadedBytes": 168791552,
+    "gpuDeviceRequested": false,
+    "productGenerationStarted": false
+  },
+  "request": {
+    "canonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":96,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+    "byteLength": 365,
+    "sha256": "ecc1d8d0fd7a87e14d0cf827563280fe35853526368becf883d98f4d42cb1ad4"
+  },
+  "runtime": {
+    "backend": "custom-webgpu-wgsl-and-wasm",
+    "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "modelManifestUrl": "http://127.0.0.1:5173/model/files-reference/manifest.json",
+    "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "ditDenseManifestUrl": "http://127.0.0.1:5173/model/files-fp16-dit-rev7-oracle/manifest.json",
+    "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "ditDenseManifestByteLength": 254357,
+    "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+    "ditDenseKernelSetId": "opt-0009-n256-k32-fp16-fp32-v1",
+    "ditAttentionRuntimeProfile": "opt-0070-fixed32-quad-query32-full-self-production-v1",
+    "ditAttentionKernelSetId": "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1",
+    "ditDenseLayerBytes": 3020808192,
+    "ditResidentWeightBytes": 3150917888,
+    "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+    "vaeManifestUrl": "http://127.0.0.1:5173/model/files-fp16-vae-revision7-experimental/manifest.json",
+    "vaeManifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+    "vaeManifestByteLength": 716185,
+    "vaeRuntimeProfile": "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1",
+    "vaeKernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+    "vaePrecisionMapSha256": "4815ec86311e401a9bf8cec3f4474d479ef3ac28c925f4824fed4c9ae3b8bc60",
+    "vaeWindowRuntimeProfile": "opt-0070-c2378-overlap64-production-v1",
+    "vaeMaxWindowFrames": 2378,
+    "executionProfile": {
+      "id": "reference-bf16-subgroups",
+      "modelProfile": "reference-bf16",
+      "weightStorage": "packed-bf16-u32",
+      "matrixArithmetic": "float32",
+      "sensitiveReductions": "float32",
+      "vaeArithmetic": "float32",
+      "kernelBackend": "subgroups",
+      "requiredFeatures": [
+        "subgroups"
+      ]
+    },
+    "schedulingProfile": "cooperative",
+    "capabilities": {
+      "executionProfile": {
+        "id": "reference-bf16-subgroups",
+        "modelProfile": "reference-bf16",
+        "weightStorage": "packed-bf16-u32",
+        "matrixArithmetic": "float32",
+        "sensitiveReductions": "float32",
+        "vaeArithmetic": "float32",
+        "kernelBackend": "subgroups",
+        "requiredFeatures": [
+          "subgroups"
+        ]
+      },
+      "schedulingProfile": "cooperative",
+      "adapterInfo": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "isFallbackAdapter": false
+      },
+      "adapterFeatures": [
+        "bgra8unorm-storage",
+        "clip-distances",
+        "core-features-and-limits",
+        "depth-clip-control",
+        "depth32float-stencil8",
+        "dual-source-blending",
+        "float32-blendable",
+        "float32-filterable",
+        "indirect-first-instance",
+        "primitive-index",
+        "rg11b10ufloat-renderable",
+        "shader-f16",
+        "subgroups",
+        "texture-component-swizzle",
+        "texture-compression-astc",
+        "texture-compression-astc-sliced-3d",
+        "texture-compression-bc",
+        "texture-compression-bc-sliced-3d",
+        "texture-compression-etc2",
+        "texture-formats-tier1",
+        "texture-formats-tier2",
+        "timestamp-query"
+      ],
+      "deviceFeatures": [
+        "core-features-and-limits",
+        "shader-f16",
+        "subgroups"
+      ],
+      "stockFeatures": {
+        "shader-f16": {
+          "adapterSupported": true,
+          "deviceEnabled": true,
+          "required": true,
+          "requested": true
+        },
+        "subgroups": {
+          "adapterSupported": true,
+          "deviceEnabled": true,
+          "required": true,
+          "requested": true
+        },
+        "timestamp-query": {
+          "adapterSupported": true,
+          "deviceEnabled": false,
+          "required": false,
+          "requested": false
+        }
+      },
+      "requiredFeatures": [
+        "subgroups",
+        "shader-f16"
+      ],
+      "requestedOptionalFeatures": [],
+      "adapterLimits": {
+        "maxBufferSize": 4294967292,
+        "maxStorageBufferBindingSize": 4294967292,
+        "maxUniformBufferBindingSize": 65536,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxStorageBuffersPerShaderStage": 10,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxDynamicStorageBuffersPerPipelineLayout": 8,
+        "maxDynamicUniformBuffersPerPipelineLayout": 10,
+        "maxComputeWorkgroupStorageSize": 32768,
+        "maxComputeInvocationsPerWorkgroup": 1024,
+        "maxComputeWorkgroupSizeX": 1024,
+        "maxComputeWorkgroupSizeY": 1024,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "minStorageBufferOffsetAlignment": 256,
+        "minUniformBufferOffsetAlignment": 256
+      },
+      "deviceLimits": {
+        "maxBufferSize": 1168834560,
+        "maxStorageBufferBindingSize": 1168834560,
+        "maxUniformBufferBindingSize": 65536,
+        "maxBindGroups": 4,
+        "maxBindingsPerBindGroup": 1000,
+        "maxStorageBuffersPerShaderStage": 8,
+        "maxUniformBuffersPerShaderStage": 12,
+        "maxDynamicStorageBuffersPerPipelineLayout": 4,
+        "maxDynamicUniformBuffersPerPipelineLayout": 8,
+        "maxComputeWorkgroupStorageSize": 16384,
+        "maxComputeInvocationsPerWorkgroup": 256,
+        "maxComputeWorkgroupSizeX": 256,
+        "maxComputeWorkgroupSizeY": 256,
+        "maxComputeWorkgroupSizeZ": 64,
+        "maxComputeWorkgroupsPerDimension": 65535,
+        "minStorageBufferOffsetAlignment": 256,
+        "minUniformBufferOffsetAlignment": 256
+      },
+      "requestedLimits": {
+        "maxBufferSize": 1168834560,
+        "maxStorageBufferBindingSize": 1168834560,
+        "maxStorageBuffersPerShaderStage": 8,
+        "maxComputeWorkgroupStorageSize": 16384,
+        "maxComputeInvocationsPerWorkgroup": 256
+      }
+    },
+    "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+    "plannerSourceRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80",
+    "parakeetReferenceRevision": "7ee112738262a6f5a0efd2f150748a4087432fbb"
+  },
+  "selection": {
+    "control": {
+      "selectedProductionPolicy": "depth2-phase-epoch4",
+      "effectiveSubmissionPolicy": "depth1-epoch1",
+      "cooperativeGpuQueueDrains": 2725
+    },
+    "candidate": {
+      "selectedProductionPolicy": "depth2-phase-epoch4",
+      "effectiveSubmissionPolicy": "depth2-phase-epoch4",
+      "cooperativeGpuQueueDrains": 1243
+    },
+    "production": {
+      "selectedProductionPolicy": "depth2-phase-epoch4",
+      "effectiveSubmissionPolicy": "depth2-phase-epoch4",
+      "cooperativeGpuQueueDrains": 1243
+    },
+    "controlToCandidateDrainReduction": 1482,
+    "controlToCandidateDrainRatio": 2.1922767497988738
+  },
+  "outputs": {
+    "finalLatent": {
+      "elementCount": 153600,
+      "byteLength": 614400,
+      "sha256": "527cdc7e560691f21383f3b06a4a85f7f41ba92e93e6357b7be75f115a5c9e07",
+      "scan": {
+        "nonFiniteCount": 0,
+        "nonzeroCount": 153599,
+        "maximumAbsolute": 6.882010459899902
+      }
+    },
+    "raw": {
+      "byteLength": 36864000,
+      "sha256": "c4152aa56bcf81236b60cb2dbea3976b4a7f4d800af001b9bfbbbd52dda6e82b",
+      "stats": {
+        "peak": 1.909955620765686,
+        "finiteSamples": 9216000,
+        "outputInterleavedElements": 9216000,
+        "windowsDecoded": 2,
+        "cooperativeIdleMs": 1
+      }
+    },
+    "seam": {
+      "seamLatentFrame": 2250,
+      "seamAudioFrame": 4320000,
+      "radiusLatentFrames": 64,
+      "startAudioFrame": 4197120,
+      "endAudioFrame": 4442880,
+      "byteLength": 1966080,
+      "sha256": "17540647f319a947860bf7402721e3e942f089cfc90a8d8aa20d8191ff889830",
+      "scan": {
+        "sampleCount": 491520,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 491520,
+        "peak": 1.287604808807373
+      }
+    },
+    "wav": {
+      "byteLength": 36864044,
+      "sha256": "c088385a6b4dabc30215d122b3a4da8406611f1a7d6d1255eba2846aa7e24e4a",
+      "scan": {
+        "sampleCount": 9216000,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 9216000,
+        "peak": 0.8912509083747864
+      }
+    },
+    "vaePlan": {
+      "latentFrames": 2400,
+      "chunkFrames": 2378,
+      "overlapFrames": 64,
+      "strideFrames": 2250,
+      "direct": false,
+      "windowCount": 2,
+      "windows": [
+        {
+          "index": 0,
+          "coreStartLatentFrame": 0,
+          "coreEndLatentFrame": 2250,
+          "windowStartLatentFrame": 0,
+          "windowEndLatentFrame": 2314,
+          "latentWindowFrames": 2314,
+          "discardPrefixLatentFrames": 0,
+          "discardSuffixLatentFrames": 64,
+          "discardPrefixAudioFrames": 0,
+          "discardSuffixAudioFrames": 122880,
+          "outputStartAudioFrame": 0,
+          "outputAudioFrames": 4320000,
+          "decodedAudioFrames": 4442880
+        },
+        {
+          "index": 1,
+          "coreStartLatentFrame": 2250,
+          "coreEndLatentFrame": 2400,
+          "windowStartLatentFrame": 2186,
+          "windowEndLatentFrame": 2400,
+          "latentWindowFrames": 214,
+          "discardPrefixLatentFrames": 64,
+          "discardSuffixLatentFrames": 0,
+          "discardPrefixAudioFrames": 122880,
+          "discardSuffixAudioFrames": 0,
+          "outputStartAudioFrame": 4320000,
+          "outputAudioFrames": 288000,
+          "decodedAudioFrames": 410880
+        }
+      ]
+    },
+    "metadata": {
+      "durationSeconds": 96,
+      "seed": "0000000000c0ffee",
+      "generationProfile": "ace-turbo-v1-correctness",
+      "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "mimeType": "audio/wav",
+      "sampleRateHz": 48000,
+      "channelCount": 2,
+      "frameCount": 4608000,
+      "audioStorageIdWasSafe": true
+    },
+    "progress": {
+      "initializationStages": [
+        "webgpu",
+        "storage",
+        "manifest",
+        "weights",
+        "tokenizers",
+        "wasm",
+        "ready"
+      ],
+      "generationStages": [
+        "prepare",
+        "text-encoder",
+        "semantic-detokenizer",
+        "condition-encoder",
+        "release-conditioning",
+        "dit-load",
+        "dit-denoise",
+        "release-dit",
+        "vae-load",
+        "vae-decode",
+        "wav-encode",
+        "cleanup",
+        "done"
+      ],
+      "initializationEventCount": 158,
+      "generationEventCount": 76437
+    },
+    "diagnosticCodes": []
+  },
+  "comparisons": {
+    "controlCandidate": {
+      "schema": "ace-opt-0080-product-pair-comparison-v1",
+      "pairId": "control-candidate",
+      "finalLatent": {
+        "schema": "ace-opt-0080-final-latent-u32-comparison-v1",
+        "wordCount": 153600,
+        "byteLength": 614400,
+        "exactU32MismatchCount": 0,
+        "firstMismatch": null
+      },
+      "fullRaw": {
+        "schema": "ace-raw-audio-snapshot-comparison-v1",
+        "byteLength": 36864000,
+        "sampleCount": 9216000,
+        "exactU32MismatchCount": 0,
+        "leftNonFiniteCount": 0,
+        "rightNonFiniteCount": 0,
+        "finitePairCount": 9216000,
+        "maximumAbsoluteDifference": 0,
+        "meanAbsoluteDifference": 0,
+        "rootMeanSquareDifference": 0
+      },
+      "seamRaw": {
+        "schema": "ace-raw-audio-snapshot-comparison-v1",
+        "byteLength": 1966080,
+        "sampleCount": 491520,
+        "exactU32MismatchCount": 0,
+        "leftNonFiniteCount": 0,
+        "rightNonFiniteCount": 0,
+        "finitePairCount": 491520,
+        "maximumAbsoluteDifference": 0,
+        "meanAbsoluteDifference": 0,
+        "rootMeanSquareDifference": 0,
+        "seamLatentFrame": 2250,
+        "seamAudioFrame": 4320000,
+        "radiusLatentFrames": 64,
+        "startAudioFrame": 4197120,
+        "endAudioFrame": 4442880
+      },
+      "wav": {
+        "schema": "ace-opt-0080-wav-byte-comparison-v1",
+        "byteLength": 36864044,
+        "exactByteMismatchCount": 0,
+        "firstMismatch": null
+      },
+      "suppliedHashes": {
+        "finalLatentSha256": "527cdc7e560691f21383f3b06a4a85f7f41ba92e93e6357b7be75f115a5c9e07",
+        "rawSha256": "c4152aa56bcf81236b60cb2dbea3976b4a7f4d800af001b9bfbbbd52dda6e82b",
+        "seamSha256": "17540647f319a947860bf7402721e3e942f089cfc90a8d8aa20d8191ff889830",
+        "wavSha256": "c088385a6b4dabc30215d122b3a4da8406611f1a7d6d1255eba2846aa7e24e4a",
+        "allExact": true
+      },
+      "stableSummaryIdentity": {
+        "fields": [
+          "identity",
+          "request",
+          "metadata",
+          "runtime",
+          "vaePlan",
+          "diagnosticCodes"
+        ],
+        "progressStageFields": [
+          "initializationStages",
+          "generationStages"
+        ],
+        "policyDependentProgressEventCountsExcluded": true,
+        "allExact": true
+      },
+      "boundedComparisonBlockBytes": 1048576,
+      "passed": true
+    },
+    "candidateProduction": {
+      "schema": "ace-opt-0080-product-pair-comparison-v1",
+      "pairId": "candidate-production",
+      "finalLatent": {
+        "schema": "ace-opt-0080-final-latent-u32-comparison-v1",
+        "wordCount": 153600,
+        "byteLength": 614400,
+        "exactU32MismatchCount": 0,
+        "firstMismatch": null
+      },
+      "fullRaw": {
+        "schema": "ace-raw-audio-snapshot-comparison-v1",
+        "byteLength": 36864000,
+        "sampleCount": 9216000,
+        "exactU32MismatchCount": 0,
+        "leftNonFiniteCount": 0,
+        "rightNonFiniteCount": 0,
+        "finitePairCount": 9216000,
+        "maximumAbsoluteDifference": 0,
+        "meanAbsoluteDifference": 0,
+        "rootMeanSquareDifference": 0
+      },
+      "seamRaw": {
+        "schema": "ace-raw-audio-snapshot-comparison-v1",
+        "byteLength": 1966080,
+        "sampleCount": 491520,
+        "exactU32MismatchCount": 0,
+        "leftNonFiniteCount": 0,
+        "rightNonFiniteCount": 0,
+        "finitePairCount": 491520,
+        "maximumAbsoluteDifference": 0,
+        "meanAbsoluteDifference": 0,
+        "rootMeanSquareDifference": 0,
+        "seamLatentFrame": 2250,
+        "seamAudioFrame": 4320000,
+        "radiusLatentFrames": 64,
+        "startAudioFrame": 4197120,
+        "endAudioFrame": 4442880
+      },
+      "wav": {
+        "schema": "ace-opt-0080-wav-byte-comparison-v1",
+        "byteLength": 36864044,
+        "exactByteMismatchCount": 0,
+        "firstMismatch": null
+      },
+      "suppliedHashes": {
+        "finalLatentSha256": "527cdc7e560691f21383f3b06a4a85f7f41ba92e93e6357b7be75f115a5c9e07",
+        "rawSha256": "c4152aa56bcf81236b60cb2dbea3976b4a7f4d800af001b9bfbbbd52dda6e82b",
+        "seamSha256": "17540647f319a947860bf7402721e3e942f089cfc90a8d8aa20d8191ff889830",
+        "wavSha256": "c088385a6b4dabc30215d122b3a4da8406611f1a7d6d1255eba2846aa7e24e4a",
+        "allExact": true
+      },
+      "stableSummaryIdentity": {
+        "fields": [
+          "identity",
+          "request",
+          "metadata",
+          "runtime",
+          "vaePlan",
+          "diagnosticCodes"
+        ],
+        "progressStageFields": [
+          "initializationStages",
+          "generationStages"
+        ],
+        "policyDependentProgressEventCountsExcluded": true,
+        "allExact": true
+      },
+      "boundedComparisonBlockBytes": 1048576,
+      "passed": true
+    }
+  },
+  "cancellation": {
+    "schema": "ace-opt-0080-product-cancellation-v1",
+    "identity": {
+      "coreCommit": "dfb2a24c979f840f13909b6baee0742bd7ee4f40",
+      "harnessCommit": "dfb2a24c979f840f13909b6baee0742bd7ee4f40",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Codex in-app Chromium 151.0.0.0",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "ordinaryProductionSelector": true,
+    "opt0080ProductRunOmitted": true,
+    "triggerCount": 1,
+    "progressCountAtAbort": 74375,
+    "publicProgressAfterAbortCount": 0,
+    "abortReasonIdentityPreserved": true,
+    "abortObservationThroughRejectionMs": 4.1000001430511475,
+    "abortObservationThroughRejectionAndCleanupMs": 4.200000047683716,
+    "postDitStageCount": 0,
+    "outputCount": 0,
+    "evidenceCount": 0,
+    "fatalDiagnosticCount": 0,
+    "unhandledRejectionCount": 0,
+    "disposeCompletedAtEpochMilliseconds": 1787321373378,
+    "workerReadyToTerminate": true
+  },
+  "heartbeat": {
+    "control": {
+      "schema": "ace-opt-0080-product-page-heartbeat-v1",
+      "runKind": "control",
+      "intervalMilliseconds": 50,
+      "timerTickCount": 3432,
+      "observedGapCount": 3433,
+      "maximumGapMilliseconds": 52.40000009536743,
+      "p99GapMilliseconds": 52,
+      "startedAtEpochMilliseconds": 1787321085339,
+      "workerTerminatedAtEpochMilliseconds": 1787321256956,
+      "passed": true
+    },
+    "candidate": {
+      "schema": "ace-opt-0080-product-page-heartbeat-v1",
+      "runKind": "candidate",
+      "intervalMilliseconds": 50,
+      "timerTickCount": 3987,
+      "observedGapCount": 3988,
+      "maximumGapMilliseconds": 52.59999990463257,
+      "p99GapMilliseconds": 52.10000014305115,
+      "startedAtEpochMilliseconds": 1787321161442,
+      "workerTerminatedAtEpochMilliseconds": 1787321360834,
+      "passed": true
+    },
+    "production": {
+      "schema": "ace-opt-0080-product-page-heartbeat-v1",
+      "runKind": "production",
+      "intervalMilliseconds": 50,
+      "timerTickCount": 2077,
+      "observedGapCount": 2078,
+      "maximumGapMilliseconds": 52.60000014305115,
+      "p99GapMilliseconds": 52.200000047683716,
+      "startedAtEpochMilliseconds": 1787321256957,
+      "workerTerminatedAtEpochMilliseconds": 1787321360838,
+      "passed": true
+    },
+    "cancellation": {
+      "schema": "ace-opt-0080-product-page-heartbeat-v1",
+      "runKind": "cancellation",
+      "intervalMilliseconds": 50,
+      "timerTickCount": 250,
+      "observedGapCount": 251,
+      "maximumGapMilliseconds": 52.10000014305115,
+      "p99GapMilliseconds": 52.10000014305115,
+      "startedAtEpochMilliseconds": 1787321360838,
+      "workerTerminatedAtEpochMilliseconds": 1787321373381,
+      "passed": true
+    },
+    "intervalMilliseconds": 50,
+    "maximumAllowedGapMilliseconds": 500,
+    "allPassed": true
+  },
+  "lifecycle": {
+    "freshWorkerCount": 4,
+    "terminatedWorkerCount": 4,
+    "maximumLargeArmPayloadsRetained": 2,
+    "explicitReleaseAfterComparison": true,
+    "largePayloadsReleasedBeforeCancellation": true,
+    "automaticRetryCount": 0,
+    "workerOrderWasOneWay": true
+  },
+  "attempts": [
+    {
+      "id": "attempt-001",
+      "status": "failed",
+      "condition": "revision-7 VAE payload absent from OPFS",
+      "automaticRetryCount": 0,
+      "artifact": {
+        "path": "optimization/artifacts/OPT-0080/product/attempt-001-cache-miss.json",
+        "bytes": 966,
+        "sha256": "0ddd9f99f9a8f8a56b94371efe3a36b8d0b7d2fb84369ae0dd81a1080df2d5ad"
+      }
+    },
+    {
+      "id": "attempt-002",
+      "status": "failed",
+      "condition": "harness compared policy-dependent progress event counts",
+      "automaticRetryCount": 0,
+      "artifact": {
+        "path": "optimization/artifacts/OPT-0080/product/attempt-002-progress-count-failure.json",
+        "bytes": 942,
+        "sha256": "7bbd65eadc7322c44546199c4c9b2f2bd6a3ef701920f05ad9f9e468618c98d6"
+      }
+    },
+    {
+      "id": "attempt-003",
+      "status": "failed",
+      "condition": "worker released OPFS transaction before page comparison",
+      "automaticRetryCount": 0,
+      "artifact": {
+        "path": "optimization/artifacts/OPT-0080/product/attempt-003-released-opfs-snapshot.json",
+        "bytes": 658,
+        "sha256": "80952322fca7c30016aaeab60472fef5249a8711df322cc291f51fc940c5cd31"
+      }
+    },
+    {
+      "id": "attempt-004",
+      "status": "passed",
+      "condition": "retained output release handshake",
+      "automaticRetryCount": 0,
+      "artifact": {
+        "path": "optimization/artifacts/OPT-0080/product/attempt-004-passed.json",
+        "bytes": 51285,
+        "sha256": "d91dc34fc1a1bb14102121dff9ea8d7e66ad666e0cf4911f4accb8afca67f9e5"
+      }
+    }
+  ],
+  "artifacts": {
+    "cacheStage": {
+      "path": "optimization/artifacts/OPT-0080/product/cache-stage.json",
+      "bytes": 1967,
+      "sha256": "eafa19469c07348501f9dcf4072a7aab2fcfb831c0acbb1f51c03aee81b340d3"
+    },
+    "passingReceipt": {
+      "path": "optimization/artifacts/OPT-0080/product/attempt-004-passed.json",
+      "bytes": 51285,
+      "sha256": "d91dc34fc1a1bb14102121dff9ea8d7e66ad666e0cf4911f4accb8afca67f9e5"
+    }
+  },
+  "validation": {
+    "typescript": "passed",
+    "focusedTests": {
+      "webgpuPipeline": 41,
+      "productContract": 6,
+      "audioOutput": 7
+    },
+    "actualChromium": "passed",
+    "timingReportable": false,
+    "thermalClaim": false,
+    "unchangedRetryPerformed": false
+  }
+}

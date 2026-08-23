@@ -1,0 +1,316 @@
+{
+  "source": "notifyutil-com.apple.system.thermalpressurelevel",
+  "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+  "startedAtEpochMilliseconds": 1786853216471,
+  "completedAtEpochMilliseconds": 1786853271205,
+  "observationCount": 61,
+  "maximumPollGapMilliseconds": 920,
+  "nonNominalObservationCount": 0,
+  "observations": [
+    {
+      "atEpochMilliseconds": 1786853216471,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853217387,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853218299,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853219210,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853220125,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853221038,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853221952,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853222869,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853223783,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853224695,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853225601,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853226506,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853227414,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853228328,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853229237,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853230151,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853231064,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853231982,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853232901,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853233816,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853234733,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853235640,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853236550,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853237469,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853238377,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853239297,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853240212,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853241122,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853242039,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853242955,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853243864,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853244782,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853245694,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853246600,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853247509,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853248417,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853249323,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853250237,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853251152,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853252066,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853252975,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853253886,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853254796,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853255705,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853256612,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853257518,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853258424,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853259339,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853260247,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853261161,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853262074,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853262990,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853263902,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853264815,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853265726,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853266635,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853267551,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853268461,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853269377,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853270290,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    },
+    {
+      "atEpochMilliseconds": 1786853271205,
+      "level": 0,
+      "rawValue": "com.apple.system.thermalpressurelevel 0"
+    }
+  ]
+}

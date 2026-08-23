@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0024 K7 C512 subsystem gate</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 86rem; }
+      button { margin: 0 0.75rem 0.75rem 0; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p>
+      Stock-WebGPU OPT-0024 C512 subsystem A/B. Prepare authenticates and
+      uploads the current exact-packed FP16 VAE package, builds the OPT-0028
+      control and direct-dot4 K7 candidate dispatch graphs, and gives both one
+      complete untimed warmup. The timed action is intentionally separate so
+      it can follow an external 30-second nominal thermal check. It executes
+      shipped/candidate then candidate/shipped, one command buffer and drain at
+      a time with the production one-millisecond queue-empty interval.
+    </p>
+    <button id="prepare" type="button">Prepare and warm C512</button>
+    <button id="run" type="button" disabled>Run timed AB/BA</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0024-vae-k7-c512-subsystem.ts"></script>
+  </body>
+</html>

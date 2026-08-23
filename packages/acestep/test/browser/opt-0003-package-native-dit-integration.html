@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0003 package-native DiT integration</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 76rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Package-native OPT-0003 integration gate. The page authenticates and
+      acquires only the 50 DiT shards, then runs the complete 24-layer,
+      eight-evaluation graph sequentially through the portable and fixed-32
+      subgroup backends. It compares every final-latent bit and never keeps two
+      heavyweight GPU phases resident at once. This is a correctness and
+      integration gate, not a reportable performance benchmark.
+    </p>
+    <button id="start" type="button">Run package-native DiT A/B</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0003-package-native-dit-integration.ts"></script>
+  </body>
+</html>

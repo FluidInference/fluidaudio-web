@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE M2250 full-attention portable/query8 gate</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      fieldset { display: grid; gap: 0.4rem; max-width: 54rem; }
+      label { display: grid; grid-template-columns: 25rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>Production M2250 full-attention A/B</h1>
+    <p>
+      Compile and the exact-shape valid-length warmup occur before timing.
+      After the page reports ready, observe one continuous 30-second nominal
+      interval, enter that trace, and run portable then query8 exactly once.
+    </p>
+    <p id="progress">preparing deterministic inputs</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>External nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>Run portable → query8 once</button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./dit-full-attention-query8-ab.ts"></script>
+  </body>
+</html>

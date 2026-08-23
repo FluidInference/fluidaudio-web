@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0082 planner compact-head A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 80rem; }
+      button { margin-inline-end: 0.5rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p>
+      Focused OPT-0082 developer A/B. The worker authenticates the current
+      reference-BF16 package, loads only planner and tokenizer files, creates
+      one planner executor, and establishes each hidden row with an ordinary
+      full-vocabulary semantic decode. It then checks full and compact tied-head
+      replays bit-for-bit and checks the accepted full and compact samplers and
+      Philox cursors. Timing then advances the real decode cache through twelve
+      balanced adjacent-position A/B pairs at each of three semantic regions;
+      an opposite-head replay validates every timed state outside its
+      complete-token interval. These timings have no thermal evidence by
+      themselves.
+    </p>
+    <button id="run" type="button">Run focused A/B</button>
+    <button id="cancel" type="button" disabled>Cancel</button>
+    <p id="progress" role="status" aria-live="polite">ready</p>
+    <pre id="result">No result yet.</pre>
+    <script type="module" src="./opt-0082-planner-compact-head-ab.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,553 @@
+{
+  "schema": "ace-opt-0024-vae-k7-c512-subsystem-v1",
+  "status": "passed",
+  "experimentId": "OPT-0024",
+  "classification": "complete-C512-control-candidate-balanced-ABBA-stock-WebGPU",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "executionProfile": {
+      "id": "raw-fp16-portable",
+      "modelProfile": "raw-fp16",
+      "weightStorage": "float16",
+      "matrixArithmetic": "float16",
+      "sensitiveReductions": "float32",
+      "vaeArithmetic": "float32",
+      "kernelBackend": "portable",
+      "requiredFeatures": [
+        "shader-f16"
+      ]
+    },
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "deviceFeatures": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "deviceLimits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 268435456,
+      "maxUniformBufferBindingSize": 65536,
+      "maxBindGroups": 4,
+      "maxBindingsPerBindGroup": 1000,
+      "maxStorageBuffersPerShaderStage": 8,
+      "maxUniformBuffersPerShaderStage": 12,
+      "maxDynamicStorageBuffersPerPipelineLayout": 4,
+      "maxDynamicUniformBuffersPerPipelineLayout": 8,
+      "maxComputeWorkgroupStorageSize": 16384,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupSizeY": 256,
+      "maxComputeWorkgroupSizeZ": 64,
+      "maxComputeWorkgroupsPerDimension": 65535,
+      "minStorageBufferOffsetAlignment": 256,
+      "minUniformBufferOffsetAlignment": 256
+    }
+  },
+  "fixture": {
+    "frames": 512,
+    "elements": 32768,
+    "byteLength": 131072,
+    "sha256": "eff0005ae48353fbc0a9ec86a5b2824b49e6fff6e899ea89af7d1c6e5870e899"
+  },
+  "package": {
+    "manifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+    "manifestByteLength": 715301,
+    "converterRevision": 6,
+    "residentBytes": 168791552
+  },
+  "graph": {
+    "operationCount": 88,
+    "graphQuantumCount": 7854,
+    "sequenceQuantumCount": 7855,
+    "commandBufferCountAtBatch8": 983,
+    "activeOutputBytes": 7864320,
+    "maximumWorkspaceBytes": 251658240,
+    "familyBatches": {
+      "k7-conv1d": {
+        "batchCount": 500,
+        "quantumCount": 3999,
+        "submitThroughDrainMs": 0
+      },
+      "k1-conv1d": {
+        "batchCount": 89,
+        "quantumCount": 712,
+        "submitThroughDrainMs": 0
+      },
+      "conv-transpose1d": {
+        "batchCount": 78,
+        "quantumCount": 624,
+        "submitThroughDrainMs": 0
+      },
+      "snake": {
+        "batchCount": 170,
+        "quantumCount": 1360,
+        "submitThroughDrainMs": 0
+      },
+      "add": {
+        "batchCount": 74,
+        "quantumCount": 592,
+        "submitThroughDrainMs": 0
+      },
+      "mixed": {
+        "batchCount": 71,
+        "quantumCount": 568,
+        "submitThroughDrainMs": 0
+      }
+    },
+    "shippedK7KernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+    "candidateK7KernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "onlyK7DispatchOwnerChanged": true
+  },
+  "protocol": {
+    "warmupOrder": [
+      "shipped",
+      "candidate"
+    ],
+    "timedOrder": [
+      "shipped",
+      "candidate",
+      "candidate",
+      "shipped"
+    ],
+    "externalThermalGateRequiredBeforeTimedAction": true,
+    "completeRunsPerTimedArm": 2,
+    "quantaPerCommandBuffer": 8,
+    "oneOutstandingCommandBuffer": true,
+    "queueDrainAfterEveryCommandBuffer": true,
+    "realQueueEmptyMillisecondsBetweenCommandBuffers": 1,
+    "stockWebGpuOnly": true,
+    "wasmOrJavascriptHostOnly": true,
+    "experimentalBrowserFlags": false,
+    "webNn": false
+  },
+  "executions": [
+    {
+      "index": 0,
+      "arm": "shipped",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "qNaNSentinelCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983039,
+        "clampBoundaryCount": 0,
+        "minimum": -0.9420424103736877,
+        "maximum": 0.9584733843803406,
+        "peak": 0.9584733843803406
+      },
+      "timing": {
+        "measured": true,
+        "quantaPerCommandBuffer": 8,
+        "decoderBatchCount": 982,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 7083.399999141693,
+        "readbackSubmitThroughDrainMs": 1.3000000715255737,
+        "mapMs": 0.7999999523162842,
+        "requestedCooperativeIdleMs": 982,
+        "outerWindowWallMs": 8389.100000023842,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 500,
+            "quantumCount": 3999,
+            "submitThroughDrainMs": 4857.099998950958
+          },
+          "k1-conv1d": {
+            "batchCount": 89,
+            "quantumCount": 712,
+            "submitThroughDrainMs": 285.599999666214
+          },
+          "conv-transpose1d": {
+            "batchCount": 78,
+            "quantumCount": 624,
+            "submitThroughDrainMs": 1214.4000002145767
+          },
+          "snake": {
+            "batchCount": 170,
+            "quantumCount": 1360,
+            "submitThroughDrainMs": 276.30000019073486
+          },
+          "add": {
+            "batchCount": 74,
+            "quantumCount": 592,
+            "submitThroughDrainMs": 121.90000009536743
+          },
+          "mixed": {
+            "batchCount": 71,
+            "quantumCount": 568,
+            "submitThroughDrainMs": 328.10000002384186
+          }
+        }
+      }
+    },
+    {
+      "index": 1,
+      "arm": "candidate",
+      "outputSha256": "11db972c1c8f4bdc42eea1f300bf5f78cccf7b33072dc9f0af3cef2a5538b93a",
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "qNaNSentinelCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983040,
+        "clampBoundaryCount": 0,
+        "minimum": -0.9418851137161255,
+        "maximum": 0.9585198163986206,
+        "peak": 0.9585198163986206
+      },
+      "timing": {
+        "measured": true,
+        "quantaPerCommandBuffer": 8,
+        "decoderBatchCount": 982,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 4316.299998044968,
+        "readbackSubmitThroughDrainMs": 1.399999976158142,
+        "mapMs": 1.6999999284744263,
+        "requestedCooperativeIdleMs": 982,
+        "outerWindowWallMs": 5605,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 500,
+            "quantumCount": 3999,
+            "submitThroughDrainMs": 2221.6999992132187
+          },
+          "k1-conv1d": {
+            "batchCount": 89,
+            "quantumCount": 712,
+            "submitThroughDrainMs": 282.199999332428
+          },
+          "conv-transpose1d": {
+            "batchCount": 78,
+            "quantumCount": 624,
+            "submitThroughDrainMs": 1165.2000002861023
+          },
+          "snake": {
+            "batchCount": 170,
+            "quantumCount": 1360,
+            "submitThroughDrainMs": 289.99999952316284
+          },
+          "add": {
+            "batchCount": 74,
+            "quantumCount": 592,
+            "submitThroughDrainMs": 133.59999918937683
+          },
+          "mixed": {
+            "batchCount": 71,
+            "quantumCount": 568,
+            "submitThroughDrainMs": 223.60000050067902
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "arm": "candidate",
+      "outputSha256": "11db972c1c8f4bdc42eea1f300bf5f78cccf7b33072dc9f0af3cef2a5538b93a",
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "qNaNSentinelCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983040,
+        "clampBoundaryCount": 0,
+        "minimum": -0.9418851137161255,
+        "maximum": 0.9585198163986206,
+        "peak": 0.9585198163986206
+      },
+      "timing": {
+        "measured": true,
+        "quantaPerCommandBuffer": 8,
+        "decoderBatchCount": 982,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 4338.799996495247,
+        "readbackSubmitThroughDrainMs": 0.6000000238418579,
+        "mapMs": 1.2999999523162842,
+        "requestedCooperativeIdleMs": 982,
+        "outerWindowWallMs": 5622.5,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 500,
+            "quantumCount": 3999,
+            "submitThroughDrainMs": 2243.9999985694885
+          },
+          "k1-conv1d": {
+            "batchCount": 89,
+            "quantumCount": 712,
+            "submitThroughDrainMs": 290.0999987125397
+          },
+          "conv-transpose1d": {
+            "batchCount": 78,
+            "quantumCount": 624,
+            "submitThroughDrainMs": 1163.8000001907349
+          },
+          "snake": {
+            "batchCount": 170,
+            "quantumCount": 1360,
+            "submitThroughDrainMs": 282.79999935626984
+          },
+          "add": {
+            "batchCount": 74,
+            "quantumCount": 592,
+            "submitThroughDrainMs": 129.7999997138977
+          },
+          "mixed": {
+            "batchCount": 71,
+            "quantumCount": 568,
+            "submitThroughDrainMs": 228.29999995231628
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "arm": "shipped",
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "qNaNSentinelCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983039,
+        "clampBoundaryCount": 0,
+        "minimum": -0.9420424103736877,
+        "maximum": 0.9584733843803406,
+        "peak": 0.9584733843803406
+      },
+      "timing": {
+        "measured": true,
+        "quantaPerCommandBuffer": 8,
+        "decoderBatchCount": 982,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 6915.700000286102,
+        "readbackSubmitThroughDrainMs": 2.200000047683716,
+        "mapMs": 1.1999999284744263,
+        "requestedCooperativeIdleMs": 982,
+        "outerWindowWallMs": 8212.799999952316,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 500,
+            "quantumCount": 3999,
+            "submitThroughDrainMs": 4754.300000309944
+          },
+          "k1-conv1d": {
+            "batchCount": 89,
+            "quantumCount": 712,
+            "submitThroughDrainMs": 283.1999999284744
+          },
+          "conv-transpose1d": {
+            "batchCount": 78,
+            "quantumCount": 624,
+            "submitThroughDrainMs": 1173.6999999284744
+          },
+          "snake": {
+            "batchCount": 170,
+            "quantumCount": 1360,
+            "submitThroughDrainMs": 284.400000333786
+          },
+          "add": {
+            "batchCount": 74,
+            "quantumCount": 592,
+            "submitThroughDrainMs": 129.99999940395355
+          },
+          "mixed": {
+            "batchCount": 71,
+            "quantumCount": 568,
+            "submitThroughDrainMs": 290.1000003814697
+          }
+        }
+      }
+    }
+  ],
+  "pairs": {
+    "AB": {
+      "order": "AB",
+      "timing": {
+        "shippedK7Ms": 4857.099998950958,
+        "candidateK7Ms": 2221.6999992132187,
+        "k7Speedup": 2.1862087593604116,
+        "k7SavingMs": 2635.3999997377396,
+        "shippedDecoderSubmitThroughDrainMs": 7083.399999141693,
+        "candidateDecoderSubmitThroughDrainMs": 4316.299998044968,
+        "shippedOuterWindowWallMs": 8389.100000023842,
+        "candidateOuterWindowWallMs": 5605,
+        "k7SpeedupPassed": true,
+        "k7SavingPassed": true,
+        "decoderNoSlowerPassed": true,
+        "outerNoSlowerPassed": true
+      },
+      "metrics": {
+        "joint": {
+          "count": 1966080,
+          "nrmse": 0.0018405635694897268,
+          "snrDb": 54.70098356541297,
+          "pearson": 0.9999983061725438,
+          "relativeRmsDrift": 0.000008171561893529713,
+          "relativeEnergyDrift": 0.000016343057012592563,
+          "relativePeakDrift": 0.00004844372210715888,
+          "relativeDcOffsetDrift": 0.0000013881631696440805,
+          "relativeMaximumAbsoluteError": 0.008118983595985577,
+          "maximumAbsoluteError": 0.007781829684972763,
+          "controlRms": 0.16239398088862908,
+          "candidateRms": 0.1623926538761631,
+          "controlPeak": 0.9584733843803406,
+          "candidatePeak": 0.9585198163986206,
+          "controlMean": -0.0004063913983484597,
+          "candidateMean": -0.0004066168276917012,
+          "finite": true,
+          "passed": true
+        },
+        "left": {
+          "count": 983040,
+          "nrmse": 0.0018026922026467274,
+          "snrDb": 54.88156839515197,
+          "pearson": 0.999998375103719,
+          "relativeRmsDrift": 0.000011641613892977162,
+          "relativeEnergyDrift": 0.000023283092258544012,
+          "relativePeakDrift": 0.00004844372210715888,
+          "relativeDcOffsetDrift": 5.5189783807314256e-8,
+          "relativeMaximumAbsoluteError": 0.008118983595985577,
+          "maximumAbsoluteError": 0.007781829684972763,
+          "controlRms": 0.17059490475582553,
+          "candidateRms": 0.17059291875581226,
+          "controlPeak": 0.9584733843803406,
+          "candidatePeak": 0.9585198163986206,
+          "controlMean": -0.0013069943129626746,
+          "candidateMean": -0.0013070037280585867,
+          "finite": true,
+          "passed": true
+        },
+        "right": {
+          "count": 983040,
+          "nrmse": 0.001886140203474897,
+          "snrDb": 54.48852055506643,
+          "pearson": 0.9999982212237118,
+          "relativeRmsDrift": 0.000003899861605289913,
+          "relativeEnergyDrift": 0.00000779970800154406,
+          "relativePeakDrift": 0.00011982833106238063,
+          "relativeDcOffsetDrift": 0.0000028710608651781596,
+          "relativeMaximumAbsoluteError": 0.008193070210790384,
+          "maximumAbsoluteError": 0.007315292954444885,
+          "controlRms": 0.15375626338157156,
+          "candidateRms": 0.15375566375342342,
+          "controlPeak": 0.8928634524345398,
+          "candidatePeak": 0.8929704427719116,
+          "controlMean": 0.0004942115162657551,
+          "candidateMean": 0.0004937700726751843,
+          "finite": true,
+          "passed": true
+        }
+      },
+      "waveformPassed": true,
+      "passed": true
+    },
+    "BA": {
+      "order": "BA",
+      "timing": {
+        "shippedK7Ms": 4754.300000309944,
+        "candidateK7Ms": 2243.9999985694885,
+        "k7Speedup": 2.118672015748988,
+        "k7SavingMs": 2510.3000017404556,
+        "shippedDecoderSubmitThroughDrainMs": 6915.700000286102,
+        "candidateDecoderSubmitThroughDrainMs": 4338.799996495247,
+        "shippedOuterWindowWallMs": 8212.799999952316,
+        "candidateOuterWindowWallMs": 5622.5,
+        "k7SpeedupPassed": true,
+        "k7SavingPassed": true,
+        "decoderNoSlowerPassed": true,
+        "outerNoSlowerPassed": true
+      },
+      "metrics": {
+        "joint": {
+          "count": 1966080,
+          "nrmse": 0.0018405635694897268,
+          "snrDb": 54.70098356541297,
+          "pearson": 0.9999983061725438,
+          "relativeRmsDrift": 0.000008171561893529713,
+          "relativeEnergyDrift": 0.000016343057012592563,
+          "relativePeakDrift": 0.00004844372210715888,
+          "relativeDcOffsetDrift": 0.0000013881631696440805,
+          "relativeMaximumAbsoluteError": 0.008118983595985577,
+          "maximumAbsoluteError": 0.007781829684972763,
+          "controlRms": 0.16239398088862908,
+          "candidateRms": 0.1623926538761631,
+          "controlPeak": 0.9584733843803406,
+          "candidatePeak": 0.9585198163986206,
+          "controlMean": -0.0004063913983484597,
+          "candidateMean": -0.0004066168276917012,
+          "finite": true,
+          "passed": true
+        },
+        "left": {
+          "count": 983040,
+          "nrmse": 0.0018026922026467274,
+          "snrDb": 54.88156839515197,
+          "pearson": 0.999998375103719,
+          "relativeRmsDrift": 0.000011641613892977162,
+          "relativeEnergyDrift": 0.000023283092258544012,
+          "relativePeakDrift": 0.00004844372210715888,
+          "relativeDcOffsetDrift": 5.5189783807314256e-8,
+          "relativeMaximumAbsoluteError": 0.008118983595985577,
+          "maximumAbsoluteError": 0.007781829684972763,
+          "controlRms": 0.17059490475582553,
+          "candidateRms": 0.17059291875581226,
+          "controlPeak": 0.9584733843803406,
+          "candidatePeak": 0.9585198163986206,
+          "controlMean": -0.0013069943129626746,
+          "candidateMean": -0.0013070037280585867,
+          "finite": true,
+          "passed": true
+        },
+        "right": {
+          "count": 983040,
+          "nrmse": 0.001886140203474897,
+          "snrDb": 54.48852055506643,
+          "pearson": 0.9999982212237118,
+          "relativeRmsDrift": 0.000003899861605289913,
+          "relativeEnergyDrift": 0.00000779970800154406,
+          "relativePeakDrift": 0.00011982833106238063,
+          "relativeDcOffsetDrift": 0.0000028710608651781596,
+          "relativeMaximumAbsoluteError": 0.008193070210790384,
+          "maximumAbsoluteError": 0.007315292954444885,
+          "controlRms": 0.15375626338157156,
+          "candidateRms": 0.15375566375342342,
+          "controlPeak": 0.8928634524345398,
+          "candidatePeak": 0.8929704427719116,
+          "controlMean": 0.0004942115162657551,
+          "candidateMean": 0.0004937700726751843,
+          "finite": true,
+          "passed": true
+        }
+      },
+      "waveformPassed": true,
+      "passed": true
+    }
+  },
+  "deterministic": {
+    "candidate": {
+      "comparedElementCount": 1966080,
+      "mismatchCount": 0
+    },
+    "shipped": {
+      "comparedElementCount": 1966080,
+      "mismatchCount": 0
+    },
+    "passed": true
+  },
+  "runtimeEvents": [],
+  "cleanup": {
+    "cleanupRunsAfterReceiptConstruction": true,
+    "bothRuntimesOnePackageAndSharedWorkspaceOwned": true
+  }
+}

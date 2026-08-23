@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "status": "accepted-browser-softmax-v1",
+  "browserSoftmaxValidation": {
+    "oracleId": "ace-browser-softmax-v1",
+    "reference": "scripts/planner_sampling_reference.py:Decimal.exp",
+    "errorBounds": {
+      "normalExpRelative": 6.1e-8,
+      "subnormalExpAbsolute": 7.1e-46,
+      "realisticWeightAbsolute": 3e-7,
+      "realisticDistributionL1": 1e-5,
+      "realisticTopPKeepCountDelta": 4,
+      "realisticTopPRetainedMass": 0.0001
+    },
+    "realisticSparse": {
+      "vocabularySize": 217204,
+      "firstSemanticTokenId": 151669,
+      "semanticTokenCount": 64000,
+      "topP": 0.9,
+      "temperature": 0.85,
+      "topPKeepSha256": "7f62f18a4c8f57711a411dc3effbe098ab3bbc7f4112419836b935a72b8cc6fd",
+      "weightWordsSha256": "456fc6404f3ed324f73e65e52050fe9c68e2b237b48fb6fdd3275eb67302cd36",
+      "positiveWeightCount": 9062,
+      "browserKeepCount": 9062,
+      "decimalKeepCount": 9066
+    }
+  },
+  "vectors": [
+    {
+      "id": "cfg-mask-penalty-top-k-top-p",
+      "conditional": [12.0, 1.0, 3.0, -2.0, 3.0, 0.5, -8.0, 1000.0],
+      "unconditional": [9.0, 0.5, 1.0, -1.0, 2.0, 0.25, -4.0, -1000.0],
+      "allowedTokenIds": [1, 2, 3, 4, 5, 6],
+      "seenTokenIds": [2, 2, 3],
+      "guidanceScale": 2.0,
+      "repetitionPenalty": 1.25,
+      "topK": 4,
+      "topP": 0.8,
+      "temperature": 0.85,
+      "word": 305419896,
+      "expected": {
+        "combinedWords": [4286578688, 1069547520, 1084227584, 3225419776, 1082130432, 1061158912, 3242196992, 4286578688],
+        "penalizedWords": [4286578688, 1069547520, 1082130432, 3228565504, 1082130432, 1061158912, 3242196992, 4286578688],
+        "postTopKFinite": [1, 2, 4, 5],
+        "postTopPFinite": [2, 4],
+        "weightWords": [0, 0, 1056964608, 0, 1056964608, 0, 0, 0],
+        "sampledTokenId": 2
+      }
+    },
+    {
+      "id": "stable-tie-top-p-boundary",
+      "conditional": [0.0, 0.0, 0.0, 0.0],
+      "allowedTokenIds": [0, 1, 2, 3],
+      "seenTokenIds": [],
+      "guidanceScale": 1.0,
+      "repetitionPenalty": 1.0,
+      "topK": 0,
+      "topP": 0.5,
+      "temperature": 1.0,
+      "word": 4294967295,
+      "expected": {
+        "combinedWords": [0, 0, 0, 0],
+        "penalizedWords": [0, 0, 0, 0],
+        "postTopKFinite": [0, 1, 2, 3],
+        "postTopPFinite": [0, 1, 2],
+        "weightWords": [1051372203, 1051372203, 1051372203, 0],
+        "sampledTokenId": 2
+      }
+    },
+    {
+      "id": "adversarial-exp-dynamic-range",
+      "conditional": [0.0, -0.0000001, -0.6931471824645996, -10.0, -80.0, -103.9, -1000.0, -3.0],
+      "allowedTokenIds": [0, 1, 2, 3, 4, 5, 6, 7],
+      "seenTokenIds": [],
+      "guidanceScale": 1.0,
+      "repetitionPenalty": 1.0,
+      "topK": 0,
+      "topP": 0.99999994,
+      "temperature": 0.7,
+      "word": 4294967295,
+      "expected": {
+        "combinedWords": [0, 3017195413, 3207688728, 3240099840, 3265265664, 3268398285, 3296329728, 3225419776],
+        "penalizedWords": [0, 3017195413, 3207688728, 3240099840, 3265265664, 3268398285, 3296329728, 3225419776],
+        "postTopKFinite": [0, 1, 2, 3, 4, 5, 6, 7],
+        "postTopPFinite": [0, 1, 2, 3, 7],
+        "weightWords": [1054254785, 1054254784, 1042250816, 881632596, 0, 0, 0, 1002247464],
+        "sampledTokenId": 7
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPT-0051 K7 K4 row reuse 16×64</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 900px; }
+      fieldset { display: grid; gap: 0.4rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      button { font: inherit; padding: 8px 12px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0051 K7 K4 row reuse 16×64</h1>
+    <p>
+      Preparation covers all four production channel tiers at dilations 1, 3,
+      and 9 plus signed-zero, cancellation, finite-range, and tail-Cin cases.
+      It proves native-to-packed-to-native U16 identity, then runs OPT-0024 and
+      the 16-row × 64-output candidate twice and compares every raw FP16 output
+      bit with qNaN prefill, finite checks, and adjacent canaries. Packing is
+      completed before READY and is never timed.
+    </p>
+    <p>
+      After READY, wait at least 30 seconds and make exactly one external
+      <code>notifyutil -g com.apple.system.thermalpressurelevel</code> check.
+      Continue only at level 0. The one button runs balanced timing; every tier
+      must be non-slower and the production-weighted score must reach 1.25×.
+    </p>
+    <p id="progress" role="status">preparing 12 production and four adversarial exact cases…</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external level-0 check after a 30-second wait</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Command
+        <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Wait start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Check time (epoch ms)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" readonly />
+      </label>
+      <label>
+        Maximum observation gap (ms; blank derives exact wait)
+        <input name="thermalMaximumObservationGapMilliseconds" inputmode="decimal" />
+      </label>
+      <button id="run" type="button" disabled>Run balanced OPT-0024/16×64 timing</button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0051-vae-k7-k4-row-reuse-16x64.ts"></script>
+  </body>
+</html>

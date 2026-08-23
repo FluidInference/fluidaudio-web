@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 FP16 VAE Conv1D correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 76rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only: compile both shader-f16 scalar-oracle and portable
+      workgroup kernels, execute every planned range FIFO with a drain and real
+      queue-empty turn, then compare every FP16 output bit as U16 or every final
+      FP32 output bit as U32. The run includes the complete synthetic block-0
+      2,560-frame/C1024 operation with all 80 ranges. It makes no timing,
+      thermal, throughput, quality, listening, or production-integration claim.
+    </p>
+    <button id="start" type="button">Run OPT-0011 Conv1D correctness</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0011-vae-conv1d-fp16-ab.ts"></script>
+  </body>
+</html>

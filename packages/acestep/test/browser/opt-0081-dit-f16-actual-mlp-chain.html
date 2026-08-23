@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0081 DiT typed-F16 actual MLP-chain gate</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    body { margin: 1rem; max-width: 88rem; }
+    p { max-width: 82rem; }
+    fieldset { display: grid; gap: 0.45rem; margin-block: 1rem; max-width: 76rem; }
+    label { display: grid; grid-template-columns: 38rem minmax(18rem, 1fr); gap: 0.5rem; }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0081 typed-F16 actual MLP-chain gate</h1>
+  <p>
+    Preparation executes the real M2250 MLP prefix with one shared normalized
+    input and the exact packed gate, up, and down weights. Arms A, B, and C run
+    in A,A,B,B,C,C order at each of five checkpoints. Every candidate
+    <code>mlpModulated</code> and <code>gatedActivation</code> U16 must equal an
+    independent round-to-nearest-even cast of A's current FP32 producer output;
+    every gate, up, and down U32 must match all six registered comparisons.
+    Complete overwrite, signed zero, finite output, rows 2240–2249, and adjacent
+    guards are mandatory before timing is enabled.
+  </p>
+  <p>
+    Start one absolute-cadence external 1,000 ms thermal logger before
+    preparation. After READY, enter a fresh continuous level-0 slice of at
+    least 30 seconds and run exactly once. The eight registered arm orders are
+    ABC, CBA, BCA, ACB, CAB, BAC, ABC, CBA. Every arm occurrence runs four
+    fixed panels in order: actual mlpModulated→gate, actual
+    mlpModulated→up, actual gatedActivation→down from those gate/up results,
+    and the complete five-dispatch chain. Producer work is inside every panel's
+    one timestamp pair, compute pass, command buffer, submit, and matching
+    drain. Allocation, compilation, correctness readback, hashing, and
+    serialization stay outside timing. Arm C remains diagnostic and cannot be
+    selected under OPT-0081; only B can authorize the next diagnostic stage.
+    Keep the trace running through cleanup and never retry unchanged work.
+  </p>
+  <div id="progress" role="status" aria-live="polite">
+    preparing five staged raw checkpoints for the three actual MLP chains
+  </div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch slice from the continuous trace</legend>
+    <label>Source
+      <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run one registered eight-round four-panel actual MLP gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize and expose the downloadable receipt without retry
+    </button>
+  </fieldset>
+
+  <button id="download" type="button" disabled>Download compact JSON receipt</button>
+  <pre id="result">not run</pre>
+  <script type="module" src="./opt-0081-dit-f16-actual-mlp-chain.ts"></script>
+</body>
+</html>

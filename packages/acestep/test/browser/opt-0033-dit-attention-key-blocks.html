@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPT-0033 query8 K/V key blocking</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 900px; }
+      fieldset { display: grid; gap: 0.4rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      button { font: inherit; padding: 8px 12px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0033 query8 K/V key blocking</h1>
+    <p>
+      Preparation compiles row-staged query8 plus key-block8 and key-block16,
+      then compares all 4,608,000 F32 output words with qNaN prefill and
+      adjacent canaries. No timed GPU work runs before the button.
+    </p>
+    <p>
+      After READY, provide one continuous 30-second nominal thermal interval.
+      The button runs three balanced A/B/C rounds through queue drain. The best
+      blocked arm must reach 1.35x query8; this primitive cannot select
+      production.
+    </p>
+    <p id="progress" role="status">preparing exact M2250 gate…</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>Run balanced A/B/C timing</button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0033-dit-attention-key-blocks.ts"></script>
+  </body>
+</html>

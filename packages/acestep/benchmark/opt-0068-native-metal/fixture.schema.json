@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ace-opt-0068-m2250-native-fixture-v1",
+  "title": "OPT-0068 authenticated actual M2250 dense fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "authority", "evaluationOutput", "activations",
+    "acceptedWebGPUOutputs", "cases"
+  ],
+  "properties": {
+    "schema": { "const": "ace-opt-0068-m2250-native-fixture-v1" },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experimentId", "aceSourceCommit", "aceSnapshot", "mainManifestSha256",
+        "goldenFixtureManifestSha256", "packageManifestSha256",
+        "packageConverterRevision", "requestId", "requestSha256",
+        "requestByteLength", "plannerEnabled",
+        "durationSeconds", "sampler", "dcwMode", "lowFrequencyStrength",
+        "highFrequencyStrength", "evaluation", "layer", "conditionTokens",
+        "expectedEvaluation0Sha256", "captureCommit", "captureSourceSha256"
+      ],
+      "properties": {
+        "experimentId": { "const": "OPT-0068" },
+        "aceSourceCommit": { "const": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0" },
+        "aceSnapshot": { "const": "19671f406d603126926c1b7e2adc169acbcade22" },
+        "mainManifestSha256": { "const": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6" },
+        "goldenFixtureManifestSha256": { "const": "cb9e0546c58be371581f302b8cd3943c3209ca1dcec296b75838ebf01c0cf7eb" },
+        "packageManifestSha256": { "const": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f" },
+        "packageConverterRevision": { "const": 7 },
+        "requestId": { "const": "ace-turbo-v1-correctness" },
+        "requestSha256": { "const": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f" },
+        "requestByteLength": { "const": 366 },
+        "plannerEnabled": { "const": false },
+        "durationSeconds": { "const": 180 },
+        "sampler": { "const": "shift-3-euler-8-evaluations" },
+        "dcwMode": { "const": "double-haar" },
+        "lowFrequencyStrength": { "const": 0.05 },
+        "highFrequencyStrength": { "const": 0.02 },
+        "evaluation": { "const": 0 },
+        "layer": { "const": 0 },
+        "conditionTokens": { "const": 98 },
+        "expectedEvaluation0Sha256": { "const": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286" },
+        "captureCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "captureSourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "evaluationOutput": { "$ref": "#/$defs/hashedFile" },
+    "activations": {
+      "type": "array", "minItems": 6, "maxItems": 6,
+      "items": { "$ref": "#/$defs/hashedFile" }
+    },
+    "acceptedWebGPUOutputs": {
+      "type": "array", "minItems": 9, "maxItems": 9,
+      "items": { "$ref": "#/$defs/hashedFile" }
+    },
+    "cases": {
+      "type": "array", "minItems": 9, "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "activation", "acceptedWebGPUOutput", "weightTensor",
+          "rows", "inner", "columns"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "activation": { "type": "string" },
+          "acceptedWebGPUOutput": { "type": "string" },
+          "weightTensor": { "type": "string" },
+          "rows": { "const": 2250 },
+          "inner": { "enum": [2048, 6144] },
+          "columns": { "enum": [1024, 2048, 6144] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "path", "dtype", "shape", "elementCount", "byteLength", "sha256",
+        "finiteCount", "nonzeroCount", "minimum", "maximum", "headF32Bits",
+        "tailF32Bits"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "pattern": "^[^/]+$" },
+        "dtype": { "const": "float32-le" },
+        "shape": {
+          "oneOf": [
+            {
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [
+                { "const": 2250 },
+                { "enum": [1024, 2048, 6144] }
+              ]
+            },
+            {
+              "type": "array", "minItems": 1, "maxItems": 1,
+              "prefixItems": [{ "const": 288000 }]
+            }
+          ]
+        },
+        "elementCount": { "type": "integer", "minimum": 288000, "maximum": 13824000 },
+        "byteLength": { "type": "integer", "minimum": 1152000, "maximum": 55296000 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "finiteCount": { "type": "integer", "minimum": 288000, "maximum": 13824000 },
+        "nonzeroCount": { "type": "integer", "minimum": 1, "maximum": 13824000 },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "headF32Bits": {
+          "type": "array", "minItems": 8, "maxItems": 8,
+          "items": { "type": "string", "pattern": "^[0-9a-f]{8}$" }
+        },
+        "tailF32Bits": {
+          "type": "array", "minItems": 8, "maxItems": 8,
+          "items": { "type": "string", "pattern": "^[0-9a-f]{8}$" }
+        }
+      }
+    }
+  }
+}

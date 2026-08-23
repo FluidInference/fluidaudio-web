@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0058 dynamic-int8 DP4a dense screen</title>
+  <style>
+    body { font: 14px system-ui; margin: 24px; max-width: 1000px; }
+    fieldset { display: grid; gap: 6px; margin: 16px 0; }
+    label { display: grid; grid-template-columns: 320px 1fr; gap: 8px; }
+    button, input { font: inherit; }
+    button { padding: 8px 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0058 dynamic-int8 DP4a dense screen</h1>
+  <p id="progress">proving stock WGSL compilation and preparing exact/K4/G32/G64/G128 correctness…</p>
+  <p>After READY, begin one fresh nominal idle wait of at least 30 seconds. Then run <code>notifyutil -g com.apple.system.thermalpressurelevel</code> exactly once, enter that single level-0 observation below, and immediately click the one timing button.</p>
+  <fieldset id="thermal-gate" disabled>
+    <legend>One-check thermal gate</legend>
+    <input name="thermalCommand" type="hidden" value="notifyutil -g com.apple.system.thermalpressurelevel">
+    <label>wait started (epoch ms)<input name="waitStartedAtEpochMilliseconds" inputmode="numeric"></label>
+    <label>checked (epoch ms)<input name="checkedAtEpochMilliseconds" inputmode="numeric"></label>
+    <label>check count<input name="checkCount" inputmode="numeric" value="1"></label>
+    <label>thermal level<input name="thermalLevel" inputmode="numeric" value="0"></label>
+  </fieldset>
+  <button id="run" type="button" disabled>Run one balanced exact/K4/DP4a timing gate</button>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0058-dit-dense-int8-dp4a.ts"></script>
+</body>
+</html>

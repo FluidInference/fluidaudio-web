@@ -1,0 +1,350 @@
+{
+  "schema": "ace-opt-0080-full-graph-evidence-v1",
+  "experiment": "OPT-0080",
+  "stage": "full-m2250-confirmation",
+  "status": "passed",
+  "disposition": "production-dit-integration-authorized",
+  "passed": true,
+  "identity": {
+    "run": {
+      "coreCommit": "2a9be026c6f36363ca73d44fb3ede9c49b5aaacc",
+      "harnessCommit": "2a9be026c6f36363ca73d44fb3ede9c49b5aaacc",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Codex in-app Chromium 151.0.0.0",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "evaluationSliceEvidenceSha256": "a2ad4320f22be728898668d76b84524cd2957cc1e08a588f36a0f3714b183fd9",
+    "requestSha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+    "requestByteLength": 366,
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "denseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "denseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+    "attentionRuntimeProfile": "opt-0070-fixed32-quad-query32-full-self-production-v1",
+    "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+    "descriptorTableMemberCount": 6833
+  },
+  "artifacts": {
+    "committedCompactResult": "optimization/results/OPT-0080/full-graph.json",
+    "ignoredArtifactDirectory": "optimization/artifacts/OPT-0080/full",
+    "authoritativeBrowserReceipt": "full-graph-result.json",
+    "files": {
+      "A-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/full/A-gate.json",
+        "byteLength": 6464,
+        "sha256": "484e61b65799150788b9bf747c564a57ed33e53bb1c360c044e347e22aeafd61"
+      },
+      "A-index.json": {
+        "location": "optimization/artifacts/OPT-0080/full/A-index.json",
+        "byteLength": 106,
+        "sha256": "d710d40913b03effa79381d7ec4c4ada87f5e6e5bd4f8593c6a5121e747ba812"
+      },
+      "A-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/full/A-selected.jsonl",
+        "byteLength": 9639,
+        "sha256": "9b43a74f012df8a676f72c5d909449824eb5d142220fddfad09dee118dd1ebbd"
+      },
+      "A-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/full/A-thermal.jsonl",
+        "byteLength": 11277,
+        "sha256": "99e40d076be4b0d0492df669cfa323cb56858716d10ed0e60d8f6422c8ef4711"
+      },
+      "A-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/full/A-trace.json",
+        "byteLength": 15482,
+        "sha256": "a16c09e747e25bb3713d05f52958467a1ad0b2a85b89b5193a685519492eb917"
+      },
+      "B-gate.json": {
+        "location": "optimization/artifacts/OPT-0080/full/B-gate.json",
+        "byteLength": 5009,
+        "sha256": "ca24b0940ddd407509f22d37830c1c2ddfa8a6c8e92b6c9753c64746ce05378f"
+      },
+      "B-index.json": {
+        "location": "optimization/artifacts/OPT-0080/full/B-index.json",
+        "byteLength": 106,
+        "sha256": "b68872e93245126a18591640deb137de27e9128ca73c5d37e8e4c1bfeb00f208"
+      },
+      "B-selected.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/full/B-selected.jsonl",
+        "byteLength": 9639,
+        "sha256": "ab04f9c96f795f3f7fcfbb0caafa9349841d6b867e815cd91fa3824198eee6d4"
+      },
+      "B-thermal.jsonl": {
+        "location": "optimization/artifacts/OPT-0080/full/B-thermal.jsonl",
+        "byteLength": 11403,
+        "sha256": "11c7b0eb07d7e6ce2eedc43257c39b45297e023f9f1bd1d2973b72ba319452e3"
+      },
+      "B-trace.json": {
+        "location": "optimization/artifacts/OPT-0080/full/B-trace.json",
+        "byteLength": 15482,
+        "sha256": "a54039abd3775a9303ecfec1a6d69581b117b268114d0c5b9f1dcd6f4ce40c33"
+      },
+      "full-graph-result.json": {
+        "location": "optimization/artifacts/OPT-0080/full/full-graph-result.json",
+        "byteLength": 4518842,
+        "sha256": "3cfa6ede4d93e71f4bdf12a3cbf35a7cdd670551bb2753ef3b984fb08befda83"
+      }
+    },
+    "note": "Every ignored full-graph browser receipt, raw thermal trace, selected suffix, selection index, parsed gate, and parsed through-cleanup trace is bound by exact byte length and SHA-256. This compact result deliberately omits thermal observations, heartbeat gaps, and per-fence/per-epoch arrays."
+  },
+  "correctness": {
+    "passed": true,
+    "excludedFromTiming": true,
+    "profiles": [
+      "depth1-epoch1",
+      "opt-0080-depth2-epoch4"
+    ],
+    "evaluationCount": 8,
+    "evaluationElementsPerTap": 288000,
+    "comparedEvaluationRawU32Words": 2304000,
+    "evaluationRawU32MismatchCount": 0,
+    "finalLatentRawU32MismatchCount": 0,
+    "finalTapToFinalReadbackRawU32MismatchCount": 0,
+    "everyTapMatchedAcceptedHash": true,
+    "evaluationSha256": [
+      "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286",
+      "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331",
+      "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca",
+      "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543",
+      "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2",
+      "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e",
+      "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237",
+      "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+    ],
+    "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+    "descriptorSequenceExact": true,
+    "graphCommandBufferCount": 2553,
+    "evaluationTapInCommandCopyCountPerArm": 8,
+    "evaluationTapExtraCommandBufferCount": 0,
+    "evaluationTapExtraQueueDrainCount": 0
+  },
+  "topology": {
+    "phaseCommandBufferCounts": [
+      25,
+      316,
+      316,
+      316,
+      316,
+      316,
+      316,
+      316,
+      316
+    ],
+    "common": {
+      "graphCommandBufferCount": 2553,
+      "readbackCommandBufferCount": 1,
+      "totalCommandBufferCount": 2554,
+      "commandBuffersSubmitted": 2554,
+      "completionFenceRequestedCount": 2554,
+      "completionFenceSettledCount": 2554,
+      "completionFenceRejectedCount": 0,
+      "pendingDescriptorCountAfterCleanup": 0,
+      "graphToReadbackRequestedIdleMs": 1
+    },
+    "control": {
+      "schedulingProfile": "depth1-epoch1",
+      "graphTrueQueueDrainCount": 2553,
+      "totalTrueQueueDrainCount": 2554,
+      "graphCompletionEpochCount": 2553,
+      "graphCooperativeIdleTurns": 2552,
+      "totalCooperativeIdleTurns": 2553,
+      "graphRequestedCooperativeIdleMs": 2552,
+      "totalRequestedCooperativeIdleMs": 2553,
+      "maximumOutstandingCommandBuffers": 1,
+      "maximumPendingDescriptorCount": 1
+    },
+    "candidate": {
+      "schedulingProfile": "opt-0080-depth2-epoch4",
+      "graphTrueQueueDrainCount": 639,
+      "totalTrueQueueDrainCount": 640,
+      "graphCompletionEpochCount": 639,
+      "graphCooperativeIdleTurns": 638,
+      "totalCooperativeIdleTurns": 639,
+      "graphRequestedCooperativeIdleMs": 638,
+      "totalRequestedCooperativeIdleMs": 639,
+      "maximumOutstandingCommandBuffers": 2,
+      "maximumPendingDescriptorCount": 2
+    }
+  },
+  "cancellation": {
+    "scope": "actual-dit-full-graph",
+    "schedulingProfile": "opt-0080-depth2-epoch4",
+    "abortedCommandBufferIndex": 0,
+    "outstandingSuccessorsAtAbort": 1,
+    "prefetchedTailCommandCount": 1,
+    "backfillAfterAbortCount": 0,
+    "publicProgressAfterAbortCount": 0,
+    "completedCommandBufferCountAtAbort": 1,
+    "completionFenceRequestedCountAtAbort": 2,
+    "checkpointCount": 0,
+    "unhandledRejectionCount": 0,
+    "terminalSettlementBeforeGenerationRejection": true,
+    "graphAndModelDestroyAwaitedBeforeGenerationRejection": true,
+    "backendDisposeAwaitedAfterGenerationRejection": true,
+    "abortObservationThroughRejectionAndCleanupMs": 20.699999928474426
+  },
+  "performance": {
+    "fixedOrder": [
+      "A-depth1-epoch1",
+      "B-opt-0080-depth2-epoch4"
+    ],
+    "samples": [
+      {
+        "armId": "A",
+        "schedulingProfile": "depth1-epoch1",
+        "precomputeWallMs": 513.3999999761581,
+        "evaluationWallMs": [
+          7278.5,
+          7202,
+          7283.899999976158,
+          7322.899999976158,
+          7470.600000023842,
+          7878.300000071526,
+          8002.099999904633,
+          8091
+        ],
+        "evaluationWallSumMs": 60529.299999952316,
+        "graphWallMs": 61042.699999928474,
+        "graphToReadbackObservedIdleMs": 1.600000023841858,
+        "readbackFenceMs": 57.200000047683716,
+        "readbackMapMs": 0.2999999523162842,
+        "backendWallMs": 61102.200000047684,
+        "graphEpochWallSumMs": 56805.99999690056
+      },
+      {
+        "armId": "B",
+        "schedulingProfile": "opt-0080-depth2-epoch4",
+        "precomputeWallMs": 242.79999995231628,
+        "evaluationWallMs": [
+          6730.5,
+          6490.799999952316,
+          6637.900000095367,
+          6768.899999976158,
+          7667.799999952316,
+          6635,
+          6202.399999976158,
+          6229.5
+        ],
+        "evaluationWallSumMs": 53362.799999952316,
+        "graphWallMs": 53605.59999990463,
+        "graphToReadbackObservedIdleMs": 0.9000000953674316,
+        "readbackFenceMs": 25.700000047683716,
+        "readbackMapMs": 0.5,
+        "backendWallMs": 53633.10000002384,
+        "graphEpochWallSumMs": 52567.29999816418
+      }
+    ],
+    "graphImproved": true,
+    "backendImproved": true,
+    "graphSpeedup": 1.1387373707231534,
+    "graphSavingMs": 7437.100000023842,
+    "evaluationWallSumSpeedup": 1.1342976755343874,
+    "evaluationWallSumSavingMs": 7166.5,
+    "heartbeatAbsolutePassed": true,
+    "heartbeatRelativePassed": true,
+    "wallBoundaryConsistent": true,
+    "classification": "passed",
+    "passed": true
+  },
+  "thermal": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "thermalStartPassed": true,
+    "arms": {
+      "A": {
+        "nominalGateDurationMs": 56788,
+        "gateObservationCount": 63,
+        "gateMaximumPollGapMs": 923,
+        "throughCleanupObservationCount": 153,
+        "throughCleanupMaximumPollGapMs": 940,
+        "throughCleanupNonNominalObservationCount": 52,
+        "throughCleanupTransitions": [
+          {
+            "atEpochMilliseconds": 1787317108409,
+            "level": 0
+          },
+          {
+            "atEpochMilliseconds": 1787317143960,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1787317154904,
+            "level": 2
+          }
+        ],
+        "postCleanupTraceCoverageMs": 19759
+      },
+      "B": {
+        "nominalGateDurationMs": 43068,
+        "gateObservationCount": 48,
+        "gateMaximumPollGapMs": 923,
+        "throughCleanupObservationCount": 153,
+        "throughCleanupMaximumPollGapMs": 923,
+        "throughCleanupNonNominalObservationCount": 71,
+        "throughCleanupTransitions": [
+          {
+            "atEpochMilliseconds": 1787317310611,
+            "level": 0
+          },
+          {
+            "atEpochMilliseconds": 1787317342501,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1787317353420,
+            "level": 2
+          }
+        ],
+        "postCleanupTraceCoverageMs": 40695
+      }
+    },
+    "interpretation": "Both arms satisfied the frozen independent nominal-start gate. Both later heated to levels 1 and 2; those through-cleanup transitions are retained and disclosed and did not invalidate the frozen start gate."
+  },
+  "responsiveness": {
+    "intervalMs": 50,
+    "control": {
+      "gapCount": 1223,
+      "maximumGapMs": 52.200000047683716,
+      "p99GapMs": 52.10000002384186
+    },
+    "candidate": {
+      "gapCount": 1074,
+      "maximumGapMs": 52.200000047683716,
+      "p99GapMs": 52.10000002384186
+    },
+    "absolutePassed": true,
+    "relativePassed": true
+  },
+  "lifecycle": {
+    "oneFifoGraphOwnerPerArm": true,
+    "sequentialNonOverlappingPackageOwnership": true,
+    "noCrossArmBackendOrDeviceReuse": true,
+    "graphCompiledBeforeEveryThermalGate": true,
+    "distinctThermalTracePerArm": true,
+    "oneCompletionFencePerPhysicalCommandBuffer": true,
+    "terminalSettlementBeforeRelease": true,
+    "allBackendsAndDevicesDisposed": true,
+    "executedEvaluationCountPerArm": 8,
+    "timedEvaluationSnapshotCount": 0,
+    "timedReadbackCount": 1,
+    "rejectedSetupAttemptCount": 0
+  },
+  "scope": {
+    "productionDefaultChanged": false,
+    "productionIntegrationPerformed": false,
+    "productionDitIntegrationAuthorized": true,
+    "packageBytesChanged": false,
+    "modelMathChanged": false,
+    "timedCommandBufferContentsChanged": false,
+    "untimedCorrectnessCommandBuffersAddedEvaluationTapCopies": true,
+    "commandBufferCoalescing": false,
+    "uniformPoolUsedByCandidate": false,
+    "vaeExecuted": false,
+    "plannerExecuted": false,
+    "listeningClaim": false,
+    "underOneMinuteClaim": false
+  },
+  "decision": "full-graph-pass-authorize-production-dit-integration"
+}

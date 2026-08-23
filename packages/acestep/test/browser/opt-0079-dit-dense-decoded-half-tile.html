@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0079 DiT dense decoded half-tile multicast primitive gate</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    body { margin: 1rem; max-width: 88rem; }
+    p { max-width: 82rem; }
+    fieldset { display: grid; gap: 0.45rem; margin-block: 1rem; max-width: 76rem; }
+    label { display: grid; grid-template-columns: 38rem minmax(18rem, 1fr); gap: 0.5rem; }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0079 exact dense decoded half-tile multicast gate</h1>
+  <p>
+    Preparation authenticates OPT-0009 and the frozen M64/N128/K32/WG256
+    typed-FP16 decoded-panel candidate on all four exact M2250 production
+    shapes. Every output U32 is
+    compared with deterministic current and candidate reruns; qNaN overwrite, the
+    partial-M tail, adjacent guards, finite-class identity, GPU errors, device
+    loss, and lifecycle accounting all fail closed before timing is enabled.
+  </p>
+  <p>
+    Start one absolute-cadence external 1,000 ms thermal logger before
+    preparation. After READY, enter a fresh continuous level-0 slice of at
+    least 30 seconds and run exactly once. Eight rounds alternate arm order and
+    rotate all four shapes. Each timestamp sample is one compute pass, command
+    buffer, submit, and matching queue drain. Keep the trace running through
+    cleanup; unchanged work is never retried.
+  </p>
+  <p>
+    The frozen pass requires every shape faster on mean and median, at least
+    seven of eight paired wins, at least 1.15x and 25.0 ms complete-score
+    savings on both GPU and wall mean and median, a 4,800 ms projection, and
+    wall/GPU savings agreement within 0.75x..1.25x.
+  </p>
+  <div id="progress" role="status" aria-live="polite">
+    preparing full-output raw-U32 browser correctness
+  </div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch slice from the continuous trace</legend>
+    <label>Source
+      <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run one balanced eight-round exact dense gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize and expose the downloadable receipt without retry
+    </button>
+  </fieldset>
+
+  <button id="download" type="button" disabled>Download compact JSON receipt</button>
+  <pre id="result">not run</pre>
+  <script type="module" src="./opt-0079-dit-dense-decoded-half-tile.ts"></script>
+</body>
+</html>

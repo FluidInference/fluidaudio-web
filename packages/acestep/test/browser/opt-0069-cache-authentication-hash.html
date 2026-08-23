@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0069 warm-cache authentication hash screen</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 88rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 9rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      code, pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+      #result { max-height: 60rem; overflow: auto; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0069 — complete warm-cache SHA-256 A/B screen</h1>
+    <p>
+      This explicit-button, CPU-only benchmark authenticates the pinned main,
+      revision-7 dense-DiT, and revision-6 VAE manifests, derives their real
+      production acquisition subsets, and refuses to run unless all 158 logical
+      records resolve to the exact 156 marker-qualified OPFS payloads totaling
+      7,325,999,133 physical bytes. It never requests a GPU device and never
+      writes, removes, or republishes a cache entry.
+    </p>
+    <p>
+      The fixed balanced order is A1, B1, B2, A2, B3, A3, A4, B4. A is the
+      current sequential File.stream() plus AceIncrementalSha256 path with
+      at-most-4 MiB slices. B is sequential whole-file File.arrayBuffer() plus
+      WebCrypto SHA-256, with exactly one sub-128 MiB payload live and a
+      conservative transient bound below 384 MiB. Every arm gets a fresh worker,
+      independently repeats exact digest verification, and reports both the
+      complete path and the retained 102-file / 5,731,837,696-byte (5.7318 GB)
+      upload slice. The optional WASM arm is deliberately absent until a true
+      dependency-free four-file SIMD owner and its matched scalar reader control
+      are independently proven.
+    </p>
+    <p>
+      Before opening this page, run
+      <code>pnpm exec vite --host 127.0.0.1</code>. The URL must include complete
+      <code>coreCommit</code>, <code>harnessCommit</code>,
+      <code>machineModel</code>, <code>osVersion</code>, <code>osBuild</code>,
+      <code>browserVersion</code>, <code>cpuCoreCount</code>, and
+      <code>memoryBytes</code> query parameters. Do not start while another
+      benchmark, build, or heavy process is active.
+    </p>
+    <p>
+      For each READY arm, start a new thermal poll in Terminal:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py poll /tmp/opt69-ARM.jsonl</code>.
+      After at least 30 nominal seconds, use a second Terminal to build the gate:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py gate /tmp/opt69-ARM.jsonl /tmp/opt69-ARM-gate.json /tmp/opt69-ARM-index.json</code>.
+      Paste its stdout below and run immediately. Keep the original poll alive
+      through payload release and worker termination. Then stop it with Ctrl-C
+      and build the trace:
+      <code>uv run --python 3.13 optimization/artifacts/OPT-0067/thermal-poller.py trace /tmp/opt69-ARM.jsonl /tmp/opt69-ARM-gate.json /tmp/opt69-ARM-index.json /tmp/opt69-ARM-trace.json /tmp/opt69-ARM-selected.jsonl</code>.
+      Paste that stdout below. Replace ARM with the current arm ID and use fresh
+      paths for every arm; never reuse a gate or trace.
+    </p>
+
+    <button id="prepare" type="button">Authenticate inventory and prepare A1</button>
+    <div id="progress" role="status" aria-live="polite">idle — no payload read, hash, or GPU work</div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>Run complete inventory arm</button>
+      <button id="cancel-arm" type="button" disabled>Cancel current arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's continuous trace through payload release and worker termination</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record arm trace and continue</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0069-cache-authentication-hash.json">
+      Download complete receipt
+    </a>
+    <script type="module" src="./opt-0069-cache-authentication-hash.ts"></script>
+  </body>
+</html>

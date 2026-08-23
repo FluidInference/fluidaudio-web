@@ -1,0 +1,3300 @@
+{
+  "schema": "ace-opt-0062-quad-query-full-graph-gate-v1",
+  "experimentId": "OPT-0062",
+  "status": "failed",
+  "passed": false,
+  "identity": {
+    "run": {
+      "coreCommit": "aa46aa5f4f7b1f8ca15453c336418b9cfe471348",
+      "harnessCommit": "aa46aa5f4f7b1f8ca15453c336418b9cfe471348",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Google Chrome 151.0.7922.138",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "requestCanonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":180,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+    "requestSha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+    "requestByteLength": 366,
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "denseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+    "denseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+    "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+    "vaeRuntimeProfile": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+    "candidateRuntimeProfile": "opt-0062-fixed32-quad-query32-full-self-v1",
+    "candidateKernelSetId": "opt-0062-query8-plus-quad-query32-full-self-v1",
+    "candidateKernelId": "opt-0062-fixed32-quad-query32-full-self-v1",
+    "authenticatedWgslSha256": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6"
+  },
+  "correctness": {
+    "schema": "ace-opt-0062-correctness-gate-v1",
+    "actualLayerComparedU32": 442368000,
+    "actualLayerMismatchCount": 0,
+    "allEightEvaluationTapsRawU32Exact": true,
+    "finalLatentRawU32Exact": true,
+    "quadDeterministicRepeatExact": true,
+    "sequentialNonOverlappingArms": true,
+    "arms": {
+      "control": {
+        "role": "correctness-query8",
+        "arm": "query8",
+        "runtimeProfile": "fixed32-subgroup-query8-default",
+        "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+        "evaluationHashes": [
+          {
+            "evaluation": 0,
+            "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+          },
+          {
+            "evaluation": 1,
+            "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+          },
+          {
+            "evaluation": 2,
+            "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+          },
+          {
+            "evaluation": 3,
+            "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+          },
+          {
+            "evaluation": 4,
+            "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+          },
+          {
+            "evaluation": 5,
+            "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+          },
+          {
+            "evaluation": 6,
+            "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+          },
+          {
+            "evaluation": 7,
+            "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+          }
+        ],
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "routeProfile": null,
+        "actualLayerIdentity": null,
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 1,
+          "initializedOrdinal": 2,
+          "checkpointOrdinal": 3,
+          "generationCleanupCompletedOrdinal": 4,
+          "disposeStartedOrdinal": 5,
+          "disposeCompletedOrdinal": 6
+        },
+        "evidence": {
+          "initializationProgressEventCount": 158,
+          "generationProgressEventCount": 75778,
+          "diagnosticCodes": [
+            "ACE_PLANNER_CONDITIONING_RESOLVED",
+            "ACE_CONDITIONING_TENSORS_READY",
+            "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+          ],
+          "ditDestroyedBeforeCheckpoint": true,
+          "pipelineCleanupAwaitedBeforeDispose": true,
+          "backendAndDeviceDisposeAwaited": true,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "quad": {
+        "role": "correctness-quad",
+        "arm": "quad",
+        "runtimeProfile": "opt-0062-fixed32-quad-query32-full-self-v1",
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "evaluationHashes": [
+          {
+            "evaluation": 0,
+            "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+          },
+          {
+            "evaluation": 1,
+            "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+          },
+          {
+            "evaluation": 2,
+            "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+          },
+          {
+            "evaluation": 3,
+            "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+          },
+          {
+            "evaluation": 4,
+            "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+          },
+          {
+            "evaluation": 5,
+            "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+          },
+          {
+            "evaluation": 6,
+            "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+          },
+          {
+            "evaluation": 7,
+            "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+          }
+        ],
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "routeProfile": {
+          "runtimeProfileId": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "kernelSetId": "opt-0062-query8-plus-quad-query32-full-self-v1",
+          "quadQueryKernelId": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "authenticatedWgslSha256": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6",
+          "expectedQuadQueryRoutes": 96,
+          "quadQueryRoutes": 96,
+          "query8SlidingRoutes": 96,
+          "query8CrossRoutes": 192,
+          "query8OtherRoutes": 0,
+          "unintendedQuadQueryRoutes": 0,
+          "uniqueQuadQueryRouteIds": [
+            "ace-dit-eval-0-layer-1-self-full-attention",
+            "ace-dit-eval-0-layer-3-self-full-attention",
+            "ace-dit-eval-0-layer-5-self-full-attention",
+            "ace-dit-eval-0-layer-7-self-full-attention",
+            "ace-dit-eval-0-layer-9-self-full-attention",
+            "ace-dit-eval-0-layer-11-self-full-attention",
+            "ace-dit-eval-0-layer-13-self-full-attention",
+            "ace-dit-eval-0-layer-15-self-full-attention",
+            "ace-dit-eval-0-layer-17-self-full-attention",
+            "ace-dit-eval-0-layer-19-self-full-attention",
+            "ace-dit-eval-0-layer-21-self-full-attention",
+            "ace-dit-eval-0-layer-23-self-full-attention",
+            "ace-dit-eval-1-layer-1-self-full-attention",
+            "ace-dit-eval-1-layer-3-self-full-attention",
+            "ace-dit-eval-1-layer-5-self-full-attention",
+            "ace-dit-eval-1-layer-7-self-full-attention",
+            "ace-dit-eval-1-layer-9-self-full-attention",
+            "ace-dit-eval-1-layer-11-self-full-attention",
+            "ace-dit-eval-1-layer-13-self-full-attention",
+            "ace-dit-eval-1-layer-15-self-full-attention",
+            "ace-dit-eval-1-layer-17-self-full-attention",
+            "ace-dit-eval-1-layer-19-self-full-attention",
+            "ace-dit-eval-1-layer-21-self-full-attention",
+            "ace-dit-eval-1-layer-23-self-full-attention",
+            "ace-dit-eval-2-layer-1-self-full-attention",
+            "ace-dit-eval-2-layer-3-self-full-attention",
+            "ace-dit-eval-2-layer-5-self-full-attention",
+            "ace-dit-eval-2-layer-7-self-full-attention",
+            "ace-dit-eval-2-layer-9-self-full-attention",
+            "ace-dit-eval-2-layer-11-self-full-attention",
+            "ace-dit-eval-2-layer-13-self-full-attention",
+            "ace-dit-eval-2-layer-15-self-full-attention",
+            "ace-dit-eval-2-layer-17-self-full-attention",
+            "ace-dit-eval-2-layer-19-self-full-attention",
+            "ace-dit-eval-2-layer-21-self-full-attention",
+            "ace-dit-eval-2-layer-23-self-full-attention",
+            "ace-dit-eval-3-layer-1-self-full-attention",
+            "ace-dit-eval-3-layer-3-self-full-attention",
+            "ace-dit-eval-3-layer-5-self-full-attention",
+            "ace-dit-eval-3-layer-7-self-full-attention",
+            "ace-dit-eval-3-layer-9-self-full-attention",
+            "ace-dit-eval-3-layer-11-self-full-attention",
+            "ace-dit-eval-3-layer-13-self-full-attention",
+            "ace-dit-eval-3-layer-15-self-full-attention",
+            "ace-dit-eval-3-layer-17-self-full-attention",
+            "ace-dit-eval-3-layer-19-self-full-attention",
+            "ace-dit-eval-3-layer-21-self-full-attention",
+            "ace-dit-eval-3-layer-23-self-full-attention",
+            "ace-dit-eval-4-layer-1-self-full-attention",
+            "ace-dit-eval-4-layer-3-self-full-attention",
+            "ace-dit-eval-4-layer-5-self-full-attention",
+            "ace-dit-eval-4-layer-7-self-full-attention",
+            "ace-dit-eval-4-layer-9-self-full-attention",
+            "ace-dit-eval-4-layer-11-self-full-attention",
+            "ace-dit-eval-4-layer-13-self-full-attention",
+            "ace-dit-eval-4-layer-15-self-full-attention",
+            "ace-dit-eval-4-layer-17-self-full-attention",
+            "ace-dit-eval-4-layer-19-self-full-attention",
+            "ace-dit-eval-4-layer-21-self-full-attention",
+            "ace-dit-eval-4-layer-23-self-full-attention",
+            "ace-dit-eval-5-layer-1-self-full-attention",
+            "ace-dit-eval-5-layer-3-self-full-attention",
+            "ace-dit-eval-5-layer-5-self-full-attention",
+            "ace-dit-eval-5-layer-7-self-full-attention",
+            "ace-dit-eval-5-layer-9-self-full-attention",
+            "ace-dit-eval-5-layer-11-self-full-attention",
+            "ace-dit-eval-5-layer-13-self-full-attention",
+            "ace-dit-eval-5-layer-15-self-full-attention",
+            "ace-dit-eval-5-layer-17-self-full-attention",
+            "ace-dit-eval-5-layer-19-self-full-attention",
+            "ace-dit-eval-5-layer-21-self-full-attention",
+            "ace-dit-eval-5-layer-23-self-full-attention",
+            "ace-dit-eval-6-layer-1-self-full-attention",
+            "ace-dit-eval-6-layer-3-self-full-attention",
+            "ace-dit-eval-6-layer-5-self-full-attention",
+            "ace-dit-eval-6-layer-7-self-full-attention",
+            "ace-dit-eval-6-layer-9-self-full-attention",
+            "ace-dit-eval-6-layer-11-self-full-attention",
+            "ace-dit-eval-6-layer-13-self-full-attention",
+            "ace-dit-eval-6-layer-15-self-full-attention",
+            "ace-dit-eval-6-layer-17-self-full-attention",
+            "ace-dit-eval-6-layer-19-self-full-attention",
+            "ace-dit-eval-6-layer-21-self-full-attention",
+            "ace-dit-eval-6-layer-23-self-full-attention",
+            "ace-dit-eval-7-layer-1-self-full-attention",
+            "ace-dit-eval-7-layer-3-self-full-attention",
+            "ace-dit-eval-7-layer-5-self-full-attention",
+            "ace-dit-eval-7-layer-7-self-full-attention",
+            "ace-dit-eval-7-layer-9-self-full-attention",
+            "ace-dit-eval-7-layer-11-self-full-attention",
+            "ace-dit-eval-7-layer-13-self-full-attention",
+            "ace-dit-eval-7-layer-15-self-full-attention",
+            "ace-dit-eval-7-layer-17-self-full-attention",
+            "ace-dit-eval-7-layer-19-self-full-attention",
+            "ace-dit-eval-7-layer-21-self-full-attention",
+            "ace-dit-eval-7-layer-23-self-full-attention"
+          ]
+        },
+        "actualLayerIdentity": {
+          "schema": "ace-opt-0062-actual-layer-raw-u32-identity-v1",
+          "routeCount": 96,
+          "outputElementsPerRoute": 4608000,
+          "totalComparedElements": 442368000,
+          "totalMismatchCount": 0,
+          "totalNonFiniteCount": 0,
+          "totalCanaryCount": 0,
+          "copyCount": 1,
+          "extraCommandBufferCount": 0,
+          "extraQueueDrainCount": 0,
+          "routes": [
+            {
+              "routeIndex": 0,
+              "label": "ace-dit-eval-0-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 1,
+              "label": "ace-dit-eval-0-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 2,
+              "label": "ace-dit-eval-0-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 3,
+              "label": "ace-dit-eval-0-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 4,
+              "label": "ace-dit-eval-0-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 5,
+              "label": "ace-dit-eval-0-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 6,
+              "label": "ace-dit-eval-0-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 7,
+              "label": "ace-dit-eval-0-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 8,
+              "label": "ace-dit-eval-0-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 9,
+              "label": "ace-dit-eval-0-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 10,
+              "label": "ace-dit-eval-0-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 11,
+              "label": "ace-dit-eval-0-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 12,
+              "label": "ace-dit-eval-1-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 13,
+              "label": "ace-dit-eval-1-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 14,
+              "label": "ace-dit-eval-1-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 15,
+              "label": "ace-dit-eval-1-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 16,
+              "label": "ace-dit-eval-1-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 17,
+              "label": "ace-dit-eval-1-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 18,
+              "label": "ace-dit-eval-1-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 19,
+              "label": "ace-dit-eval-1-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 20,
+              "label": "ace-dit-eval-1-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 21,
+              "label": "ace-dit-eval-1-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 22,
+              "label": "ace-dit-eval-1-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 23,
+              "label": "ace-dit-eval-1-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 24,
+              "label": "ace-dit-eval-2-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 25,
+              "label": "ace-dit-eval-2-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 26,
+              "label": "ace-dit-eval-2-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 27,
+              "label": "ace-dit-eval-2-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 28,
+              "label": "ace-dit-eval-2-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 29,
+              "label": "ace-dit-eval-2-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 30,
+              "label": "ace-dit-eval-2-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 31,
+              "label": "ace-dit-eval-2-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 32,
+              "label": "ace-dit-eval-2-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 33,
+              "label": "ace-dit-eval-2-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 34,
+              "label": "ace-dit-eval-2-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 35,
+              "label": "ace-dit-eval-2-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 36,
+              "label": "ace-dit-eval-3-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 37,
+              "label": "ace-dit-eval-3-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 38,
+              "label": "ace-dit-eval-3-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 39,
+              "label": "ace-dit-eval-3-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 40,
+              "label": "ace-dit-eval-3-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 41,
+              "label": "ace-dit-eval-3-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 42,
+              "label": "ace-dit-eval-3-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 43,
+              "label": "ace-dit-eval-3-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 44,
+              "label": "ace-dit-eval-3-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 45,
+              "label": "ace-dit-eval-3-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 46,
+              "label": "ace-dit-eval-3-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 47,
+              "label": "ace-dit-eval-3-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 48,
+              "label": "ace-dit-eval-4-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 49,
+              "label": "ace-dit-eval-4-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 50,
+              "label": "ace-dit-eval-4-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 51,
+              "label": "ace-dit-eval-4-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 52,
+              "label": "ace-dit-eval-4-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 53,
+              "label": "ace-dit-eval-4-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 54,
+              "label": "ace-dit-eval-4-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 55,
+              "label": "ace-dit-eval-4-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 56,
+              "label": "ace-dit-eval-4-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 57,
+              "label": "ace-dit-eval-4-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 58,
+              "label": "ace-dit-eval-4-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 59,
+              "label": "ace-dit-eval-4-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 60,
+              "label": "ace-dit-eval-5-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 61,
+              "label": "ace-dit-eval-5-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 62,
+              "label": "ace-dit-eval-5-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 63,
+              "label": "ace-dit-eval-5-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 64,
+              "label": "ace-dit-eval-5-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 65,
+              "label": "ace-dit-eval-5-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 66,
+              "label": "ace-dit-eval-5-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 67,
+              "label": "ace-dit-eval-5-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 68,
+              "label": "ace-dit-eval-5-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 69,
+              "label": "ace-dit-eval-5-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 70,
+              "label": "ace-dit-eval-5-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 71,
+              "label": "ace-dit-eval-5-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 72,
+              "label": "ace-dit-eval-6-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 73,
+              "label": "ace-dit-eval-6-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 74,
+              "label": "ace-dit-eval-6-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 75,
+              "label": "ace-dit-eval-6-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 76,
+              "label": "ace-dit-eval-6-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 77,
+              "label": "ace-dit-eval-6-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 78,
+              "label": "ace-dit-eval-6-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 79,
+              "label": "ace-dit-eval-6-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 80,
+              "label": "ace-dit-eval-6-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 81,
+              "label": "ace-dit-eval-6-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 82,
+              "label": "ace-dit-eval-6-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 83,
+              "label": "ace-dit-eval-6-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 84,
+              "label": "ace-dit-eval-7-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 85,
+              "label": "ace-dit-eval-7-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 86,
+              "label": "ace-dit-eval-7-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 87,
+              "label": "ace-dit-eval-7-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 88,
+              "label": "ace-dit-eval-7-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 89,
+              "label": "ace-dit-eval-7-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 90,
+              "label": "ace-dit-eval-7-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 91,
+              "label": "ace-dit-eval-7-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 92,
+              "label": "ace-dit-eval-7-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 93,
+              "label": "ace-dit-eval-7-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 94,
+              "label": "ace-dit-eval-7-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 95,
+              "label": "ace-dit-eval-7-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            }
+          ]
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 7,
+          "initializedOrdinal": 8,
+          "checkpointOrdinal": 9,
+          "generationCleanupCompletedOrdinal": 10,
+          "disposeStartedOrdinal": 11,
+          "disposeCompletedOrdinal": 12
+        },
+        "evidence": {
+          "initializationProgressEventCount": 158,
+          "generationProgressEventCount": 65301,
+          "diagnosticCodes": [
+            "ACE_PLANNER_CONDITIONING_RESOLVED",
+            "ACE_CONDITIONING_TENSORS_READY",
+            "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+          ],
+          "ditDestroyedBeforeCheckpoint": true,
+          "pipelineCleanupAwaitedBeforeDispose": true,
+          "backendAndDeviceDisposeAwaited": true,
+          "vaeWeightAcquireStarted": false
+        }
+      },
+      "quadRepeat": {
+        "role": "correctness-quad-repeat",
+        "arm": "quad",
+        "runtimeProfile": "opt-0062-fixed32-quad-query32-full-self-v1",
+        "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+        "evaluationHashes": [
+          {
+            "evaluation": 0,
+            "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+          },
+          {
+            "evaluation": 1,
+            "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+          },
+          {
+            "evaluation": 2,
+            "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+          },
+          {
+            "evaluation": 3,
+            "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+          },
+          {
+            "evaluation": 4,
+            "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+          },
+          {
+            "evaluation": 5,
+            "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+          },
+          {
+            "evaluation": 6,
+            "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+          },
+          {
+            "evaluation": 7,
+            "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+          }
+        ],
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "routeProfile": {
+          "runtimeProfileId": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "kernelSetId": "opt-0062-query8-plus-quad-query32-full-self-v1",
+          "quadQueryKernelId": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "authenticatedWgslSha256": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6",
+          "expectedQuadQueryRoutes": 96,
+          "quadQueryRoutes": 96,
+          "query8SlidingRoutes": 96,
+          "query8CrossRoutes": 192,
+          "query8OtherRoutes": 0,
+          "unintendedQuadQueryRoutes": 0,
+          "uniqueQuadQueryRouteIds": [
+            "ace-dit-eval-0-layer-1-self-full-attention",
+            "ace-dit-eval-0-layer-3-self-full-attention",
+            "ace-dit-eval-0-layer-5-self-full-attention",
+            "ace-dit-eval-0-layer-7-self-full-attention",
+            "ace-dit-eval-0-layer-9-self-full-attention",
+            "ace-dit-eval-0-layer-11-self-full-attention",
+            "ace-dit-eval-0-layer-13-self-full-attention",
+            "ace-dit-eval-0-layer-15-self-full-attention",
+            "ace-dit-eval-0-layer-17-self-full-attention",
+            "ace-dit-eval-0-layer-19-self-full-attention",
+            "ace-dit-eval-0-layer-21-self-full-attention",
+            "ace-dit-eval-0-layer-23-self-full-attention",
+            "ace-dit-eval-1-layer-1-self-full-attention",
+            "ace-dit-eval-1-layer-3-self-full-attention",
+            "ace-dit-eval-1-layer-5-self-full-attention",
+            "ace-dit-eval-1-layer-7-self-full-attention",
+            "ace-dit-eval-1-layer-9-self-full-attention",
+            "ace-dit-eval-1-layer-11-self-full-attention",
+            "ace-dit-eval-1-layer-13-self-full-attention",
+            "ace-dit-eval-1-layer-15-self-full-attention",
+            "ace-dit-eval-1-layer-17-self-full-attention",
+            "ace-dit-eval-1-layer-19-self-full-attention",
+            "ace-dit-eval-1-layer-21-self-full-attention",
+            "ace-dit-eval-1-layer-23-self-full-attention",
+            "ace-dit-eval-2-layer-1-self-full-attention",
+            "ace-dit-eval-2-layer-3-self-full-attention",
+            "ace-dit-eval-2-layer-5-self-full-attention",
+            "ace-dit-eval-2-layer-7-self-full-attention",
+            "ace-dit-eval-2-layer-9-self-full-attention",
+            "ace-dit-eval-2-layer-11-self-full-attention",
+            "ace-dit-eval-2-layer-13-self-full-attention",
+            "ace-dit-eval-2-layer-15-self-full-attention",
+            "ace-dit-eval-2-layer-17-self-full-attention",
+            "ace-dit-eval-2-layer-19-self-full-attention",
+            "ace-dit-eval-2-layer-21-self-full-attention",
+            "ace-dit-eval-2-layer-23-self-full-attention",
+            "ace-dit-eval-3-layer-1-self-full-attention",
+            "ace-dit-eval-3-layer-3-self-full-attention",
+            "ace-dit-eval-3-layer-5-self-full-attention",
+            "ace-dit-eval-3-layer-7-self-full-attention",
+            "ace-dit-eval-3-layer-9-self-full-attention",
+            "ace-dit-eval-3-layer-11-self-full-attention",
+            "ace-dit-eval-3-layer-13-self-full-attention",
+            "ace-dit-eval-3-layer-15-self-full-attention",
+            "ace-dit-eval-3-layer-17-self-full-attention",
+            "ace-dit-eval-3-layer-19-self-full-attention",
+            "ace-dit-eval-3-layer-21-self-full-attention",
+            "ace-dit-eval-3-layer-23-self-full-attention",
+            "ace-dit-eval-4-layer-1-self-full-attention",
+            "ace-dit-eval-4-layer-3-self-full-attention",
+            "ace-dit-eval-4-layer-5-self-full-attention",
+            "ace-dit-eval-4-layer-7-self-full-attention",
+            "ace-dit-eval-4-layer-9-self-full-attention",
+            "ace-dit-eval-4-layer-11-self-full-attention",
+            "ace-dit-eval-4-layer-13-self-full-attention",
+            "ace-dit-eval-4-layer-15-self-full-attention",
+            "ace-dit-eval-4-layer-17-self-full-attention",
+            "ace-dit-eval-4-layer-19-self-full-attention",
+            "ace-dit-eval-4-layer-21-self-full-attention",
+            "ace-dit-eval-4-layer-23-self-full-attention",
+            "ace-dit-eval-5-layer-1-self-full-attention",
+            "ace-dit-eval-5-layer-3-self-full-attention",
+            "ace-dit-eval-5-layer-5-self-full-attention",
+            "ace-dit-eval-5-layer-7-self-full-attention",
+            "ace-dit-eval-5-layer-9-self-full-attention",
+            "ace-dit-eval-5-layer-11-self-full-attention",
+            "ace-dit-eval-5-layer-13-self-full-attention",
+            "ace-dit-eval-5-layer-15-self-full-attention",
+            "ace-dit-eval-5-layer-17-self-full-attention",
+            "ace-dit-eval-5-layer-19-self-full-attention",
+            "ace-dit-eval-5-layer-21-self-full-attention",
+            "ace-dit-eval-5-layer-23-self-full-attention",
+            "ace-dit-eval-6-layer-1-self-full-attention",
+            "ace-dit-eval-6-layer-3-self-full-attention",
+            "ace-dit-eval-6-layer-5-self-full-attention",
+            "ace-dit-eval-6-layer-7-self-full-attention",
+            "ace-dit-eval-6-layer-9-self-full-attention",
+            "ace-dit-eval-6-layer-11-self-full-attention",
+            "ace-dit-eval-6-layer-13-self-full-attention",
+            "ace-dit-eval-6-layer-15-self-full-attention",
+            "ace-dit-eval-6-layer-17-self-full-attention",
+            "ace-dit-eval-6-layer-19-self-full-attention",
+            "ace-dit-eval-6-layer-21-self-full-attention",
+            "ace-dit-eval-6-layer-23-self-full-attention",
+            "ace-dit-eval-7-layer-1-self-full-attention",
+            "ace-dit-eval-7-layer-3-self-full-attention",
+            "ace-dit-eval-7-layer-5-self-full-attention",
+            "ace-dit-eval-7-layer-7-self-full-attention",
+            "ace-dit-eval-7-layer-9-self-full-attention",
+            "ace-dit-eval-7-layer-11-self-full-attention",
+            "ace-dit-eval-7-layer-13-self-full-attention",
+            "ace-dit-eval-7-layer-15-self-full-attention",
+            "ace-dit-eval-7-layer-17-self-full-attention",
+            "ace-dit-eval-7-layer-19-self-full-attention",
+            "ace-dit-eval-7-layer-21-self-full-attention",
+            "ace-dit-eval-7-layer-23-self-full-attention"
+          ]
+        },
+        "actualLayerIdentity": {
+          "schema": "ace-opt-0062-actual-layer-raw-u32-identity-v1",
+          "routeCount": 96,
+          "outputElementsPerRoute": 4608000,
+          "totalComparedElements": 442368000,
+          "totalMismatchCount": 0,
+          "totalNonFiniteCount": 0,
+          "totalCanaryCount": 0,
+          "copyCount": 1,
+          "extraCommandBufferCount": 0,
+          "extraQueueDrainCount": 0,
+          "routes": [
+            {
+              "routeIndex": 0,
+              "label": "ace-dit-eval-0-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 1,
+              "label": "ace-dit-eval-0-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 2,
+              "label": "ace-dit-eval-0-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 3,
+              "label": "ace-dit-eval-0-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 4,
+              "label": "ace-dit-eval-0-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 5,
+              "label": "ace-dit-eval-0-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 6,
+              "label": "ace-dit-eval-0-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 7,
+              "label": "ace-dit-eval-0-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 8,
+              "label": "ace-dit-eval-0-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 9,
+              "label": "ace-dit-eval-0-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 10,
+              "label": "ace-dit-eval-0-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 11,
+              "label": "ace-dit-eval-0-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 12,
+              "label": "ace-dit-eval-1-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 13,
+              "label": "ace-dit-eval-1-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 14,
+              "label": "ace-dit-eval-1-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 15,
+              "label": "ace-dit-eval-1-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 16,
+              "label": "ace-dit-eval-1-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 17,
+              "label": "ace-dit-eval-1-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 18,
+              "label": "ace-dit-eval-1-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 19,
+              "label": "ace-dit-eval-1-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 20,
+              "label": "ace-dit-eval-1-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 21,
+              "label": "ace-dit-eval-1-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 22,
+              "label": "ace-dit-eval-1-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 23,
+              "label": "ace-dit-eval-1-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 24,
+              "label": "ace-dit-eval-2-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 25,
+              "label": "ace-dit-eval-2-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 26,
+              "label": "ace-dit-eval-2-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 27,
+              "label": "ace-dit-eval-2-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 28,
+              "label": "ace-dit-eval-2-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 29,
+              "label": "ace-dit-eval-2-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 30,
+              "label": "ace-dit-eval-2-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 31,
+              "label": "ace-dit-eval-2-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 32,
+              "label": "ace-dit-eval-2-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 33,
+              "label": "ace-dit-eval-2-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 34,
+              "label": "ace-dit-eval-2-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 35,
+              "label": "ace-dit-eval-2-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 36,
+              "label": "ace-dit-eval-3-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 37,
+              "label": "ace-dit-eval-3-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 38,
+              "label": "ace-dit-eval-3-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 39,
+              "label": "ace-dit-eval-3-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 40,
+              "label": "ace-dit-eval-3-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 41,
+              "label": "ace-dit-eval-3-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 42,
+              "label": "ace-dit-eval-3-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 43,
+              "label": "ace-dit-eval-3-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 44,
+              "label": "ace-dit-eval-3-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 45,
+              "label": "ace-dit-eval-3-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 46,
+              "label": "ace-dit-eval-3-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 47,
+              "label": "ace-dit-eval-3-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 48,
+              "label": "ace-dit-eval-4-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 49,
+              "label": "ace-dit-eval-4-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 50,
+              "label": "ace-dit-eval-4-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 51,
+              "label": "ace-dit-eval-4-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 52,
+              "label": "ace-dit-eval-4-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 53,
+              "label": "ace-dit-eval-4-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 54,
+              "label": "ace-dit-eval-4-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 55,
+              "label": "ace-dit-eval-4-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 56,
+              "label": "ace-dit-eval-4-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 57,
+              "label": "ace-dit-eval-4-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 58,
+              "label": "ace-dit-eval-4-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 59,
+              "label": "ace-dit-eval-4-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 60,
+              "label": "ace-dit-eval-5-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 61,
+              "label": "ace-dit-eval-5-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 62,
+              "label": "ace-dit-eval-5-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 63,
+              "label": "ace-dit-eval-5-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 64,
+              "label": "ace-dit-eval-5-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 65,
+              "label": "ace-dit-eval-5-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 66,
+              "label": "ace-dit-eval-5-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 67,
+              "label": "ace-dit-eval-5-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 68,
+              "label": "ace-dit-eval-5-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 69,
+              "label": "ace-dit-eval-5-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 70,
+              "label": "ace-dit-eval-5-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 71,
+              "label": "ace-dit-eval-5-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 72,
+              "label": "ace-dit-eval-6-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 73,
+              "label": "ace-dit-eval-6-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 74,
+              "label": "ace-dit-eval-6-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 75,
+              "label": "ace-dit-eval-6-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 76,
+              "label": "ace-dit-eval-6-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 77,
+              "label": "ace-dit-eval-6-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 78,
+              "label": "ace-dit-eval-6-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 79,
+              "label": "ace-dit-eval-6-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 80,
+              "label": "ace-dit-eval-6-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 81,
+              "label": "ace-dit-eval-6-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 82,
+              "label": "ace-dit-eval-6-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 83,
+              "label": "ace-dit-eval-6-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 84,
+              "label": "ace-dit-eval-7-layer-1-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 85,
+              "label": "ace-dit-eval-7-layer-3-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 86,
+              "label": "ace-dit-eval-7-layer-5-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 87,
+              "label": "ace-dit-eval-7-layer-7-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 88,
+              "label": "ace-dit-eval-7-layer-9-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 89,
+              "label": "ace-dit-eval-7-layer-11-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 90,
+              "label": "ace-dit-eval-7-layer-13-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 91,
+              "label": "ace-dit-eval-7-layer-15-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 92,
+              "label": "ace-dit-eval-7-layer-17-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 93,
+              "label": "ace-dit-eval-7-layer-19-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 94,
+              "label": "ace-dit-eval-7-layer-21-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            },
+            {
+              "routeIndex": 95,
+              "label": "ace-dit-eval-7-layer-23-self-full-attention",
+              "comparedElements": 4608000,
+              "mismatchCount": 0,
+              "query8NonFiniteCount": 0,
+              "quadNonFiniteCount": 0,
+              "query8CanaryCount": 0,
+              "quadCanaryCount": 0
+            }
+          ]
+        },
+        "timing": null,
+        "lifecycle": {
+          "backendCreatedOrdinal": 13,
+          "initializedOrdinal": 14,
+          "checkpointOrdinal": 15,
+          "generationCleanupCompletedOrdinal": 16,
+          "disposeStartedOrdinal": 17,
+          "disposeCompletedOrdinal": 18
+        },
+        "evidence": {
+          "initializationProgressEventCount": 158,
+          "generationProgressEventCount": 67952,
+          "diagnosticCodes": [
+            "ACE_PLANNER_CONDITIONING_RESOLVED",
+            "ACE_CONDITIONING_TENSORS_READY",
+            "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+          ],
+          "ditDestroyedBeforeCheckpoint": true,
+          "pipelineCleanupAwaitedBeforeDispose": true,
+          "backendAndDeviceDisposeAwaited": true,
+          "vaeWeightAcquireStarted": false
+        }
+      }
+    }
+  },
+  "performance": {
+    "fixedOrder": [
+      "forward-query8",
+      "forward-quad",
+      "reverse-quad",
+      "reverse-query8"
+    ],
+    "samples": [
+      {
+        "direction": "forward",
+        "order": 0,
+        "arm": "query8",
+        "fullSelfMs": 26071.699999928474,
+        "sliceEvaluation0FullSelfMs": 1531.3000000715256,
+        "graphWallMs": 154996.59999990463,
+        "ditStageWallMs": 157285.80000007153,
+        "commandDrainMs": 150936.80000019073,
+        "requestedIdleMs": 2552,
+        "readbackMs": 2.9000000953674316,
+        "residualMs": 1507.7999997138977,
+        "familyMs": {
+          "precompute": 6.700000047683716,
+          "cross-cache": 198.70000040531158,
+          "timestep": 116.299999833107,
+          "input": 801,
+          "attention-projections": 4402.400000214577,
+          "self-full": 26071.699999928474,
+          "self-sliding": 0,
+          "cross-attention": 0,
+          "feed-forward": 63074.99999880791,
+          "plumbing": 0,
+          "output": 159.19999992847443,
+          "sampler-dcw": 14.199999928474426,
+          "mixed": 56091.600001096725
+        }
+      },
+      {
+        "direction": "forward",
+        "order": 1,
+        "arm": "quad",
+        "fullSelfMs": 17896.700000166893,
+        "sliceEvaluation0FullSelfMs": 2214.5,
+        "graphWallMs": 156630,
+        "ditStageWallMs": 161019,
+        "commandDrainMs": 152653.79999935627,
+        "requestedIdleMs": 2552,
+        "readbackMs": 7.5000001192092896,
+        "residualMs": 1424.2000006437302,
+        "familyMs": {
+          "precompute": 6.399999976158142,
+          "cross-cache": 466.5999995470047,
+          "timestep": 106.50000011920929,
+          "input": 782.5,
+          "attention-projections": 4406.4000009298325,
+          "self-full": 17896.700000166893,
+          "self-sliding": 0,
+          "cross-attention": 0,
+          "feed-forward": 74411.19999933243,
+          "plumbing": 0,
+          "output": 207.299999833107,
+          "sampler-dcw": 15.099999904632568,
+          "mixed": 54355.099999547005
+        }
+      },
+      {
+        "direction": "reverse",
+        "order": 0,
+        "arm": "quad",
+        "fullSelfMs": 17352.600001215935,
+        "sliceEvaluation0FullSelfMs": 998.3999999761581,
+        "graphWallMs": 151389.20000004768,
+        "ditStageWallMs": 153612.60000002384,
+        "commandDrainMs": 147417.6000019312,
+        "requestedIdleMs": 2552,
+        "readbackMs": 7.600000023841858,
+        "residualMs": 1419.5999981164932,
+        "familyMs": {
+          "precompute": 20.600000023841858,
+          "cross-cache": 220.10000014305115,
+          "timestep": 85.29999995231628,
+          "input": 805.8999999761581,
+          "attention-projections": 4091.3000010252,
+          "self-full": 17352.600001215935,
+          "self-sliding": 0,
+          "cross-attention": 0,
+          "feed-forward": 69848.70000171661,
+          "plumbing": 0,
+          "output": 179.09999990463257,
+          "sampler-dcw": 16.199999928474426,
+          "mixed": 54797.79999804497
+        }
+      },
+      {
+        "direction": "reverse",
+        "order": 1,
+        "arm": "query8",
+        "fullSelfMs": 28943.300001740456,
+        "sliceEvaluation0FullSelfMs": 3603.899999499321,
+        "graphWallMs": 165918.69999992847,
+        "ditStageWallMs": 170172.39999997616,
+        "commandDrainMs": 161941.70000302792,
+        "requestedIdleMs": 2552,
+        "readbackMs": 2.600000023841858,
+        "residualMs": 1424.9999969005585,
+        "familyMs": {
+          "precompute": 5.600000023841858,
+          "cross-cache": 668.5000001192093,
+          "timestep": 85.10000014305115,
+          "input": 748.8999999761581,
+          "attention-projections": 4199.699999809265,
+          "self-full": 28943.300001740456,
+          "self-sliding": 0,
+          "cross-attention": 0,
+          "feed-forward": 71606.30000209808,
+          "plumbing": 0,
+          "output": 187.60000002384186,
+          "sampler-dcw": 23.5,
+          "mixed": 55473.19999909401
+        }
+      }
+    ],
+    "forwardGraphImproved": false,
+    "reverseGraphImproved": true,
+    "forwardStageImproved": false,
+    "reverseStageImproved": true,
+    "forwardFullSelfImproved": true,
+    "reverseFullSelfImproved": true,
+    "forwardSliceImproved": false,
+    "reverseSliceImproved": true,
+    "aggregateFullSelfSpeedup": 1.56074021326695,
+    "medianSliceFullSelfSpeedup": 2.150581700455034,
+    "aggregateGraphSavingsMs": 12896.099999785423,
+    "nonAttentionRegressions": {
+      "forward:attention-projections": 0.0009085954740735147,
+      "reverse:attention-projections": -0.02581136719027277,
+      "forward:cross-attention": 0,
+      "reverse:cross-attention": 0,
+      "forward:cross-cache": 1.3482637070720997,
+      "reverse:cross-cache": -0.6707554224326071,
+      "forward:feed-forward": 0.17972572335693648,
+      "reverse:feed-forward": -0.02454532632366102,
+      "forward:input": -0.023096129837702817,
+      "reverse:input": 0.07611163039366353,
+      "forward:mixed": -0.03095828968180203,
+      "reverse:mixed": -0.012175248607617206,
+      "forward:output": 0.30213567792866214,
+      "reverse:output": -0.0453091690731825,
+      "forward:plumbing": 0,
+      "reverse:plumbing": 0,
+      "forward:precompute": -0.04477612975977341,
+      "reverse:precompute": 2.6785714171674786,
+      "forward:sampler-dcw": 0.06338028033038401,
+      "reverse:sampler-dcw": -0.3106383009159819,
+      "forward:self-sliding": 0,
+      "reverse:self-sliding": 0,
+      "forward:timestep": -0.08426482999106544,
+      "reverse:timestep": 0.0023501740179663333
+    },
+    "maximumNonAttentionRegression": 2.6785714171674786,
+    "passed": false
+  },
+  "directions": {
+    "forward": {
+      "gate": {
+        "source": "notifyutil-com.apple.system.thermalpressurelevel",
+        "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+        "startedAtEpochMilliseconds": 1786848198296,
+        "completedAtEpochMilliseconds": 1786848228898,
+        "observationCount": 35,
+        "maximumPollGapMilliseconds": 907,
+        "nonNominalObservationCount": 0
+      },
+      "thermalTrace": {
+        "source": "notifyutil-com.apple.system.thermalpressurelevel",
+        "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+        "rawTraceSha256": "6a02c2021953e84f9e01306add23407a86c99d709b49379ec268f6dc19c48481",
+        "completedAtEpochMilliseconds": 1786848678004,
+        "observationCount": 534,
+        "maximumPollGapMilliseconds": 916,
+        "nonNominalObservationCount": 469,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1786848228898,
+            "level": 0
+          },
+          {
+            "atEpochMilliseconds": 1786848256807,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786848277506,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786848529508,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786848531302,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786848532201,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786848625797,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786848631199,
+            "level": 1
+          }
+        ]
+      },
+      "arms": [
+        {
+          "role": "forward-query8",
+          "arm": "query8",
+          "runtimeProfile": "fixed32-subgroup-query8-default",
+          "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+          "evaluationHashes": [
+            {
+              "evaluation": 0,
+              "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+            },
+            {
+              "evaluation": 1,
+              "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+            },
+            {
+              "evaluation": 2,
+              "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+            },
+            {
+              "evaluation": 3,
+              "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+            },
+            {
+              "evaluation": 4,
+              "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+            },
+            {
+              "evaluation": 5,
+              "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+            },
+            {
+              "evaluation": 6,
+              "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+            },
+            {
+              "evaluation": 7,
+              "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+            }
+          ],
+          "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+          "routeProfile": null,
+          "actualLayerIdentity": null,
+          "timing": {
+            "direction": "forward",
+            "order": 0,
+            "arm": "query8",
+            "fullSelfMs": 26071.699999928474,
+            "sliceEvaluation0FullSelfMs": 1531.3000000715256,
+            "graphWallMs": 154996.59999990463,
+            "ditStageWallMs": 157285.80000007153,
+            "commandDrainMs": 150936.80000019073,
+            "requestedIdleMs": 2552,
+            "readbackMs": 2.9000000953674316,
+            "residualMs": 1507.7999997138977,
+            "familyMs": {
+              "precompute": 6.700000047683716,
+              "cross-cache": 198.70000040531158,
+              "timestep": 116.299999833107,
+              "input": 801,
+              "attention-projections": 4402.400000214577,
+              "self-full": 26071.699999928474,
+              "self-sliding": 0,
+              "cross-attention": 0,
+              "feed-forward": 63074.99999880791,
+              "plumbing": 0,
+              "output": 159.19999992847443,
+              "sampler-dcw": 14.199999928474426,
+              "mixed": 56091.600001096725
+            }
+          },
+          "lifecycle": {
+            "backendCreatedOrdinal": 19,
+            "initializedOrdinal": 20,
+            "checkpointOrdinal": 21,
+            "generationCleanupCompletedOrdinal": 22,
+            "disposeStartedOrdinal": 23,
+            "disposeCompletedOrdinal": 24
+          },
+          "evidence": {
+            "initializationProgressEventCount": 158,
+            "generationProgressEventCount": 76067,
+            "diagnosticCodes": [
+              "ACE_PLANNER_CONDITIONING_RESOLVED",
+              "ACE_CONDITIONING_TENSORS_READY",
+              "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+            ],
+            "ditDestroyedBeforeCheckpoint": true,
+            "pipelineCleanupAwaitedBeforeDispose": true,
+            "backendAndDeviceDisposeAwaited": true,
+            "vaeWeightAcquireStarted": false
+          }
+        },
+        {
+          "role": "forward-quad",
+          "arm": "quad",
+          "runtimeProfile": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+          "evaluationHashes": [
+            {
+              "evaluation": 0,
+              "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+            },
+            {
+              "evaluation": 1,
+              "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+            },
+            {
+              "evaluation": 2,
+              "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+            },
+            {
+              "evaluation": 3,
+              "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+            },
+            {
+              "evaluation": 4,
+              "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+            },
+            {
+              "evaluation": 5,
+              "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+            },
+            {
+              "evaluation": 6,
+              "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+            },
+            {
+              "evaluation": 7,
+              "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+            }
+          ],
+          "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+          "routeProfile": {
+            "runtimeProfileId": "opt-0062-fixed32-quad-query32-full-self-v1",
+            "kernelSetId": "opt-0062-query8-plus-quad-query32-full-self-v1",
+            "quadQueryKernelId": "opt-0062-fixed32-quad-query32-full-self-v1",
+            "authenticatedWgslSha256": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6",
+            "expectedQuadQueryRoutes": 96,
+            "quadQueryRoutes": 96,
+            "query8SlidingRoutes": 96,
+            "query8CrossRoutes": 192,
+            "query8OtherRoutes": 0,
+            "unintendedQuadQueryRoutes": 0,
+            "uniqueQuadQueryRouteIds": [
+              "ace-dit-eval-0-layer-1-self-full-attention",
+              "ace-dit-eval-0-layer-3-self-full-attention",
+              "ace-dit-eval-0-layer-5-self-full-attention",
+              "ace-dit-eval-0-layer-7-self-full-attention",
+              "ace-dit-eval-0-layer-9-self-full-attention",
+              "ace-dit-eval-0-layer-11-self-full-attention",
+              "ace-dit-eval-0-layer-13-self-full-attention",
+              "ace-dit-eval-0-layer-15-self-full-attention",
+              "ace-dit-eval-0-layer-17-self-full-attention",
+              "ace-dit-eval-0-layer-19-self-full-attention",
+              "ace-dit-eval-0-layer-21-self-full-attention",
+              "ace-dit-eval-0-layer-23-self-full-attention",
+              "ace-dit-eval-1-layer-1-self-full-attention",
+              "ace-dit-eval-1-layer-3-self-full-attention",
+              "ace-dit-eval-1-layer-5-self-full-attention",
+              "ace-dit-eval-1-layer-7-self-full-attention",
+              "ace-dit-eval-1-layer-9-self-full-attention",
+              "ace-dit-eval-1-layer-11-self-full-attention",
+              "ace-dit-eval-1-layer-13-self-full-attention",
+              "ace-dit-eval-1-layer-15-self-full-attention",
+              "ace-dit-eval-1-layer-17-self-full-attention",
+              "ace-dit-eval-1-layer-19-self-full-attention",
+              "ace-dit-eval-1-layer-21-self-full-attention",
+              "ace-dit-eval-1-layer-23-self-full-attention",
+              "ace-dit-eval-2-layer-1-self-full-attention",
+              "ace-dit-eval-2-layer-3-self-full-attention",
+              "ace-dit-eval-2-layer-5-self-full-attention",
+              "ace-dit-eval-2-layer-7-self-full-attention",
+              "ace-dit-eval-2-layer-9-self-full-attention",
+              "ace-dit-eval-2-layer-11-self-full-attention",
+              "ace-dit-eval-2-layer-13-self-full-attention",
+              "ace-dit-eval-2-layer-15-self-full-attention",
+              "ace-dit-eval-2-layer-17-self-full-attention",
+              "ace-dit-eval-2-layer-19-self-full-attention",
+              "ace-dit-eval-2-layer-21-self-full-attention",
+              "ace-dit-eval-2-layer-23-self-full-attention",
+              "ace-dit-eval-3-layer-1-self-full-attention",
+              "ace-dit-eval-3-layer-3-self-full-attention",
+              "ace-dit-eval-3-layer-5-self-full-attention",
+              "ace-dit-eval-3-layer-7-self-full-attention",
+              "ace-dit-eval-3-layer-9-self-full-attention",
+              "ace-dit-eval-3-layer-11-self-full-attention",
+              "ace-dit-eval-3-layer-13-self-full-attention",
+              "ace-dit-eval-3-layer-15-self-full-attention",
+              "ace-dit-eval-3-layer-17-self-full-attention",
+              "ace-dit-eval-3-layer-19-self-full-attention",
+              "ace-dit-eval-3-layer-21-self-full-attention",
+              "ace-dit-eval-3-layer-23-self-full-attention",
+              "ace-dit-eval-4-layer-1-self-full-attention",
+              "ace-dit-eval-4-layer-3-self-full-attention",
+              "ace-dit-eval-4-layer-5-self-full-attention",
+              "ace-dit-eval-4-layer-7-self-full-attention",
+              "ace-dit-eval-4-layer-9-self-full-attention",
+              "ace-dit-eval-4-layer-11-self-full-attention",
+              "ace-dit-eval-4-layer-13-self-full-attention",
+              "ace-dit-eval-4-layer-15-self-full-attention",
+              "ace-dit-eval-4-layer-17-self-full-attention",
+              "ace-dit-eval-4-layer-19-self-full-attention",
+              "ace-dit-eval-4-layer-21-self-full-attention",
+              "ace-dit-eval-4-layer-23-self-full-attention",
+              "ace-dit-eval-5-layer-1-self-full-attention",
+              "ace-dit-eval-5-layer-3-self-full-attention",
+              "ace-dit-eval-5-layer-5-self-full-attention",
+              "ace-dit-eval-5-layer-7-self-full-attention",
+              "ace-dit-eval-5-layer-9-self-full-attention",
+              "ace-dit-eval-5-layer-11-self-full-attention",
+              "ace-dit-eval-5-layer-13-self-full-attention",
+              "ace-dit-eval-5-layer-15-self-full-attention",
+              "ace-dit-eval-5-layer-17-self-full-attention",
+              "ace-dit-eval-5-layer-19-self-full-attention",
+              "ace-dit-eval-5-layer-21-self-full-attention",
+              "ace-dit-eval-5-layer-23-self-full-attention",
+              "ace-dit-eval-6-layer-1-self-full-attention",
+              "ace-dit-eval-6-layer-3-self-full-attention",
+              "ace-dit-eval-6-layer-5-self-full-attention",
+              "ace-dit-eval-6-layer-7-self-full-attention",
+              "ace-dit-eval-6-layer-9-self-full-attention",
+              "ace-dit-eval-6-layer-11-self-full-attention",
+              "ace-dit-eval-6-layer-13-self-full-attention",
+              "ace-dit-eval-6-layer-15-self-full-attention",
+              "ace-dit-eval-6-layer-17-self-full-attention",
+              "ace-dit-eval-6-layer-19-self-full-attention",
+              "ace-dit-eval-6-layer-21-self-full-attention",
+              "ace-dit-eval-6-layer-23-self-full-attention",
+              "ace-dit-eval-7-layer-1-self-full-attention",
+              "ace-dit-eval-7-layer-3-self-full-attention",
+              "ace-dit-eval-7-layer-5-self-full-attention",
+              "ace-dit-eval-7-layer-7-self-full-attention",
+              "ace-dit-eval-7-layer-9-self-full-attention",
+              "ace-dit-eval-7-layer-11-self-full-attention",
+              "ace-dit-eval-7-layer-13-self-full-attention",
+              "ace-dit-eval-7-layer-15-self-full-attention",
+              "ace-dit-eval-7-layer-17-self-full-attention",
+              "ace-dit-eval-7-layer-19-self-full-attention",
+              "ace-dit-eval-7-layer-21-self-full-attention",
+              "ace-dit-eval-7-layer-23-self-full-attention"
+            ]
+          },
+          "actualLayerIdentity": null,
+          "timing": {
+            "direction": "forward",
+            "order": 1,
+            "arm": "quad",
+            "fullSelfMs": 17896.700000166893,
+            "sliceEvaluation0FullSelfMs": 2214.5,
+            "graphWallMs": 156630,
+            "ditStageWallMs": 161019,
+            "commandDrainMs": 152653.79999935627,
+            "requestedIdleMs": 2552,
+            "readbackMs": 7.5000001192092896,
+            "residualMs": 1424.2000006437302,
+            "familyMs": {
+              "precompute": 6.399999976158142,
+              "cross-cache": 466.5999995470047,
+              "timestep": 106.50000011920929,
+              "input": 782.5,
+              "attention-projections": 4406.4000009298325,
+              "self-full": 17896.700000166893,
+              "self-sliding": 0,
+              "cross-attention": 0,
+              "feed-forward": 74411.19999933243,
+              "plumbing": 0,
+              "output": 207.299999833107,
+              "sampler-dcw": 15.099999904632568,
+              "mixed": 54355.099999547005
+            }
+          },
+          "lifecycle": {
+            "backendCreatedOrdinal": 25,
+            "initializedOrdinal": 26,
+            "checkpointOrdinal": 27,
+            "generationCleanupCompletedOrdinal": 28,
+            "disposeStartedOrdinal": 29,
+            "disposeCompletedOrdinal": 30
+          },
+          "evidence": {
+            "initializationProgressEventCount": 158,
+            "generationProgressEventCount": 66554,
+            "diagnosticCodes": [
+              "ACE_PLANNER_CONDITIONING_RESOLVED",
+              "ACE_CONDITIONING_TENSORS_READY",
+              "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+            ],
+            "ditDestroyedBeforeCheckpoint": true,
+            "pipelineCleanupAwaitedBeforeDispose": true,
+            "backendAndDeviceDisposeAwaited": true,
+            "vaeWeightAcquireStarted": false
+          }
+        }
+      ]
+    },
+    "reverse": {
+      "gate": {
+        "source": "notifyutil-com.apple.system.thermalpressurelevel",
+        "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+        "startedAtEpochMilliseconds": 1786848748508,
+        "completedAtEpochMilliseconds": 1786848779115,
+        "observationCount": 35,
+        "maximumPollGapMilliseconds": 906,
+        "nonNominalObservationCount": 0
+      },
+      "thermalTrace": {
+        "source": "notifyutil-com.apple.system.thermalpressurelevel",
+        "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+        "rawTraceSha256": "e7008dc519a7bdb9392b60a8a6656e8000ba9153aeb2ec2b87ced479f074def9",
+        "completedAtEpochMilliseconds": 1786849230918,
+        "observationCount": 537,
+        "maximumPollGapMilliseconds": 910,
+        "nonNominalObservationCount": 475,
+        "transitions": [
+          {
+            "atEpochMilliseconds": 1786848779115,
+            "level": 0
+          },
+          {
+            "atEpochMilliseconds": 1786848804312,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786848827714,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786848950114,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786848961813,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786849077015,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786849078821,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786849079720,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786849138220,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786849142715,
+            "level": 1
+          },
+          {
+            "atEpochMilliseconds": 1786849143618,
+            "level": 2
+          },
+          {
+            "atEpochMilliseconds": 1786849157116,
+            "level": 1
+          }
+        ]
+      },
+      "arms": [
+        {
+          "role": "reverse-quad",
+          "arm": "quad",
+          "runtimeProfile": "opt-0062-fixed32-quad-query32-full-self-v1",
+          "descriptorTableSha256": "d480bde986cba12068e462093169ef1a6cf3ceb45987eabb82ef8c8fe07eca47",
+          "evaluationHashes": [
+            {
+              "evaluation": 0,
+              "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+            },
+            {
+              "evaluation": 1,
+              "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+            },
+            {
+              "evaluation": 2,
+              "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+            },
+            {
+              "evaluation": 3,
+              "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+            },
+            {
+              "evaluation": 4,
+              "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+            },
+            {
+              "evaluation": 5,
+              "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+            },
+            {
+              "evaluation": 6,
+              "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+            },
+            {
+              "evaluation": 7,
+              "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+            }
+          ],
+          "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+          "routeProfile": {
+            "runtimeProfileId": "opt-0062-fixed32-quad-query32-full-self-v1",
+            "kernelSetId": "opt-0062-query8-plus-quad-query32-full-self-v1",
+            "quadQueryKernelId": "opt-0062-fixed32-quad-query32-full-self-v1",
+            "authenticatedWgslSha256": "7b9af88e0f24f96da54dd525850da2432158fb4a7cdaccab1633b961f10911e6",
+            "expectedQuadQueryRoutes": 96,
+            "quadQueryRoutes": 96,
+            "query8SlidingRoutes": 96,
+            "query8CrossRoutes": 192,
+            "query8OtherRoutes": 0,
+            "unintendedQuadQueryRoutes": 0,
+            "uniqueQuadQueryRouteIds": [
+              "ace-dit-eval-0-layer-1-self-full-attention",
+              "ace-dit-eval-0-layer-3-self-full-attention",
+              "ace-dit-eval-0-layer-5-self-full-attention",
+              "ace-dit-eval-0-layer-7-self-full-attention",
+              "ace-dit-eval-0-layer-9-self-full-attention",
+              "ace-dit-eval-0-layer-11-self-full-attention",
+              "ace-dit-eval-0-layer-13-self-full-attention",
+              "ace-dit-eval-0-layer-15-self-full-attention",
+              "ace-dit-eval-0-layer-17-self-full-attention",
+              "ace-dit-eval-0-layer-19-self-full-attention",
+              "ace-dit-eval-0-layer-21-self-full-attention",
+              "ace-dit-eval-0-layer-23-self-full-attention",
+              "ace-dit-eval-1-layer-1-self-full-attention",
+              "ace-dit-eval-1-layer-3-self-full-attention",
+              "ace-dit-eval-1-layer-5-self-full-attention",
+              "ace-dit-eval-1-layer-7-self-full-attention",
+              "ace-dit-eval-1-layer-9-self-full-attention",
+              "ace-dit-eval-1-layer-11-self-full-attention",
+              "ace-dit-eval-1-layer-13-self-full-attention",
+              "ace-dit-eval-1-layer-15-self-full-attention",
+              "ace-dit-eval-1-layer-17-self-full-attention",
+              "ace-dit-eval-1-layer-19-self-full-attention",
+              "ace-dit-eval-1-layer-21-self-full-attention",
+              "ace-dit-eval-1-layer-23-self-full-attention",
+              "ace-dit-eval-2-layer-1-self-full-attention",
+              "ace-dit-eval-2-layer-3-self-full-attention",
+              "ace-dit-eval-2-layer-5-self-full-attention",
+              "ace-dit-eval-2-layer-7-self-full-attention",
+              "ace-dit-eval-2-layer-9-self-full-attention",
+              "ace-dit-eval-2-layer-11-self-full-attention",
+              "ace-dit-eval-2-layer-13-self-full-attention",
+              "ace-dit-eval-2-layer-15-self-full-attention",
+              "ace-dit-eval-2-layer-17-self-full-attention",
+              "ace-dit-eval-2-layer-19-self-full-attention",
+              "ace-dit-eval-2-layer-21-self-full-attention",
+              "ace-dit-eval-2-layer-23-self-full-attention",
+              "ace-dit-eval-3-layer-1-self-full-attention",
+              "ace-dit-eval-3-layer-3-self-full-attention",
+              "ace-dit-eval-3-layer-5-self-full-attention",
+              "ace-dit-eval-3-layer-7-self-full-attention",
+              "ace-dit-eval-3-layer-9-self-full-attention",
+              "ace-dit-eval-3-layer-11-self-full-attention",
+              "ace-dit-eval-3-layer-13-self-full-attention",
+              "ace-dit-eval-3-layer-15-self-full-attention",
+              "ace-dit-eval-3-layer-17-self-full-attention",
+              "ace-dit-eval-3-layer-19-self-full-attention",
+              "ace-dit-eval-3-layer-21-self-full-attention",
+              "ace-dit-eval-3-layer-23-self-full-attention",
+              "ace-dit-eval-4-layer-1-self-full-attention",
+              "ace-dit-eval-4-layer-3-self-full-attention",
+              "ace-dit-eval-4-layer-5-self-full-attention",
+              "ace-dit-eval-4-layer-7-self-full-attention",
+              "ace-dit-eval-4-layer-9-self-full-attention",
+              "ace-dit-eval-4-layer-11-self-full-attention",
+              "ace-dit-eval-4-layer-13-self-full-attention",
+              "ace-dit-eval-4-layer-15-self-full-attention",
+              "ace-dit-eval-4-layer-17-self-full-attention",
+              "ace-dit-eval-4-layer-19-self-full-attention",
+              "ace-dit-eval-4-layer-21-self-full-attention",
+              "ace-dit-eval-4-layer-23-self-full-attention",
+              "ace-dit-eval-5-layer-1-self-full-attention",
+              "ace-dit-eval-5-layer-3-self-full-attention",
+              "ace-dit-eval-5-layer-5-self-full-attention",
+              "ace-dit-eval-5-layer-7-self-full-attention",
+              "ace-dit-eval-5-layer-9-self-full-attention",
+              "ace-dit-eval-5-layer-11-self-full-attention",
+              "ace-dit-eval-5-layer-13-self-full-attention",
+              "ace-dit-eval-5-layer-15-self-full-attention",
+              "ace-dit-eval-5-layer-17-self-full-attention",
+              "ace-dit-eval-5-layer-19-self-full-attention",
+              "ace-dit-eval-5-layer-21-self-full-attention",
+              "ace-dit-eval-5-layer-23-self-full-attention",
+              "ace-dit-eval-6-layer-1-self-full-attention",
+              "ace-dit-eval-6-layer-3-self-full-attention",
+              "ace-dit-eval-6-layer-5-self-full-attention",
+              "ace-dit-eval-6-layer-7-self-full-attention",
+              "ace-dit-eval-6-layer-9-self-full-attention",
+              "ace-dit-eval-6-layer-11-self-full-attention",
+              "ace-dit-eval-6-layer-13-self-full-attention",
+              "ace-dit-eval-6-layer-15-self-full-attention",
+              "ace-dit-eval-6-layer-17-self-full-attention",
+              "ace-dit-eval-6-layer-19-self-full-attention",
+              "ace-dit-eval-6-layer-21-self-full-attention",
+              "ace-dit-eval-6-layer-23-self-full-attention",
+              "ace-dit-eval-7-layer-1-self-full-attention",
+              "ace-dit-eval-7-layer-3-self-full-attention",
+              "ace-dit-eval-7-layer-5-self-full-attention",
+              "ace-dit-eval-7-layer-7-self-full-attention",
+              "ace-dit-eval-7-layer-9-self-full-attention",
+              "ace-dit-eval-7-layer-11-self-full-attention",
+              "ace-dit-eval-7-layer-13-self-full-attention",
+              "ace-dit-eval-7-layer-15-self-full-attention",
+              "ace-dit-eval-7-layer-17-self-full-attention",
+              "ace-dit-eval-7-layer-19-self-full-attention",
+              "ace-dit-eval-7-layer-21-self-full-attention",
+              "ace-dit-eval-7-layer-23-self-full-attention"
+            ]
+          },
+          "actualLayerIdentity": null,
+          "timing": {
+            "direction": "reverse",
+            "order": 0,
+            "arm": "quad",
+            "fullSelfMs": 17352.600001215935,
+            "sliceEvaluation0FullSelfMs": 998.3999999761581,
+            "graphWallMs": 151389.20000004768,
+            "ditStageWallMs": 153612.60000002384,
+            "commandDrainMs": 147417.6000019312,
+            "requestedIdleMs": 2552,
+            "readbackMs": 7.600000023841858,
+            "residualMs": 1419.5999981164932,
+            "familyMs": {
+              "precompute": 20.600000023841858,
+              "cross-cache": 220.10000014305115,
+              "timestep": 85.29999995231628,
+              "input": 805.8999999761581,
+              "attention-projections": 4091.3000010252,
+              "self-full": 17352.600001215935,
+              "self-sliding": 0,
+              "cross-attention": 0,
+              "feed-forward": 69848.70000171661,
+              "plumbing": 0,
+              "output": 179.09999990463257,
+              "sampler-dcw": 16.199999928474426,
+              "mixed": 54797.79999804497
+            }
+          },
+          "lifecycle": {
+            "backendCreatedOrdinal": 31,
+            "initializedOrdinal": 32,
+            "checkpointOrdinal": 33,
+            "generationCleanupCompletedOrdinal": 34,
+            "disposeStartedOrdinal": 35,
+            "disposeCompletedOrdinal": 36
+          },
+          "evidence": {
+            "initializationProgressEventCount": 158,
+            "generationProgressEventCount": 76608,
+            "diagnosticCodes": [
+              "ACE_PLANNER_CONDITIONING_RESOLVED",
+              "ACE_CONDITIONING_TENSORS_READY",
+              "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+            ],
+            "ditDestroyedBeforeCheckpoint": true,
+            "pipelineCleanupAwaitedBeforeDispose": true,
+            "backendAndDeviceDisposeAwaited": true,
+            "vaeWeightAcquireStarted": false
+          }
+        },
+        {
+          "role": "reverse-query8",
+          "arm": "query8",
+          "runtimeProfile": "fixed32-subgroup-query8-default",
+          "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+          "evaluationHashes": [
+            {
+              "evaluation": 0,
+              "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+            },
+            {
+              "evaluation": 1,
+              "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+            },
+            {
+              "evaluation": 2,
+              "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+            },
+            {
+              "evaluation": 3,
+              "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+            },
+            {
+              "evaluation": 4,
+              "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+            },
+            {
+              "evaluation": 5,
+              "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+            },
+            {
+              "evaluation": 6,
+              "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+            },
+            {
+              "evaluation": 7,
+              "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+            }
+          ],
+          "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+          "routeProfile": null,
+          "actualLayerIdentity": null,
+          "timing": {
+            "direction": "reverse",
+            "order": 1,
+            "arm": "query8",
+            "fullSelfMs": 28943.300001740456,
+            "sliceEvaluation0FullSelfMs": 3603.899999499321,
+            "graphWallMs": 165918.69999992847,
+            "ditStageWallMs": 170172.39999997616,
+            "commandDrainMs": 161941.70000302792,
+            "requestedIdleMs": 2552,
+            "readbackMs": 2.600000023841858,
+            "residualMs": 1424.9999969005585,
+            "familyMs": {
+              "precompute": 5.600000023841858,
+              "cross-cache": 668.5000001192093,
+              "timestep": 85.10000014305115,
+              "input": 748.8999999761581,
+              "attention-projections": 4199.699999809265,
+              "self-full": 28943.300001740456,
+              "self-sliding": 0,
+              "cross-attention": 0,
+              "feed-forward": 71606.30000209808,
+              "plumbing": 0,
+              "output": 187.60000002384186,
+              "sampler-dcw": 23.5,
+              "mixed": 55473.19999909401
+            }
+          },
+          "lifecycle": {
+            "backendCreatedOrdinal": 37,
+            "initializedOrdinal": 38,
+            "checkpointOrdinal": 39,
+            "generationCleanupCompletedOrdinal": 40,
+            "disposeStartedOrdinal": 41,
+            "disposeCompletedOrdinal": 42
+          },
+          "evidence": {
+            "initializationProgressEventCount": 158,
+            "generationProgressEventCount": 65765,
+            "diagnosticCodes": [
+              "ACE_PLANNER_CONDITIONING_RESOLVED",
+              "ACE_CONDITIONING_TENSORS_READY",
+              "ACE_DIT_OPT0062_QUAD_QUERY_TRAJECTORY"
+            ],
+            "ditDestroyedBeforeCheckpoint": true,
+            "pipelineCleanupAwaitedBeforeDispose": true,
+            "backendAndDeviceDisposeAwaited": true,
+            "vaeWeightAcquireStarted": false
+          }
+        }
+      ]
+    }
+  },
+  "lifecycle": {
+    "oneFifoGraphOwnerPerArm": true,
+    "sequentialNonOverlappingArms": true,
+    "drainBeforeRelease": true,
+    "allBackendsAndDevicesDisposed": true,
+    "postCheckpointVaeAcquireCount": 0,
+    "identityExtraSubmitCount": 0,
+    "identityExtraDrainCount": 0
+  },
+  "scope": {
+    "productionDefaultChanged": false,
+    "denseProfileChanged": false,
+    "packageBytesChanged": false,
+    "schedulerChanged": false,
+    "vaeWeightsAcquired": false,
+    "vaeExecuted": false,
+    "audioExecuted": false,
+    "sixEvaluationCombined": false,
+    "selectiveDenseCombined": false,
+    "listeningClaim": false,
+    "underOneMinuteClaim": false
+  },
+  "decision": "inconclusive-or-negative-keep-query8-default"
+}

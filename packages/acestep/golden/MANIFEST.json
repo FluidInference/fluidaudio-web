@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "ace-golden-contract-f74abaaa98db2b752c749daa21935748191fbfd7f6230f160423eaabe1e787d4",
+  "fixtures": {
+    "direct-instrumental-short": "63269e63a38b8baeb535d9d7847b7d549a6472d13997459105f722ecbc609e3e",
+    "direct-lyrics-long-condition": "c9c6c50aba153ebbcc520f2518974857eb3b3eedf48b5c6a9003b4a22e1726c3",
+    "direct-lyrics-short": "69b12dd7ba0216c3f4bbff2ce1b35056fe81d3c24e086e73df65ed78dd81304e",
+    "planner-lyrics-short": "73886939f8d60c6f5744ab1f0bd880deaea02913a81cac6a8a0231558d774cf2"
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9586,
+      "sha256": "36a5a0834ab9892025656c78ff529843faa222152ecc146934e760f1a164f486"
+    },
+    {
+      "path": "fixture.schema.json",
+      "bytes": 9196,
+      "sha256": "86d718efe14a938df9cb67d961f833c0d7bc0a1537d9ffa0ef54d846f1b00673"
+    },
+    {
+      "path": "taps.json",
+      "bytes": 5212,
+      "sha256": "f070df3771684370a4c64dad08b150ab9e64af3832a594da2cf6288a61520482"
+    },
+    {
+      "path": "prng/ace-seed-v1.json",
+      "bytes": 3162,
+      "sha256": "1aa8b6ddde9c3181b03a6f6fbc8ab0e35eec294849bbb19791d90aa53f1f64c0"
+    },
+    {
+      "path": "prng/ace-seed-v1-vectors.json",
+      "bytes": 5752,
+      "sha256": "27875e952dbad23c6badb48f338f980cc748347becade9a6eccc3376aa44cee1"
+    },
+    {
+      "path": "expected/README.md",
+      "bytes": 325,
+      "sha256": "197813bda08be9b1c960a353423c4e8fab277a62c1ea0be75d84d4d873c0c6e5"
+    },
+    {
+      "path": "expected/status.json",
+      "bytes": 725,
+      "sha256": "241b368792884b13cc33aa3cbd70f6a1ebf134d00b156fdc2c138bb33164380b"
+    },
+    {
+      "path": "fixtures/direct-instrumental-short.json",
+      "bytes": 4141,
+      "sha256": "5ef8d23784da0341153289dcb8022a8b3c2ea6c431075d3a77a00d583dd13aa8"
+    },
+    {
+      "path": "fixtures/direct-lyrics-long-condition.json",
+      "bytes": 6133,
+      "sha256": "d64ea1be526de1524aa28812ec3be1c9c253c86eb18694cd92054a9cf0b6b805"
+    },
+    {
+      "path": "fixtures/direct-lyrics-short.json",
+      "bytes": 4265,
+      "sha256": "2e557e4a2c2a632b8b39ad37b5d17fa0837c689525113e5a8e631317d86cfcde"
+    },
+    {
+      "path": "fixtures/planner-lyrics-short.json",
+      "bytes": 4513,
+      "sha256": "ad3a2859b76271c7b133c15de8952d58ff53705111219fc325200d6f41532e1a"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0035 VAE C2378 two-window gate</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 88rem; }
+      button, select { margin: 0 0.75rem 0.75rem 0; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+      audio { display: block; margin-block: 0.75rem; width: min(42rem, 100%); }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0035 exact VAE C512/64 vs C2378/64</h1>
+    <p>
+      Nothing requests a GPU until <strong>Prepare</strong> is clicked. The
+      dedicated worker authenticates converter revision 6, selects the exact
+      OPT-0028 packed profile with native exact K7, requests only advertised
+      stock-WebGPU limits, and runs C512, C2378, and a C2378 determinism repeat
+      sequentially. No two weight phases or multi-gigabyte backends coexist.
+    </p>
+    <p>
+      READY requires exact two-window coverage, successful C2378 allocation,
+      finite deterministic raw output, bounded OPFS comparison against the
+      C512 authority, full-waveform NRMSE/SNR/Pearson gates, seam diagnostics,
+      and a listenable normalized float WAV. After READY, wait at least 30
+      seconds and confirm nominal thermal state before running the balanced
+      C512/C2378/C2378/C512 timing. The production C512 default is untouched.
+    </p>
+    <label for="batch">Quanta per command buffer</label>
+    <select id="batch">
+      <option value="64" selected>64 (OPT-0027 candidate)</option>
+      <option value="8">8 (accepted production scheduling)</option>
+    </select>
+    <button id="prepare" type="button">Prepare correctness gate</button>
+    <button id="run" type="button" disabled>Run balanced timing</button>
+    <button id="dispose" type="button" disabled>Remove artifact and dispose</button>
+    <p id="progress" role="status" aria-live="polite">idle — no GPU work has run</p>
+    <audio id="audio" controls hidden></audio>
+    <pre id="result">not prepared</pre>
+    <script type="module" src="./opt-0035-vae-c2378-two-window.ts"></script>
+  </body>
+</html>

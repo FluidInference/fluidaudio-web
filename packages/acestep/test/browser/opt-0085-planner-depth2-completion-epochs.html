@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0085 planner depth-two completion epochs</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 90rem; }
+      #protocol { max-width: 84rem; }
+      #progress { margin-block: 1rem; }
+      fieldset { display: grid; gap: 0.5rem; max-width: 58rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Benchmark-only OPT-0085 A/B. Preparation authenticates the current
+      reference-BF16 package, uploads one planner-weight owner, creates one
+      planner executor, and warms depth-one and depth-two/four-completion arms
+      on middle-cache M1 full logits, M2 full logits, the compact semantic
+      range, and forced EOS. After 30 externally observed continuous nominal
+      seconds, the worker runs four balanced same-state pairs per path. Every
+      timed arm starts after an excluded identical prefill; authoritative wall
+      time covers decode through its terminal fence and map plus the selected
+      sampler. Exact raw logits, status validation, sampled token, Philox word
+      and cursor, scheduler topology, cancellation, runtime events, and cleanup
+      are retained. Never add or sum per-fence durations. Keep the same external
+      logger running until cleanup finishes, take its final poll, then attach
+      that continuous through-cleanup trace below.
+    </p>
+    <p>
+      Required URL identity parameters: <code>implementationCommit</code>,
+      <code>harnessCommit</code>, <code>machineModel</code>,
+      <code>osVersion</code>, <code>osBuild</code>,
+      <code>browserVersion</code>, <code>gpuCoreCount</code>, and
+      <code>memoryBytes</code>.
+    </p>
+    <button id="prepare" type="button">Prepare one planner owner</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+
+    <fieldset id="pre-gate" disabled>
+      <legend>External 30-second nominal pre-gate</legend>
+      <label>Source <input name="preThermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Continuous trace start (epoch ms) <input name="preThermalStartedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Pre-gate completion (epoch ms; blank uses click) <input name="preThermalCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Observation count <input name="preThermalObservations" inputmode="numeric" value="31" /></label>
+      <label>Poll interval (ms) <input name="preThermalPollMilliseconds" inputmode="numeric" value="1000" readonly /></label>
+      <label>Maximum poll gap (ms) <input name="preThermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Non-nominal observations <input name="preThermalNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <button id="run-timed" type="button" disabled>Run 16 timed A/B pairs</button>
+    </fieldset>
+
+    <fieldset id="final-gate" disabled>
+      <legend>Same continuous nominal trace through cleanup</legend>
+      <label>Source <input name="finalThermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Original continuous trace start (epoch ms) <input name="finalThermalStartedAtEpochMilliseconds" inputmode="decimal" readonly /></label>
+      <label>Final post-cleanup poll (epoch ms; blank uses click) <input name="finalThermalCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Total observation count <input name="finalThermalObservations" inputmode="numeric" /></label>
+      <label>Poll interval (ms) <input name="finalThermalPollMilliseconds" inputmode="numeric" value="1000" readonly /></label>
+      <label>Maximum poll gap over full trace (ms) <input name="finalThermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Total non-nominal observations <input name="finalThermalNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <button id="finalize" type="button" disabled>Validate trace and download receipt</button>
+    </fieldset>
+
+    <details>
+      <summary>Preparation receipt</summary>
+      <pre id="preparation">not prepared</pre>
+    </details>
+    <details>
+      <summary>Raw worker result awaiting thermal join</summary>
+      <pre id="raw-result">not run</pre>
+    </details>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0085-planner-depth2-completion-epochs.ts"></script>
+  </body>
+</html>

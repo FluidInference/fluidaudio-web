@@ -1,3 +1,7 @@
+import "./theme/site.css";
+import { initSiteTheme } from "./theme/theme.js";
+initSiteTheme();
+
 // Live-captions showcase: mic → true-streaming ASR (push()-capable engines).
 // EOU finalizes utterances from the model's own <EOU>/<EOB> events; engines
 // without events (Nemotron) finalize on a text-stall timeout. The transcript

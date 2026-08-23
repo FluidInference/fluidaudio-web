@@ -1,0 +1,48 @@
+{
+  "name": "ace-step-1.5.wgsl",
+  "version": "0.0.0",
+  "description": "ACE-Step 1.5 Turbo in the browser with custom WebGPU and WebAssembly",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "license": "MIT",
+  "author": {
+    "name": "Hamza Qayyum",
+    "email": "hamza@narcotic.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/narcotic-sh/ace-step-1.5.wgsl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/narcotic-sh/ace-step-1.5.wgsl/issues"
+  },
+  "homepage": "https://github.com/narcotic-sh/ace-step-1.5.wgsl#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_LICENSES"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "npm run check && vite build && tsc --project tsconfig.build.json",
+    "check": "tsc --noEmit && tsc --project demo/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@webgpu/types": "^0.1.64",
+    "typescript": "^5.8.0",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}

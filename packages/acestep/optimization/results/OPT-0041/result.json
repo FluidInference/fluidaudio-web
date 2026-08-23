@@ -1,0 +1,191 @@
+{
+  "schema": "ace-opt-0041-vae-k7-bounded-fp16-partials-v1",
+  "experiment": "OPT-0041",
+  "status": "completed",
+  "passed": false,
+  "identity": {
+    "k4KernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "k8KernelId": "ace-vae-fp16-opt-0041-direct-native-oki-fp16-k8-partials-k7-conv1d-v1",
+    "k16KernelId": "ace-vae-fp16-opt-0041-direct-native-oki-fp16-k16-partials-k7-conv1d-v1",
+    "nativeWeightLayout": "O-K-I FP16, unchanged and shared by all arms",
+    "k4CoreSha256": "fe3bf8110cef1a3bb791006e9d376fe549e9f00fe30e4738d7429cb0daf65841",
+    "candidateCoreSha256": "d97892196a9f1426d63b1fcd08cafeab6a1e11e8b3263e701e9102561c2d41cd",
+    "decoderCoreSha256": "07f294e2aadd615c0a8b840884f43205bc00c146362f54048a39a85440da1d3e"
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "limits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 147456000,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupsPerDimension": 65535
+    }
+  },
+  "thermal": {
+    "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+    "waitStartedAtEpochMilliseconds": 1786835629274,
+    "checkedAtEpochMilliseconds": 1786835663856,
+    "waitDurationMilliseconds": 34582,
+    "checkCount": 1,
+    "thermalLevel": 0,
+    "launchedAtEpochMilliseconds": 1786835669131,
+    "launchDelayMilliseconds": 5275,
+    "pollingLoggerUsed": false
+  },
+  "correctness": {
+    "productionTierCount": 4,
+    "adversarialFixtureCount": 4,
+    "probeCount": 16,
+    "executionsPerProbe": 2,
+    "armsPerExecution": 3,
+    "dispatchCount": 96,
+    "comparedRawU16CountPerCandidate": 2428928,
+    "completeWrites": true,
+    "allOutputsFinite": true,
+    "adjacentCanariesIntact": true,
+    "deterministicRawU16": true,
+    "aggregate": {
+      "k8": {
+        "count": 2428928,
+        "differingRawU16Count": 470898,
+        "signedZeroDifferenceCount": 0,
+        "finiteToZeroCount": 0,
+        "nrmse": 4.5776347461220796e-9,
+        "snrDecibels": 140.95293826548627,
+        "pearsonCorrelation": 0.9999999999999959,
+        "maximumAbsoluteError": 0.000030517578125,
+        "relativeMaximumAbsoluteError": 4.76837158203125e-8,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0
+      },
+      "k16": {
+        "count": 2428928,
+        "differingRawU16Count": 623642,
+        "signedZeroDifferenceCount": 0,
+        "finiteToZeroCount": 0,
+        "nrmse": 5.3809782484972395e-9,
+        "snrDecibels": 139.5485362743486,
+        "pearsonCorrelation": 0.9999999999999943,
+        "maximumAbsoluteError": 0.000030517578125,
+        "relativeMaximumAbsoluteError": 4.76837158203125e-8,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0
+      }
+    },
+    "passed": true
+  },
+  "protocol": {
+    "timingOrders": [
+      ["k4", "k8", "k16"],
+      ["k8", "k16", "k4"],
+      ["k16", "k4", "k8"],
+      ["k16", "k8", "k4"],
+      ["k4", "k16", "k8"],
+      ["k8", "k4", "k16"]
+    ],
+    "samplesPerArmPerTier": 6,
+    "dispatchesPerSample": 3,
+    "submitDrainCount": 72,
+    "oneThermalCheckOnly": true,
+    "unchangedRetryPerformed": false
+  },
+  "timing": {
+    "exactC300WeightTotal": 2397,
+    "tiers": [
+      {
+        "id": "c1024",
+        "operationLabel": "block-0-res-1-conv1",
+        "weight": 282,
+        "samplesMilliseconds": {
+          "k4": [9.899999976158142, 2.5, 2.799999952316284, 3.5, 2.3000000715255737, 2.5],
+          "k8": [19.300000071525574, 3.200000047683716, 2.200000047683716, 2.0999999046325684, 2.399999976158142, 2.4000000953674316],
+          "k16": [7.599999904632568, 5.299999952316284, 5, 5.200000047683716, 5.199999928474426, 4.799999952316284]
+        },
+        "mediansMilliseconds": {"k4": 2.649999976158142, "k8": 2.400000035762787, "k16": 5.199999988079071},
+        "speedupOverK4": {"k8": 1.104166640279194, "k16": 0.5096153811986982},
+        "candidateWon": {"k8": true, "k16": false}
+      },
+      {
+        "id": "c512",
+        "operationLabel": "block-1-res-2-conv1",
+        "weight": 423,
+        "samplesMilliseconds": {
+          "k4": [3, 1.899999976158142, 1.5, 1.7999999523162842, 1.7999999523162842, 1.5],
+          "k8": [1.399999976158142, 2.6999999284744263, 1.899999976158142, 1.4000000953674316, 1.8000000715255737, 1.899999976158142],
+          "k16": [2.200000047683716, 2.3000000715255737, 2.5, 2.6999999284744263, 2.4000000953674316, 3.200000047683716]
+        },
+        "mediansMilliseconds": {"k4": 1.7999999523162842, "k8": 1.850000023841858, "k16": 2.450000047683716},
+        "speedupOverK4": {"k8": 0.9729729346588117, "k16": 0.7346938437891232},
+        "candidateWon": {"k8": false, "k16": false}
+      },
+      {
+        "id": "c256",
+        "operationLabel": "block-2-res-1-conv1",
+        "weight": 423,
+        "samplesMilliseconds": {
+          "k4": [1.899999976158142, 1.2999999523162842, 1.2999999523162842, 1.2999999523162842, 1.3000000715255737, 1.8000000715255737],
+          "k8": [1.0999999046325684, 1.6999999284744263, 1.100000023841858, 1.2000000476837158, 1.2000000476837158, 1.0999999046325684],
+          "k16": [1.9000000953674316, 1.5, 2.9000000953674316, 2.799999952316284, 2.799999952316284, 1.7999999523162842]
+        },
+        "mediansMilliseconds": {"k4": 1.300000011920929, "k8": 1.1500000357627869, "k16": 2.350000023841858},
+        "speedupOverK4": {"k8": 1.1304347578203753, "k16": 0.5531914888220494},
+        "candidateWon": {"k8": true, "k16": false}
+      },
+      {
+        "id": "c128",
+        "operationLabel": "block-4-res-3-conv1",
+        "weight": 1269,
+        "samplesMilliseconds": {
+          "k4": [5, 1.1999999284744263, 1.8000000715255737, 1.2000000476837158, 2.1999999284744263, 1.6999999284744263],
+          "k8": [1.100000023841858, 1.2999999523162842, 1.5, 1, 1.1999999284744263, 1.8000000715255737],
+          "k16": [1.399999976158142, 2.4000000953674316, 1.399999976158142, 1.399999976158142, 1.3000000715255737, 1.3000000715255737]
+        },
+        "mediansMilliseconds": {"k4": 1.75, "k8": 1.2499999403953552, "k16": 1.399999976158142},
+        "speedupOverK4": {"k8": 1.4000000667572052, "k16": 1.2500000212873734},
+        "candidateWon": {"k8": true, "k16": true}
+      }
+    ],
+    "weightedMilliseconds": {"k4": 4279.349978148937, "k8": 3532.0499596595764, "k16": 5273.399996638298},
+    "weightedSpeedupOverK4": {"k8": 1.2115768539585965, "k16": 0.8114973225768858},
+    "requiredSpeedupOverK4": 1.15,
+    "allTierWinRequired": true,
+    "eligible": {"k8": false, "k16": false},
+    "winner": null,
+    "passed": false
+  },
+  "decision": {
+    "disposition": "negative-stop-before-c512",
+    "c512AuthorizedVariant": null,
+    "productionIntegrationAuthorized": false,
+    "productionSelectorChanged": false,
+    "fullProductRunAuthorized": false
+  },
+  "cleanup": {
+    "createdBufferCount": 126,
+    "destroyedBufferCount": 126,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "maximumLiveBytes": 673832504,
+    "mapCount": 123,
+    "unmapCount": 123,
+    "activeMapCount": 0,
+    "mapsBalanced": true,
+    "queueDrainedBeforeRelease": true,
+    "kernelDestroyIdempotent": true,
+    "zeroLiveResources": true,
+    "deviceDestroyed": true
+  }
+}

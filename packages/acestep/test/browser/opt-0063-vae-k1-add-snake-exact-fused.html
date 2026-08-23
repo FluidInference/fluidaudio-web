@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0063 exact K1/Add/Snake fusion screen</title>
+    <style>
+      body { font: 14px/1.45 system-ui, sans-serif; margin: 1.5rem; max-width: 72rem; }
+      fieldset { display: grid; grid-template-columns: 20rem 1fr; gap: .4rem .8rem; }
+      input { font: inherit; min-width: 28rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0063 exact K1 → Add → successor Snake fusion</h1>
+    <p>
+      This benchmark-only page compares the unchanged OPT-0025 K1 plus
+      production Add and Snake dispatches against one fused kernel. Preparation
+      checks every raw-U16 former-Add and final-Snake word twice, including
+      guards, deterministic prefills, ten C512/C2314 production-range screens,
+      and signed-zero/subnormal/transcendental fixtures.
+    </p>
+    <p id="progress">Preparing and running the untimed correctness gate…</p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One-check thermal gate (wait 30 s after preparation)</legend>
+      <label for="thermalSource">Source</label>
+      <input id="thermalSource" name="thermalSource"
+        value="notifyutil-com.apple.system.thermalpressurelevel" />
+      <label for="thermalStartedAtEpochMilliseconds">Wait started (epoch ms)</label>
+      <input id="thermalStartedAtEpochMilliseconds"
+        name="thermalStartedAtEpochMilliseconds" inputmode="numeric" />
+      <label for="thermalCheckedAtEpochMilliseconds">Level-0 check (epoch ms)</label>
+      <input id="thermalCheckedAtEpochMilliseconds"
+        name="thermalCheckedAtEpochMilliseconds" inputmode="numeric" />
+      <label for="thermalObservations">Observation count</label>
+      <input id="thermalObservations" name="thermalObservations" value="1" />
+      <label for="thermalObservedLevel">Observed level</label>
+      <input id="thermalObservedLevel" name="thermalObservedLevel" value="0" />
+    </fieldset>
+    <p>
+      Command: <code>notifyutil -g com.apple.system.thermalpressurelevel</code>
+    </p>
+    <button id="run" type="button" disabled>Run balanced ABBA once</button>
+    <pre id="result">not run</pre>
+    <script type="module"
+      src="./opt-0063-vae-k1-add-snake-exact-fused.ts"></script>
+  </body>
+</html>

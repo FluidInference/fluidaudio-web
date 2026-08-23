@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0084 planner compact-head plus fused-sampler compound gate</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    }
+    body { margin: 1rem; max-width: 90rem; }
+    p { max-width: 84rem; line-height: 1.45; }
+    fieldset {
+      display: grid;
+      gap: 0.45rem;
+      margin-block: 1rem;
+      max-width: 78rem;
+    }
+    label {
+      display: grid;
+      grid-template-columns: 40rem minmax(18rem, 1fr);
+      gap: 0.5rem;
+    }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="idle">
+  <h1>OPT-0084 planner compact-head plus fused-sampler compound gate</h1>
+  <p>
+    This benchmark-only page compares A (the current full 217,204-row tied head
+    and accepted browser-v1 sampler), B (that same full head and the OPT-0084
+    reusable fused/radix sampler), and C (the exact 64,000-row semantic head and
+    the compact OPT-0084 sampler). Production remains on A regardless of this
+    page's result.
+  </p>
+  <p>
+    Preparation authenticates the reference-BF16 package and pinned tokenizer,
+    loads one planner owner, and executes actual sequential two-row semantic
+    states at early, middle, and late cache positions. Before timing it checks
+    every retained logit, filtered logit, sampling weight, token, random word,
+    draw index, cursor end, cache geometry, mapped write status, and reusable
+    allocation state by replaying the opposite tied head over the exact same
+    final hidden rows.
+  </p>
+  <p>
+    Timing is exactly sixteen balanced A/B/C triples at each position, with B
+    between A and C and the A/C order reversed in half the rounds. Each wall is
+    one actual decode plus its selected sampler. A per-position untimed
+    decode/replay constructs both phase-local dispatches so the authoritative
+    recurring-token wall excludes one-time construction. Same-state replay,
+    hashing, and diagnostics happen after each timed boundary. Start one
+    absolute-cadence 1,000 ms thermal trace before preparation, enter a fresh
+    nominal level-0 interval of at least 30 seconds after READY, run once, and
+    retain that same trace through owner/device cleanup. The worker records the
+    actual first timed-token epoch, requires it within 5 seconds of the entered
+    gate completion, and finalization rejects any pressure transition through
+    that actual start. Never rerun unchanged timing to seek a preferred result.
+  </p>
+  <p>
+    The page refuses to prepare unless its URL query contains the complete run
+    identity: <code>harnessCommit</code> (full 40-character lowercase commit),
+    <code>machineModel</code>, <code>osVersion</code>, <code>osBuild</code>,
+    <code>browserVersion</code>, <code>gpuCoreCount</code>, and
+    <code>memoryBytes</code>. The page and worker validate this identity
+    independently, and the final receipt preserves it verbatim.
+  </p>
+
+  <button id="prepare" type="button">
+    Prepare authenticated owner and three-arm correctness
+  </button>
+  <button id="cancel" type="button" disabled>
+    Cancel at the next bounded checkpoint
+  </button>
+  <div id="progress" role="status" aria-live="polite">
+    idle; no planner work has started
+  </div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch interval from the continuous external trace</legend>
+    <label>Source
+      <input name="thermalSource"
+        value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand"
+        value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal"
+        value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run the registered sixteen-round A/B/C compound gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same external trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema"
+        value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1"
+        readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal"
+        value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Every level transition as JSON
+      <input name="thermalTraceTransitionsJson" spellcheck="false" value="[]"
+        placeholder='[{"atEpochMilliseconds":123,"level":1}]'>
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize the stable receipt without rerunning timing
+    </button>
+  </fieldset>
+
+  <a id="download" hidden
+    download="opt-0084-planner-compact-head-fused-sampling.json">
+    Download complete raw receipt
+  </a>
+  <pre id="result"></pre>
+  <script type="module"
+    src="./opt-0084-planner-compact-head-fused-sampling.ts"></script>
+</body>
+</html>

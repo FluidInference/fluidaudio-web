@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "contractId": "ace-seed-v1",
+  "authority": "browser-defined",
+  "seedSyntax": "uint64-lowercase-hex-16",
+  "generator": "philox4x32-10",
+  "counterOrder": "little-endian-word-index",
+  "streams": {
+    "diffusion-noise": {"domainWords": [1145652806, 1313818963]},
+    "planner-sampling": {"domainWords": [1347174734, 1396788560]}
+  },
+  "philox": {
+    "rounds": 10,
+    "multipliers": [3528531795, 3449720151],
+    "weyl": [2654435769, 3144134277],
+    "arithmetic": "all operations modulo 2^32"
+  },
+  "knownAnswer": {
+    "counterWords": [0, 0, 0, 0],
+    "keyWords": [0, 0],
+    "outputWords": [1713891541, 3781805453, 3159862348, 2600524760]
+  },
+  "wordAddressing": {
+    "blockIndex": "floor(globalWordIndex / 4)",
+    "laneOrder": ["word0", "word1", "word2", "word3"],
+    "maximumGlobalWordIndexHex": "3ffffffffffffffff"
+  },
+  "gaussian": {
+    "mappingId": "probit-acklam-binary64-f32-v1",
+    "uniform": "u=(uint32(word)+0.5)*2^-32, evaluated exactly in binary64",
+    "algorithm": "Acklam inverse-standard-normal rational approximation with fixed coefficient and operation order",
+    "deterministicLog": "binary64 power-of-two range reduction plus 25 atanh terms through denominator 49",
+    "deterministicSqrt": "10 fixed binary64 Newton iterations, initial estimate max(x,1)",
+    "hostTranscendentals": false,
+    "output": "one IEEE-754 binary32 value, round-to-nearest-ties-to-even",
+    "consumption": "one diffusion-noise word per row-major [batch,latent-frame,channel] element",
+    "executionLocation": "dedicated-worker-cpu"
+  },
+  "categorical": {
+    "mappingId": "u32-midpoint-binary64-cdf-v1",
+    "uniform": "u=(uint32(word)+0.5)*2^-32, evaluated exactly in binary64",
+    "weights": "original-token-ID array; each finite nonnegative value rounds once to binary32",
+    "plannerPipeline": "CFG combine for semantic codes, constrained FSM mask, repetition penalty, top-k, top-p on untempered FP32 logits, temperature division, FP32 softmax, then this mapping; descending-logit ties use ascending token ID",
+    "accumulation": "binary64, ascending token ID, first total pass then second cumulative pass",
+    "selection": "first positive-weight token with cumulative>u*total; final positive token is the upper-rounding guard",
+    "consumption": "one planner-sampling word per emitted token, including forced single-candidate and stop tokens",
+    "plannerOrder": "continuous draw ordinal across CoT then semantic-code phases; autoregressive step then item; CFG model rows share one sampled token and consume no extra word",
+    "executionLocation": "dedicated-worker-cpu"
+  },
+  "vectors": {
+    "path": "prng/ace-seed-v1-vectors.json",
+    "pythonOracle": "scripts/prng_reference.py",
+    "typescriptTest": "test/seed.test.ts"
+  },
+  "transformStatus": {
+    "uniformWords": "pinned",
+    "diffusionGaussianMapping": "pinned",
+    "plannerCategoricalMapping": "pinned",
+    "nativeCapture": "pending"
+  },
+  "referenceInterop": "Inject the exact browser-produced initial-noise tensor and raw planner words into the pinned upstream capture. A numeric seed is never presumed to match PyTorch or MLX RNG."
+}

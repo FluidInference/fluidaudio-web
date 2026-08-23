@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0011 production FP16 Snake correctness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Correctness only: authenticate the promoted production shader-f16 Snake
+      source and every generated WGSL identity; bind all 36 operations and all
+      813 unchanged B-256 graph quanta; execute bounded representative exact
+      graph ranges for every production shape family; and execute complete
+      manageable arithmetic fixtures spanning channel reuse, alpha/beta log
+      scales, signed zero, subnormals, round-to-nearest-even boundaries,
+      extreme finite values, legitimate overflow, and odd tails.
+      Every selected raw FP16 output bit is compared with an independent CPU oracle
+      and rerun deterministically. The gate also validates qNaN prefills,
+      canaries, guards, binding padding, real multi-range cancellation,
+      heartbeat liveness, and complete idempotent cleanup/device loss.
+      It records no kernel, performance, or wall-time timing. Timer and
+      animation-frame counts are lifecycle correctness signals only. It makes
+      no thermal, throughput, quality, listening, selector, or
+      production-integration claim.
+    </p>
+    <button id="start" type="button">
+      Run OPT-0011 production FP16 Snake correctness
+    </button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <fieldset id="raw-result-retrieval">
+      <legend>Bounded raw-result retrieval — Available from page start</legend>
+      <label>
+        Next code-unit offset
+        <input name="rawResultOffset" inputmode="numeric" value="0" />
+      </label>
+      <button id="publish-raw-result-chunk" type="button">
+        Publish raw-result chunk
+      </button>
+      <pre
+        id="raw-result-chunk"
+        data-state="ready"
+        hidden
+        aria-hidden="true"
+      ></pre>
+    </fieldset>
+    <script
+      type="module"
+      src="./opt-0011-vae-snake-fp16-production.ts"
+    ></script>
+  </body>
+</html>

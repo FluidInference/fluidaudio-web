@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/narcotic-sh/ace-step-1.5.wgsl/reference/input.schema.json",
+  "title": "ACE-Step native reference random-input bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "fixtureId",
+    "fixtureContractSha256",
+    "algorithmId",
+    "gaussianMapping",
+    "initialNoise",
+    "plannerSampling"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "fixtureId": {"type": "string", "minLength": 1},
+    "fixtureContractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "algorithmId": {"const": "ace-seed-v1"},
+    "gaussianMapping": {"type": "string", "minLength": 1, "not": {"const": "deferred"}},
+    "initialNoise": {"$ref": "#/$defs/floatArtifact"},
+    "plannerSampling": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapping", "drawStart", "words"],
+          "properties": {
+            "mapping": {"type": "string", "minLength": 1, "not": {"const": "deferred"}},
+            "drawStart": {"const": 0},
+            "words": {"$ref": "#/$defs/wordArtifact"}
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "floatArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dtype", "shape", "byteLength", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "dtype": {"const": "float32-le"},
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "integer", "minimum": 1}
+        },
+        "byteLength": {"type": "integer", "minimum": 4},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "wordArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dtype", "shape", "byteLength", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "dtype": {"const": "uint32-le"},
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"type": "integer", "minimum": 1}
+        },
+        "byteLength": {"type": "integer", "minimum": 4},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

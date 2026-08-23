@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0087 planner package-native low-row GEMV</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 90rem; }
+      #protocol { max-width: 84rem; }
+      #progress { margin-block: 1rem; }
+      fieldset { display: grid; gap: 0.5rem; max-width: 58rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Benchmark-only OPT-0087 A/B. Preparation authenticates the current
+      reference-BF16 package, uploads one planner-weight owner, creates one
+      paired planner executor, and warms the generic M16 and unchanged OPT-0083
+      direct low-row pipelines on middle-cache M1 and M2 full-vocabulary tokens.
+      Scheduling remains the production depth-one path: exactly 33 model quanta
+      plus one unchanged readback command-buffer boundary, with one drain and
+      real queue-empty interval per command. After 30 externally observed
+      continuous nominal seconds, the
+      worker runs eight balanced same-state pairs per row count (16 total).
+      Every timed arm starts after an excluded identical generic prefill.
+      The first cold generic-A warmup for each M1/M2 shape creates exactly five
+      256-byte mapped controls in a planner-runtime compile cache. Those ten
+      buffers persist across phase replay until owner cleanup. Their allocation
+      is captured in the disclosed cold outer wall and completes before the
+      authoritative recurring model-through-readback wall. Direct-B warmups and
+      every subsequently warmed A/B arm create no buffers; their only two maps
+      are the exact evidence readbacks. Timed pairs require those zero-allocation
+      and two-map resource receipts to be identical.
+      The unchanged terminal readback command-buffer boundary has
+      evidence-augmented contents that also copy every newly appended
+      K/V cache element across all 28 layers, both K and V, all physical rows,
+      eight KV heads and 128 dimensions, plus the appended validity words, into
+      a paired-owner-only evidence buffer. Receipts retain exact raw-U32 hashes
+      and comparisons for that cache evidence, full logits, actual write-status
+      words, sampled token, Philox word and cursor, layer/head/readback/model and
+      complete-token walls, logical weight bandwidth, exact topology, resource
+      accounting, cancellation, runtime events, and cleanup. Keep the same
+      external logger running from before preparation/READY until cleanup
+      finishes, take its final poll, then attach the raw continuous
+      through-cleanup trace binding below. Later post-launch thermal transitions
+      are disclosed and retained; only the launch interval must remain nominal.
+    </p>
+    <p>
+      Required URL identity parameters: <code>implementationCommit</code>,
+      <code>harnessCommit</code>, <code>machineModel</code>,
+      <code>osVersion</code>, <code>osBuild</code>,
+      <code>browserVersion</code>, <code>gpuCoreCount</code>, and
+      <code>memoryBytes</code>.
+    </p>
+    <button id="prepare" type="button">Prepare one planner owner</button>
+    <button id="cancel" type="button" disabled>Cancel at the next bounded checkpoint</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+
+    <fieldset id="pre-gate" disabled>
+      <legend>Fresh nominal launch interval from the continuous external trace</legend>
+      <label>Source <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Exact command <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Full trace start (epoch ms) <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Fresh gate start observation (epoch ms) <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Fresh gate completion observation (epoch ms) <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Fresh gate observation count <input name="thermalGateObservations" inputmode="numeric" value="31" /></label>
+      <label>Poll interval (ms) <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly /></label>
+      <label>Maximum adjacent observation gap (ms) <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Non-nominal observations <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <label>Missing observations <input name="thermalGateMissingObservations" inputmode="numeric" value="0" /></label>
+      <button id="run-timed" type="button" disabled>Run 16 timed A/B pairs</button>
+    </fieldset>
+
+    <fieldset id="final-gate" disabled>
+      <legend>Same external trace through measurement and cleanup</legend>
+      <label>Raw JSONL schema <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly /></label>
+      <label>Raw JSONL SHA-256 <input name="thermalTraceSha256" spellcheck="false" /></label>
+      <label>Raw JSONL byte length <input name="thermalTraceByteLength" inputmode="numeric" /></label>
+      <label>Trace completion observation (epoch ms; after cleanup) <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Full trace observation count <input name="thermalTraceObservations" inputmode="numeric" /></label>
+      <label>Full trace maximum adjacent gap (ms) <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Full trace non-nominal observations <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <label>Full trace missing observations <input name="thermalTraceMissingObservations" inputmode="numeric" value="0" /></label>
+      <label>Full trace initial level <input name="thermalTraceInitialLevel" inputmode="numeric" value="0" /></label>
+      <label>Full trace final level <input name="thermalTraceFinalLevel" inputmode="numeric" value="0" /></label>
+      <label>Every level transition as JSON <input name="thermalTraceTransitionsJson" spellcheck="false" value="[]" placeholder='[{"atEpochMilliseconds":123,"level":1}]' /></label>
+      <button id="finalize" type="button" disabled>Validate trace and download receipt</button>
+    </fieldset>
+
+    <details>
+      <summary>Preparation receipt</summary>
+      <pre id="preparation">not prepared</pre>
+    </details>
+    <details>
+      <summary>Raw worker result awaiting thermal join</summary>
+      <pre id="raw-result">not run</pre>
+    </details>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0087-planner-package-native-low-row-gemv.ts"></script>
+  </body>
+</html>

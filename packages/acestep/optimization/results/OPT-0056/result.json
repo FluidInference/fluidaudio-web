@@ -1,0 +1,5034 @@
+{
+  "schema": "ace-opt-0056-selective-k4-exact-down-trajectory-gate-v1",
+  "experimentId": "OPT-0056",
+  "status": "failed-correctness-gate",
+  "passed": false,
+  "fixedExecutionOrder": [
+    "rev7-control",
+    "rev8-all-k4",
+    "rev8-selective",
+    "rev8-selective-repeat"
+  ],
+  "identity": {
+    "requestCanonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":180,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+    "requestSha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+    "requestByteLength": 366,
+    "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+    "control": {
+      "role": "rev7-control",
+      "manifestPath": "/model/files-fp16-dit-rev7-oracle/manifest.json",
+      "manifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "manifestByteLength": 254357,
+      "runtimeProfile": "opt-0009-fp16-fp32-dense-v1",
+      "kernelSetId": "opt-0009-n256-k32-fp16-fp32-v1"
+    },
+    "allK4": {
+      "role": "rev8-all-k4",
+      "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+      "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+      "manifestByteLength": 257789,
+      "runtimeProfile": "opt-0037-k4-fp16-partials-v1",
+      "kernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1"
+    },
+    "selective": {
+      "role": "rev8-selective",
+      "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+      "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+      "manifestByteLength": 257789,
+      "runtimeProfile": "opt-0056-selective-k4-exact-down-v1",
+      "kernelSetId": "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1"
+    }
+  },
+  "primitive": {
+    "passed": true,
+    "shapeCount": 4,
+    "shapeIds": [
+      "h-h",
+      "h-1024",
+      "h-6144",
+      "6144-h"
+    ],
+    "comparedOutputU32Count": 25344000,
+    "exactIncreasingKFp32": true,
+    "exhaustiveLayoutForwardInverseCoveredByFocusedTests": true,
+    "weightFixture": "deterministic-synthetic-logical-fp16",
+    "logicalBitsPackedIntoRev7AndAuthenticatedRev8Layouts": true,
+    "actualPackageWeightIsolatedU32IdentityMeasured": false,
+    "authenticatedRev8PackageExercisedByFullTrajectory": true,
+    "uncapturedGpuErrorCount": 0,
+    "unexpectedDeviceLossCount": 0,
+    "cases": [
+      {
+        "id": "h-h",
+        "shape": {
+          "id": "h-h",
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048
+        },
+        "outputElements": 4608000,
+        "mismatches": 0,
+        "nonFinite": 0,
+        "prefillRemaining": 0,
+        "guardsClean": true,
+        "outputSha256": "864d869b6508d84aaba28eda19e572e3c4ada3b2c356441a80c965d302b3f396",
+        "passed": true
+      },
+      {
+        "id": "h-1024",
+        "shape": {
+          "id": "h-1024",
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputElements": 2304000,
+        "mismatches": 0,
+        "nonFinite": 0,
+        "prefillRemaining": 0,
+        "guardsClean": true,
+        "outputSha256": "95671a16e07cfd30eb02145636301dccee5b928c9c2a8692112a487ae3a48fd2",
+        "passed": true
+      },
+      {
+        "id": "h-6144",
+        "shape": {
+          "id": "h-6144",
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144
+        },
+        "outputElements": 13824000,
+        "mismatches": 0,
+        "nonFinite": 0,
+        "prefillRemaining": 0,
+        "guardsClean": true,
+        "outputSha256": "82d06149f5a29b7b52fb40bd54e4f7752337e49c1fa194b551bef3c7c073da0c",
+        "passed": true
+      },
+      {
+        "id": "6144-h",
+        "shape": {
+          "id": "6144-h",
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048
+        },
+        "outputElements": 4608000,
+        "mismatches": 0,
+        "nonFinite": 0,
+        "prefillRemaining": 0,
+        "guardsClean": true,
+        "outputSha256": "b1ee228890c71711cd18091ba7b75f0d9115c80d266741f089d372341824c2f7",
+        "passed": true
+      }
+    ]
+  },
+  "arms": {
+    "control": {
+      "role": "rev7-control",
+      "authenticatedPackage": {
+        "role": "rev7-control",
+        "manifestPath": "/model/files-fp16-dit-rev7-oracle/manifest.json",
+        "manifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+        "manifestByteLength": 254357,
+        "runtimeProfile": "opt-0009-fp16-fp32-dense-v1",
+        "kernelSetId": "opt-0009-n256-k32-fp16-fp32-v1"
+      },
+      "runtimeDiagnostics": {
+        "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+        "ditDenseManifestByteLength": 254357,
+        "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+        "ditDenseKernelSetId": "opt-0009-n256-k32-fp16-fp32-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "conditionTokenCount": 98
+      },
+      "evaluationHashes": [
+        {
+          "evaluation": 0,
+          "latentSha256": "d7f4280fdc43a038728df167f02819c35d99dac812347731d2fb8ac421a36286"
+        },
+        {
+          "evaluation": 1,
+          "latentSha256": "29b113de627c68cfe67cd1d3e2fe3ef3279d968e1584d16ffb3e5f217e220331"
+        },
+        {
+          "evaluation": 2,
+          "latentSha256": "d4ef5e04ceaa6b20e8dd0bd87afbb47a61a8c3f2e4e936d74b50998f40d5a1ca"
+        },
+        {
+          "evaluation": 3,
+          "latentSha256": "d1cff5e3804105a21a9188ac784a9730fcbd4e589aaade20b5bfefeee4837543"
+        },
+        {
+          "evaluation": 4,
+          "latentSha256": "67539d0c653881306821bffa0934c0770a8eaaa96f003cecf5cc6f0d9005bbb2"
+        },
+        {
+          "evaluation": 5,
+          "latentSha256": "060c796e1a625b114bc40fc29e310e8c0cce568164b71f776dc0a42c41c0f85e"
+        },
+        {
+          "evaluation": 6,
+          "latentSha256": "73c345cb357c9081c33565d61356e2c07090b6c8011d552ddfec6243f862b237"
+        },
+        {
+          "evaluation": 7,
+          "latentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c"
+        }
+      ],
+      "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentMaxAbs": 6.882339954376221,
+      "routeProfile": null,
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 55620.1999976635,
+        "graphWallMs": 59213.10000002384
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 26
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1217.1999999284744
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 1980.1000000238419
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 19.700000047683716
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 1916.5999999046326
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 59307.90000009537
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 1,
+        "initializedOrdinal": 2,
+        "checkpointOrdinal": 3,
+        "generationCleanupCompletedOrdinal": 4,
+        "disposeStartedOrdinal": 5,
+        "disposeCompletedOrdinal": 6
+      },
+      "evidence": {
+        "initializationProgressEventCount": 158,
+        "generationProgressEventCount": 77829,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_OPT0056_TRAJECTORY"
+        ],
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false
+      }
+    },
+    "allK4": {
+      "role": "rev8-all-k4",
+      "authenticatedPackage": {
+        "role": "rev8-all-k4",
+        "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+        "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "manifestByteLength": 257789,
+        "runtimeProfile": "opt-0037-k4-fp16-partials-v1",
+        "kernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1"
+      },
+      "runtimeDiagnostics": {
+        "ditDenseManifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "ditDenseManifestByteLength": 257789,
+        "ditDenseRuntimeProfile": "opt-0037-k4-fp16-partials-v1",
+        "ditDenseKernelSetId": "opt-0037-opt-0032-k4-partials-fixed32-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "conditionTokenCount": 98
+      },
+      "evaluationHashes": [
+        {
+          "evaluation": 0,
+          "latentSha256": "dd8ff86582af6861990ec1277c0b20b87a5b76639bf0af9eba19887439b856c6"
+        },
+        {
+          "evaluation": 1,
+          "latentSha256": "6ab364be92b28c04f65cd8b56cd3a5d19a79d26ee629c7c9e000eb52c7a44f31"
+        },
+        {
+          "evaluation": 2,
+          "latentSha256": "256d81d3882f3eab2a66917929405f7fbc34e9a8d918e0cb594fd37532cf14ea"
+        },
+        {
+          "evaluation": 3,
+          "latentSha256": "cb8825220f0b4872a9e3b811dbf8d1f4391f632601392174f4ef838f904defa5"
+        },
+        {
+          "evaluation": 4,
+          "latentSha256": "d2c365df1bfdd9b23c8eeaeb89e7bd27d9388f16e26c276e08ff0039e8ea6446"
+        },
+        {
+          "evaluation": 5,
+          "latentSha256": "2b2d8f54ab5331ad90843710940b1d29302e8f9ba782b02cae2e90d3296142c9"
+        },
+        {
+          "evaluation": 6,
+          "latentSha256": "41d84d1ae3c5b1a751ec916fb6e9351ee56909596901f83c46370c7cd520258c"
+        },
+        {
+          "evaluation": 7,
+          "latentSha256": "7da2b7a03fcad61547d56400ba2c499af34fe5459f002a8ab2a998b9214e9943"
+        }
+      ],
+      "finalLatentSha256": "7da2b7a03fcad61547d56400ba2c499af34fe5459f002a8ab2a998b9214e9943",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentMaxAbs": 6.882054328918457,
+      "routeProfile": null,
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 53404.100001215935,
+        "graphWallMs": 56676.799999952316
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 24.699999928474426
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1954
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0.10000002384185791
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 2564.2000000476837
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 24.09999990463257
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 3442.3000000715256
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 56754.89999997616
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 7,
+        "initializedOrdinal": 8,
+        "checkpointOrdinal": 9,
+        "generationCleanupCompletedOrdinal": 10,
+        "disposeStartedOrdinal": 11,
+        "disposeCompletedOrdinal": 12
+      },
+      "evidence": {
+        "initializationProgressEventCount": 8798,
+        "generationProgressEventCount": 78508,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_OPT0056_TRAJECTORY"
+        ],
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false
+      }
+    },
+    "selective": {
+      "role": "rev8-selective",
+      "authenticatedPackage": {
+        "role": "rev8-selective",
+        "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+        "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "manifestByteLength": 257789,
+        "runtimeProfile": "opt-0056-selective-k4-exact-down-v1",
+        "kernelSetId": "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1"
+      },
+      "runtimeDiagnostics": {
+        "ditDenseManifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "ditDenseManifestByteLength": 257789,
+        "ditDenseRuntimeProfile": "opt-0056-selective-k4-exact-down-v1",
+        "ditDenseKernelSetId": "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "conditionTokenCount": 98
+      },
+      "evaluationHashes": [
+        {
+          "evaluation": 0,
+          "latentSha256": "c9f8176724272c358387b52cfe73316cf2e988bd7a94f59b81be7044f2334896"
+        },
+        {
+          "evaluation": 1,
+          "latentSha256": "7cfc9bac40f3852bf69b30c43d3392ec1f7d1c4826a75ba8b688595d67d0d17c"
+        },
+        {
+          "evaluation": 2,
+          "latentSha256": "1f77156faf73812b1af071f6cd7c83fa1bc9fa98082fb4737f33e64f74695d4e"
+        },
+        {
+          "evaluation": 3,
+          "latentSha256": "5f78d8e6545adf529f84b2ec896fb4b86935047fd3a525357093a049dc92368c"
+        },
+        {
+          "evaluation": 4,
+          "latentSha256": "151b6b866698ff3eff9cc4ead73ff68c000bab7d2aef59d38a6d2e843f3c41ee"
+        },
+        {
+          "evaluation": 5,
+          "latentSha256": "a6ad901d880921df1cfef1fd3882142a4b6c946499902936d79c4639c103f50d"
+        },
+        {
+          "evaluation": 6,
+          "latentSha256": "57913ea9fe19f081c1d2748a32045d19837b4e6c70a87e3fe9d8628222d50a93"
+        },
+        {
+          "evaluation": 7,
+          "latentSha256": "ce20507c078d5c6ad04f91b4f6253fc859aa8a6a3f6e4b8e309d81288fe518bf"
+        }
+      ],
+      "finalLatentSha256": "ce20507c078d5c6ad04f91b4f6253fc859aa8a6a3f6e4b8e309d81288fe518bf",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentMaxAbs": 6.881793975830078,
+      "routeProfile": {
+        "schema": "ace-opt-0056-selective-dense-routes-v1",
+        "kernelSetId": "ace-opt-0056-selective-k4-exact-down-fixed32-v1",
+        "routeCount": 216,
+        "dispatchCount": 1728,
+        "approximateRouteCount": 192,
+        "exactDownRouteCount": 24,
+        "routeOwnerRows": [
+          [
+            "ace-dit-layer-0-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ]
+        ]
+      },
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 65582.69999861717,
+        "graphWallMs": 68867.79999995232
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 27.199999928474426
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1060.8000000715256
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 2218.100000023842
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 27.09999990463257
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 2558.100000023842
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 68983.5
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 13,
+        "initializedOrdinal": 14,
+        "checkpointOrdinal": 15,
+        "generationCleanupCompletedOrdinal": 16,
+        "disposeStartedOrdinal": 17,
+        "disposeCompletedOrdinal": 18
+      },
+      "evidence": {
+        "initializationProgressEventCount": 158,
+        "generationProgressEventCount": 76466,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_OPT0056_TRAJECTORY"
+        ],
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false
+      }
+    },
+    "selectiveRepeat": {
+      "role": "rev8-selective-repeat",
+      "authenticatedPackage": {
+        "role": "rev8-selective-repeat",
+        "manifestPath": "/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+        "manifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "manifestByteLength": 257789,
+        "runtimeProfile": "opt-0056-selective-k4-exact-down-v1",
+        "kernelSetId": "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1"
+      },
+      "runtimeDiagnostics": {
+        "ditDenseManifestSha256": "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1",
+        "ditDenseManifestByteLength": 257789,
+        "ditDenseRuntimeProfile": "opt-0056-selective-k4-exact-down-v1",
+        "ditDenseKernelSetId": "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1",
+        "executionProfileId": "reference-bf16-subgroups",
+        "schedulingProfile": "cooperative"
+      },
+      "conditioningAuthority": {
+        "textTokenCount": 82,
+        "textTokenSha256": "8067ee5c606e45e54d991364aa82a0ef7303e2a4e98831a01bb974236cafb3b2",
+        "lyricTokenCount": 15,
+        "lyricTokenSha256": "b4b58cd318163b4dfaa02b7ddbf46b18d84a415909c7662f9538c0b9053f3764",
+        "conditionTokenCount": 98
+      },
+      "evaluationHashes": [
+        {
+          "evaluation": 0,
+          "latentSha256": "c9f8176724272c358387b52cfe73316cf2e988bd7a94f59b81be7044f2334896"
+        },
+        {
+          "evaluation": 1,
+          "latentSha256": "7cfc9bac40f3852bf69b30c43d3392ec1f7d1c4826a75ba8b688595d67d0d17c"
+        },
+        {
+          "evaluation": 2,
+          "latentSha256": "1f77156faf73812b1af071f6cd7c83fa1bc9fa98082fb4737f33e64f74695d4e"
+        },
+        {
+          "evaluation": 3,
+          "latentSha256": "5f78d8e6545adf529f84b2ec896fb4b86935047fd3a525357093a049dc92368c"
+        },
+        {
+          "evaluation": 4,
+          "latentSha256": "151b6b866698ff3eff9cc4ead73ff68c000bab7d2aef59d38a6d2e843f3c41ee"
+        },
+        {
+          "evaluation": 5,
+          "latentSha256": "a6ad901d880921df1cfef1fd3882142a4b6c946499902936d79c4639c103f50d"
+        },
+        {
+          "evaluation": 6,
+          "latentSha256": "57913ea9fe19f081c1d2748a32045d19837b4e6c70a87e3fe9d8628222d50a93"
+        },
+        {
+          "evaluation": 7,
+          "latentSha256": "ce20507c078d5c6ad04f91b4f6253fc859aa8a6a3f6e4b8e309d81288fe518bf"
+        }
+      ],
+      "finalLatentSha256": "ce20507c078d5c6ad04f91b4f6253fc859aa8a6a3f6e4b8e309d81288fe518bf",
+      "finalLatentNonFiniteCount": 0,
+      "finalLatentMaxAbs": 6.881793975830078,
+      "routeProfile": {
+        "schema": "ace-opt-0056-selective-dense-routes-v1",
+        "kernelSetId": "ace-opt-0056-selective-k4-exact-down-fixed32-v1",
+        "routeCount": 216,
+        "dispatchCount": 1728,
+        "approximateRouteCount": 192,
+        "exactDownRouteCount": 24,
+        "routeOwnerRows": [
+          [
+            "ace-dit-layer-0-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-0-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-1-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-2-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-3-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-4-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-5-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-6-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-7-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-8-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-9-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-10-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-11-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-12-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-13-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-14-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-15-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-16-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-17-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-18-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-19-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-20-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-21-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-22-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-key-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-value-projection",
+            2048,
+            1024,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-self-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-cross-query-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-cross-output-projection",
+            2048,
+            2048,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-gate-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-up-projection",
+            2048,
+            6144,
+            "opt-0032-k4-fp16-partials",
+            "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+            8
+          ],
+          [
+            "ace-dit-layer-23-mlp-down-projection",
+            6144,
+            2048,
+            "opt-0056-k4-exact-fp32",
+            "ace-opt-0056-dense-k4-exact-increasing-k-fp32-fixed32-wg128-m32-n128-v1",
+            8
+          ]
+        ]
+      },
+      "graphWalls": {
+        "graphSubmitThroughDrainMs": 64346.500007390976,
+        "graphWallMs": 67637.29999995232
+      },
+      "stageWalls": [
+        {
+          "stage": "prepare",
+          "wallMs": 30.100000023841858
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 997
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 1967.6000000238419
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 24.299999952316284
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 2052.399999976158
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 67746.5
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ],
+      "lifecycle": {
+        "backendCreatedOrdinal": 19,
+        "initializedOrdinal": 20,
+        "checkpointOrdinal": 21,
+        "generationCleanupCompletedOrdinal": 22,
+        "disposeStartedOrdinal": 23,
+        "disposeCompletedOrdinal": 24
+      },
+      "evidence": {
+        "initializationProgressEventCount": 158,
+        "generationProgressEventCount": 75608,
+        "diagnosticCodes": [
+          "ACE_PLANNER_CONDITIONING_RESOLVED",
+          "ACE_CONDITIONING_TENSORS_READY",
+          "ACE_DIT_OPT0056_TRAJECTORY"
+        ],
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeDispose": true,
+        "backendAndDeviceDisposeAwaited": true,
+        "vaeWeightAcquireStarted": false
+      }
+    }
+  },
+  "correctness": {
+    "evaluationCount": 8,
+    "allK4Comparison": {
+      "evaluationCount": 8,
+      "evaluations": [
+        {
+          "evaluation": 0,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287682,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 9,
+            "classChanges": {
+              "positive-finite->negative-finite": 5,
+              "negative-finite->positive-finite": 4
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -1.4981953555290614e-9,
+            "meanAbsoluteError": 0.00004590481487392722,
+            "rmsError": 0.00008335760084826434,
+            "relativeRmsError": 0.06488783371362872,
+            "nrmse": 0.00008428971882966717,
+            "snrDecibels": 81.48450789726618,
+            "pearsonCorrelation": 0.9999999964478262,
+            "maximumAbsoluteControl": 4.587299346923828,
+            "maximumAbsoluteCandidate": 4.58723783493042,
+            "maximumAbsoluteError": 0.0031360387802124023,
+            "relativeMaximumAbsoluteError": 0.0006836350852741671,
+            "maximumRelativeError": 21.575756552777335,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.4717507362365723,
+              "candidate": 1.4717427492141724,
+              "controlU32": 1069310548,
+              "candidateU32": 1069310481
+            },
+            "worstDifference": {
+              "index": 45906,
+              "control": -1.34309983253479,
+              "candidate": -1.3462358713150024,
+              "error": -0.0031360387802124023,
+              "absoluteError": 0.0031360387802124023,
+              "relativeError": 0.002334926045142791
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 1,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287789,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 7,
+            "classChanges": {
+              "positive-finite->negative-finite": 4,
+              "negative-finite->positive-finite": 3
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -1.682200675290346e-8,
+            "meanAbsoluteError": 0.00006217705532516385,
+            "rmsError": 0.00010652640605881266,
+            "relativeRmsError": 0.033150381983359026,
+            "nrmse": 0.00010984806036454452,
+            "snrDecibels": 79.18415214408421,
+            "pearsonCorrelation": 0.9999999939671066,
+            "maximumAbsoluteControl": 4.543668746948242,
+            "maximumAbsoluteCandidate": 4.543601989746094,
+            "maximumAbsoluteError": 0.003546595573425293,
+            "relativeMaximumAbsoluteError": 0.0007805576882794033,
+            "maximumRelativeError": 15.311759460914796,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.416184663772583,
+              "candidate": 1.4161642789840698,
+              "controlU32": 1068844426,
+              "candidateU32": 1068844255
+            },
+            "worstDifference": {
+              "index": 33039,
+              "control": -1.416587471961975,
+              "candidate": -1.4130408763885498,
+              "error": 0.003546595573425293,
+              "absoluteError": 0.003546595573425293,
+              "relativeError": 0.002503619185981685
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 2,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287880,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 21,
+            "classChanges": {
+              "positive-finite->negative-finite": 11,
+              "negative-finite->positive-finite": 10
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -7.90842065818636e-8,
+            "meanAbsoluteError": 0.00011425804534551623,
+            "rmsError": 0.00021845811479979523,
+            "relativeRmsError": 0.49687697227402805,
+            "nrmse": 0.00023142799295570543,
+            "snrDecibels": 72.71168222048453,
+            "pearsonCorrelation": 0.9999999732201734,
+            "maximumAbsoluteControl": 4.471524238586426,
+            "maximumAbsoluteCandidate": 4.471368312835693,
+            "maximumAbsoluteError": 0.013290882110595703,
+            "relativeMaximumAbsoluteError": 0.0029723381561714006,
+            "maximumRelativeError": 227.19258646475282,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.3571888208389282,
+              "candidate": 1.3571887016296387,
+              "controlU32": 1068349533,
+              "candidateU32": 1068349532
+            },
+            "worstDifference": {
+              "index": 175732,
+              "control": -2.071430206298828,
+              "candidate": -2.084721088409424,
+              "error": -0.013290882110595703,
+              "absoluteError": 0.013290882110595703,
+              "relativeError": 0.006416282851423446
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 3,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287951,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 32,
+            "classChanges": {
+              "positive-finite->negative-finite": 12,
+              "negative-finite->positive-finite": 20
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 6.688232983831613e-7,
+            "meanAbsoluteError": 0.0002417475104982842,
+            "rmsError": 0.0004099616117136224,
+            "relativeRmsError": 0.8731357450761622,
+            "nrmse": 0.0004508642824704834,
+            "snrDecibels": 66.91908336396787,
+            "pearsonCorrelation": 0.9999998983542786,
+            "maximumAbsoluteControl": 4.3510050773620605,
+            "maximumAbsoluteCandidate": 4.350904941558838,
+            "maximumAbsoluteError": 0.012176513671875,
+            "relativeMaximumAbsoluteError": 0.0027985519334896777,
+            "maximumRelativeError": 465.30121295518256,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.2899962663650513,
+              "candidate": 1.2898908853530884,
+              "controlU32": 1067785881,
+              "candidateU32": 1067784997
+            },
+            "worstDifference": {
+              "index": 175732,
+              "control": -2.042881727218628,
+              "candidate": -2.055058240890503,
+              "error": -0.012176513671875,
+              "absoluteError": 0.012176513671875,
+              "relativeError": 0.005960459438076846
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 4,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287980,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 70,
+            "classChanges": {
+              "positive-finite->negative-finite": 37,
+              "negative-finite->positive-finite": 33
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -0.0000012451630882564205,
+            "meanAbsoluteError": 0.0005406009851624451,
+            "rmsError": 0.0008875059504297415,
+            "relativeRmsError": 0.668090268816577,
+            "nrmse": 0.001026213416077317,
+            "snrDecibels": 59.775246238939886,
+            "pearsonCorrelation": 0.9999994732576417,
+            "maximumAbsoluteControl": 4.171069145202637,
+            "maximumAbsoluteCandidate": 4.171279430389404,
+            "maximumAbsoluteError": 0.024023383855819702,
+            "relativeMaximumAbsoluteError": 0.005759526639219166,
+            "maximumRelativeError": 230.4163024368459,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.2416185140609741,
+              "candidate": 1.2421969175338745,
+              "controlU32": 1067380059,
+              "candidateU32": 1067384911
+            },
+            "worstDifference": {
+              "index": 204946,
+              "control": 0.4370875060558319,
+              "candidate": 0.4611108899116516,
+              "error": 0.024023383855819702,
+              "absoluteError": 0.024023383855819702,
+              "relativeError": 0.05496241261298154
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 5,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287988,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 176,
+            "classChanges": {
+              "positive-finite->negative-finite": 109,
+              "negative-finite->positive-finite": 67
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 1.2614133883204203e-7,
+            "meanAbsoluteError": 0.001322362948032843,
+            "rmsError": 0.0022516566668201606,
+            "relativeRmsError": 0.540719426988267,
+            "nrmse": 0.0027551774784150807,
+            "snrDecibels": 51.19700840510973,
+            "pearsonCorrelation": 0.9999961998792178,
+            "maximumAbsoluteControl": 4.00472354888916,
+            "maximumAbsoluteCandidate": 4.005780220031738,
+            "maximumAbsoluteError": 0.07463419064879417,
+            "relativeMaximumAbsoluteError": 0.018636540010232763,
+            "maximumRelativeError": 229.392464452237,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.161903738975525,
+              "candidate": 1.1619126796722412,
+              "controlU32": 1066711363,
+              "candidateU32": 1066711438
+            },
+            "worstDifference": {
+              "index": 105857,
+              "control": -0.05267803743481636,
+              "candidate": -0.12731222808361053,
+              "error": -0.07463419064879417,
+              "absoluteError": 0.07463419064879417,
+              "relativeError": 1.4167989978963489
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 6,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287998,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 410,
+            "classChanges": {
+              "positive-finite->negative-finite": 197,
+              "negative-finite->positive-finite": 213
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 0.00000824208457425573,
+            "meanAbsoluteError": 0.002996457204902988,
+            "rmsError": 0.005684677205815986,
+            "relativeRmsError": 1.6035514763165084,
+            "nrmse": 0.006951856115245841,
+            "snrDecibels": 43.157984503919174,
+            "pearsonCorrelation": 0.9999757500461652,
+            "maximumAbsoluteControl": 4.092430591583252,
+            "maximumAbsoluteCandidate": 4.092371463775635,
+            "maximumAbsoluteError": 0.21227413415908813,
+            "relativeMaximumAbsoluteError": 0.051869941202097446,
+            "maximumRelativeError": 757.0602877982187,
+            "firstDifference": {
+              "index": 0,
+              "control": 0.9906708598136902,
+              "candidate": 0.9881758093833923,
+              "controlU32": 1065196699,
+              "candidateU32": 1065154839
+            },
+            "worstDifference": {
+              "index": 273545,
+              "control": 0.04154035449028015,
+              "candidate": 0.2538144886493683,
+              "error": 0.21227413415908813,
+              "absoluteError": 0.21227413415908813,
+              "relativeError": 5.110070358421165
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 7,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287999,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 802,
+            "classChanges": {
+              "negative-finite->positive-finite": 412,
+              "positive-finite->negative-finite": 390
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 0.00002450548873029056,
+            "meanAbsoluteError": 0.007045904014310846,
+            "rmsError": 0.016886645813062637,
+            "relativeRmsError": 6.038731786170261,
+            "nrmse": 0.01658430115994917,
+            "snrDecibels": 35.60605648683608,
+            "pearsonCorrelation": 0.9998616362142014,
+            "maximumAbsoluteControl": 6.882339954376221,
+            "maximumAbsoluteCandidate": 6.882054328918457,
+            "maximumAbsoluteError": 0.995576024055481,
+            "relativeMaximumAbsoluteError": 0.14465661833842305,
+            "maximumRelativeError": 2697.9857606655514,
+            "firstDifference": {
+              "index": 0,
+              "control": 0.5339322686195374,
+              "candidate": 0.5321939587593079,
+              "controlU32": 1057533897,
+              "candidateU32": 1057504733
+            },
+            "worstDifference": {
+              "index": 273508,
+              "control": -1.101751685142517,
+              "candidate": -2.097327709197998,
+              "error": -0.995576024055481,
+              "absoluteError": 0.995576024055481,
+              "relativeError": 0.903630135066867
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": false
+          }
+        }
+      ],
+      "firstDifferingEvaluation": 0,
+      "final": {
+        "count": 288000,
+        "finitePairCount": 288000,
+        "differingU32Count": 287999,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 802,
+        "classChanges": {
+          "negative-finite->positive-finite": 412,
+          "positive-finite->negative-finite": 390
+        },
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 0.00002450548873029056,
+        "meanAbsoluteError": 0.007045904014310846,
+        "rmsError": 0.016886645813062637,
+        "relativeRmsError": 6.038731786170261,
+        "nrmse": 0.01658430115994917,
+        "snrDecibels": 35.60605648683608,
+        "pearsonCorrelation": 0.9998616362142014,
+        "maximumAbsoluteControl": 6.882339954376221,
+        "maximumAbsoluteCandidate": 6.882054328918457,
+        "maximumAbsoluteError": 0.995576024055481,
+        "relativeMaximumAbsoluteError": 0.14465661833842305,
+        "maximumRelativeError": 2697.9857606655514,
+        "firstDifference": {
+          "index": 0,
+          "control": 0.5339322686195374,
+          "candidate": 0.5321939587593079,
+          "controlU32": 1057533897,
+          "candidateU32": 1057504733
+        },
+        "worstDifference": {
+          "index": 273508,
+          "control": -1.101751685142517,
+          "candidate": -2.097327709197998,
+          "error": -0.995576024055481,
+          "absoluteError": 0.995576024055481,
+          "relativeError": 0.903630135066867
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.02,
+          "snrDecibelsMinimum": 34,
+          "pearsonMinimum": 0.999,
+          "maximumAbsoluteErrorMaximum": 0.25
+        },
+        "passed": false
+      },
+      "passedFinalEnvelope": false
+    },
+    "selectiveComparison": {
+      "evaluationCount": 8,
+      "evaluations": [
+        {
+          "evaluation": 0,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287623,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 5,
+            "classChanges": {
+              "negative-finite->positive-finite": 1,
+              "positive-finite->negative-finite": 4
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -2.7554754353786846e-9,
+            "meanAbsoluteError": 0.00003687601875586211,
+            "rmsError": 0.00006113891299266846,
+            "relativeRmsError": 0.026510694569677903,
+            "nrmse": 0.0000618225780644071,
+            "snrDecibels": 84.17705776746637,
+            "pearsonCorrelation": 0.9999999980890331,
+            "maximumAbsoluteControl": 4.587299346923828,
+            "maximumAbsoluteCandidate": 4.587260723114014,
+            "maximumAbsoluteError": 0.0019246041774749756,
+            "relativeMaximumAbsoluteError": 0.000419550596532486,
+            "maximumRelativeError": 8.153488842657014,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.4717507362365723,
+              "candidate": 1.471736192703247,
+              "controlU32": 1069310548,
+              "candidateU32": 1069310426
+            },
+            "worstDifference": {
+              "index": 75828,
+              "control": 0.4499390125274658,
+              "candidate": 0.4518636167049408,
+              "error": 0.0019246041774749756,
+              "absoluteError": 0.0019246041774749756,
+              "relativeError": 0.004277477888978322
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 1,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287727,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 5,
+            "classChanges": {
+              "positive-finite->negative-finite": 4,
+              "negative-finite->positive-finite": 1
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -5.367078475910287e-8,
+            "meanAbsoluteError": 0.00004639466051264307,
+            "rmsError": 0.00007231490789496872,
+            "relativeRmsError": 0.027358025475900438,
+            "nrmse": 0.00007456979599328032,
+            "snrDecibels": 82.54874090085663,
+            "pearsonCorrelation": 0.9999999972197496,
+            "maximumAbsoluteControl": 4.543668746948242,
+            "maximumAbsoluteCandidate": 4.543586730957031,
+            "maximumAbsoluteError": 0.0018388628959655762,
+            "relativeMaximumAbsoluteError": 0.0004047088373686241,
+            "maximumRelativeError": 11.433306518597,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.416184663772583,
+              "candidate": 1.416152000427246,
+              "controlU32": 1068844426,
+              "candidateU32": 1068844152
+            },
+            "worstDifference": {
+              "index": 75828,
+              "control": 0.41153597831726074,
+              "candidate": 0.4133748412132263,
+              "error": 0.0018388628959655762,
+              "absoluteError": 0.0018388628959655762,
+              "relativeError": 0.004468291942504143
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 2,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287832,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 13,
+            "classChanges": {
+              "positive-finite->negative-finite": 8,
+              "negative-finite->positive-finite": 5
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -1.944596254626248e-7,
+            "meanAbsoluteError": 0.00007314336682154586,
+            "rmsError": 0.00012175880941470335,
+            "relativeRmsError": 0.1625822874450769,
+            "nrmse": 0.0001289876410100169,
+            "snrDecibels": 77.7890379952995,
+            "pearsonCorrelation": 0.9999999916809684,
+            "maximumAbsoluteControl": 4.471524238586426,
+            "maximumAbsoluteCandidate": 4.471354007720947,
+            "maximumAbsoluteError": 0.006147623062133789,
+            "relativeMaximumAbsoluteError": 0.0013748383625171235,
+            "maximumRelativeError": 80.2265226180765,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.3571888208389282,
+              "candidate": 1.3571507930755615,
+              "controlU32": 1068349533,
+              "candidateU32": 1068349214
+            },
+            "worstDifference": {
+              "index": 175732,
+              "control": -2.071430206298828,
+              "candidate": -2.077577829360962,
+              "error": -0.006147623062133789,
+              "absoluteError": 0.006147623062133789,
+              "relativeError": 0.002967815687653887
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 3,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287906,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 22,
+            "classChanges": {
+              "positive-finite->negative-finite": 8,
+              "negative-finite->positive-finite": 14
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 9.939544455347023e-8,
+            "meanAbsoluteError": 0.00011866742720185976,
+            "rmsError": 0.0001854825852982008,
+            "relativeRmsError": 0.20293830758477877,
+            "nrmse": 0.00020398854512666248,
+            "snrDecibels": 73.80788438951704,
+            "pearsonCorrelation": 0.9999999791922562,
+            "maximumAbsoluteControl": 4.3510050773620605,
+            "maximumAbsoluteCandidate": 4.3509626388549805,
+            "maximumAbsoluteError": 0.005663156509399414,
+            "relativeMaximumAbsoluteError": 0.0013015743279327287,
+            "maximumRelativeError": 106.21005463917754,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.2899962663650513,
+              "candidate": 1.2899242639541626,
+              "controlU32": 1067785881,
+              "candidateU32": 1067785277
+            },
+            "worstDifference": {
+              "index": 175732,
+              "control": -2.042881727218628,
+              "candidate": -2.0485448837280273,
+              "error": -0.005663156509399414,
+              "absoluteError": 0.005663156509399414,
+              "relativeError": 0.002772141154304498
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 4,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287947,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 31,
+            "classChanges": {
+              "positive-finite->negative-finite": 18,
+              "negative-finite->positive-finite": 13
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -4.5157271771106226e-7,
+            "meanAbsoluteError": 0.00022021961831607465,
+            "rmsError": 0.0003372276661997805,
+            "relativeRmsError": 0.2811855197440092,
+            "nrmse": 0.0003899326592222707,
+            "snrDecibels": 68.18020776989955,
+            "pearsonCorrelation": 0.9999999239478892,
+            "maximumAbsoluteControl": 4.171069145202637,
+            "maximumAbsoluteCandidate": 4.170790195465088,
+            "maximumAbsoluteError": 0.006688356399536133,
+            "relativeMaximumAbsoluteError": 0.0016035112741366944,
+            "maximumRelativeError": 91.06122455720279,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.2416185140609741,
+              "candidate": 1.241892695426941,
+              "controlU32": 1067380059,
+              "candidateU32": 1067382359
+            },
+            "worstDifference": {
+              "index": 29556,
+              "control": 2.159851551055908,
+              "candidate": 2.153163194656372,
+              "error": -0.006688356399536133,
+              "absoluteError": 0.006688356399536133,
+              "relativeError": 0.0030966741192311707
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 5,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287979,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 66,
+            "classChanges": {
+              "positive-finite->negative-finite": 39,
+              "negative-finite->positive-finite": 27
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": -9.373798300885818e-7,
+            "meanAbsoluteError": 0.0004977942027710765,
+            "rmsError": 0.0008231478662324425,
+            "relativeRmsError": 0.19673325456493373,
+            "nrmse": 0.0010072221470833118,
+            "snrDecibels": 59.93749466812449,
+            "pearsonCorrelation": 0.9999994921201771,
+            "maximumAbsoluteControl": 4.00472354888916,
+            "maximumAbsoluteCandidate": 4.005487442016602,
+            "maximumAbsoluteError": 0.026747658848762512,
+            "relativeMaximumAbsoluteError": 0.0066790275339185,
+            "maximumRelativeError": 74.75166346344132,
+            "firstDifference": {
+              "index": 0,
+              "control": 1.161903738975525,
+              "candidate": 1.1618098020553589,
+              "controlU32": 1066711363,
+              "candidateU32": 1066710575
+            },
+            "worstDifference": {
+              "index": 87568,
+              "control": 0.08154165744781494,
+              "candidate": 0.05479399859905243,
+              "error": -0.026747658848762512,
+              "absoluteError": 0.026747658848762512,
+              "relativeError": 0.3280244685470183
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 6,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287983,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 145,
+            "classChanges": {
+              "positive-finite->negative-finite": 65,
+              "negative-finite->positive-finite": 80
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 0.0000014011740408569217,
+            "meanAbsoluteError": 0.001153853296512758,
+            "rmsError": 0.0024239592030712693,
+            "relativeRmsError": 0.5923724095583939,
+            "nrmse": 0.0029642871527933348,
+            "snrDecibels": 50.56159456423819,
+            "pearsonCorrelation": 0.9999955909804406,
+            "maximumAbsoluteControl": 4.092430591583252,
+            "maximumAbsoluteCandidate": 4.092334747314453,
+            "maximumAbsoluteError": 0.13786181807518005,
+            "relativeMaximumAbsoluteError": 0.033687026570154974,
+            "maximumRelativeError": 252.26791601834458,
+            "firstDifference": {
+              "index": 0,
+              "control": 0.9906708598136902,
+              "candidate": 0.9898935556411743,
+              "controlU32": 1065196699,
+              "candidateU32": 1065183658
+            },
+            "worstDifference": {
+              "index": 273545,
+              "control": 0.04154035449028015,
+              "candidate": 0.1794021725654602,
+              "error": 0.13786181807518005,
+              "absoluteError": 0.13786181807518005,
+              "relativeError": 3.3187443816214364
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": true
+          }
+        },
+        {
+          "evaluation": 7,
+          "comparison": {
+            "count": 288000,
+            "finitePairCount": 288000,
+            "differingU32Count": 287995,
+            "signedZeroDifferenceCount": 0,
+            "classChangeCount": 328,
+            "classChanges": {
+              "negative-finite->positive-finite": 178,
+              "positive-finite->negative-finite": 150
+            },
+            "controlNonFiniteCount": 0,
+            "candidateNonFiniteCount": 0,
+            "signedMeanError": 0.000004786231978705757,
+            "meanAbsoluteError": 0.0028619124083344577,
+            "rmsError": 0.00794804009489219,
+            "relativeRmsError": 2.0575944391582586,
+            "nrmse": 0.007805735492070282,
+            "snrDecibels": 42.1517233892548,
+            "pearsonCorrelation": 0.9999693483674081,
+            "maximumAbsoluteControl": 6.882339954376221,
+            "maximumAbsoluteCandidate": 6.881793975830078,
+            "maximumAbsoluteError": 0.6395987272262573,
+            "relativeMaximumAbsoluteError": 0.09293332376288105,
+            "maximumRelativeError": 902.1714483317978,
+            "firstDifference": {
+              "index": 0,
+              "control": 0.5339322686195374,
+              "candidate": 0.5332287549972534,
+              "controlU32": 1057533897,
+              "candidateU32": 1057522094
+            },
+            "worstDifference": {
+              "index": 273508,
+              "control": -1.101751685142517,
+              "candidate": -1.7413504123687744,
+              "error": -0.6395987272262573,
+              "absoluteError": 0.6395987272262573,
+              "relativeError": 0.5805289302947806
+            },
+            "thresholds": {
+              "nrmseMaximum": 0.02,
+              "snrDecibelsMinimum": 34,
+              "pearsonMinimum": 0.999,
+              "maximumAbsoluteErrorMaximum": 0.25
+            },
+            "passed": false
+          }
+        }
+      ],
+      "firstDifferingEvaluation": 0,
+      "final": {
+        "count": 288000,
+        "finitePairCount": 288000,
+        "differingU32Count": 287995,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 328,
+        "classChanges": {
+          "negative-finite->positive-finite": 178,
+          "positive-finite->negative-finite": 150
+        },
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 0.000004786231978705757,
+        "meanAbsoluteError": 0.0028619124083344577,
+        "rmsError": 0.00794804009489219,
+        "relativeRmsError": 2.0575944391582586,
+        "nrmse": 0.007805735492070282,
+        "snrDecibels": 42.1517233892548,
+        "pearsonCorrelation": 0.9999693483674081,
+        "maximumAbsoluteControl": 6.882339954376221,
+        "maximumAbsoluteCandidate": 6.881793975830078,
+        "maximumAbsoluteError": 0.6395987272262573,
+        "relativeMaximumAbsoluteError": 0.09293332376288105,
+        "maximumRelativeError": 902.1714483317978,
+        "firstDifference": {
+          "index": 0,
+          "control": 0.5339322686195374,
+          "candidate": 0.5332287549972534,
+          "controlU32": 1057533897,
+          "candidateU32": 1057522094
+        },
+        "worstDifference": {
+          "index": 273508,
+          "control": -1.101751685142517,
+          "candidate": -1.7413504123687744,
+          "error": -0.6395987272262573,
+          "absoluteError": 0.6395987272262573,
+          "relativeError": 0.5805289302947806
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.02,
+          "snrDecibelsMinimum": 34,
+          "pearsonMinimum": 0.999,
+          "maximumAbsoluteErrorMaximum": 0.25
+        },
+        "passed": false
+      },
+      "passedFinalEnvelope": false
+    },
+    "selectiveDeterministic": true,
+    "unchangedOpt0037FinalThresholds": true,
+    "finalEnvelopePassed": false,
+    "passed": false
+  },
+  "lifecycle": {
+    "sequentialNonOverlappingArms": true,
+    "gpuPackageRuntimeCoResidency": false,
+    "allBackendsAndDevicesDisposed": true,
+    "onlyDetachedCpuTrajectoriesRetainedBetweenArms": true
+  },
+  "topology": {
+    "graphCommandBufferCountPerArm": 2553,
+    "finalReadbackCommandBufferCountPerArm": 1,
+    "totalCommandBufferCountPerArm": 2554,
+    "samplerSnapshotCopyCountPerArm": 8,
+    "samplerSnapshotExtraSubmitsPerArm": 0,
+    "samplerSnapshotExtraDrainsPerArm": 0
+  },
+  "decision": "negative-stop-selective-selector",
+  "scope": {
+    "vaeWeightsAcquired": false,
+    "vaeExecuted": false,
+    "audioExecuted": false,
+    "productDefaultChanged": false,
+    "listeningApproval": false,
+    "speedupCalculated": false
+  }
+}

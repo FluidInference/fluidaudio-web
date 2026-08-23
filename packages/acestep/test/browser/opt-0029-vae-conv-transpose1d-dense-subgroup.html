@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0029 dense ConvTranspose A/B</title>
+    <style>
+      body { font: 14px/1.45 system-ui, sans-serif; margin: 1.5rem; }
+      button { font: inherit; padding: 0.5rem 0.8rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0029 dense ConvTranspose versus OPT-0026</h1>
+    <p>
+      Preparation compiles both fixed32 kernels and compares every raw FP16
+      output bit over all five exact C512-window production shapes, using the
+      same revision-6 polyphase weight bytes. Once ready, wait 30 seconds,
+      confirm nominal thermal state, and run the balanced paired timing once.
+    </p>
+    <p id="progress" role="status">preparing</p>
+    <button id="run" type="button" disabled>Run paired timing</button>
+    <pre id="result">not run</pre>
+    <script
+      type="module"
+      src="./opt-0029-vae-conv-transpose1d-dense-subgroup.ts"
+    ></script>
+  </body>
+</html>

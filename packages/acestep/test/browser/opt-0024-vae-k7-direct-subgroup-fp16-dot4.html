@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0024 direct-subgroup FP16-dot4 K7 gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; }
+      p { max-width: 84rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 72rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 36rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0024 bounded direct-subgroup FP16-dot4 K7 gate</h1>
+    <p>
+      Preparation authenticates the shipped fixed32 and one isolated native
+      O-K-I FP16-dot4 candidate, compiles all 32 generated C300 shaders, and
+      executes all 16 biased K7 operations at first/interior/tail ranges.
+      The 48 probes contain exactly 6,299,648 unique raw-U16 outputs; two
+      candidate executions are each compared with their same-run shipped
+      control for exactly 12,599,296 comparisons. qNaN overwrite, finite
+      output, guards/canaries, deterministic candidate hashes, complete FP16
+      ULP and signed-zero reports, and every frozen numerical threshold must
+      pass before timing.
+    </p>
+    <p>
+      Start one absolute-cadence 1,000 ms external logger before this page
+      compiles or warms anything. After the page reports ready, enter one
+      fresh continuous 30-second nominal slice and run exactly once. Each tier
+      uses the fixed pair order shipped/candidate, candidate/shipped,
+      candidate/shipped, shipped/candidate. Every arm sample is one command
+      buffer and one pass containing first → interior → tail, followed by its
+      matching queue drain. The C300 weights are 282/423/423/1,269; long-window
+      conv1 ranges are static coverage and contribute zero timing weight.
+    </p>
+    <p>
+      Keep the same JSONL trace running through validation and resource
+      cleanup, then enter its final artifact summary. Preserve each stable
+      observation index, absolute target epoch, actual observed epoch, and
+      exact keyed payload under schema
+      <code>jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1</code>.
+      There is no unchanged thermal or candidate retry. This gate cannot
+      authorize production, waveform/listening, C4500, or full-product work.
+    </p>
+    <div id="progress" role="status" aria-live="polite">
+      preparing exhaustive bounded C300 correctness
+    </div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>Fresh post-warmup nominal slice from the continuing trace</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Exact command
+        <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Full trace start (epoch ms)
+        <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Full trace first observation index (zero based)
+        <input name="thermalTraceStartObservationIndex" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Fresh gate start observation (epoch ms; after warmup)
+        <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Fresh gate start observation index
+        <input name="thermalGateStartObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Fresh gate completion observation (epoch ms)
+        <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Fresh gate completion observation index
+        <input name="thermalGateCompletedObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Fresh gate observation count
+        <input name="thermalGateObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Fresh gate maximum adjacent observation gap (ms)
+        <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Fresh gate non-nominal observations
+        <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Fresh gate missing observations
+        <input name="thermalGateMissingObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run the one frozen 32-sample C300 screen
+      </button>
+    </fieldset>
+
+    <fieldset id="thermal-completion" disabled>
+      <legend>Same absolute-cadence trace through validation and cleanup</legend>
+      <label>
+        Raw JSONL schema
+        <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly />
+      </label>
+      <label>
+        Raw JSONL SHA-256
+        <input name="thermalTraceSha256" spellcheck="false" />
+      </label>
+      <label>
+        Raw JSONL byte length
+        <input name="thermalTraceByteLength" inputmode="numeric" />
+      </label>
+      <label>
+        Trace completion observation (epoch ms; after cleanup)
+        <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Trace completion observation index
+        <input name="thermalTraceCompletedObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Full trace observation count
+        <input name="thermalTraceObservations" inputmode="numeric" />
+      </label>
+      <label>
+        Full trace maximum adjacent observation gap (ms)
+        <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Full trace non-nominal observations
+        <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Full trace missing observations
+        <input name="thermalTraceMissingObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Full trace initial level
+        <input name="thermalTraceInitialLevel" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Full trace final level
+        <input name="thermalTraceFinalLevel" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Transitions JSON ([{"atEpochMilliseconds":…,"level":…}])
+        <input name="thermalTraceTransitionsJson" value="[]" spellcheck="false" />
+      </label>
+      <button id="finalize" type="button" disabled>
+        Finalize authenticated receipt without retry
+      </button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <script
+      type="module"
+      src="./opt-0024-vae-k7-direct-subgroup-fp16-dot4.ts"
+    ></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0009 Parakeet GEMM calibration</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 76rem; }
+      button { margin-inline-end: 0.75rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p>
+      Correctness runs first and needs no thermal claim. Timing must start only
+      after the externally logged continuous nominal thermal pre-gate; keep
+      this page visible until cleanup completes.
+    </p>
+    <button id="run-correctness" type="button">Run correctness</button>
+    <button id="run-timing" type="button">Run thermal timing</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0009-parakeet-gemm-calibration.ts"></script>
+  </body>
+</html>

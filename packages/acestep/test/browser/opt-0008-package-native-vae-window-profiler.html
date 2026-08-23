@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0008 package-native VAE window profiler</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #thermal-gate { display: grid; gap: 0.5rem; max-width: 52rem; }
+      #thermal-gate label { display: grid; grid-template-columns: 22rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Package-native OPT-0008 profiler. Preparation authenticates and uploads
+      only the revision-4 VAE phase, compiles the shipped production decoder,
+      qNaN-prefills its complete output, and runs one untimed warmup. After a
+      separately observed continuous 30-second nominal thermal gate, the timed
+      run preserves the production batch-eight topology and records every
+      physical batch locally in the dedicated worker. A post-drain one-batch
+      cancellation proof follows outside timing. Keep the external thermal
+      logger running through cleanup; its stopped, hashed artifact is joined to
+      the raw browser receipt during result closure. Supply the frozen run
+      identity in the URL query: harnessCommit, productionCommit, machineModel,
+      osVersion, osBuild, browserVersion, gpuCoreCount, and memoryBytes.
+    </p>
+    <button id="prepare" type="button">Prepare and warm up VAE</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <fieldset id="thermal-gate" disabled>
+      <legend>External thermal gate</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms; blank uses click time)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run-timed" type="button" disabled>
+        Run one timed production window
+      </button>
+    </fieldset>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0008-package-native-vae-window-profiler.ts"></script>
+  </body>
+</html>

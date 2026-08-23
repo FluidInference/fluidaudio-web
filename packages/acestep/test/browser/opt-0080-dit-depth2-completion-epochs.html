@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 DiT depth-two completion epochs</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 8rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0080 — DiT depth-two completion epochs</h1>
+    <p>
+      Preparation runs untimed depth1 and depth2 evaluation-0 exact repeats,
+      verifies all 288,000 result words as raw U32 against the accepted hash,
+      authenticates the immutable 2,553-descriptor / 6,833-member full table
+      and its executed 341-command prefix, and runs an actual candidate DiT
+      graph abort with one successor in flight, including terminal settlement
+      and full backend disposal.
+      None of that work belongs to accepted timing.
+    </p>
+    <p>
+      Timing is exactly A1 depth1, B1 depth2/epoch4, B2 depth2/epoch4, A2
+      depth1. Every arm owns a fresh backend, device, package, and graph. Start
+      its fresh continuous ≥30-second nominal notifyutil trace only after READY,
+      and keep polling through evaluation readback, terminal settlement,
+      cleanup, backend destruction, and device disposal. The next arm is not
+      prepared until the current arm's distinct trace is authenticated.
+    </p>
+    <p>
+      Both profiles submit the same 341 singleton graph command buffers and one
+      ordinary readback with one cumulative fence per submission. The candidate
+      has 86 true graph drains, 85 graph idle turns, and at most two outstanding
+      buffers; overlapping per-fence timings are diagnostic and non-additive.
+      A 50 ms main-page heartbeat covers each accepted run through cleanup.
+    </p>
+    <button id="prepare" type="button">Prepare preflights and A1</button>
+    <div id="progress" role="status" aria-live="polite">idle — no GPU work</div>
+
+    <fieldset>
+      <legend>Current arm's fresh nominal pre-gate JSON</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run-arm" type="button" disabled>Run current arm</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same arm's distinct trace through cleanup/device disposal JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="record-trace" type="button" disabled>Record arm trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0080-dit-depth2-completion-epochs.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0080-dit-depth2-completion-epochs.ts"></script>
+  </body>
+</html>

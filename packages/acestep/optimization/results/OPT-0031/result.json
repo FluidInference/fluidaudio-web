@@ -1,0 +1,453 @@
+{
+  "schema": "ace-opt-0031-dit-dense-wg512-panels-v1",
+  "status": "completed",
+  "experimentId": "OPT-0031",
+  "classification": "bounded-primitive-decision-gate-not-integrated",
+  "recordedAt": "2026-08-15T20:45:28.160Z",
+  "identity": {
+    "currentCoreSourceSha256": "a238f67da07c6ba1097da9d9e9e97960ae97d2e1d5c129fcbabf69e962cbb6b3",
+    "candidateCoreSourceSha256": "26ffafd12800aaa8670cada76d6ca9f4f60c3064ec7cf1ebf4387d9ebbcf8c47",
+    "candidateKernelSetId": "opt-0031-m128-n128-k32-wg512-panels-fp16-fp32-v1",
+    "generatedShaders": [
+      {
+        "id": "h-h",
+        "currentSha256": "678e2355985bf7aacdc57b44932b9f19b3dd1ceb541b47c1ae9ce9e3c547a935",
+        "candidateSha256": "937493b34918803746d2ca5be6b9ee6248b26a554c2067248d76ff5320258246"
+      },
+      {
+        "id": "h-1024",
+        "currentSha256": "da55c517e2d602df768670b724d486802e62f1582bd5e51db30dd1f576b0d56e",
+        "candidateSha256": "7eff827f78b4d2bc1406cff39cf1a3b2547f115f582ba1bb86728e5907092df5"
+      },
+      {
+        "id": "h-6144",
+        "currentSha256": "132378fdc944a3aa861d68475efadc8d1fad0954529c7e70668a9feaebb533a6",
+        "candidateSha256": "ab52b5b8d2a4683b1e12a462f9687b0460cdf1a35fdb1510fc73214d307352d9"
+      },
+      {
+        "id": "6144-h",
+        "currentSha256": "aafb096a46d617cc107ac4868735c04b2019e81c597ac27f9b0969b92e832506",
+        "candidateSha256": "6995909efba668c0d9e7e7b329675792a87a4149b82bbb76a917e2c096836a22"
+      }
+    ]
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "page": "http://127.0.0.1:5174/test/browser/opt-0031-dit-dense-wg512-panels.html",
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "limits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxComputeInvocationsPerWorkgroup": 512,
+      "maxComputeWorkgroupSizeX": 512,
+      "maxComputeWorkgroupStorageSize": 16896,
+      "maxComputeWorkgroupsPerDimension": 65535
+    }
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "startedAtEpochMilliseconds": 1786826691754,
+      "completedAtEpochMilliseconds": 1786826721811,
+      "durationMilliseconds": 30057,
+      "observationCount": 31,
+      "pollMilliseconds": 1000,
+      "maximumPollGapMilliseconds": 1000,
+      "nonNominalObservationCount": 0,
+      "launchDelayMilliseconds": 5583
+    },
+    "fullRawU32CorrectnessCompletedBeforeReady": true,
+    "bothKernelsCompiledBeforeReady": true,
+    "correctnessExecutionsServeAsUntimedWarmups": true,
+    "timingOrder": "shape order left-rotated by round; AB in rounds 1/3 and BA in rounds 2/4",
+    "authoritativeTiming": "performance.now-immediately-before-submit-through-matching-queue-drain",
+    "oneThirtySecondNominalGate": true,
+    "timedGpuWorkBeforeButton": false
+  },
+  "correctness": {
+    "shapeCount": 4,
+    "executionCount": 16,
+    "comparisonsPerOutputWord": 4,
+    "comparedU32Count": 101376000,
+    "mismatchCount": 0,
+    "qNaNPrefillCompleteWrites": true,
+    "canariesUntouched": true,
+    "finiteOutputs": true,
+    "deterministicReruns": true,
+    "cases": [
+      {
+        "id": "h-h",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048
+        },
+        "outputU32Count": 4608000,
+        "executionCount": 4,
+        "comparisonCount": 4,
+        "comparedU32Count": 18432000,
+        "mismatchCount": 0,
+        "outputSha256": "5640c38a4dd868feb10528fe0d2fc80bdab52b6abdb32ff31101882da9b35f1d",
+        "nonFiniteCount": 0,
+        "qNaNPrefillCount": 0,
+        "nonzeroCount": 4607402,
+        "currentFirstRerunExact": true,
+        "candidateFirstRerunExact": true,
+        "candidateVersusCurrentExact": true,
+        "prefixCanaryIntact": true,
+        "suffixCanaryIntact": true,
+        "tailRowWritten": true,
+        "currentPlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048,
+          "tileRows": 32,
+          "tileColumns": 256,
+          "tileInner": 32,
+          "workgroupSize": 128,
+          "rowTiles": 71,
+          "columnTiles": 8,
+          "innerTiles": 64,
+          "workgroupCount": 568,
+          "scheduledMultiplyAdds": 9529458688
+        },
+        "candidatePlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048,
+          "tileRows": 128,
+          "tileColumns": 128,
+          "tileInner": 32,
+          "workgroupSize": 512,
+          "rowTiles": 18,
+          "columnTiles": 16,
+          "innerTiles": 64,
+          "workgroupCount": 288,
+          "scheduledMultiplyAdds": 9663676416
+        }
+      },
+      {
+        "id": "h-1024",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 2304000,
+        "executionCount": 4,
+        "comparisonCount": 4,
+        "comparedU32Count": 9216000,
+        "mismatchCount": 0,
+        "outputSha256": "b3ee2f803d8ebeb038da03fa3e4dd4e96b7426d9f77e01f9e9b28eab630be4e3",
+        "nonFiniteCount": 0,
+        "qNaNPrefillCount": 0,
+        "nonzeroCount": 2303690,
+        "currentFirstRerunExact": true,
+        "candidateFirstRerunExact": true,
+        "candidateVersusCurrentExact": true,
+        "prefixCanaryIntact": true,
+        "suffixCanaryIntact": true,
+        "tailRowWritten": true,
+        "currentPlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024,
+          "tileRows": 32,
+          "tileColumns": 256,
+          "tileInner": 32,
+          "workgroupSize": 128,
+          "rowTiles": 71,
+          "columnTiles": 4,
+          "innerTiles": 64,
+          "workgroupCount": 284,
+          "scheduledMultiplyAdds": 4764729344
+        },
+        "candidatePlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024,
+          "tileRows": 128,
+          "tileColumns": 128,
+          "tileInner": 32,
+          "workgroupSize": 512,
+          "rowTiles": 18,
+          "columnTiles": 8,
+          "innerTiles": 64,
+          "workgroupCount": 144,
+          "scheduledMultiplyAdds": 4831838208
+        }
+      },
+      {
+        "id": "h-6144",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144
+        },
+        "outputU32Count": 13824000,
+        "executionCount": 4,
+        "comparisonCount": 4,
+        "comparedU32Count": 55296000,
+        "mismatchCount": 0,
+        "outputSha256": "f5912ac06e993fdf88f131e6e1de4062901fb98693da04961f4666c20a72bf02",
+        "nonFiniteCount": 0,
+        "qNaNPrefillCount": 0,
+        "nonzeroCount": 13822138,
+        "currentFirstRerunExact": true,
+        "candidateFirstRerunExact": true,
+        "candidateVersusCurrentExact": true,
+        "prefixCanaryIntact": true,
+        "suffixCanaryIntact": true,
+        "tailRowWritten": true,
+        "currentPlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144,
+          "tileRows": 32,
+          "tileColumns": 256,
+          "tileInner": 32,
+          "workgroupSize": 128,
+          "rowTiles": 71,
+          "columnTiles": 24,
+          "innerTiles": 64,
+          "workgroupCount": 1704,
+          "scheduledMultiplyAdds": 28588376064
+        },
+        "candidatePlan": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144,
+          "tileRows": 128,
+          "tileColumns": 128,
+          "tileInner": 32,
+          "workgroupSize": 512,
+          "rowTiles": 18,
+          "columnTiles": 48,
+          "innerTiles": 64,
+          "workgroupCount": 864,
+          "scheduledMultiplyAdds": 28991029248
+        }
+      },
+      {
+        "id": "6144-h",
+        "shape": {
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048
+        },
+        "outputU32Count": 4608000,
+        "executionCount": 4,
+        "comparisonCount": 4,
+        "comparedU32Count": 18432000,
+        "mismatchCount": 0,
+        "outputSha256": "84ccc62813e853daf2417772de107ff857e1f0bd5507c391a42527769876a7df",
+        "nonFiniteCount": 0,
+        "qNaNPrefillCount": 0,
+        "nonzeroCount": 4607632,
+        "currentFirstRerunExact": true,
+        "candidateFirstRerunExact": true,
+        "candidateVersusCurrentExact": true,
+        "prefixCanaryIntact": true,
+        "suffixCanaryIntact": true,
+        "tailRowWritten": true,
+        "currentPlan": {
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048,
+          "tileRows": 32,
+          "tileColumns": 256,
+          "tileInner": 32,
+          "workgroupSize": 128,
+          "rowTiles": 71,
+          "columnTiles": 8,
+          "innerTiles": 192,
+          "workgroupCount": 568,
+          "scheduledMultiplyAdds": 28588376064
+        },
+        "candidatePlan": {
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048,
+          "tileRows": 128,
+          "tileColumns": 128,
+          "tileInner": 32,
+          "workgroupSize": 512,
+          "rowTiles": 18,
+          "columnTiles": 16,
+          "innerTiles": 192,
+          "workgroupCount": 288,
+          "scheduledMultiplyAdds": 28991029248
+        }
+      }
+    ]
+  },
+  "timing": {
+    "samplesPerArmPerShape": 4,
+    "weighted": {
+      "multiplicities": "4/2/2/1",
+      "currentMilliseconds": 166.80000001192093,
+      "candidateMilliseconds": 181.45000010728836,
+      "savingMilliseconds": -14.650000095367432,
+      "speedup": 0.9192615040688612,
+      "requiredSpeedup": 1.25
+    },
+    "everyShapeNoSlower": false,
+    "strata": [
+      {
+        "id": "h-h",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048
+        },
+        "productionMultiplicity": 4,
+        "samples": {
+          "current": [
+            21.5,
+            12,
+            11.900000095367432,
+            11.899999976158142
+          ],
+          "candidate": [
+            13.200000047683716,
+            13.300000071525574,
+            13.099999904632568,
+            13.100000023841858
+          ]
+        },
+        "mediansMilliseconds": {
+          "current": 11.950000047683716,
+          "candidate": 13.150000035762787
+        },
+        "candidateNoSlower": false,
+        "speedup": 0.9087452483030003
+      },
+      {
+        "id": "h-1024",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "productionMultiplicity": 2,
+        "samples": {
+          "current": [
+            7.199999928474426,
+            6.299999952316284,
+            6.399999976158142,
+            6.100000023841858
+          ],
+          "candidate": [
+            7,
+            7,
+            7,
+            7
+          ]
+        },
+        "mediansMilliseconds": {
+          "current": 6.349999964237213,
+          "candidate": 7
+        },
+        "candidateNoSlower": false,
+        "speedup": 0.9071428520338876
+      },
+      {
+        "id": "h-6144",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144
+        },
+        "productionMultiplicity": 2,
+        "samples": {
+          "current": [
+            37.10000002384186,
+            35,
+            35.09999990463257,
+            35.10000002384186
+          ],
+          "candidate": [
+            38.5,
+            38.60000002384186,
+            38.10000002384186,
+            38.199999928474426
+          ]
+        },
+        "mediansMilliseconds": {
+          "current": 35.09999996423721,
+          "candidate": 38.34999996423721
+        },
+        "candidateNoSlower": false,
+        "speedup": 0.915254237209107
+      },
+      {
+        "id": "6144-h",
+        "shape": {
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048
+        },
+        "productionMultiplicity": 1,
+        "samples": {
+          "current": [
+            36.59999990463257,
+            36.700000047683716,
+            35.60000002384186,
+            35.39999997615814
+          ],
+          "candidate": [
+            38.10000002384186,
+            44.39999997615814,
+            38,
+            38.200000047683716
+          ]
+        },
+        "mediansMilliseconds": {
+          "current": 36.09999996423721,
+          "candidate": 38.15000003576279
+        },
+        "candidateNoSlower": false,
+        "speedup": 0.9462647426054036
+      }
+    ],
+    "passed": false,
+    "decision": "negative-stop-primitive-gate",
+    "timingStartedAtEpochMilliseconds": 1786826727395,
+    "timingCompletedAtEpochMilliseconds": 1786826728159
+  },
+  "decision": {
+    "disposition": "negative-stop-primitive-gate",
+    "primitiveQualifierPassed": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false
+  },
+  "memory": {
+    "createdBufferCount": 20,
+    "destroyedBufferCount": 8,
+    "liveBufferCount": 12,
+    "liveBytes": 274884608,
+    "maximumLiveBytes": 311749632
+  },
+  "cleanup": {
+    "createdBufferCount": 20,
+    "destroyedBufferCount": 20,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "maximumLiveBytes": 311749632,
+    "idempotent": true,
+    "deviceDestroyed": true
+  }
+}

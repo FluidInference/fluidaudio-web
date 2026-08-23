@@ -1,0 +1,410 @@
+{
+  "schema": "ace-opt-0080-vae-scheduler-evidence-v1",
+  "experiment": "OPT-0080",
+  "stage": "c2314-vae-scheduler-screen",
+  "status": "passed",
+  "disposition": "production-vae-scheduler-integration-authorized",
+  "passed": true,
+  "identity": {
+    "run": {
+      "coreCommit": "f8fde273ad57d21c8410710518c63e501acaa1ec",
+      "harnessCommit": "f8fde273ad57d21c8410710518c63e501acaa1ec",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Codex in-app Chromium 151.0.0.0",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "fixtureSha256": "01ec291963276b4784ec0ae3f6b3d7ed80bffd657dfd3b14125729260918783d",
+    "waveformSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+    "package": {
+      "revision": 7,
+      "physicalOptimizationIdentity": "OPT-0066",
+      "physicalPackageIdentity": "OPT-0066-revision7",
+      "manifestPath": "/model/files-fp16-vae-revision7-experimental/manifest.json",
+      "manifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+      "manifestByteLength": 716185,
+      "converterRevision": 7,
+      "tensorRecordCount": 145,
+      "weightFileCount": 7,
+      "residentBytes": 168791552,
+      "authenticatedAndAcquiredBeforeDeviceRequest": true
+    },
+    "device": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false,
+      "deviceFeatures": [
+        "core-features-and-limits",
+        "shader-f16",
+        "subgroups"
+      ],
+      "requestedLimits": {
+        "maxBufferSize": 1168834816,
+        "maxStorageBufferBindingSize": 1168834560,
+        "maxStorageBuffersPerShaderStage": 8,
+        "maxComputeWorkgroupStorageSize": 16384,
+        "maxComputeInvocationsPerWorkgroup": 256
+      }
+    },
+    "runtimeProfile": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+    "kernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1"
+  },
+  "artifacts": {
+    "committedCompactResult": "optimization/results/OPT-0080/vae-scheduler.json",
+    "ignoredArtifactDirectory": "optimization/artifacts/OPT-0080/vae-scheduler",
+    "authoritativeBrowserReceipt": "raw-receipt.json",
+    "files": {
+      "A1-gate.json": {
+        "byteLength": 6173,
+        "sha256": "901a37f3d4a9b15ba648ea96f6b3774305edee88b9cbef7b5148b1ac224c0454"
+      },
+      "A1-index.json": {
+        "byteLength": 105,
+        "sha256": "b8bf5c072f97ddec34cef300d2f99f788de1f98496bcd1c62b86fc75e87db8a8"
+      },
+      "A1-selected.jsonl": {
+        "byteLength": 5985,
+        "sha256": "fb620727e9e740220928cb116112953048196d45dc21f7c12816e302aff6574a"
+      },
+      "A1-thermal.jsonl": {
+        "byteLength": 5985,
+        "sha256": "fb620727e9e740220928cb116112953048196d45dc21f7c12816e302aff6574a"
+      },
+      "A1-trace.json": {
+        "byteLength": 9706,
+        "sha256": "4c64b5cf91d8ca6d27c8156a632de0aa79db6c1e683516fc2c2229b066879318"
+      },
+      "B1-gate.json": {
+        "byteLength": 4815,
+        "sha256": "e80b4627568750ec9863615b5e0df61bf005add4d56528e00a7400d4635fc9c6"
+      },
+      "B1-index.json": {
+        "byteLength": 105,
+        "sha256": "673b25d85f9a4075ec76a511afe6a58b40c5687884a4f7c6a9eed5942a79e893"
+      },
+      "B1-selected.jsonl": {
+        "byteLength": 4725,
+        "sha256": "ed1685f311f20bcbfcdf2db4a0daf39b60f3652c27abf8dcf4178c4f04c43b28"
+      },
+      "B1-thermal.jsonl": {
+        "byteLength": 4725,
+        "sha256": "ed1685f311f20bcbfcdf2db4a0daf39b60f3652c27abf8dcf4178c4f04c43b28"
+      },
+      "B1-trace.json": {
+        "byteLength": 7766,
+        "sha256": "9d7416acc0feaa71bb0307bd5af3e58279ea93c42d203f25966b463555a7c090"
+      },
+      "B2-gate.json": {
+        "byteLength": 5979,
+        "sha256": "05067d52d4ad875cd3a4e49a3ca8ee9c8f339c40876041e10592724bceff283b"
+      },
+      "B2-index.json": {
+        "byteLength": 105,
+        "sha256": "183a92503c9865eb050d478b2527ae8016cd3536ef75eed6c385b18078e939cb"
+      },
+      "B2-selected.jsonl": {
+        "byteLength": 5418,
+        "sha256": "b138ce0a9af1a62705ab965d3b9afefb9f7dc6c63951b87751ed819bd066379b"
+      },
+      "B2-thermal.jsonl": {
+        "byteLength": 5418,
+        "sha256": "b138ce0a9af1a62705ab965d3b9afefb9f7dc6c63951b87751ed819bd066379b"
+      },
+      "B2-trace.json": {
+        "byteLength": 8833,
+        "sha256": "aae32f44899ecd06426d057d490409138200403603fa5759f9ea683de2e75e64"
+      },
+      "A2-gate.json": {
+        "byteLength": 5009,
+        "sha256": "3fa12eec8583857835aa17d51bf0d2987bce54f155434c8ca18bc2072323bc34"
+      },
+      "A2-index.json": {
+        "byteLength": 105,
+        "sha256": "559456337c628f290d8ccfe7822743669c42740d257e67de5b8e47183230b7c6"
+      },
+      "A2-selected.jsonl": {
+        "byteLength": 5229,
+        "sha256": "ef5d06b2fc3616514e3be6a4fed2ad85861a3e97d07638d71f5fa5530669f73d"
+      },
+      "A2-thermal.jsonl": {
+        "byteLength": 5229,
+        "sha256": "ef5d06b2fc3616514e3be6a4fed2ad85861a3e97d07638d71f5fa5530669f73d"
+      },
+      "A2-trace.json": {
+        "byteLength": 8542,
+        "sha256": "9691447f253ea71fdde33a5cfd6a4eaa0e35774c8b0763a54a64c681b20e8443"
+      },
+      "raw-receipt.json": {
+        "byteLength": 3038276,
+        "sha256": "6a3d97aa4b0360c268415884d5621a0a20d69bbed85548e19187a1d5e4a6ea64"
+      }
+    },
+    "note": "Every ignored browser receipt, thermal gate, selection index, raw thermal trace, selected trace, and parsed through-settlement trace is bound by exact byte length and SHA-256. The compact result omits bulky per-command, per-epoch, heartbeat-gap, guard-span, and thermal-observation arrays."
+  },
+  "geometry": {
+    "latentFrames": 2314,
+    "maximumWindowFrames": 2378,
+    "overlapFrames": 64,
+    "quantaPerCommandBuffer": 64,
+    "decoderQuantumCount": 35498,
+    "decoderCommandBufferCount": 555,
+    "readbackCommandBufferCount": 1,
+    "totalCommandBufferCount": 556,
+    "completionFencesPerArm": 556,
+    "projectedProductionWindowCount": 2,
+    "outputU32WordCount": 8885760,
+    "outputByteLength": 35543040
+  },
+  "correctness": {
+    "passed": true,
+    "excludedFromTiming": true,
+    "untimedCorrectnessExecutionCount": 3,
+    "controlOutputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+    "candidateOutputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+    "postCancellationProbeSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+    "comparedU32WordCountPerPair": 8885760,
+    "controlCandidateU32MismatchCount": 0,
+    "controlProbeU32MismatchCount": 0,
+    "controlNonFiniteCount": 0,
+    "controlNonzeroCount": 8885760,
+    "boundedComparisonCanariesPassed": true,
+    "gpuGuards": {
+      "scheme": "c2314-active-end-and-c2378-allocation-end-guards-v1",
+      "guardedBufferCount": 6,
+      "guardedRegionCount": 12,
+      "activeEndGuardRegionCount": 6,
+      "allocationEndGuardRegionCount": 6,
+      "guardBytesPerRegion": 256,
+      "checkedBytesPerExecution": 3072,
+      "patternU32": 2774139008,
+      "expectedSha256": "183dead51e555d79ec074ad8acfe08c5f4dffce8392ccadc46bb9da2d5aa413d",
+      "diagnosticCommandBufferCount": 1,
+      "diagnosticCompletionFenceCount": 1,
+      "initializationQueueFenceCount": 1,
+      "excludedFromSchedulerTopologyAndTiming": true,
+      "passed": true
+    },
+    "topologyExact": true,
+    "allTimedArmOutputsMatchedAuthority": true
+  },
+  "topology": {
+    "common": {
+      "phaseCommandBufferCounts": [
+        556
+      ],
+      "commandBuffersSubmitted": 556,
+      "completionFenceRequestedCount": 556,
+      "completionFenceSettledCount": 556,
+      "completionFenceRejectedCount": 0
+    },
+    "control": {
+      "schedulingProfile": "depth1-epoch1",
+      "trueQueueDrainCount": 556,
+      "completionEpochCount": 556,
+      "cooperativeIdleTurns": 555,
+      "requestedCooperativeIdleMs": 555,
+      "maximumOutstandingCommandBuffers": 1
+    },
+    "candidate": {
+      "schedulingProfile": "depth2-phase-epoch4",
+      "trueQueueDrainCount": 139,
+      "completionEpochCount": 139,
+      "cooperativeIdleTurns": 138,
+      "requestedCooperativeIdleMs": 138,
+      "maximumOutstandingCommandBuffers": 2
+    }
+  },
+  "cancellation": {
+    "scope": "actual-c2314-vae-window",
+    "schedulingProfile": "depth2-phase-epoch4",
+    "abortedFromFirstProgressCallback": true,
+    "progressEventCountAtAbort": 1,
+    "progressEventCountAfterAbort": 0,
+    "schedulingEvidenceCallbackCount": 0,
+    "rejectedWithExactAbortReason": true,
+    "queueDrainedBeforeRejection": true,
+    "outputPublished": false,
+    "unhandledRejectionCount": 0,
+    "abortThroughRejectionMs": 114.09999990463257,
+    "gpuGuardsPassed": true,
+    "postCancellationExactProbePassed": true
+  },
+  "performance": {
+    "fixedOrder": [
+      "A1-depth1-epoch1",
+      "B1-depth2-phase-epoch4",
+      "B2-depth2-phase-epoch4",
+      "A2-depth1-epoch1"
+    ],
+    "samples": [
+      {
+        "armId": "A1",
+        "schedulingProfile": "depth1-epoch1",
+        "schedulingWallMs": 16510.60000014305,
+        "preSchedulingWallMs": 0.09999990463256836,
+        "mapAndDetachWallMs": 14.799999952316284,
+        "decodeWindowWallMs": 16525.5,
+        "epochWallSumMs": 15600.599999189377,
+        "outputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+        "rawU32MismatchCount": 0,
+        "heartbeatMaximumGapMs": 52.200000047683716,
+        "heartbeatP99GapMs": 52.10000014305115
+      },
+      {
+        "armId": "B1",
+        "schedulingProfile": "depth2-phase-epoch4",
+        "schedulingWallMs": 15176.5,
+        "preSchedulingWallMs": 0.10000014305114746,
+        "mapAndDetachWallMs": 19,
+        "decodeWindowWallMs": 15195.600000143051,
+        "epochWallSumMs": 14947.400002002716,
+        "outputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+        "rawU32MismatchCount": 0,
+        "heartbeatMaximumGapMs": 52.200000047683716,
+        "heartbeatP99GapMs": 52.10000014305115
+      },
+      {
+        "armId": "B2",
+        "schedulingProfile": "depth2-phase-epoch4",
+        "schedulingWallMs": 15195.5,
+        "preSchedulingWallMs": 0.09999990463256836,
+        "mapAndDetachWallMs": 17.600000143051147,
+        "decodeWindowWallMs": 15213.200000047684,
+        "epochWallSumMs": 14967.300002098083,
+        "outputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+        "rawU32MismatchCount": 0,
+        "heartbeatMaximumGapMs": 52.10000014305115,
+        "heartbeatP99GapMs": 52.10000014305115
+      },
+      {
+        "armId": "A2",
+        "schedulingProfile": "depth1-epoch1",
+        "schedulingWallMs": 16461,
+        "preSchedulingWallMs": 0.20000004768371582,
+        "mapAndDetachWallMs": 15.299999952316284,
+        "decodeWindowWallMs": 16476.5,
+        "epochWallSumMs": 15548.599995851517,
+        "outputSha256": "2a16f0fc4b07661e21628e0b5574c2feeab3882ecef169da52a671c937f36f0c",
+        "rawU32MismatchCount": 0,
+        "heartbeatMaximumGapMs": 52.09999990463257,
+        "heartbeatP99GapMs": 51.30000019073486
+      }
+    ],
+    "forwardSchedulingImproved": true,
+    "reverseSchedulingImproved": true,
+    "forwardDecodeImproved": true,
+    "reverseDecodeImproved": true,
+    "forwardDecodeSavingMs": 1329.8999998569489,
+    "reverseDecodeSavingMs": 1263.2999999523163,
+    "aggregateDecodeSpeedup": 1.0852779458509707,
+    "projectedTwoWindowSavingMs": 2593.199999809265,
+    "requiredProjectedTwoWindowSavingMs": 800,
+    "projectedTwoWindowSavingPassed": true,
+    "wallBoundaryConsistent": true,
+    "passed": true
+  },
+  "thermal": {
+    "passed": true,
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "independentNominalStartGatePerArm": true,
+    "continuousThroughSettlementTracePerArm": true,
+    "allGateAndTraceObservationsNominal": true,
+    "arms": [
+      {
+        "armId": "A1",
+        "gateObservationCount": 60,
+        "gateMaximumPollGapMs": 924,
+        "traceObservationCount": 95,
+        "traceMaximumPollGapMs": 924,
+        "nonNominalObservationCount": 0,
+        "rawTraceSha256": "fb620727e9e740220928cb116112953048196d45dc21f7c12816e302aff6574a"
+      },
+      {
+        "armId": "B1",
+        "gateObservationCount": 46,
+        "gateMaximumPollGapMs": 921,
+        "traceObservationCount": 75,
+        "traceMaximumPollGapMs": 921,
+        "nonNominalObservationCount": 0,
+        "rawTraceSha256": "ed1685f311f20bcbfcdf2db4a0daf39b60f3652c27abf8dcf4178c4f04c43b28"
+      },
+      {
+        "armId": "B2",
+        "gateObservationCount": 58,
+        "gateMaximumPollGapMs": 923,
+        "traceObservationCount": 86,
+        "traceMaximumPollGapMs": 923,
+        "nonNominalObservationCount": 0,
+        "rawTraceSha256": "b138ce0a9af1a62705ab965d3b9afefb9f7dc6c63951b87751ed819bd066379b"
+      },
+      {
+        "armId": "A2",
+        "gateObservationCount": 48,
+        "gateMaximumPollGapMs": 923,
+        "traceObservationCount": 83,
+        "traceMaximumPollGapMs": 935,
+        "nonNominalObservationCount": 0,
+        "rawTraceSha256": "ef5d06b2fc3616514e3be6a4fed2ad85861a3e97d07638d71f5fa5530669f73d"
+      }
+    ]
+  },
+  "responsiveness": {
+    "heartbeatIntervalMs": 50,
+    "maximumGapMs": 52.200000047683716,
+    "maximumP99GapMs": 52.10000014305115,
+    "absoluteGatePassed": true,
+    "relativeGatePassed": true,
+    "passed": true
+  },
+  "lifecycle": {
+    "passed": true,
+    "persistentDeviceBackendAndPackageOwnerCount": 1,
+    "reusedAcrossCorrectnessCancellationAndTiming": true,
+    "fifoBackendUseWasSequential": true,
+    "queueDrainedBeforeBackendDestroy": true,
+    "backendDestroyPromiseIdempotent": true,
+    "createdBufferCount": 16,
+    "destroyedBufferCount": 16,
+    "createdBufferBytes": 3758352400,
+    "maximumLiveBufferBytes": 3758352400,
+    "liveBufferCountBeforeDeviceDestroy": 0,
+    "liveBufferBytesBeforeDeviceDestroy": 0,
+    "mapCallCount": 15,
+    "unmapCallCount": 15,
+    "mappedOrPendingBufferCountBeforeDeviceDestroy": 0,
+    "everyBufferDestroyedExactlyOnce": true,
+    "deviceContextDestroyed": true,
+    "cleanupWallMs": 2.299999952316284,
+    "runtimeEventCount": 0,
+    "rejectedSetupAttemptCount": 0
+  },
+  "scope": {
+    "samePersistentDeviceBackendAndPackageOwner": true,
+    "productionDefaultChanged": false,
+    "productionVaeSchedulerIntegrated": false,
+    "productIntegrationEvidence": false,
+    "packageBytesChanged": false,
+    "modelMathChanged": false,
+    "commandBufferContentsChanged": false,
+    "commandBufferCoalescing": false,
+    "ditSelectionRetained": true,
+    "plannerExecuted": false,
+    "fullProductTimingClaim": false,
+    "listeningClaim": false,
+    "underOneMinuteClaim": false
+  },
+  "decision": {
+    "literalBrowserDecision": "positive-authorize-production-vae-scheduler-selection",
+    "evidence": "positive",
+    "productionVaeSchedulerIntegrationAuthorized": true,
+    "productionVaeSchedulerIntegrated": false,
+    "postIntegrationProductGateRequired": true,
+    "productIntegrationEvidence": false,
+    "plannerVaeSchedulerSelectionAuthorized": false,
+    "packageOrModelMathChangeAuthorized": false
+  }
+}

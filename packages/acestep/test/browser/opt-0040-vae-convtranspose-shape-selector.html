@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0040 ConvTranspose shape selector</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 66rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 29rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0040 — C512 ConvTranspose per-shape selector</h1>
+    <p>
+      This exact revision-6 gate compares the explicit OPT-0028 fixed32 owner
+      against the opt-in OPT-0040 selector. Both arms use batch64, one
+      outstanding command buffer, the same package, fixture, K1/K7/Snake/Add
+      owners, and the same FIFO graph. Only blocks 0–2 select channel reuse and
+      blocks 3–4 select row reuse.
+    </p>
+    <p>
+      Initialization runs complete untimed C512 exactness and deterministic
+      reruns. Once READY, leave the machine idle for 30 seconds, run
+      <code>notifyutil -g com.apple.system.thermalpressurelevel</code> exactly
+      once, enter the observed level, and start the balanced A/B/B/A timing.
+    </p>
+    <button id="prepare" type="button">Initialize authenticated C512 gate</button>
+    <div id="progress" role="status" aria-live="polite">idle</div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>One-check nominal start</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Wait start (epoch ms; filled at READY)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" readonly />
+      </label>
+      <label>
+        Level-0 check time (epoch ms; blank uses click time)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal-pressure level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Start-to-check gap (ms; blank derives exact timestamps)
+        <input name="thermalMaximumObservationGapMilliseconds" inputmode="decimal" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run control / selector / selector / control
+      </button>
+    </fieldset>
+
+    <pre id="result">not initialized</pre>
+    <a id="download" hidden download="opt-0040-vae-convtranspose-shape-selector.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0040-vae-convtranspose-shape-selector.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0010 package-native planner token profiler</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; }
+      #protocol { max-width: 80rem; }
+      #progress { margin-block: 1rem; }
+      #thermal-gate { display: grid; gap: 0.5rem; max-width: 54rem; }
+      #thermal-gate label { display: grid; grid-template-columns: 24rem 1fr; gap: 0.5rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Benchmark-only OPT-0010 profiler. Preparation authenticates and uploads
+      only the raw-FP16 planner phase and its pinned tokenizer, compiles the
+      unchanged package-native executor, then produces full-logit correctness
+      references for short, middle, and long M1 CoT and M2 semantic-token
+      cases. After a separately observed continuous 30-second nominal thermal
+      gate, each measured decode proxy-observes all 628 physical dispatches,
+      all 34 command-buffer/drain/real-idle events, all progress payloads, and
+      the six exact readback copies. Post-drain cancellation and idempotent
+      cleanup follow outside timing. Keep the external thermal logger running
+      through cleanup; its stopped, hashed artifact is joined to this raw
+      browser receipt during evidence closure.
+    </p>
+    <button id="prepare" type="button">Prepare six planner references</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <fieldset id="thermal-gate" disabled>
+      <legend>External thermal gate</legend>
+      <label>Source <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Continuous nominal start (epoch ms) <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Gate completion (epoch ms; blank uses click time) <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Observation count <input name="thermalObservations" inputmode="numeric" value="31" /></label>
+      <label>Poll interval (ms) <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly /></label>
+      <label>Maximum poll gap (ms) <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Non-nominal observations <input name="thermalNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <button id="run-timed" type="button" disabled>Run six timed planner tokens</button>
+    </fieldset>
+    <details><summary>Preparation receipt</summary><pre id="preparation">not prepared</pre></details>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0010-package-native-planner-token-profiler.ts"></script>
+  </body>
+</html>

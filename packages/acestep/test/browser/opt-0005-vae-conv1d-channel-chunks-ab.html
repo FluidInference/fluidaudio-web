@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0005 channel-chunked VAE Conv1D A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 72rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Run only after a 30-second continuous-nominal thermal gate. Keep this
+      page visible for the complete selected balanced Conv1D probe. A run must
+      explicitly choose <code>runMode=screen-d1</code>,
+      <code>block0-d1</code>, <code>screen-d9</code>, or
+      <code>overlap-d1</code>. The canonical first screen allocates the full
+      production operation but executes its middle 32-row range at 1,024
+      channels; only a positive result justifies timing the complete
+      2,560-frame block-0 residual operation. Geometry is fixed at chunk 64;
+      this page performs no automatic sweep.
+    </p>
+    <button id="start" type="button">Run channel-chunked VAE Conv1D A/B</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0005-vae-conv1d-channel-chunks-ab.ts"></script>
+  </body>
+</html>

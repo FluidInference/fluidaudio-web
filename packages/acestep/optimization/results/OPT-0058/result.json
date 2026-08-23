@@ -1,0 +1,3500 @@
+{
+  "schema": "ace-opt-0058-dense-int8-dp4a-v1",
+  "experimentId": "OPT-0058",
+  "passed": false,
+  "identity": {
+    "stockWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "deviceFeatures": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups",
+      "timestamp-query"
+    ],
+    "wgslLanguageFeatures": [
+      "immediate_address_space",
+      "linear_indexing",
+      "packed_4x8_integer_dot_product",
+      "pointer_composite_access",
+      "readonly_and_readwrite_storage_textures",
+      "subgroup_id",
+      "subgroup_uniformity",
+      "texture_and_sampler_let",
+      "uniform_buffer_standard_layout",
+      "unrestricted_pointer_parameters"
+    ],
+    "requiredWgslLanguageFeature": "packed_4x8_integer_dot_product",
+    "packed4x8IntegerDotProductPresent": true,
+    "languageFeaturePresenceDoesNotProveNativeHardwareDp4a": true,
+    "adapterVendorRecordedForNativeOrLoweredInterpretation": true,
+    "successfulPackedDotPipelineCompilation": true,
+    "groupSizes": [
+      32,
+      64,
+      128
+    ],
+    "layoutProof": {
+      "signedI8Domain": "[-127,127]",
+      "deterministicRounding": "f32 divide; round nearest with halves away from zero",
+      "deterministicClamp": "[-127,127]",
+      "zeroGroupScaleAndPayloadCanonicalZero": true,
+      "groups": {
+        "g32": {
+          "groupSize": 32,
+          "logicalValues": 8192,
+          "packedWords": 2048,
+          "scaleElements": 256,
+          "everyWordVisitedOnce": true,
+          "everyScaleVisitedOnce": true,
+          "inverseMismatchCount": 0,
+          "repackedWordMismatchCount": 0,
+          "passed": true
+        },
+        "g64": {
+          "groupSize": 64,
+          "logicalValues": 16384,
+          "packedWords": 4096,
+          "scaleElements": 256,
+          "everyWordVisitedOnce": true,
+          "everyScaleVisitedOnce": true,
+          "inverseMismatchCount": 0,
+          "repackedWordMismatchCount": 0,
+          "passed": true
+        },
+        "g128": {
+          "groupSize": 128,
+          "logicalValues": 32768,
+          "packedWords": 8192,
+          "scaleElements": 256,
+          "everyWordVisitedOnce": true,
+          "everyScaleVisitedOnce": true,
+          "inverseMismatchCount": 0,
+          "repackedWordMismatchCount": 0,
+          "passed": true
+        }
+      },
+      "passed": true
+    },
+    "fixtureVersion": "opt0032-full-plus-opt0058-adversarial-fp16-v1"
+  },
+  "correctness": {
+    "passed": false,
+    "completedBeforeReady": true,
+    "successfulStockWgslCompilationBeforeReady": true,
+    "fullOutputCountPerArm": 25344000,
+    "fullCases": [
+      {
+        "id": "h-h",
+        "fixtureKind": "full",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 2048
+        },
+        "outputU32Count": 4608000,
+        "packing": {
+          "logicalWeightElements": 4194304,
+          "exactFp16WeightBytes": 8388608,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 1048576,
+              "weightScaleElements": 131072,
+              "weightSaturationCount": 700405,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 524288
+            },
+            "g64": {
+              "packedWeightWords": 1048576,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 697910,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g128": {
+              "packedWeightWords": 1048576,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 697910,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 4608000,
+          "finiteCount": 4608000,
+          "differingU32Count": 4607606,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 438,
+          "classChanges": {
+            "positive-finite->negative-finite": 219,
+            "negative-finite->positive-finite": 219
+          },
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": -2.4414070119544503e-7,
+          "meanAbsoluteError": 0.0012355701056303587,
+          "rmsError": 0.001550312214626976,
+          "relativeRmsError": 1.38290044749677,
+          "nrmse": 0.00031160395826711565,
+          "snrDecibels": 70.12794068349089,
+          "pearsonCorrelation": 0.9999999523043467,
+          "maximumAbsoluteControl": 26.46219253540039,
+          "maximumAbsoluteError": 0.009391307830810547,
+          "maximumRelativeError": 2367.660403251648,
+          "firstDifference": {
+            "shapeId": "h-h",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": -10.93539047241211,
+            "candidate": -10.937024116516113,
+            "controlU32": 3241080668,
+            "candidateU32": 3241082381
+          },
+          "worstDifference": {
+            "shapeId": "h-h",
+            "index": 3868153,
+            "row": 1888,
+            "column": 1529,
+            "control": 5.681861400604248,
+            "candidate": 5.691252708435059,
+            "error": 0.009391307830810547,
+            "absoluteError": 0.009391307830810547,
+            "relativeError": 0.0016528576057507863
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 770002,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 700405,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607987,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8052,
+              "classChanges": {
+                "negative-finite->positive-finite": 3990,
+                "positive-finite->negative-finite": 4062
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00001805029458799605,
+              "meanAbsoluteError": 0.02424617270672788,
+              "rmsError": 0.03038143065129893,
+              "relativeRmsError": 33.946756354843615,
+              "nrmse": 0.006106495168807329,
+              "snrDecibels": 44.28415964319275,
+              "pearsonCorrelation": 0.9999848041467488,
+              "maximumAbsoluteControl": 26.46219253540039,
+              "maximumAbsoluteError": 0.16202831268310547,
+              "maximumRelativeError": 61659.78488372093,
+              "firstDifference": {
+                "shapeId": "h-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -10.93539047241211,
+                "candidate": -10.96275520324707,
+                "controlU32": 3241080668,
+                "candidateU32": 3241109362
+              },
+              "worstDifference": {
+                "shapeId": "h-h",
+                "index": 1062373,
+                "row": 518,
+                "column": 1509,
+                "control": -6.075234413146973,
+                "candidate": -6.237262725830078,
+                "error": -0.16202831268310547,
+                "absoluteError": 0.16202831268310547,
+                "relativeError": 0.026670298076477805
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 767441,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 697910,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607980,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8044,
+              "classChanges": {
+                "negative-finite->positive-finite": 3974,
+                "positive-finite->negative-finite": 4070
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00001792586234195443,
+              "meanAbsoluteError": 0.024289717373427704,
+              "rmsError": 0.03043583774777636,
+              "relativeRmsError": 33.68727667540012,
+              "nrmse": 0.0061174306864793405,
+              "snrDecibels": 44.26861885439909,
+              "pearsonCorrelation": 0.9999847637993605,
+              "maximumAbsoluteControl": 26.46219253540039,
+              "maximumAbsoluteError": 0.16202926635742188,
+              "maximumRelativeError": 61659.49418604651,
+              "firstDifference": {
+                "shapeId": "h-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -10.93539047241211,
+                "candidate": -10.962756156921387,
+                "controlU32": 3241080668,
+                "candidateU32": 3241109363
+              },
+              "worstDifference": {
+                "shapeId": "h-h",
+                "index": 1062373,
+                "row": 518,
+                "column": 1509,
+                "control": -6.075234413146973,
+                "candidate": -6.2372636795043945,
+                "error": -0.16202926635742188,
+                "absoluteError": 0.16202926635742188,
+                "relativeError": 0.026670455053847162
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 767441,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 697910,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607985,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8044,
+              "classChanges": {
+                "negative-finite->positive-finite": 3973,
+                "positive-finite->negative-finite": 4071
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.000017926067164711138,
+              "meanAbsoluteError": 0.024289717546683735,
+              "rmsError": 0.03043583768085478,
+              "relativeRmsError": 33.687336913541046,
+              "nrmse": 0.006117430673028483,
+              "snrDecibels": 44.26861887349741,
+              "pearsonCorrelation": 0.9999847637994547,
+              "maximumAbsoluteControl": 26.46219253540039,
+              "maximumAbsoluteError": 0.16202974319458008,
+              "maximumRelativeError": 61659.58139534884,
+              "firstDifference": {
+                "shapeId": "h-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -10.93539047241211,
+                "candidate": -10.962757110595703,
+                "controlU32": 3241080668,
+                "candidateU32": 3241109364
+              },
+              "worstDifference": {
+                "shapeId": "h-h",
+                "index": 1062373,
+                "row": 518,
+                "column": 1509,
+                "control": -6.075234413146973,
+                "candidate": -6.237264156341553,
+                "error": -0.16202974319458008,
+                "absoluteError": 0.16202974319458008,
+                "relativeError": 0.026670533542531842
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "h-1024",
+        "fixtureKind": "full",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 2304000,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 350115,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 348946,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 348946,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 2304000,
+          "finiteCount": 2304000,
+          "differingU32Count": 2303784,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 219,
+          "classChanges": {
+            "negative-finite->positive-finite": 114,
+            "positive-finite->negative-finite": 105
+          },
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": -8.842457941177095e-7,
+          "meanAbsoluteError": 0.0012345265665072577,
+          "rmsError": 0.0015491262694403087,
+          "relativeRmsError": 0.8011090761554115,
+          "nrmse": 0.00031097462808635386,
+          "snrDecibels": 70.14550085815044,
+          "pearsonCorrelation": 0.9999999524909717,
+          "maximumAbsoluteControl": 26.84905242919922,
+          "maximumAbsoluteError": 0.007839202880859375,
+          "maximumRelativeError": 787.5533774495125,
+          "firstDifference": {
+            "shapeId": "h-1024",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": 2.757554054260254,
+            "candidate": 2.7576851844787598,
+            "controlU32": 1076919236,
+            "candidateU32": 1076919786
+          },
+          "worstDifference": {
+            "shapeId": "h-1024",
+            "index": 268925,
+            "row": 262,
+            "column": 637,
+            "control": 9.476818084716797,
+            "candidate": 9.484657287597656,
+            "error": 0.007839202880859375,
+            "absoluteError": 0.007839202880859375,
+            "relativeError": 0.0008271977799702209
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 2304000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 770308,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 350115,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2304000,
+              "finiteCount": 2304000,
+              "differingU32Count": 2303993,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 4158,
+              "classChanges": {
+                "positive-finite->negative-finite": 2049,
+                "negative-finite->positive-finite": 2109
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.0000019075634358572217,
+              "meanAbsoluteError": 0.024234565565259072,
+              "rmsError": 0.030376131164809538,
+              "relativeRmsError": 30.245539137746604,
+              "nrmse": 0.006097763802747864,
+              "snrDecibels": 44.296588041360685,
+              "pearsonCorrelation": 0.9999848568147676,
+              "maximumAbsoluteControl": 26.84905242919922,
+              "maximumAbsoluteError": 0.15996074676513672,
+              "maximumRelativeError": 41319.92440670729,
+              "firstDifference": {
+                "shapeId": "h-1024",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 2.757554054260254,
+                "candidate": 2.7493669986724854,
+                "controlU32": 1076919236,
+                "candidateU32": 1076884897
+              },
+              "worstDifference": {
+                "shapeId": "h-1024",
+                "index": 278518,
+                "row": 271,
+                "column": 1014,
+                "control": -12.40107536315918,
+                "candidate": -12.561036109924316,
+                "error": -0.15996074676513672,
+                "absoluteError": 0.15996074676513672,
+                "relativeError": 0.012898941590206306
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 2304000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 767616,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 348946,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2304000,
+              "finiteCount": 2304000,
+              "differingU32Count": 2303991,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 4165,
+              "classChanges": {
+                "positive-finite->negative-finite": 2053,
+                "negative-finite->positive-finite": 2112
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.0000027678445385136602,
+              "meanAbsoluteError": 0.024279434296040195,
+              "rmsError": 0.030432420722611635,
+              "relativeRmsError": 30.239097426781914,
+              "nrmse": 0.006109063478344339,
+              "snrDecibels": 44.280507243140015,
+              "pearsonCorrelation": 0.9999848146667994,
+              "maximumAbsoluteControl": 26.84905242919922,
+              "maximumAbsoluteError": 0.1599597930908203,
+              "maximumRelativeError": 41319.69343870878,
+              "firstDifference": {
+                "shapeId": "h-1024",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 2.757554054260254,
+                "candidate": 2.7515335083007812,
+                "controlU32": 1076919236,
+                "candidateU32": 1076893984
+              },
+              "worstDifference": {
+                "shapeId": "h-1024",
+                "index": 278518,
+                "row": 271,
+                "column": 1014,
+                "control": -12.40107536315918,
+                "candidate": -12.56103515625,
+                "error": -0.1599597930908203,
+                "absoluteError": 0.1599597930908203,
+                "relativeError": 0.012898864687656449
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 2304000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 767582,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 348946,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2304000,
+              "finiteCount": 2304000,
+              "differingU32Count": 2303989,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 4162,
+              "classChanges": {
+                "positive-finite->negative-finite": 2052,
+                "negative-finite->positive-finite": 2110
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.000002874192137295185,
+              "meanAbsoluteError": 0.024279667238818605,
+              "rmsError": 0.030432770848654832,
+              "relativeRmsError": 30.23926721304248,
+              "nrmse": 0.006109133763328988,
+              "snrDecibels": 44.280407312256955,
+              "pearsonCorrelation": 0.9999848144884613,
+              "maximumAbsoluteControl": 26.84905242919922,
+              "maximumAbsoluteError": 0.1599597930908203,
+              "maximumRelativeError": 41319.94675844908,
+              "firstDifference": {
+                "shapeId": "h-1024",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 2.757554054260254,
+                "candidate": 2.7515335083007812,
+                "controlU32": 1076919236,
+                "candidateU32": 1076893984
+              },
+              "worstDifference": {
+                "shapeId": "h-1024",
+                "index": 278518,
+                "row": 271,
+                "column": 1014,
+                "control": -12.40107536315918,
+                "candidate": -12.56103515625,
+                "error": -0.1599597930908203,
+                "absoluteError": 0.1599597930908203,
+                "relativeError": 0.012898864687656449
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "h-6144",
+        "fixtureKind": "full",
+        "shape": {
+          "rows": 2250,
+          "inner": 2048,
+          "columns": 6144
+        },
+        "outputU32Count": 13824000,
+        "packing": {
+          "logicalWeightElements": 12582912,
+          "exactFp16WeightBytes": 25165824,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 393216,
+              "weightSaturationCount": 2104141,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 1572864
+            },
+            "g64": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 196608,
+              "weightSaturationCount": 2096726,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 786432
+            },
+            "g128": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 98304,
+              "weightSaturationCount": 2096693,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 393216
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 13824000,
+          "finiteCount": 13824000,
+          "differingU32Count": 13822778,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 1352,
+          "classChanges": {
+            "positive-finite->negative-finite": 687,
+            "negative-finite->positive-finite": 664,
+            "positive-finite->positive-zero": 1
+          },
+          "finiteToZeroCollapseCount": 1,
+          "finiteToZeroCollapseRate": 7.233796296296296e-8,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": 1.746206040749072e-7,
+          "meanAbsoluteError": 0.001236474793324103,
+          "rmsError": 0.0015514226716138574,
+          "relativeRmsError": 0.8686018678790555,
+          "nrmse": 0.0003112183832468909,
+          "snrDecibels": 70.13869515479831,
+          "pearsonCorrelation": 0.9999999524247781,
+          "maximumAbsoluteControl": 28.760805130004883,
+          "maximumAbsoluteError": 0.008998632431030273,
+          "maximumRelativeError": 1981.1824895441532,
+          "firstDifference": {
+            "shapeId": "h-6144",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": -4.371448993682861,
+            "candidate": -4.369989395141602,
+            "controlU32": 3230393065,
+            "candidateU32": 3230390004
+          },
+          "worstDifference": {
+            "shapeId": "h-6144",
+            "index": 9610964,
+            "row": 1564,
+            "column": 1748,
+            "control": 1.1401865482330322,
+            "candidate": 1.131187915802002,
+            "error": -0.008998632431030273,
+            "absoluteError": 0.008998632431030273,
+            "relativeError": 0.007892245742572229
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 13824000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 771345,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2104141,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 13824000,
+              "finiteCount": 13824000,
+              "differingU32Count": 13823960,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 24363,
+              "classChanges": {
+                "positive-finite->negative-finite": 12187,
+                "negative-finite->positive-finite": 12176
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00001148697384632546,
+              "meanAbsoluteError": 0.024247845676213284,
+              "rmsError": 0.03039306405610786,
+              "relativeRmsError": 16.430199789515605,
+              "nrmse": 0.006096907329336332,
+              "snrDecibels": 44.29780812076458,
+              "pearsonCorrelation": 0.9999848545112776,
+              "maximumAbsoluteControl": 28.760805130004883,
+              "maximumAbsoluteError": 0.15985679626464844,
+              "maximumRelativeError": 38682.555147058825,
+              "firstDifference": {
+                "shapeId": "h-6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -4.371448993682861,
+                "candidate": -4.406362533569336,
+                "controlU32": 3230393065,
+                "candidateU32": 3230466284
+              },
+              "worstDifference": {
+                "shapeId": "h-6144",
+                "index": 8773455,
+                "row": 1427,
+                "column": 5967,
+                "control": 14.034041404724121,
+                "candidate": 14.19389820098877,
+                "error": 0.15985679626464844,
+                "absoluteError": 0.15985679626464844,
+                "relativeError": 0.011390645905522101
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 13824000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 768809,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2096726,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 13824000,
+              "finiteCount": 13824000,
+              "differingU32Count": 13823932,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 24387,
+              "classChanges": {
+                "positive-finite->negative-finite": 12205,
+                "negative-finite->positive-finite": 12182
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.000011929463975313226,
+              "meanAbsoluteError": 0.024290658020557212,
+              "rmsError": 0.03044693343170442,
+              "relativeRmsError": 16.44897090582399,
+              "nrmse": 0.006107713630086237,
+              "snrDecibels": 44.28242667458116,
+              "pearsonCorrelation": 0.9999848151975063,
+              "maximumAbsoluteControl": 28.760805130004883,
+              "maximumAbsoluteError": 0.16097545623779297,
+              "maximumRelativeError": 38682.20955882353,
+              "firstDifference": {
+                "shapeId": "h-6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -4.371448993682861,
+                "candidate": -4.406362533569336,
+                "controlU32": 3230393065,
+                "candidateU32": 3230466284
+              },
+              "worstDifference": {
+                "shapeId": "h-6144",
+                "index": 8773455,
+                "row": 1427,
+                "column": 5967,
+                "control": 14.034041404724121,
+                "candidate": 14.195016860961914,
+                "error": 0.16097545623779297,
+                "absoluteError": 0.16097545623779297,
+                "relativeError": 0.011470356371016949
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 13824000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 768809,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2096693,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 13824000,
+              "finiteCount": 13824000,
+              "differingU32Count": 13823943,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 24385,
+              "classChanges": {
+                "positive-finite->negative-finite": 12205,
+                "negative-finite->positive-finite": 12180
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00001188288534983591,
+              "meanAbsoluteError": 0.02429073618884068,
+              "rmsError": 0.03044707342623939,
+              "relativeRmsError": 16.44896953607209,
+              "nrmse": 0.006107741713260239,
+              "snrDecibels": 44.28238673708506,
+              "pearsonCorrelation": 0.9999848150823192,
+              "maximumAbsoluteControl": 28.760805130004883,
+              "maximumAbsoluteError": 0.16097545623779297,
+              "maximumRelativeError": 38682.643382352944,
+              "firstDifference": {
+                "shapeId": "h-6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -4.371448993682861,
+                "candidate": -4.406361103057861,
+                "controlU32": 3230393065,
+                "candidateU32": 3230466281
+              },
+              "worstDifference": {
+                "shapeId": "h-6144",
+                "index": 8773455,
+                "row": 1427,
+                "column": 5967,
+                "control": 14.034041404724121,
+                "candidate": 14.195016860961914,
+                "error": 0.16097545623779297,
+                "absoluteError": 0.16097545623779297,
+                "relativeError": 0.011470356371016949
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "6144-h",
+        "fixtureKind": "full",
+        "shape": {
+          "rows": 2250,
+          "inner": 6144,
+          "columns": 2048
+        },
+        "outputU32Count": 4608000,
+        "packing": {
+          "logicalWeightElements": 12582912,
+          "exactFp16WeightBytes": 25165824,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 393216,
+              "weightSaturationCount": 2105687,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 1572864
+            },
+            "g64": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 196608,
+              "weightSaturationCount": 2098292,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 786432
+            },
+            "g128": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 98304,
+              "weightSaturationCount": 2098272,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 393216
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 4608000,
+          "finiteCount": 4608000,
+          "differingU32Count": 4607609,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 475,
+          "classChanges": {
+            "positive-finite->negative-finite": 228,
+            "negative-finite->positive-finite": 247
+          },
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": 9.186113333170296e-7,
+          "meanAbsoluteError": 0.002144418439495641,
+          "rmsError": 0.002689050529611434,
+          "relativeRmsError": 0.6551800664869852,
+          "nrmse": 0.00031163845914906197,
+          "snrDecibels": 70.12697903247057,
+          "pearsonCorrelation": 0.9999999522908113,
+          "maximumAbsoluteControl": 47.52846908569336,
+          "maximumAbsoluteError": 0.01443171501159668,
+          "maximumRelativeError": 1347.7936507936508,
+          "firstDifference": {
+            "shapeId": "6144-h",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": 21.445730209350586,
+            "candidate": 21.444862365722656,
+            "controlU32": 1101762779,
+            "candidateU32": 1101762324
+          },
+          "worstDifference": {
+            "shapeId": "6144-h",
+            "index": 1940362,
+            "row": 947,
+            "column": 906,
+            "control": -3.8669421672821045,
+            "candidate": -3.881373882293701,
+            "error": -0.01443171501159668,
+            "absoluteError": 0.01443171501159668,
+            "relativeError": 0.0037320741783268166
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2312730,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2105687,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607981,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 7961,
+              "classChanges": {
+                "negative-finite->positive-finite": 3933,
+                "positive-finite->negative-finite": 4028
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.00004101211548479252,
+              "meanAbsoluteError": 0.042030767093523796,
+              "rmsError": 0.05267366621572482,
+              "relativeRmsError": 18.016631449709976,
+              "nrmse": 0.006104437234049471,
+              "snrDecibels": 44.28708734662581,
+              "pearsonCorrelation": 0.9999848183996364,
+              "maximumAbsoluteControl": 47.52846908569336,
+              "maximumAbsoluteError": 0.3026294708251953,
+              "maximumRelativeError": 37863.09126984127,
+              "firstDifference": {
+                "shapeId": "6144-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 21.445730209350586,
+                "candidate": 21.542219161987305,
+                "controlU32": 1101762779,
+                "candidateU32": 1101813367
+              },
+              "worstDifference": {
+                "shapeId": "6144-h",
+                "index": 4398015,
+                "row": 2147,
+                "column": 959,
+                "control": 18.65277099609375,
+                "candidate": 18.955400466918945,
+                "error": 0.3026294708251953,
+                "absoluteError": 0.3026294708251953,
+                "relativeError": 0.0162243706786821
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2304826,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2098292,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607984,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8007,
+              "classChanges": {
+                "negative-finite->positive-finite": 3934,
+                "positive-finite->negative-finite": 4073
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.000041478713625586566,
+              "meanAbsoluteError": 0.04210627419553767,
+              "rmsError": 0.052768258367124225,
+              "relativeRmsError": 18.026793412140172,
+              "nrmse": 0.006115399673016345,
+              "snrDecibels": 44.271503086165026,
+              "pearsonCorrelation": 0.9999847784685849,
+              "maximumAbsoluteControl": 47.52846908569336,
+              "maximumAbsoluteError": 0.3026294708251953,
+              "maximumRelativeError": 37863.269841269845,
+              "firstDifference": {
+                "shapeId": "6144-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 21.445730209350586,
+                "candidate": 21.542217254638672,
+                "controlU32": 1101762779,
+                "candidateU32": 1101813366
+              },
+              "worstDifference": {
+                "shapeId": "6144-h",
+                "index": 4398015,
+                "row": 2147,
+                "column": 959,
+                "control": 18.65277099609375,
+                "candidate": 18.955400466918945,
+                "error": 0.3026294708251953,
+                "absoluteError": 0.3026294708251953,
+                "relativeError": 0.0162243706786821
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 4608000,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2304811,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2098272,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4608000,
+              "finiteCount": 4608000,
+              "differingU32Count": 4607988,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8005,
+              "classChanges": {
+                "negative-finite->positive-finite": 3935,
+                "positive-finite->negative-finite": 4070
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.000041516812707201396,
+              "meanAbsoluteError": 0.042106406277586224,
+              "rmsError": 0.05276845290338456,
+              "relativeRmsError": 18.026736040853212,
+              "nrmse": 0.006115422218141381,
+              "snrDecibels": 44.27147106469179,
+              "pearsonCorrelation": 0.9999847783873511,
+              "maximumAbsoluteControl": 47.52846908569336,
+              "maximumAbsoluteError": 0.3026294708251953,
+              "maximumRelativeError": 37863.218253968254,
+              "firstDifference": {
+                "shapeId": "6144-h",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 21.445730209350586,
+                "candidate": 21.542219161987305,
+                "controlU32": 1101762779,
+                "candidateU32": 1101813367
+              },
+              "worstDifference": {
+                "shapeId": "6144-h",
+                "index": 4398015,
+                "row": 2147,
+                "column": 959,
+                "control": 18.65277099609375,
+                "candidate": 18.955400466918945,
+                "error": 0.3026294708251953,
+                "absoluteError": 0.3026294708251953,
+                "relativeError": 0.0162243706786821
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      }
+    ],
+    "fullNumerics": {
+      "dotK4": {
+        "envelope": "full",
+        "count": 25344000,
+        "finiteCount": 25344000,
+        "differingU32Count": 25341777,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 2484,
+        "classChanges": {
+          "positive-finite->negative-finite": 1239,
+          "negative-finite->positive-finite": 1244,
+          "positive-finite->positive-zero": 1
+        },
+        "finiteToZeroCollapseCount": 1,
+        "finiteToZeroCollapseRate": 3.945707070707071e-8,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 1.3749264496135482e-7,
+        "meanAbsoluteError": 0.0014012138560639887,
+        "rmsError": 0.0018118345163724676,
+        "relativeRmsError": 0.9463777890468764,
+        "nrmse": 0.0003114214941648823,
+        "snrDecibels": 70.13302831865582,
+        "pearsonCorrelation": 0.9999999523596047,
+        "maximumAbsoluteControl": 47.52846908569336,
+        "maximumAbsoluteError": 0.01443171501159668,
+        "maximumRelativeError": 2367.660403251648,
+        "firstDifference": {
+          "shapeId": "h-h",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -10.93539047241211,
+          "candidate": -10.937024116516113,
+          "controlU32": 3241080668,
+          "candidateU32": 3241082381
+        },
+        "worstDifference": {
+          "shapeId": "6144-h",
+          "index": 1940362,
+          "row": 947,
+          "column": 906,
+          "control": -3.8669421672821045,
+          "candidate": -3.881373882293701,
+          "error": -0.01443171501159668,
+          "absoluteError": 0.01443171501159668,
+          "relativeError": 0.0037320741783268166
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": true
+      },
+      "g32": {
+        "envelope": "full",
+        "count": 25344000,
+        "finiteCount": 25344000,
+        "differingU32Count": 25343921,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 44534,
+        "classChanges": {
+          "negative-finite->positive-finite": 22208,
+          "positive-finite->negative-finite": 22326
+        },
+        "finiteToZeroCollapseCount": 0,
+        "finiteToZeroCollapseRate": 0,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": -0.0000022641604291106405,
+        "meanAbsoluteError": 0.02747959265664019,
+        "rmsError": 0.035496776144146744,
+        "relativeRmsError": 22.33721717039838,
+        "nrmse": 0.00610125205417712,
+        "snrDecibels": 44.29162066233184,
+        "pearsonCorrelation": 0.9999848335244867,
+        "maximumAbsoluteControl": 47.52846908569336,
+        "maximumAbsoluteError": 0.3026294708251953,
+        "maximumRelativeError": 61659.78488372093,
+        "firstDifference": {
+          "shapeId": "h-h",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -10.93539047241211,
+          "candidate": -10.96275520324707,
+          "controlU32": 3241080668,
+          "candidateU32": 3241109362
+        },
+        "worstDifference": {
+          "shapeId": "6144-h",
+          "index": 4398015,
+          "row": 2147,
+          "column": 959,
+          "control": 18.65277099609375,
+          "candidate": 18.955400466918945,
+          "error": 0.3026294708251953,
+          "absoluteError": 0.3026294708251953,
+          "relativeError": 0.0162243706786821
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": true
+      },
+      "g64": {
+        "envelope": "full",
+        "count": 25344000,
+        "finiteCount": 25344000,
+        "differingU32Count": 25343887,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 44603,
+        "classChanges": {
+          "negative-finite->positive-finite": 22202,
+          "positive-finite->negative-finite": 22401
+        },
+        "finiteToZeroCollapseCount": 0,
+        "finiteToZeroCollapseRate": 0,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": -0.0000024762659839207954,
+        "meanAbsoluteError": 0.027528669596119472,
+        "rmsError": 0.035560301389998696,
+        "relativeRmsError": 22.273936373765615,
+        "nrmse": 0.00611217089185332,
+        "snrDecibels": 44.27609023409446,
+        "pearsonCorrelation": 0.9999847936373586,
+        "maximumAbsoluteControl": 47.52846908569336,
+        "maximumAbsoluteError": 0.3026294708251953,
+        "maximumRelativeError": 61659.49418604651,
+        "firstDifference": {
+          "shapeId": "h-h",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -10.93539047241211,
+          "candidate": -10.962756156921387,
+          "controlU32": 3241080668,
+          "candidateU32": 3241109363
+        },
+        "worstDifference": {
+          "shapeId": "6144-h",
+          "index": 4398015,
+          "row": 2147,
+          "column": 959,
+          "control": 18.65277099609375,
+          "candidate": 18.955400466918945,
+          "error": 0.3026294708251953,
+          "absoluteError": 0.3026294708251953,
+          "relativeError": 0.0162243706786821
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": true
+      },
+      "g128": {
+        "envelope": "full",
+        "count": 25344000,
+        "finiteCount": 25344000,
+        "differingU32Count": 25343905,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 44596,
+        "classChanges": {
+          "negative-finite->positive-finite": 22198,
+          "positive-finite->negative-finite": 22398
+        },
+        "finiteToZeroCollapseCount": 0,
+        "finiteToZeroCollapseRate": 0,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": -0.000002453637559211829,
+        "meanAbsoluteError": 0.027528757456400238,
+        "rmsError": 0.03556044648606053,
+        "relativeRmsError": 22.273964899120134,
+        "nrmse": 0.006112195831234905,
+        "snrDecibels": 44.276054793286605,
+        "pearsonCorrelation": 0.9999847935468676,
+        "maximumAbsoluteControl": 47.52846908569336,
+        "maximumAbsoluteError": 0.3026294708251953,
+        "maximumRelativeError": 61659.58139534884,
+        "firstDifference": {
+          "shapeId": "h-h",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -10.93539047241211,
+          "candidate": -10.962757110595703,
+          "controlU32": 3241080668,
+          "candidateU32": 3241109364
+        },
+        "worstDifference": {
+          "shapeId": "6144-h",
+          "index": 4398015,
+          "row": 2147,
+          "column": 959,
+          "control": 18.65277099609375,
+          "candidate": 18.955400466918945,
+          "error": 0.3026294708251953,
+          "absoluteError": 0.3026294708251953,
+          "relativeError": 0.0162243706786821
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": true
+      }
+    },
+    "adversarialCases": [
+      {
+        "id": "signed-zero",
+        "fixtureKind": "signed-zero",
+        "shape": {
+          "rows": 1,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 1024,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 2097152,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 2097152,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 2097152,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 1024,
+          "finiteCount": 1024,
+          "differingU32Count": 0,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 0,
+          "classChanges": {},
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": 0,
+          "meanAbsoluteError": 0,
+          "rmsError": 0,
+          "relativeRmsError": 0,
+          "nrmse": 0,
+          "snrDecibels": "positive-infinity",
+          "pearsonCorrelation": 1,
+          "maximumAbsoluteControl": 0,
+          "maximumAbsoluteError": 0,
+          "maximumRelativeError": 0,
+          "firstDifference": null,
+          "worstDifference": null,
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 1024,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 64,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2097152,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 1024,
+              "finiteCount": 1024,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 1024,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 32,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2097152,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 1024,
+              "finiteCount": 1024,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 1024,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 16,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2097152,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 1024,
+              "finiteCount": 1024,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "zero-group",
+        "fixtureKind": "zero-group",
+        "shape": {
+          "rows": 2,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 2048,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 351831,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 350682,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 350682,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 2048,
+          "finiteCount": 2048,
+          "differingU32Count": 0,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 0,
+          "classChanges": {},
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": 0,
+          "meanAbsoluteError": 0,
+          "rmsError": 0,
+          "relativeRmsError": 0,
+          "nrmse": 0,
+          "snrDecibels": "positive-infinity",
+          "pearsonCorrelation": 1,
+          "maximumAbsoluteControl": 0,
+          "maximumAbsoluteError": 0,
+          "maximumRelativeError": 0,
+          "firstDifference": null,
+          "worstDifference": null,
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 128,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 351831,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 64,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 350682,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 0,
+            "activationZeroGroupCount": 32,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 350682,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 0,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 0,
+              "classChanges": {},
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0,
+              "meanAbsoluteError": 0,
+              "rmsError": 0,
+              "relativeRmsError": 0,
+              "nrmse": 0,
+              "snrDecibels": "positive-infinity",
+              "pearsonCorrelation": 1,
+              "maximumAbsoluteControl": 0,
+              "maximumAbsoluteError": 0,
+              "maximumRelativeError": 0,
+              "firstDifference": null,
+              "worstDifference": null,
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "cancellation",
+        "fixtureKind": "cancellation",
+        "shape": {
+          "rows": 8,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 8192,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 350666,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 349442,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 349442,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 8192,
+          "finiteCount": 8192,
+          "differingU32Count": 8190,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 1,
+          "classChanges": {
+            "positive-finite->negative-finite": 1
+          },
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": -0.000009231170906787156,
+          "meanAbsoluteError": 0.001036554667962264,
+          "rmsError": 0.0013078206455296455,
+          "relativeRmsError": 0.24139023279571334,
+          "nrmse": 0.0002986364675578463,
+          "snrDecibels": 70.49714320267496,
+          "pearsonCorrelation": 0.9999999557188,
+          "maximumAbsoluteControl": 16.196073532104492,
+          "maximumAbsoluteError": 0.005688667297363281,
+          "maximumRelativeError": 21.67588840875984,
+          "firstDifference": {
+            "shapeId": "cancellation",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": -7.845361709594727,
+            "candidate": -7.8455963134765625,
+            "controlU32": 3237678388,
+            "candidateU32": 3237678880
+          },
+          "worstDifference": {
+            "shapeId": "cancellation",
+            "index": 5617,
+            "row": 5,
+            "column": 497,
+            "control": 3.835503578186035,
+            "candidate": 3.8411922454833984,
+            "error": 0.005688667297363281,
+            "absoluteError": 0.005688667297363281,
+            "relativeError": 0.0014831604719956178
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 8192,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2728,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 350666,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 8192,
+              "finiteCount": 8192,
+              "differingU32Count": 8192,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 14,
+              "classChanges": {
+                "positive-finite->negative-finite": 6,
+                "negative-finite->positive-finite": 8
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00020444203416047912,
+              "meanAbsoluteError": 0.016587631904528166,
+              "rmsError": 0.020717418439159096,
+              "relativeRmsError": 0.8194666645429958,
+              "nrmse": 0.004730753166144307,
+              "snrDecibels": 46.501394225999924,
+              "pearsonCorrelation": 0.9999888217179217,
+              "maximumAbsoluteControl": 16.196073532104492,
+              "maximumAbsoluteError": 0.07970380783081055,
+              "maximumRelativeError": 56.424832600898505,
+              "firstDifference": {
+                "shapeId": "cancellation",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -7.845361709594727,
+                "candidate": -7.838608264923096,
+                "controlU32": 3237678388,
+                "candidateU32": 3237664225
+              },
+              "worstDifference": {
+                "shapeId": "cancellation",
+                "index": 4901,
+                "row": 4,
+                "column": 805,
+                "control": 6.8393874168396,
+                "candidate": 6.759683609008789,
+                "error": -0.07970380783081055,
+                "absoluteError": 0.07970380783081055,
+                "relativeError": 0.011653647172342919
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 8192,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2728,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 349442,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 8192,
+              "finiteCount": 8192,
+              "differingU32Count": 8191,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 14,
+              "classChanges": {
+                "positive-finite->negative-finite": 6,
+                "negative-finite->positive-finite": 8
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00020971962547378098,
+              "meanAbsoluteError": 0.016567443940317617,
+              "rmsError": 0.020703282618998283,
+              "relativeRmsError": 0.819774426832737,
+              "nrmse": 0.004727525298918562,
+              "snrDecibels": 46.50732276779137,
+              "pearsonCorrelation": 0.9999888373802095,
+              "maximumAbsoluteControl": 16.196073532104492,
+              "maximumAbsoluteError": 0.07970476150512695,
+              "maximumRelativeError": 56.42385330085322,
+              "firstDifference": {
+                "shapeId": "cancellation",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -7.845361709594727,
+                "candidate": -7.839412689208984,
+                "controlU32": 3237678388,
+                "candidateU32": 3237665912
+              },
+              "worstDifference": {
+                "shapeId": "cancellation",
+                "index": 4901,
+                "row": 4,
+                "column": 805,
+                "control": 6.8393874168396,
+                "candidate": 6.759682655334473,
+                "error": -0.07970476150512695,
+                "absoluteError": 0.07970476150512695,
+                "relativeError": 0.01165378661090054
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 8192,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2728,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 349442,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 8192,
+              "finiteCount": 8192,
+              "differingU32Count": 8192,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 14,
+              "classChanges": {
+                "positive-finite->negative-finite": 6,
+                "negative-finite->positive-finite": 8
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.00020971390821955538,
+              "meanAbsoluteError": 0.016567445714628093,
+              "rmsError": 0.020703283329141856,
+              "relativeRmsError": 0.8198049744197675,
+              "nrmse": 0.00472752546107747,
+              "snrDecibels": 46.50732246985656,
+              "pearsonCorrelation": 0.9999888373796958,
+              "maximumAbsoluteControl": 16.196073532104492,
+              "maximumAbsoluteError": 0.07970380783081055,
+              "maximumRelativeError": 56.42701154349928,
+              "firstDifference": {
+                "shapeId": "cancellation",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -7.845361709594727,
+                "candidate": -7.839412212371826,
+                "controlU32": 3237678388,
+                "candidateU32": 3237665911
+              },
+              "worstDifference": {
+                "shapeId": "cancellation",
+                "index": 4901,
+                "row": 4,
+                "column": 805,
+                "control": 6.8393874168396,
+                "candidate": 6.759683609008789,
+                "error": -0.07970380783081055,
+                "absoluteError": 0.07970380783081055,
+                "relativeError": 0.011653647172342919
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "finite-range",
+        "fixtureKind": "range",
+        "shape": {
+          "rows": 4,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 4096,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 524288,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 524288,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 524288,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 4096,
+          "finiteCount": 4096,
+          "differingU32Count": 4022,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 2,
+          "classChanges": {
+            "negative-finite->positive-zero": 1,
+            "positive-finite->positive-zero": 1
+          },
+          "finiteToZeroCollapseCount": 2,
+          "finiteToZeroCollapseRate": 0.00048828125,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": -0.00000562518835067749,
+          "meanAbsoluteError": 0.0006256997585296631,
+          "rmsError": 0.000784542771705337,
+          "relativeRmsError": 0.022161086678171796,
+          "nrmse": 0.000008535007326928368,
+          "snrDecibels": 101.37592203452755,
+          "pearsonCorrelation": 0.9999999999636002,
+          "maximumAbsoluteControl": 352.4384765625,
+          "maximumAbsoluteError": 0.002777099609375,
+          "maximumRelativeError": 1,
+          "firstDifference": {
+            "shapeId": "finite-range",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": 39.9697265625,
+            "candidate": 39.96875,
+            "controlU32": 1109385472,
+            "candidateU32": 1109385216
+          },
+          "worstDifference": {
+            "shapeId": "finite-range",
+            "index": 3827,
+            "row": 3,
+            "column": 755,
+            "control": -120.87777709960938,
+            "candidate": -120.875,
+            "error": 0.002777099609375,
+            "absoluteError": 0.002777099609375,
+            "relativeError": 0.000022974443078040143
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": false
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2048,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 524288,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 120,
+              "classChanges": {
+                "positive-finite->positive-zero": 49,
+                "negative-finite->positive-zero": 55,
+                "positive-finite->negative-finite": 7,
+                "negative-finite->positive-finite": 9
+              },
+              "finiteToZeroCollapseCount": 104,
+              "finiteToZeroCollapseRate": 0.025390625,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.019609704613685608,
+              "meanAbsoluteError": 0.6520541068166494,
+              "rmsError": 0.8193308373887849,
+              "relativeRmsError": 0.18509820398208243,
+              "nrmse": 0.0089134652086478,
+              "snrDecibels": 40.99906852660462,
+              "pearsonCorrelation": 0.999990632018291,
+              "maximumAbsoluteControl": 352.4384765625,
+              "maximumAbsoluteError": 2.814910888671875,
+              "maximumRelativeError": 1.0001216426625146,
+              "firstDifference": {
+                "shapeId": "finite-range",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 39.9697265625,
+                "candidate": 40.31498336791992,
+                "controlU32": 1109385472,
+                "candidateU32": 1109475979
+              },
+              "worstDifference": {
+                "shapeId": "finite-range",
+                "index": 3338,
+                "row": 3,
+                "column": 266,
+                "control": -263.2637939453125,
+                "candidate": -266.0787048339844,
+                "error": -2.814910888671875,
+                "absoluteError": 2.814910888671875,
+                "relativeError": 0.010692358590169879
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": false
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2048,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 524288,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 124,
+              "classChanges": {
+                "positive-finite->positive-zero": 49,
+                "negative-finite->positive-zero": 58,
+                "positive-finite->negative-finite": 11,
+                "negative-finite->positive-finite": 6
+              },
+              "finiteToZeroCollapseCount": 107,
+              "finiteToZeroCollapseRate": 0.026123046875,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.019609810784459114,
+              "meanAbsoluteError": 0.6520556211471558,
+              "rmsError": 0.8193334895128569,
+              "relativeRmsError": 0.18509837159652562,
+              "nrmse": 0.008913494060992379,
+              "snrDecibels": 40.99904041095382,
+              "pearsonCorrelation": 0.9999906320191222,
+              "maximumAbsoluteControl": 352.4384765625,
+              "maximumAbsoluteError": 2.81494140625,
+              "maximumRelativeError": 1.0001939487975176,
+              "firstDifference": {
+                "shapeId": "finite-range",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 39.9697265625,
+                "candidate": 40.31496047973633,
+                "controlU32": 1109385472,
+                "candidateU32": 1109475973
+              },
+              "worstDifference": {
+                "shapeId": "finite-range",
+                "index": 3338,
+                "row": 3,
+                "column": 266,
+                "control": -263.2637939453125,
+                "candidate": -266.0787353515625,
+                "error": -2.81494140625,
+                "absoluteError": 2.81494140625,
+                "relativeError": 0.010692474510318515
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": false
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2048,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 524288,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 125,
+              "classChanges": {
+                "positive-finite->positive-zero": 49,
+                "negative-finite->positive-zero": 61,
+                "positive-finite->negative-finite": 9,
+                "negative-finite->positive-finite": 6
+              },
+              "finiteToZeroCollapseCount": 110,
+              "finiteToZeroCollapseRate": 0.02685546875,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.01961017120629549,
+              "meanAbsoluteError": 0.652055841870606,
+              "rmsError": 0.8193337376357892,
+              "relativeRmsError": 0.18509801893947941,
+              "nrmse": 0.008913496760311168,
+              "snrDecibels": 40.999037780562034,
+              "pearsonCorrelation": 0.9999906320239219,
+              "maximumAbsoluteControl": 352.4384765625,
+              "maximumAbsoluteError": 2.814910888671875,
+              "maximumRelativeError": 1.00006021194605,
+              "firstDifference": {
+                "shapeId": "finite-range",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 39.9697265625,
+                "candidate": 40.31496810913086,
+                "controlU32": 1109385472,
+                "candidateU32": 1109475975
+              },
+              "worstDifference": {
+                "shapeId": "finite-range",
+                "index": 3338,
+                "row": 3,
+                "column": 266,
+                "control": -263.2637939453125,
+                "candidate": -266.0787048339844,
+                "error": -2.814910888671875,
+                "absoluteError": 2.814910888671875,
+                "relativeError": 0.010692358590169879
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": false
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": false
+      },
+      {
+        "id": "saturation",
+        "fixtureKind": "saturation",
+        "shape": {
+          "rows": 2,
+          "inner": 2048,
+          "columns": 1024
+        },
+        "outputU32Count": 2048,
+        "packing": {
+          "logicalWeightElements": 2097152,
+          "exactFp16WeightBytes": 4194304,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 65536,
+              "weightSaturationCount": 1589248,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 262144
+            },
+            "g64": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 32768,
+              "weightSaturationCount": 1064960,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 131072
+            },
+            "g128": {
+              "packedWeightWords": 524288,
+              "weightScaleElements": 16384,
+              "weightSaturationCount": 16384,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 65536
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 2048,
+          "finiteCount": 2048,
+          "differingU32Count": 1093,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 113,
+          "classChanges": {
+            "positive-finite->negative-finite": 51,
+            "negative-finite->positive-finite": 51,
+            "negative-finite->positive-zero": 4,
+            "positive-finite->positive-zero": 7
+          },
+          "finiteToZeroCollapseCount": 11,
+          "finiteToZeroCollapseRate": 0.00537109375,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": 0.0000016130506992340088,
+          "meanAbsoluteError": 0.00004620105028152466,
+          "rmsError": 0.00007435134134766222,
+          "relativeRmsError": 3.661634898676491,
+          "nrmse": 7.23530510895517e-8,
+          "snrDecibels": 142.81086300384513,
+          "pearsonCorrelation": 0.9999999999999996,
+          "maximumAbsoluteControl": 3584,
+          "maximumAbsoluteError": 0.0003662109375,
+          "maximumRelativeError": 69,
+          "firstDifference": {
+            "shapeId": "saturation",
+            "index": 1,
+            "row": 0,
+            "column": 1,
+            "control": 1024,
+            "candidate": 1024.0001220703125,
+            "controlU32": 1149239296,
+            "candidateU32": 1149239297
+          },
+          "worstDifference": {
+            "shapeId": "saturation",
+            "index": 670,
+            "row": 0,
+            "column": 670,
+            "control": 1536.0001220703125,
+            "candidate": 1535.999755859375,
+            "error": -0.0003662109375,
+            "absoluteError": 0.0003662109375,
+            "relativeError": 2.384185601537577e-7
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": false
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 3104,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 1589248,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 1677,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 151,
+              "classChanges": {
+                "positive-finite->negative-finite": 80,
+                "negative-finite->positive-finite": 71
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.00000331923365615161,
+              "meanAbsoluteError": 0.0001089088618757561,
+              "rmsError": 0.00014141840714326702,
+              "relativeRmsError": 4.616880455466139,
+              "nrmse": 1.376176011296875e-7,
+              "snrDecibels": 137.22652033587008,
+              "pearsonCorrelation": 0.9999999999999982,
+              "maximumAbsoluteControl": 3584,
+              "maximumAbsoluteError": 0.00048828125,
+              "maximumRelativeError": 76.75,
+              "firstDifference": {
+                "shapeId": "saturation",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": 1024,
+                "candidate": 1023.9998779296875,
+                "controlU32": 1149239296,
+                "candidateU32": 1149239294
+              },
+              "worstDifference": {
+                "shapeId": "saturation",
+                "index": 343,
+                "row": 0,
+                "column": 343,
+                "control": -1536,
+                "candidate": -1535.99951171875,
+                "error": 0.00048828125,
+                "absoluteError": 0.00048828125,
+                "relativeError": 3.178914388020833e-7
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2080,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 1064960,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 1666,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 160,
+              "classChanges": {
+                "positive-finite->negative-finite": 88,
+                "negative-finite->positive-finite": 72
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.000004600733518794753,
+              "meanAbsoluteError": 0.00010266155004537425,
+              "rmsError": 0.0001343288332383707,
+              "relativeRmsError": 3.847053180231586,
+              "nrmse": 1.3071856886414192e-7,
+              "snrDecibels": 137.6732543107571,
+              "pearsonCorrelation": 0.9999999999999982,
+              "maximumAbsoluteControl": 3584,
+              "maximumAbsoluteError": 0.0004930496215820312,
+              "maximumRelativeError": 54.75,
+              "firstDifference": {
+                "shapeId": "saturation",
+                "index": 2,
+                "row": 0,
+                "column": 2,
+                "control": -512,
+                "candidate": -511.999755859375,
+                "controlU32": 3288334336,
+                "candidateU32": 3288334328
+              },
+              "worstDifference": {
+                "shapeId": "saturation",
+                "index": 1091,
+                "row": 1,
+                "column": 67,
+                "control": -0.000164031982421875,
+                "candidate": 0.00032901763916015625,
+                "error": 0.0004930496215820312,
+                "absoluteError": 0.0004930496215820312,
+                "relativeError": 3.005813953488372
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 2048,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 32,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 16384,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 2048,
+              "finiteCount": 2048,
+              "differingU32Count": 868,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 233,
+              "classChanges": {
+                "positive-finite->negative-finite": 114,
+                "negative-finite->positive-finite": 119
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": -0.000001560896635055542,
+              "meanAbsoluteError": 0.00003594346344470978,
+              "rmsError": 0.00006512987152189779,
+              "relativeRmsError": 0.4569486924322137,
+              "nrmse": 6.33794204148272e-8,
+              "snrDecibels": 143.96103473232213,
+              "pearsonCorrelation": 0.9999999999999998,
+              "maximumAbsoluteControl": 3584,
+              "maximumAbsoluteError": 0.00030517578125,
+              "maximumRelativeError": 1.25,
+              "firstDifference": {
+                "shapeId": "saturation",
+                "index": 5,
+                "row": 0,
+                "column": 5,
+                "control": -512.0000610351562,
+                "candidate": -512,
+                "controlU32": 3288334337,
+                "candidateU32": 3288334336
+              },
+              "worstDifference": {
+                "shapeId": "saturation",
+                "index": 585,
+                "row": 0,
+                "column": 585,
+                "control": -511.99969482421875,
+                "candidate": -512,
+                "error": -0.00030517578125,
+                "absoluteError": 0.00030517578125,
+                "relativeError": 5.960468030254859e-7
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      },
+      {
+        "id": "long-k6144",
+        "fixtureKind": "long-k",
+        "shape": {
+          "rows": 2,
+          "inner": 6144,
+          "columns": 2048
+        },
+        "outputU32Count": 4096,
+        "packing": {
+          "logicalWeightElements": 12582912,
+          "exactFp16WeightBytes": 25165824,
+          "integrationProjectionRequiresConverterNativeReplaceNotDuplicate": true,
+          "benchmarkComparisonDuplicatesExactK4AndInt8Arms": true,
+          "groups": {
+            "g32": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 393216,
+              "weightSaturationCount": 2103424,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 1572864
+            },
+            "g64": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 196608,
+              "weightSaturationCount": 2095894,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 786432
+            },
+            "g128": {
+              "packedWeightWords": 3145728,
+              "weightScaleElements": 98304,
+              "weightSaturationCount": 2095867,
+              "weightZeroGroupCount": 0,
+              "bytesPerLogicalWeight": 1,
+              "f32ScaleBytes": 393216
+            }
+          }
+        },
+        "executionOrder": [
+          "exact",
+          "dotK4",
+          "g32Complete",
+          "g32Complete",
+          "g64Complete",
+          "g64Complete",
+          "g128Complete",
+          "g128Complete"
+        ],
+        "exactAndDotK4CompleteWritesFiniteGuardsAndTail": true,
+        "dotK4Numerics": {
+          "count": 4096,
+          "finiteCount": 4096,
+          "differingU32Count": 4096,
+          "signedZeroDifferenceCount": 0,
+          "classChangeCount": 0,
+          "classChanges": {},
+          "finiteToZeroCollapseCount": 0,
+          "finiteToZeroCollapseRate": 0,
+          "controlNonFiniteCount": 0,
+          "candidateNonFiniteCount": 0,
+          "signedMeanError": -0.000049257381647294096,
+          "meanAbsoluteError": 0.0021591729802139525,
+          "rmsError": 0.0027045086709643314,
+          "relativeRmsError": 0.025161539008367786,
+          "nrmse": 0.0003130114582552216,
+          "snrDecibels": 70.08879528319677,
+          "pearsonCorrelation": 0.9999999518711091,
+          "maximumAbsoluteControl": 30.061342239379883,
+          "maximumAbsoluteError": 0.0091094970703125,
+          "maximumRelativeError": 1.1239012777136022,
+          "firstDifference": {
+            "shapeId": "long-k6144",
+            "index": 0,
+            "row": 0,
+            "column": 0,
+            "control": -8.319584846496582,
+            "candidate": -8.315250396728516,
+            "controlU32": 3238337797,
+            "candidateU32": 3238333252
+          },
+          "worstDifference": {
+            "shapeId": "long-k6144",
+            "index": 2206,
+            "row": 1,
+            "column": 158,
+            "control": -4.897941589355469,
+            "candidate": -4.888832092285156,
+            "error": 0.0091094970703125,
+            "absoluteError": 0.0091094970703125,
+            "relativeError": 0.001859862332803205
+          },
+          "thresholds": {
+            "nrmseMaximum": 0.01,
+            "snrDecibelsMinimum": 40,
+            "pearsonMinimum": 0.999,
+            "finiteToZeroCollapseRateMaximum": 0.000001
+          },
+          "passed": true
+        },
+        "groups": {
+          "g32": {
+            "groupSize": 32,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2061,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2103424,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 8,
+              "classChanges": {
+                "negative-finite->positive-finite": 3,
+                "positive-finite->negative-finite": 5
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.0011014044171417936,
+              "meanAbsoluteError": 0.04250845536424208,
+              "rmsError": 0.05330571248540707,
+              "relativeRmsError": 0.47397091297122074,
+              "nrmse": 0.006169438085935755,
+              "snrDecibels": 44.19508779645189,
+              "pearsonCorrelation": 0.9999847964881392,
+              "maximumAbsoluteControl": 30.061342239379883,
+              "maximumAbsoluteError": 0.1888580322265625,
+              "maximumRelativeError": 28.101211453098706,
+              "firstDifference": {
+                "shapeId": "long-k6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -8.319584846496582,
+                "candidate": -8.41245174407959,
+                "controlU32": 3238337797,
+                "candidateU32": 3238435175
+              },
+              "worstDifference": {
+                "shapeId": "long-k6144",
+                "index": 433,
+                "row": 0,
+                "column": 433,
+                "control": 21.902372360229492,
+                "candidate": 22.091230392456055,
+                "error": 0.1888580322265625,
+                "absoluteError": 0.1888580322265625,
+                "relativeError": 0.008622720366561408
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g64": {
+            "groupSize": 64,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2056,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2095894,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 9,
+              "classChanges": {
+                "negative-finite->positive-finite": 4,
+                "positive-finite->negative-finite": 5
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.001138629620214715,
+              "meanAbsoluteError": 0.0424663699141945,
+              "rmsError": 0.05333252838241538,
+              "relativeRmsError": 0.35763243939550643,
+              "nrmse": 0.00617254167481203,
+              "snrDecibels": 44.190719383676615,
+              "pearsonCorrelation": 0.9999847998057644,
+              "maximumAbsoluteControl": 30.061342239379883,
+              "maximumAbsoluteError": 0.18729209899902344,
+              "maximumRelativeError": 19.96206732770803,
+              "firstDifference": {
+                "shapeId": "long-k6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -8.319584846496582,
+                "candidate": -8.411703109741211,
+                "controlU32": 3238337797,
+                "candidateU32": 3238434390
+              },
+              "worstDifference": {
+                "shapeId": "long-k6144",
+                "index": 433,
+                "row": 0,
+                "column": 433,
+                "control": 21.902372360229492,
+                "candidate": 22.089664459228516,
+                "error": 0.18729209899902344,
+                "absoluteError": 0.18729209899902344,
+                "relativeError": 0.008551224311166856
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          },
+          "g128": {
+            "groupSize": 128,
+            "outputU32Count": 4096,
+            "candidateDeterministicRawU32": true,
+            "dynamicQuantizerDeterministicRawU32": true,
+            "activationSaturationCount": 2056,
+            "activationZeroGroupCount": 0,
+            "zeroGroupNonzeroPayloadCount": 0,
+            "unwrittenPackedByteCount": 0,
+            "weightSaturationCount": 2095867,
+            "weightZeroGroupCount": 0,
+            "numerics": {
+              "count": 4096,
+              "finiteCount": 4096,
+              "differingU32Count": 4096,
+              "signedZeroDifferenceCount": 0,
+              "classChangeCount": 9,
+              "classChanges": {
+                "negative-finite->positive-finite": 4,
+                "positive-finite->negative-finite": 5
+              },
+              "finiteToZeroCollapseCount": 0,
+              "finiteToZeroCollapseRate": 0,
+              "controlNonFiniteCount": 0,
+              "candidateNonFiniteCount": 0,
+              "signedMeanError": 0.0011360423553981036,
+              "meanAbsoluteError": 0.04246294000708417,
+              "rmsError": 0.05332818750161341,
+              "relativeRmsError": 0.35761956003324114,
+              "nrmse": 0.006172039274710849,
+              "snrDecibels": 44.19142638083646,
+              "pearsonCorrelation": 0.9999848016221089,
+              "maximumAbsoluteControl": 30.061342239379883,
+              "maximumAbsoluteError": 0.18729019165039062,
+              "maximumRelativeError": 19.96112033024704,
+              "firstDifference": {
+                "shapeId": "long-k6144",
+                "index": 0,
+                "row": 0,
+                "column": 0,
+                "control": -8.319584846496582,
+                "candidate": -8.411702156066895,
+                "controlU32": 3238337797,
+                "candidateU32": 3238434389
+              },
+              "worstDifference": {
+                "shapeId": "long-k6144",
+                "index": 433,
+                "row": 0,
+                "column": 433,
+                "control": 21.902372360229492,
+                "candidate": 22.089662551879883,
+                "error": 0.18729019165039062,
+                "absoluteError": 0.18729019165039062,
+                "relativeError": 0.008551137227055536
+              },
+              "thresholds": {
+                "nrmseMaximum": 0.01,
+                "snrDecibelsMinimum": 40,
+                "pearsonMinimum": 0.999,
+                "finiteToZeroCollapseRateMaximum": 0.000001
+              },
+              "passed": true
+            },
+            "completeWritesFiniteGuardsAndTail": true
+          }
+        },
+        "passed": true
+      }
+    ],
+    "adversarialNumerics": {
+      "dotK4": {
+        "envelope": "adversarial",
+        "count": 21504,
+        "finiteCount": 21504,
+        "differingU32Count": 17401,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 116,
+        "classChanges": {
+          "positive-finite->negative-finite": 52,
+          "negative-finite->positive-zero": 5,
+          "positive-finite->positive-zero": 8,
+          "negative-finite->positive-finite": 51
+        },
+        "finiteToZeroCollapseCount": 13,
+        "finiteToZeroCollapseRate": 0.0006045386904761905,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": -0.000013816835516557885,
+        "meanAbsoluteError": 0.0009297300190112201,
+        "rmsError": 0.0014705637567942699,
+        "relativeRmsError": 1.139878671186766,
+        "nrmse": 0.000004599952972776963,
+        "snrDecibels": 106.74493216535923,
+        "pearsonCorrelation": 0.9999999999894231,
+        "maximumAbsoluteControl": 3584,
+        "maximumAbsoluteError": 0.0091094970703125,
+        "maximumRelativeError": 69,
+        "firstDifference": {
+          "shapeId": "cancellation",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -7.845361709594727,
+          "candidate": -7.8455963134765625,
+          "controlU32": 3237678388,
+          "candidateU32": 3237678880
+        },
+        "worstDifference": {
+          "shapeId": "long-k6144",
+          "index": 2206,
+          "row": 1,
+          "column": 158,
+          "control": -4.897941589355469,
+          "candidate": -4.888832092285156,
+          "error": 0.0091094970703125,
+          "absoluteError": 0.0091094970703125,
+          "relativeError": 0.001859862332803205
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": false
+      },
+      "g32": {
+        "envelope": "adversarial",
+        "count": 21504,
+        "finiteCount": 21504,
+        "differingU32Count": 18061,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 293,
+        "classChanges": {
+          "positive-finite->negative-finite": 98,
+          "negative-finite->positive-finite": 91,
+          "positive-finite->positive-zero": 49,
+          "negative-finite->positive-zero": 55
+        },
+        "finiteToZeroCollapseCount": 104,
+        "finiteToZeroCollapseRate": 0.004836309523809524,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 0.0038674065865399085,
+        "meanAbsoluteError": 0.13862710103254966,
+        "rmsError": 0.35856936711722115,
+        "relativeRmsError": 1.5281332259351899,
+        "nrmse": 0.0011216121834888692,
+        "snrDecibels": 59.00314563674148,
+        "pearsonCorrelation": 0.9999993787413065,
+        "maximumAbsoluteControl": 3584,
+        "maximumAbsoluteError": 2.814910888671875,
+        "maximumRelativeError": 76.75,
+        "firstDifference": {
+          "shapeId": "cancellation",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -7.845361709594727,
+          "candidate": -7.838608264923096,
+          "controlU32": 3237678388,
+          "candidateU32": 3237664225
+        },
+        "worstDifference": {
+          "shapeId": "finite-range",
+          "index": 3338,
+          "row": 3,
+          "column": 266,
+          "control": -263.2637939453125,
+          "candidate": -266.0787048339844,
+          "error": -2.814910888671875,
+          "absoluteError": 2.814910888671875,
+          "relativeError": 0.010692358590169879
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": false
+      },
+      "g64": {
+        "envelope": "adversarial",
+        "count": 21504,
+        "finiteCount": 21504,
+        "differingU32Count": 18049,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 307,
+        "classChanges": {
+          "positive-finite->negative-finite": 110,
+          "negative-finite->positive-finite": 90,
+          "positive-finite->positive-zero": 49,
+          "negative-finite->positive-zero": 58
+        },
+        "finiteToZeroCollapseCount": 107,
+        "finiteToZeroCollapseRate": 0.004975818452380952,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 0.0038726288610448885,
+        "meanAbsoluteError": 0.13861108756514443,
+        "rmsError": 0.35857096965474283,
+        "relativeRmsError": 1.3024615286462513,
+        "nrmse": 0.0011216171962584297,
+        "snrDecibels": 59.00310681738259,
+        "pearsonCorrelation": 0.9999993787364332,
+        "maximumAbsoluteControl": 3584,
+        "maximumAbsoluteError": 2.81494140625,
+        "maximumRelativeError": 56.42385330085322,
+        "firstDifference": {
+          "shapeId": "cancellation",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -7.845361709594727,
+          "candidate": -7.839412689208984,
+          "controlU32": 3237678388,
+          "candidateU32": 3237665912
+        },
+        "worstDifference": {
+          "shapeId": "finite-range",
+          "index": 3338,
+          "row": 3,
+          "column": 266,
+          "control": -263.2637939453125,
+          "candidate": -266.0787353515625,
+          "error": -2.81494140625,
+          "absoluteError": 2.81494140625,
+          "relativeError": 0.010692474510318515
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": false
+      },
+      "g128": {
+        "envelope": "adversarial",
+        "count": 21504,
+        "finiteCount": 21504,
+        "differingU32Count": 17252,
+        "signedZeroDifferenceCount": 0,
+        "classChangeCount": 381,
+        "classChanges": {
+          "positive-finite->negative-finite": 134,
+          "negative-finite->positive-finite": 137,
+          "positive-finite->positive-zero": 49,
+          "negative-finite->positive-zero": 61
+        },
+        "finiteToZeroCollapseCount": 110,
+        "finiteToZeroCollapseRate": 0.005115327380952381,
+        "controlNonFiniteCount": 0,
+        "candidateNonFiniteCount": 0,
+        "signedMeanError": 0.00387162005655942,
+        "meanAbsoluteError": 0.13860412286450832,
+        "rmsError": 0.3585709528544832,
+        "relativeRmsError": 0.5538977853544969,
+        "nrmse": 0.0011216171437068803,
+        "snrDecibels": 59.00310722434583,
+        "pearsonCorrelation": 0.9999993787438684,
+        "maximumAbsoluteControl": 3584,
+        "maximumAbsoluteError": 2.814910888671875,
+        "maximumRelativeError": 56.42701154349928,
+        "firstDifference": {
+          "shapeId": "cancellation",
+          "index": 0,
+          "row": 0,
+          "column": 0,
+          "control": -7.845361709594727,
+          "candidate": -7.839412212371826,
+          "controlU32": 3237678388,
+          "candidateU32": 3237665911
+        },
+        "worstDifference": {
+          "shapeId": "finite-range",
+          "index": 3338,
+          "row": 3,
+          "column": 266,
+          "control": -263.2637939453125,
+          "candidate": -266.0787048339844,
+          "error": -2.814910888671875,
+          "absoluteError": 2.814910888671875,
+          "relativeError": 0.010692358590169879
+        },
+        "thresholds": {
+          "nrmseMaximum": 0.01,
+          "snrDecibelsMinimum": 40,
+          "pearsonMinimum": 0.999,
+          "finiteToZeroCollapseRateMaximum": 0.000001
+        },
+        "passed": false
+      }
+    },
+    "groupEligibility": {
+      "g32": {
+        "groupSize": 32,
+        "everyIndividualCasePassed": false,
+        "eligible": false
+      },
+      "g64": {
+        "groupSize": 64,
+        "everyIndividualCasePassed": false,
+        "eligible": false
+      },
+      "g128": {
+        "groupSize": 128,
+        "everyIndividualCasePassed": false,
+        "eligible": false
+      }
+    },
+    "nonFiniteActivationFailClosed": {
+      "injectedNonFiniteCount": 1,
+      "groups": {
+        "g32": {
+          "groupSize": 32,
+          "nonFiniteActivationCount": 1,
+          "failClosedQNaNCount": 0,
+          "expectedOutputCount": 1024,
+          "passed": false
+        },
+        "g64": {
+          "groupSize": 64,
+          "nonFiniteActivationCount": 1,
+          "failClosedQNaNCount": 0,
+          "expectedOutputCount": 1024,
+          "passed": false
+        },
+        "g128": {
+          "groupSize": 128,
+          "nonFiniteActivationCount": 1,
+          "failClosedQNaNCount": 0,
+          "expectedOutputCount": 1024,
+          "passed": false
+        }
+      },
+      "passed": false
+    },
+    "uncapturedGpuErrorCount": 0
+  },
+  "cleanup": {
+    "createdBufferCount": 398,
+    "destroyedBufferCount": 398,
+    "liveBufferCount": 0,
+    "liveBytes": 0,
+    "maximumLiveBytes": 999835928,
+    "repeated": false,
+    "querySetDestroyed": true,
+    "deviceDestroyed": true
+  },
+  "decision": "negative-stop-correctness-before-timing"
+}

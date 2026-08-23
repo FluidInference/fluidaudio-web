@@ -1,0 +1,26 @@
+{
+  "schema": "ace-opt-0066-external-thermal-preflight-v1",
+  "experimentId": "OPT-0066",
+  "status": "rejected-before-timing",
+  "identity": {
+    "coreCommit": "acf8dd6c4e4ee02f5556bd2495a67a853fb4aed5",
+    "harnessCommit": "acf8dd6c4e4ee02f5556bd2495a67a853fb4aed5",
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "Google Chrome 151.0.7922.138",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184
+  },
+  "preparationReachedReady": true,
+  "readyAtEpochMilliseconds": 1786851048944,
+  "checkedAtEpochMilliseconds": 1786851098442,
+  "readyToCheckGapMilliseconds": 49498,
+  "observationCount": 1,
+  "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+  "rawOutput": "com.apple.system.thermalpressurelevel 1",
+  "observedThermalPressureLevel": 1,
+  "timingClicked": false,
+  "timedGpuWorkOccurred": false,
+  "disposition": "page released; fresh preparation followed a deeper cooldown"
+}

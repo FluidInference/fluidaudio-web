@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "OPT-0085",
+  "allocationBaselineCommit": "7a078faee2ba2644394663863f73f80e5544e358",
+  "registrationCommit": "b01a04b5be6fd20b689d254dda22786b69cc154d",
+  "implementationCommit": "85b20ae6c010d4f9b0f5bd28ae4bdbc70734428f",
+  "riskClass": "exact-fifo-scheduling-cancellation-and-aliased-resource-lifetime",
+  "evidence": {
+    "conclusion": "positive",
+    "status": "passed-browser-performance-gate",
+    "passed": true,
+    "productionIntegrationStatus": "pending-trajectory-and-product-gates",
+    "rationale": "The unchanged-command depth-two/four-completion planner scheduler reproduced every full or retained logit raw-U32, cache/write status, sampled token, Philox word, cursor, and lifecycle result. It won all 16 balanced complete-token pairs, lowered every path median, saved 77.69999992847443 ms at the aggregate median, and projects 78.47699992775917 seconds over 1,010 draws, exceeding every frozen browser threshold."
+  },
+  "identity": {
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "151.0.7922.173",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "manifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+    "modelProfile": "reference-bf16",
+    "executionProfile": "reference-bf16-subgroups",
+    "schedulingProfile": "cooperative",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "subgroupMinSize": 32,
+    "subgroupMaxSize": 32,
+    "isFallbackAdapter": false,
+    "isolatedDetachedWorktreeCommit": "85b20ae6c010d4f9b0f5bd28ae4bdbc70734428f",
+    "isolatedViteOrigin": "http://127.0.0.1:5174"
+  },
+  "protocol": {
+    "oneAuthenticatedPlannerWeightOwner": true,
+    "onePlannerExecutor": true,
+    "sameStateReplay": "untimed identical prefill before every timed arm on one executor",
+    "setupAndPrefillExcludedFromTiming": true,
+    "completeTokenWallDefinition": "performance.now around explicit decode through terminal fence/map plus selected sampler",
+    "perFenceTimingUse": "diagnostic-only-never-summed",
+    "pairOrdersPerPath": [
+      "control-candidate",
+      "candidate-control",
+      "candidate-control",
+      "control-candidate"
+    ],
+    "pathCount": 4,
+    "pairCount": 16,
+    "armExecutions": 32,
+    "controlTopology": {
+      "maximumOutstandingCommandBuffers": 1,
+      "fullCommandBuffers": 34,
+      "fullTrueQueueDrains": 34,
+      "fullCooperativeIdleTurns": 34,
+      "compactCommandBuffers": 33,
+      "compactTrueQueueDrains": 33,
+      "compactCooperativeIdleTurns": 33
+    },
+    "candidateTopology": {
+      "maximumOutstandingCommandBuffers": 2,
+      "fullCommandBuffers": 34,
+      "fullTrueQueueDrains": 9,
+      "fullCooperativeIdleTurns": 8,
+      "compactCommandBuffers": 33,
+      "compactTrueQueueDrains": 9,
+      "compactCooperativeIdleTurns": 8
+    },
+    "arithmeticChanged": false,
+    "commandBuffersChanged": false,
+    "productionSelectorChangedAtMeasurement": false
+  },
+  "correctness": {
+    "warmupPathCount": 4,
+    "timedPairCount": 16,
+    "rawLogitMismatchCount": 0,
+    "rawLogitNanCount": 0,
+    "fullM1ComparedElementsPerArm": 217204,
+    "fullM2ComparedElementsPerArm": 434408,
+    "compactM2ComparedElementsPerArm": 128000,
+    "forcedEosM2ComparedElementsPerArm": 2,
+    "cacheWriteStatusExact": true,
+    "sampleTokenWordPositiveCountExact": true,
+    "philoxCursorExact": true,
+    "forcedEosSelected": true,
+    "runtimeEventCount": 0,
+    "cancellation": {
+      "rejectionIdentityPreserved": true,
+      "completedProgressCallbacks": 1,
+      "diagnosticsPublished": 0,
+      "resultRowsPublished": false,
+      "remainingBackfillStopped": true,
+      "submittedWorkSettledBeforeDestroy": true
+    },
+    "lifecycle": {
+      "executorDestroyCalledTwice": true,
+      "executorDestroyed": true,
+      "deviceDestroyedAfterRuntimeEventCheck": true,
+      "outputPublishedOnlyAfterTerminalReadbackFence": true
+    },
+    "passed": true
+  },
+  "performance": {
+    "candidateWins": 16,
+    "requiredCandidateWins": 14,
+    "everyPathCandidateMedianBelowControl": true,
+    "aggregateControlMedianMilliseconds": 337.1999999284744,
+    "aggregateCandidateMedianMilliseconds": 259.5,
+    "aggregateMedianSavingMilliseconds": 77.69999992847443,
+    "requiredMedianSavingMilliseconds": 20,
+    "aggregateCompleteTokenSpeedup": 1.2994219650422907,
+    "projected1010DrawSavingSeconds": 78.47699992775917,
+    "requiredProjectedSavingSeconds": 20,
+    "paths": [
+      {
+        "id": "cot-m1-middle-full",
+        "candidateWins": 4,
+        "controlMedianMilliseconds": 382.2499998807907,
+        "candidateMedianMilliseconds": 293.90000009536743,
+        "medianSavingMilliseconds": 88.34999978542328,
+        "medianSpeedup": 1.3006124523877327
+      },
+      {
+        "id": "semantic-m2-middle-full",
+        "candidateWins": 4,
+        "controlMedianMilliseconds": 353.0500000715256,
+        "candidateMedianMilliseconds": 274.3000000715256,
+        "medianSavingMilliseconds": 78.75,
+        "medianSpeedup": 1.2870944220906504
+      },
+      {
+        "id": "semantic-m2-middle-compact",
+        "candidateWins": 4,
+        "controlMedianMilliseconds": 311.14999997615814,
+        "candidateMedianMilliseconds": 243.70000004768372,
+        "medianSavingMilliseconds": 67.44999992847443,
+        "medianSpeedup": 1.2767747226724528
+      },
+      {
+        "id": "semantic-m2-middle-forced-eos",
+        "candidateWins": 4,
+        "controlMedianMilliseconds": 252.45000004768372,
+        "candidateMedianMilliseconds": 170.89999997615814,
+        "medianSavingMilliseconds": 81.55000007152557,
+        "medianSpeedup": 1.4771796376998387
+      }
+    ],
+    "passed": true
+  },
+  "thermal": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "pollMilliseconds": 1000,
+    "preGateStartedAtEpochMilliseconds": 1787361152612,
+    "preGateCompletedAtEpochMilliseconds": 1787361197616,
+    "preGateDurationMilliseconds": 45004,
+    "preGateObservationCount": 46,
+    "throughCleanupCompletedAtEpochMilliseconds": 1787361326642,
+    "throughCleanupDurationMilliseconds": 174030,
+    "throughCleanupObservationCount": 175,
+    "cleanupCompletedAtEpochMilliseconds": 1787361311987,
+    "maximumPollGapMilliseconds": 1006,
+    "nonNominalObservationCount": 0,
+    "continuousNominalCoverageValidated": true
+  },
+  "artifacts": [
+    {
+      "role": "authoritative-browser-gate-receipt",
+      "location": "optimization/artifacts/OPT-0085/raw/browser-gate.json",
+      "sha256": "f1fb38eb2e94ebd36c5d637ef25e1f2df1691465b5d773b3fe8d566f36586abe",
+      "byteLength": 103342
+    },
+    {
+      "role": "continuous-thermal-trace",
+      "location": "optimization/artifacts/OPT-0085/raw/thermal-trace.jsonl",
+      "sha256": "d21ad99457c12246880f87b9b49c8fa50816ea4aab60847e1060a6e70bff079e",
+      "byteLength": 37869
+    }
+  ],
+  "nextGate": "Complete default-CoT and 150-code-plus-EOS planner trajectories, then a planner-enabled product exactness gate before production selection."
+}

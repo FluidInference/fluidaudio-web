@@ -1,0 +1,193 @@
+{
+  "schema": "ace-opt-0026-conv-transpose-multi-output-subgroup-ab-v1",
+  "status": "passed",
+  "experimentId": "OPT-0026",
+  "kernelId": "ace-vae-fp16-fixed32-subgroup-4row-128channel-conv-transpose1d-v1",
+  "weightLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+  "correctness": {
+    "operationCount": 5,
+    "comparedWeightU16Count": 49610752,
+    "inverseWeightMismatchCount": 0,
+    "comparedOutputU16Count": 141312000,
+    "outputMismatchCount": 0,
+    "outputPrefillRemainingCount": 0,
+    "rawU16Exact": true,
+    "milliseconds": 6463.5
+  },
+  "timing": {
+    "rounds": 4,
+    "order": "AB/BA alternating, one submit and matching drain per sample",
+    "milliseconds": 8833.899999976158,
+    "cases": [
+      {
+        "label": "block-0-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 300,
+          "inputChannels": 2048,
+          "outputChannels": 1024,
+          "kernelSize": 20,
+          "stride": 10,
+          "dilation": 1,
+          "padding": 5,
+          "outputPadding": 0
+        },
+        "currentSamplesMilliseconds": [
+          251,
+          210.69999992847443,
+          241.60000002384186,
+          249.20000004768372
+        ],
+        "candidateSamplesMilliseconds": [
+          63.60000002384186,
+          69.20000004768372,
+          81.10000002384186,
+          80
+        ],
+        "currentMedianMilliseconds": 245.4000000357628,
+        "candidateMedianMilliseconds": 74.60000002384186,
+        "speedup": 3.2895442353530018
+      },
+      {
+        "label": "block-1-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 3000,
+          "inputChannels": 1024,
+          "outputChannels": 512,
+          "kernelSize": 12,
+          "stride": 6,
+          "dilation": 1,
+          "padding": 3,
+          "outputPadding": 0
+        },
+        "currentSamplesMilliseconds": [
+          337.2000000476837,
+          362.2000000476837,
+          362.2999999523163,
+          334.8000000715256
+        ],
+        "candidateSamplesMilliseconds": [
+          113.19999992847443,
+          112.89999997615814,
+          113.29999995231628,
+          115.19999992847443
+        ],
+        "currentMedianMilliseconds": 349.7000000476837,
+        "candidateMedianMilliseconds": 113.24999994039536,
+        "speedup": 3.0878587216930193
+      },
+      {
+        "label": "block-2-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 18000,
+          "inputChannels": 512,
+          "outputChannels": 256,
+          "kernelSize": 8,
+          "stride": 4,
+          "dilation": 1,
+          "padding": 2,
+          "outputPadding": 0
+        },
+        "currentSamplesMilliseconds": [
+          369.10000002384186,
+          324.90000009536743,
+          319.5,
+          364.2999999523163
+        ],
+        "candidateSamplesMilliseconds": [
+          97.19999992847443,
+          111.09999990463257,
+          109.80000007152557,
+          93.69999992847443
+        ],
+        "currentMedianMilliseconds": 344.60000002384186,
+        "candidateMedianMilliseconds": 103.5,
+        "speedup": 3.3294685992641724
+      },
+      {
+        "label": "block-3-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 72000,
+          "inputChannels": 256,
+          "outputChannels": 128,
+          "kernelSize": 8,
+          "stride": 4,
+          "dilation": 1,
+          "padding": 2,
+          "outputPadding": 0
+        },
+        "currentSamplesMilliseconds": [
+          336,
+          394.3000000715256,
+          394.09999990463257,
+          367.2000000476837
+        ],
+        "candidateSamplesMilliseconds": [
+          116,
+          109.09999990463257,
+          117.5,
+          117
+        ],
+        "currentMedianMilliseconds": 380.64999997615814,
+        "candidateMedianMilliseconds": 116.5,
+        "speedup": 3.2673819740442758
+      },
+      {
+        "label": "block-4-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 288000,
+          "inputChannels": 128,
+          "outputChannels": 128,
+          "kernelSize": 4,
+          "stride": 2,
+          "dilation": 1,
+          "padding": 1,
+          "outputPadding": 0
+        },
+        "currentSamplesMilliseconds": [
+          416.39999997615814,
+          362.2999999523163,
+          347.10000002384186,
+          408.39999997615814
+        ],
+        "candidateSamplesMilliseconds": [
+          118.89999997615814,
+          121.89999997615814,
+          120.70000004768372,
+          97.89999997615814
+        ],
+        "currentMedianMilliseconds": 385.3499999642372,
+        "candidateMedianMilliseconds": 119.80000001192093,
+        "speedup": 3.216611017745344
+      }
+    ],
+    "currentSummedMedianMilliseconds": 1705.7000000476837,
+    "candidateSummedMedianMilliseconds": 527.6499999761581,
+    "summedMedianSpeedup": 3.232635269828022,
+    "projectedC4500CurrentMilliseconds": 25585.500000715256,
+    "projectedC4500CandidateMilliseconds": 7914.749999642372,
+    "projectedC4500SavingMilliseconds": 17670.750001072884
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32
+    },
+    "features": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ]
+  },
+  "cleanup": {
+    "destroyedBufferCount": 35,
+    "deviceDestroyed": true
+  }
+}

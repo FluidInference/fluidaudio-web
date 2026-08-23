@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0032 dense FP16 K4 partials</title>
+  <style>
+    body { font: 14px system-ui; margin: 24px; max-width: 960px; }
+    button { font: inherit; padding: 8px 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0032 dense FP16 K4 partials</h1>
+  <p id="progress">preparing four full M2250 outputs and bounded adversarial screens…</p>
+  <p>After READY, leave the machine nominal and idle for 30 seconds, then run the single balanced timing gate.</p>
+  <button id="run" type="button" disabled>Run balanced weighted timing</button>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0032-dit-dense-fp16-k4-partials.ts"></script>
+</body>
+</html>

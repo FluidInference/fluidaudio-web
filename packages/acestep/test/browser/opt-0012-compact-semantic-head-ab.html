@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0012 compact semantic head A/B/C</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; }
+      #protocol { max-width: 86rem; }
+      #progress { margin-block: 1rem; }
+      #thermal-gate { display: grid; gap: 0.5rem; max-width: 58rem; }
+      #thermal-gate label { display: grid; grid-template-columns: 26rem 1fr; gap: 0.5rem; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Benchmark-only OPT-0012 three-arm gate. Preparation authenticates the
+      converter-revision-4 raw-FP16 manifest, every acquired planner/tokenizer
+      file, and every pinned planner/head/sampler source; it loads only the
+      planner phase while retaining all five tied embedding bindings. It then
+      runs correctness-first A/B/C short, middle, long, adversarial, forced-EOS,
+      deterministic, cancellation, heartbeat, and resource checks. Timing is
+      enabled only after those checks and a separately observed continuous
+      30-second nominal thermal pre-gate. It runs all six A/B/C permutations at
+      every cache point with completion fences and no speed threshold. The
+      separate trajectory button wires two executions per arm of the raw-FP16
+      benchmark-scale 150-code plus forced-EOS equality/repeat gate; it is not
+      part of the balanced timing run. The historical packed-BF16 trajectory
+      identity is teacher-fixture provenance only, not raw-FP16 output authority.
+      Keep the external thermal logger running through cleanup and join its
+      stopped, hashed artifact to the raw browser receipt afterward.
+    </p>
+    <button id="prepare" type="button">Authenticate and run correctness</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <fieldset id="thermal-gate" disabled>
+      <legend>External thermal gate and post-correctness actions</legend>
+      <label>Source <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly /></label>
+      <label>Continuous nominal start (epoch ms) <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Gate completion (epoch ms; blank uses click time) <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" /></label>
+      <label>Observation count <input name="thermalObservations" inputmode="numeric" value="31" /></label>
+      <label>Poll interval (ms) <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly /></label>
+      <label>Maximum poll gap (ms) <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" /></label>
+      <label>Non-nominal observations <input name="thermalNonNominalObservations" inputmode="numeric" value="0" /></label>
+      <button id="run-timed" type="button" disabled>Run balanced A/B/C timing</button>
+      <button id="run-trajectory" type="button" disabled>Run raw-FP16 30 s trajectory equality gate</button>
+    </fieldset>
+    <details><summary>Preparation receipt</summary><pre id="preparation">not prepared</pre></details>
+    <pre id="result">ready</pre>
+    <fieldset id="raw-result-retrieval" hidden disabled>
+      <legend>Bounded raw-result retrieval</legend>
+      <label>Next code-unit offset <input name="rawResultOffset" inputmode="numeric" value="0" /></label>
+      <button id="publish-raw-result-chunk" type="button">Publish next raw-result chunk</button>
+      <pre id="raw-result-chunk" data-state="empty" hidden aria-hidden="true"></pre>
+    </fieldset>
+    <script type="module" src="./opt-0012-compact-semantic-head-ab.ts"></script>
+  </body>
+</html>

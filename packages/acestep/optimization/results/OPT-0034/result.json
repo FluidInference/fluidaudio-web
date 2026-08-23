@@ -1,0 +1,657 @@
+{
+  "schema": "ace-opt-0034-dit-command-buffer-coalescing-v1",
+  "experimentId": "OPT-0034",
+  "status": "negative",
+  "identity": {
+    "run": {
+      "coreCommit": "ab88972a561f05d1cc2a3a11658f49795091f680",
+      "harnessCommit": "ab88972a561f05d1cc2a3a11658f49795091f680",
+      "machineModel": "Mac15,12",
+      "osVersion": "26.5.2",
+      "osBuild": "25F84",
+      "browserVersion": "Google Chrome 151.0.7922.138",
+      "gpuCoreCount": 10,
+      "memoryBytes": 17179869184
+    },
+    "sourceAuthority": {
+      "optimization/experiments/OPT-0034-dit-command-buffer-coalescing.md": "6dd1b63457eb463ab791cb3cc0ed28c8a3be95ce5ae25373eefa61a2fc32b7d8",
+      "src/runtime/scheduler.ts": "7db39ad998f150c0d42f4f36c4d7f0b94f55a227dc6c6507378b8f55b851d43c",
+      "src/runtime/webgpu-pipeline.ts": "d49f5a0961cb1a75b35e580d00954c8a1bb1ef1256347bdc13021d23a4e612d5",
+      "src/webgpu/dit-backend.ts": "8013454290cdd26a949bff9c3ff972b97934d318f13e1e1f689fc04f6feb4e6e",
+      "src/webgpu/dit-graph.ts": "04bda808954107d9698fb2cb7e25a8f483cfaa0eaf406003ce79420ae4d5cad4",
+      "test/browser/opt-0034-dit-command-buffer-coalescing-worker.ts": "42cee44f8de7e852a049df77aefdc63b2abff522be01d2f7b4aa5f91f5cb8ee4",
+      "test/browser/opt-0034-dit-command-buffer-coalescing.ts": "f5e25bdbed92e9adcee5c93f1f7b4449991fb730617f44ae46ff24cbaa731e3b",
+      "test/browser/opt-0034-dit-command-buffer-coalescing.html": "5550dce28b3c0f6504c38b2e4b6d77336ddf358764c4cb291ba1b3f8faf46bbe",
+      "test/browser/opt-0034-dit-command-buffer-coalescing-contract.ts": "8fffbc1ac85c94e403aa41f3e327b3e1ca2198b96ae95e2da7734f4f504dccc3"
+    },
+    "packageAuthority": {
+      "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+      "plannerSourceRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80",
+      "parakeetReferenceRevision": "7ee112738262a6f5a0efd2f150748a4087432fbb",
+      "mainManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949"
+    },
+    "requestAuthority": {
+      "canonicalJson": "{\"generationProfile\":\"ace-turbo-v1-correctness\",\"prompt\":\"Warm analog synth arpeggios over a restrained breakbeat, rounded electric bass, airy pads, instrumental, detailed stereo production.\",\"lyrics\":\"\",\"instrumental\":true,\"durationSeconds\":180,\"seed\":\"0000000000c0ffee\",\"planner\":{\"mode\":\"disabled\"},\"metadata\":{\"bpm\":104,\"keyScale\":\"D minor\",\"timeSignature\":\"4\"}}",
+      "byteLength": 366,
+      "sha256": "031e418ac5db37355fe5e265a005cb280e02ce418e560312ac89fa184bb8862f",
+      "directDcw": {
+        "enabled": true,
+        "mode": "double",
+        "wavelet": "haar",
+        "lowBandScale": 0.05,
+        "highBandScale": 0.02
+      }
+    },
+    "runtimeDiagnostics": {
+      "backend": "custom-webgpu-wgsl-and-wasm",
+      "modelManifestId": "ace-step-webgpu-v1:reference:18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "modelManifestUrl": "http://127.0.0.1:5174/model/files-reference/manifest.json",
+      "modelManifestSha256": "18f36c6420976475af65ecd833ca56c6119706322ce54120389d4915d8e80db6",
+      "ditDenseManifestId": "ace-step-webgpu-v1:fp16-dit-dense-experimental:d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "ditDenseManifestUrl": "http://127.0.0.1:5174/model/files-fp16-dit-layer-mixed-experimental/manifest.json",
+      "ditDenseManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+      "ditDenseManifestByteLength": 254357,
+      "ditDenseRuntimeProfile": "opt-0009-fp16-fp32-dense-v1",
+      "ditDenseKernelSetId": "opt-0009-n256-k32-fp16-fp32-v1",
+      "ditDenseLayerBytes": 3020808192,
+      "ditResidentWeightBytes": 3150917888,
+      "vaeManifestId": "ace-step-webgpu-v1:fp16-vae-experimental:94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "vaeManifestUrl": "http://127.0.0.1:5174/model/files-fp16-vae-experimental/manifest.json",
+      "vaeManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "vaeManifestByteLength": 715301,
+      "vaeRuntimeProfile": "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
+      "vaeKernelSetId": "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1",
+      "vaePrecisionMapSha256": "5ad25bc038b67771535f08b37579ff47c6741352e26906381f046549bf067973",
+      "vaeMaxWindowFrames": 512,
+      "executionProfile": {
+        "id": "reference-bf16-subgroups",
+        "modelProfile": "reference-bf16",
+        "weightStorage": "packed-bf16-u32",
+        "matrixArithmetic": "float32",
+        "sensitiveReductions": "float32",
+        "vaeArithmetic": "float32",
+        "kernelBackend": "subgroups",
+        "requiredFeatures": [
+          "subgroups"
+        ]
+      },
+      "schedulingProfile": "cooperative",
+      "capabilities": {
+        "executionProfile": {
+          "id": "reference-bf16-subgroups",
+          "modelProfile": "reference-bf16",
+          "weightStorage": "packed-bf16-u32",
+          "matrixArithmetic": "float32",
+          "sensitiveReductions": "float32",
+          "vaeArithmetic": "float32",
+          "kernelBackend": "subgroups",
+          "requiredFeatures": [
+            "subgroups"
+          ]
+        },
+        "schedulingProfile": "cooperative",
+        "adapterInfo": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "description": "",
+          "subgroupMinSize": 32,
+          "subgroupMaxSize": 32,
+          "isFallbackAdapter": false
+        },
+        "adapterFeatures": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "core-features-and-limits",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-component-swizzle",
+          "texture-compression-astc",
+          "texture-compression-astc-sliced-3d",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "texture-compression-etc2",
+          "texture-formats-tier1",
+          "texture-formats-tier2",
+          "timestamp-query"
+        ],
+        "deviceFeatures": [
+          "core-features-and-limits",
+          "shader-f16",
+          "subgroups"
+        ],
+        "stockFeatures": {
+          "shader-f16": {
+            "adapterSupported": true,
+            "deviceEnabled": true,
+            "required": true,
+            "requested": true
+          },
+          "subgroups": {
+            "adapterSupported": true,
+            "deviceEnabled": true,
+            "required": true,
+            "requested": true
+          },
+          "timestamp-query": {
+            "adapterSupported": true,
+            "deviceEnabled": false,
+            "required": false,
+            "requested": false
+          }
+        },
+        "requiredFeatures": [
+          "subgroups",
+          "shader-f16"
+        ],
+        "requestedOptionalFeatures": [],
+        "adapterLimits": {
+          "maxBufferSize": 4294967292,
+          "maxStorageBufferBindingSize": 4294967292,
+          "maxUniformBufferBindingSize": 65536,
+          "maxBindGroups": 4,
+          "maxBindingsPerBindGroup": 1000,
+          "maxStorageBuffersPerShaderStage": 10,
+          "maxUniformBuffersPerShaderStage": 12,
+          "maxDynamicStorageBuffersPerPipelineLayout": 8,
+          "maxDynamicUniformBuffersPerPipelineLayout": 10,
+          "maxComputeWorkgroupStorageSize": 32768,
+          "maxComputeInvocationsPerWorkgroup": 1024,
+          "maxComputeWorkgroupSizeX": 1024,
+          "maxComputeWorkgroupSizeY": 1024,
+          "maxComputeWorkgroupSizeZ": 64,
+          "maxComputeWorkgroupsPerDimension": 65535,
+          "minStorageBufferOffsetAlignment": 256,
+          "minUniformBufferOffsetAlignment": 256
+        },
+        "deviceLimits": {
+          "maxBufferSize": 268435456,
+          "maxStorageBufferBindingSize": 268435456,
+          "maxUniformBufferBindingSize": 65536,
+          "maxBindGroups": 4,
+          "maxBindingsPerBindGroup": 1000,
+          "maxStorageBuffersPerShaderStage": 8,
+          "maxUniformBuffersPerShaderStage": 12,
+          "maxDynamicStorageBuffersPerPipelineLayout": 4,
+          "maxDynamicUniformBuffersPerPipelineLayout": 8,
+          "maxComputeWorkgroupStorageSize": 16384,
+          "maxComputeInvocationsPerWorkgroup": 256,
+          "maxComputeWorkgroupSizeX": 256,
+          "maxComputeWorkgroupSizeY": 256,
+          "maxComputeWorkgroupSizeZ": 64,
+          "maxComputeWorkgroupsPerDimension": 65535,
+          "minStorageBufferOffsetAlignment": 256,
+          "minUniformBufferOffsetAlignment": 256
+        },
+        "requestedLimits": {
+          "maxBufferSize": 268435456,
+          "maxStorageBufferBindingSize": 268435456,
+          "maxStorageBuffersPerShaderStage": 8,
+          "maxComputeWorkgroupStorageSize": 16384,
+          "maxComputeInvocationsPerWorkgroup": 256
+        }
+      },
+      "aceSourceRevision": "6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0",
+      "plannerSourceRevision": "148d8ea0225bdab342ee1ae3a354275ccd60ca80",
+      "parakeetReferenceRevision": "7ee112738262a6f5a0efd2f150748a4087432fbb"
+    }
+  },
+  "protocol": {
+    "thermalGate": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "startedAtEpochMilliseconds": 1786831261577,
+      "checkedAtEpochMilliseconds": 1786831291630,
+      "durationMilliseconds": 30053,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 30053
+    },
+    "launchDelayMilliseconds": 8736,
+    "armOrder": [
+      1,
+      8,
+      16
+    ],
+    "authoritativeRunCount": 1,
+    "timingSampleCountPerArm": 1,
+    "unchangedThermalRetryPerformed": false,
+    "queueDepth": 1,
+    "drainAfterEveryBatch": true,
+    "cooperativeIntervalMilliseconds": 1,
+    "finalReadbackSeparate": true,
+    "stockWebGpuOnly": true
+  },
+  "arms": [
+    {
+      "schema": "ace-opt-0034-arm-v1",
+      "batch": 1,
+      "topology": {
+        "physicalGraphQuantumCount": 2553,
+        "graphCommandBufferCount": 2553,
+        "readbackCommandBufferCount": 1,
+        "totalCommandBufferCount": 2554,
+        "graphQueueDrainCount": 2553,
+        "totalQueueDrainCount": 2554,
+        "graphRequestedIdleMs": 2552,
+        "graphToReadbackRequestedIdleMs": 1,
+        "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+        "physicalPrimitiveCount": 6833,
+        "scheduledMultiplyAdds": 26840955355136,
+        "batchCount": 2553,
+        "firstBatch": {
+          "batchIndex": 0,
+          "firstPhysicalIndex": 0,
+          "lastPhysicalIndex": 0,
+          "physicalQuantumCount": 1,
+          "primitiveCount": 1,
+          "scheduledMultiplyAdds": 536870912,
+          "submitThroughDrainMs": 4
+        },
+        "finalBatch": {
+          "batchIndex": 2552,
+          "firstPhysicalIndex": 2552,
+          "lastPhysicalIndex": 2552,
+          "physicalQuantumCount": 1,
+          "primitiveCount": 3,
+          "scheduledMultiplyAdds": 0,
+          "submitThroughDrainMs": 2.3000000715255737
+        },
+        "maximumPhysicalQuantaPerBatch": 1,
+        "maximumPrimitiveCountPerBatch": 14,
+        "maximumScheduledMultiplyAddsPerBatch": 28588376064
+      },
+      "timing": {
+        "generationToCheckpointWallMs": 129668.70000004768,
+        "ditLoadStageWallMs": 2538.399999976158,
+        "ditDenoiseStageWallMs": 123163.19999992847,
+        "releaseDitStageWallMs": 0.10000002384185791,
+        "ditLoadThroughReleaseWallMs": 125701.69999992847,
+        "graphSubmitThroughDrainMs": 119212.70000100136,
+        "graphWallMs": 123094.60000002384,
+        "graphToReadbackObservedIdleMs": 1,
+        "readbackSubmitThroughDrainMs": 48.200000047683716,
+        "readbackMapDetachMs": 0.6999999284744263,
+        "backendWallMs": 123144.60000002384,
+        "maximumBatchSubmitThroughDrainMs": 329.1999999284744
+      },
+      "correctness": {
+        "finalLatentElementCount": 288000,
+        "finalLatentByteLength": 1152000,
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "finalLatentNonFiniteCount": 0,
+        "finalLatentNonzeroCount": 288000,
+        "finalLatentMaxAbs": 6.882339954376221
+      },
+      "diagnostic": {
+        "code": "ACE_DIT_OPT0034_SCHEDULING_PROFILE",
+        "stage": "release-dit",
+        "elapsedMs": 129663.19999992847,
+        "detailsSha256": "341ee75aa280ed7250d917636b9068cc42189ada287374db53b03b06bc74d485",
+        "matchedCheckpoint": true
+      },
+      "lifecycle": {
+        "generationStartedAtEpochMilliseconds": 1786831300367,
+        "generationRejectedAtEpochMilliseconds": 1786831430032,
+        "generationProgressEventCount": 76731,
+        "checkpointCallbackCount": 1,
+        "privateSentinelIdentityMatched": true,
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeArmReturn": true,
+        "forbiddenPostDitProgressObserved": false
+      },
+      "stageTimings": [
+        {
+          "stage": "prepare",
+          "wallMs": 26.899999976158142
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1428.1000000238419
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 2462.1999999284744
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 32.800000071525574
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 2538.399999976158
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 123163.19999992847
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0.10000002384185791
+        }
+      ]
+    },
+    {
+      "schema": "ace-opt-0034-arm-v1",
+      "batch": 8,
+      "topology": {
+        "physicalGraphQuantumCount": 2553,
+        "graphCommandBufferCount": 320,
+        "readbackCommandBufferCount": 1,
+        "totalCommandBufferCount": 321,
+        "graphQueueDrainCount": 320,
+        "totalQueueDrainCount": 321,
+        "graphRequestedIdleMs": 319,
+        "graphToReadbackRequestedIdleMs": 1,
+        "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+        "physicalPrimitiveCount": 6833,
+        "scheduledMultiplyAdds": 26840955355136,
+        "batchCount": 320,
+        "firstBatch": {
+          "batchIndex": 0,
+          "firstPhysicalIndex": 0,
+          "lastPhysicalIndex": 7,
+          "physicalQuantumCount": 8,
+          "primitiveCount": 36,
+          "scheduledMultiplyAdds": 4294967296,
+          "submitThroughDrainMs": 223.39999997615814
+        },
+        "finalBatch": {
+          "batchIndex": 319,
+          "firstPhysicalIndex": 2552,
+          "lastPhysicalIndex": 2552,
+          "physicalQuantumCount": 1,
+          "primitiveCount": 3,
+          "scheduledMultiplyAdds": 0,
+          "submitThroughDrainMs": 0.5
+        },
+        "maximumPhysicalQuantaPerBatch": 8,
+        "maximumPrimitiveCountPerBatch": 40,
+        "maximumScheduledMultiplyAddsPerBatch": 124334546944
+      },
+      "timing": {
+        "generationToCheckpointWallMs": 138534.70000004768,
+        "ditLoadStageWallMs": 3953.8000000715256,
+        "ditDenoiseStageWallMs": 128509.79999995232,
+        "releaseDitStageWallMs": 0,
+        "ditLoadThroughReleaseWallMs": 132463.60000002384,
+        "graphSubmitThroughDrainMs": 127896.29999899864,
+        "graphWallMs": 128405.30000007153,
+        "graphToReadbackObservedIdleMs": 1.5,
+        "readbackSubmitThroughDrainMs": 67,
+        "readbackMapDetachMs": 0.8000000715255737,
+        "backendWallMs": 128474.80000007153,
+        "maximumBatchSubmitThroughDrainMs": 578.3999999761581
+      },
+      "correctness": {
+        "finalLatentElementCount": 288000,
+        "finalLatentByteLength": 1152000,
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "finalLatentNonFiniteCount": 0,
+        "finalLatentNonzeroCount": 288000,
+        "finalLatentMaxAbs": 6.882339954376221
+      },
+      "diagnostic": {
+        "code": "ACE_DIT_OPT0034_SCHEDULING_PROFILE",
+        "stage": "release-dit",
+        "elapsedMs": 138529.40000009537,
+        "detailsSha256": "320135c489e26cbb2d1dc37479ada55399b8fd06d31424754945bd35c6686368",
+        "matchedCheckpoint": true
+      },
+      "lifecycle": {
+        "generationStartedAtEpochMilliseconds": 1786831430037,
+        "generationRejectedAtEpochMilliseconds": 1786831568579,
+        "generationProgressEventCount": 66511,
+        "checkpointCallbackCount": 1,
+        "privateSentinelIdentityMatched": true,
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeArmReturn": true,
+        "forbiddenPostDitProgressObserved": false
+      },
+      "stageTimings": [
+        {
+          "stage": "prepare",
+          "wallMs": 24.600000023841858
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 2268.2000000476837
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 3724.2999999523163
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 34
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 3953.8000000715256
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 128509.79999995232
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ]
+    },
+    {
+      "schema": "ace-opt-0034-arm-v1",
+      "batch": 16,
+      "topology": {
+        "physicalGraphQuantumCount": 2553,
+        "graphCommandBufferCount": 160,
+        "readbackCommandBufferCount": 1,
+        "totalCommandBufferCount": 161,
+        "graphQueueDrainCount": 160,
+        "totalQueueDrainCount": 161,
+        "graphRequestedIdleMs": 159,
+        "graphToReadbackRequestedIdleMs": 1,
+        "descriptorTableSha256": "aedf8c74d2bb15601d1385e9c8e9da49e58905ab156a04c99271f8de3633dd76",
+        "physicalPrimitiveCount": 6833,
+        "scheduledMultiplyAdds": 26840955355136,
+        "batchCount": 160,
+        "firstBatch": {
+          "batchIndex": 0,
+          "firstPhysicalIndex": 0,
+          "lastPhysicalIndex": 15,
+          "physicalQuantumCount": 16,
+          "primitiveCount": 76,
+          "scheduledMultiplyAdds": 8589934592,
+          "submitThroughDrainMs": 417.10000002384186
+        },
+        "finalBatch": {
+          "batchIndex": 159,
+          "firstPhysicalIndex": 2544,
+          "lastPhysicalIndex": 2552,
+          "physicalQuantumCount": 9,
+          "primitiveCount": 24,
+          "scheduledMultiplyAdds": 114805088256,
+          "submitThroughDrainMs": 509.39999997615814
+        },
+        "maximumPhysicalQuantaPerBatch": 16,
+        "maximumPrimitiveCountPerBatch": 79,
+        "maximumScheduledMultiplyAddsPerBatch": 235121401856
+      },
+      "timing": {
+        "generationToCheckpointWallMs": 143533.60000002384,
+        "ditLoadStageWallMs": 3553.5999999046326,
+        "ditDenoiseStageWallMs": 134285.5,
+        "releaseDitStageWallMs": 0,
+        "ditLoadThroughReleaseWallMs": 137839.09999990463,
+        "graphSubmitThroughDrainMs": 133936.50000059605,
+        "graphWallMs": 134193.89999997616,
+        "graphToReadbackObservedIdleMs": 1.5,
+        "readbackSubmitThroughDrainMs": 53.5,
+        "readbackMapDetachMs": 1.100000023841858,
+        "backendWallMs": 134250,
+        "maximumBatchSubmitThroughDrainMs": 1301.5999999046326
+      },
+      "correctness": {
+        "finalLatentElementCount": 288000,
+        "finalLatentByteLength": 1152000,
+        "finalLatentSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "finalLatentNonFiniteCount": 0,
+        "finalLatentNonzeroCount": 288000,
+        "finalLatentMaxAbs": 6.882339954376221
+      },
+      "diagnostic": {
+        "code": "ACE_DIT_OPT0034_SCHEDULING_PROFILE",
+        "stage": "release-dit",
+        "elapsedMs": 143528.10000002384,
+        "detailsSha256": "fd13fe8c875e04ae9b37c6793e1ad002d01e01bdc94abc248b18ea58585e15aa",
+        "matchedCheckpoint": true
+      },
+      "lifecycle": {
+        "generationStartedAtEpochMilliseconds": 1786831568585,
+        "generationRejectedAtEpochMilliseconds": 1786831712115,
+        "generationProgressEventCount": 67897,
+        "checkpointCallbackCount": 1,
+        "privateSentinelIdentityMatched": true,
+        "ditDestroyedBeforeCheckpoint": true,
+        "pipelineCleanupAwaitedBeforeArmReturn": true,
+        "forbiddenPostDitProgressObserved": false
+      },
+      "stageTimings": [
+        {
+          "stage": "prepare",
+          "wallMs": 29.200000047683716
+        },
+        {
+          "stage": "text-encoder",
+          "wallMs": 1813
+        },
+        {
+          "stage": "semantic-detokenizer",
+          "wallMs": 0
+        },
+        {
+          "stage": "condition-encoder",
+          "wallMs": 3802.7000000476837
+        },
+        {
+          "stage": "release-conditioning",
+          "wallMs": 27.5
+        },
+        {
+          "stage": "dit-load",
+          "wallMs": 3553.5999999046326
+        },
+        {
+          "stage": "dit-denoise",
+          "wallMs": 134285.5
+        },
+        {
+          "stage": "release-dit",
+          "wallMs": 0
+        }
+      ]
+    }
+  ],
+  "correctness": {
+    "passed": true,
+    "comparisonKind": "complete-detached-final-latent-raw-u32",
+    "finalLatentElementsPerArm": 288000,
+    "totalComparedRawU32": 576000,
+    "comparisons": [
+      {
+        "candidateBatch": 8,
+        "comparedRawU32": 288000,
+        "mismatchCount": 0,
+        "firstMismatch": null,
+        "baselineSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "candidateSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "hashIdentical": true
+      },
+      {
+        "candidateBatch": 16,
+        "comparedRawU32": 288000,
+        "mismatchCount": 0,
+        "firstMismatch": null,
+        "baselineSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "candidateSha256": "1812a085f48b7879212633c7193dda08ec2854852a492ce661262c5e6be98f4c",
+        "hashIdentical": true
+      }
+    ],
+    "executionOrderAndArithmeticChanged": false,
+    "listeningRequired": false
+  },
+  "delta": {
+    "baselineBatch": 1,
+    "candidateBatches": [
+      8,
+      16
+    ],
+    "speedups": {
+      "batch8": {
+        "generationToCheckpoint": 0.9360015938245295,
+        "ditLoadThroughRelease": 0.9489527689108996,
+        "ditDenoiseStage": 0.95839539085715,
+        "graphWall": 0.9586411152807187,
+        "backendWall": 0.9585117081322975
+      },
+      "batch16": {
+        "generationToCheckpoint": 0.9034031056144773,
+        "ditLoadThroughRelease": 0.9119451592473793,
+        "ditDenoiseStage": 0.9171742295328124,
+        "graphWall": 0.9172890869111465,
+        "backendWall": 0.9172782122906804
+      }
+    },
+    "fastestCandidateBatch": 8,
+    "fastestCompleteStageSpeedup": 0.9360015938245295,
+    "requiredCompleteStageSpeedup": 1.1,
+    "performanceGatePassed": false
+  },
+  "lifecycle": {
+    "initializationStartedAtEpochMilliseconds": 1786831046442,
+    "initializationCompletedAtEpochMilliseconds": 1786831075619,
+    "initializationWallMilliseconds": 29175.700000047684,
+    "initializationProgressEventCount": 158,
+    "initializationDiagnosticCount": 0,
+    "comparisonStartedAtEpochMilliseconds": 1786831300367,
+    "comparisonCompletedAtEpochMilliseconds": 1786831712124,
+    "comparisonWallMilliseconds": 411740.89999997616,
+    "backendDisposeStartedAtEpochMilliseconds": 1786831712123,
+    "backendDisposeCompletedAtEpochMilliseconds": 1786831712124,
+    "backendDisposed": true,
+    "armCleanupAwaitedBeforeNextArm": true
+  },
+  "scope": {
+    "productionMathChanged": false,
+    "productionSelectorChanged": false,
+    "productionDefaultChanged": false,
+    "vaeWeightAcquireStarted": false,
+    "vaeExecuted": false,
+    "audioExecuted": false,
+    "optimizationIntegrated": false,
+    "under60SecondClaim": false
+  },
+  "decision": "negative-below-complete-stage-speed-gate"
+}

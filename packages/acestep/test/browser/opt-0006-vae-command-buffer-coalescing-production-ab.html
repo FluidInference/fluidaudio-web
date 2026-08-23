@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0006 production-range coalescing A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; }
+      #protocol { max-width: 72rem; }
+      #progress { margin-block: 1rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="ready">
+    <p id="protocol">
+      Thermally gated timing of 16 distinct consecutive C1024/d1 production
+      Conv1D quanta (range indices 32–47). The page compares bounded command
+      buffers of 1, 2, 4, 8, and 16 quanta without running a full VAE window
+      or song. Compilation, allocation, upload, and full-range bitwise
+      correctness are outside measured timing.
+    </p>
+    <button id="start" type="button">Run OPT-0006 production-range A/B</button>
+    <div id="progress" role="status" aria-live="polite">ready</div>
+    <pre id="result">ready</pre>
+    <script type="module" src="./opt-0006-vae-command-buffer-coalescing-production-ab.ts"></script>
+  </body>
+</html>

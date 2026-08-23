@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "experiment": "OPT-0033",
+  "passed": false,
+  "identity": {
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "wgslSha256": {
+      "query8": "82accd0b6b8e1d7d72c2b2eabd988a729c23e0aec031c87df68a9f333ad840c7",
+      "keyBlock8": "f46f9646103274a6cabfabfc90e46692f5d86caeb982d362a25144509e6b0d5f",
+      "keyBlock16": "8b508425523df9136a5f008373a60d692890344c6be178d058068e5f6b510be9"
+    }
+  },
+  "shape": {
+    "batch": 1,
+    "queryHeads": 16,
+    "keyValueHeads": 8,
+    "queryTokens": 2250,
+    "keyValueTokens": 2250,
+    "headDimension": 128,
+    "mode": "full"
+  },
+  "capabilities": {
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "features": [
+      "core-features-and-limits",
+      "subgroups"
+    ],
+    "limits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupStorageSize": 16384
+    }
+  },
+  "deterministicInputs": {
+    "generator": "lcg1664525-u24-f32-v1",
+    "querySeed": 324508639,
+    "keySeed": 610839776,
+    "valueSeed": 270544960,
+    "sha256": {
+      "query": "a9b3a0b9a2b44173d4943567053981bc900a963b27e765de34ebfe88b86edc91",
+      "key": "3aca97c626b259c7b083cee4e2a764fc7514cba7546b73217cf82a68c92634b5",
+      "value": "96d77cccd9f30a9332a1a3a06166fcaf5df0e31ecb4be82858501957253e4653"
+    }
+  },
+  "plans": {
+    "query8": {
+      "queryTokensPerTile": 4,
+      "queriesPerWorkgroup": 8,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "barriersPerWorkgroup": 4500,
+      "workgroupStorageBytes": 1024
+    },
+    "keyBlock8": {
+      "keyBlock": 8,
+      "queryTokensPerTile": 4,
+      "queriesPerWorkgroup": 8,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "keyBlocksPerWorkgroup": 282,
+      "barriersPerWorkgroup": 564,
+      "barrierReductionVersusRowStaged": 7.9787234042553195,
+      "workgroupStorageBytes": 8192
+    },
+    "keyBlock16": {
+      "keyBlock": 16,
+      "queryTokensPerTile": 4,
+      "queriesPerWorkgroup": 8,
+      "workgroupSize": 256,
+      "workgroupCount": 4504,
+      "keyValueScalarLoads": 2594304000,
+      "keyBlocksPerWorkgroup": 141,
+      "barriersPerWorkgroup": 282,
+      "barrierReductionVersusRowStaged": 15.957446808510639,
+      "workgroupStorageBytes": 16384
+    }
+  },
+  "correctness": {
+    "outputElements": 4608000,
+    "comparedElementsPerCandidate": 4608000,
+    "totalComparedElements": 9216000,
+    "query8NonFiniteCount": 0,
+    "keyBlock8NonFiniteCount": 0,
+    "keyBlock16NonFiniteCount": 0,
+    "keyBlock8BitMismatchCount": 0,
+    "keyBlock16BitMismatchCount": 0,
+    "completeWrites": true,
+    "canariesUntouched": true,
+    "bitExact": true,
+    "outputSha256": {
+      "query8": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "keyBlock8": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892",
+      "keyBlock16": "2882495eccd1f1971e998b957dfdd12ee517a2019a6ddccd9d76e38bb81c9892"
+    }
+  },
+  "protocol": {
+    "thermal": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "startedAtEpochMilliseconds": 1786827430124,
+      "completedAtEpochMilliseconds": 1786827460186,
+      "durationMilliseconds": 30062,
+      "observationCount": 31,
+      "pollMilliseconds": 1000,
+      "maximumPollGapMilliseconds": 1000,
+      "nonNominalObservationCount": 0,
+      "launchDelayMilliseconds": 5810
+    },
+    "compileOutsideTiming": true,
+    "fullCorrectnessOutsideTiming": true,
+    "correctnessAlsoServesAsOneWarmupPerArm": true,
+    "timedGpuWorkBeforeButton": false,
+    "rounds": 3,
+    "balancedOrders": [
+      [
+        "query8",
+        "keyBlock8",
+        "keyBlock16"
+      ],
+      [
+        "keyBlock8",
+        "keyBlock16",
+        "query8"
+      ],
+      [
+        "keyBlock16",
+        "query8",
+        "keyBlock8"
+      ]
+    ],
+    "samplesPerArm": 3,
+    "oneCommandBufferPerSample": true,
+    "oneQueueDrainPerSample": true,
+    "outputReadbackInsideTiming": false
+  },
+  "timing": {
+    "samplesPerArm": 3,
+    "mediansMilliseconds": {
+      "query8": 108.5,
+      "keyBlock8": 125,
+      "keyBlock16": 119.69999992847443
+    },
+    "bestCandidate": "keyBlock16",
+    "bestCandidateMilliseconds": 119.69999992847443,
+    "speedupVersusQuery8": 0.9064327490796418,
+    "requiredSpeedupVersusQuery8": 1.35,
+    "passed": false,
+    "decision": "negative-stop-primitive-gate"
+  },
+  "decision": {
+    "disposition": "negative-stop-primitive-gate",
+    "productionIntegrationAuthorized": false,
+    "productClaimAuthorized": false
+  },
+  "cleanup": {
+    "ownedBufferCount": 6,
+    "buffersDestroyed": true,
+    "deviceDestroyed": true
+  }
+}

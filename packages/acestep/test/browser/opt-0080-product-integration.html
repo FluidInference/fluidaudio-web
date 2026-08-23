@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0080 production integration gate</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 88rem; }
+      button { margin-block: 0.75rem; padding: 0.55rem 0.8rem; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0080 — post-integration product correctness gate</h1>
+    <p>
+      This is a correctness, lifecycle, and responsiveness gate, not a timing or
+      thermal comparison. It runs one fixed, one-way sequence with no automatic
+      retry: forced depth-one control, forced depth-two candidate, ordinary
+      production selection with no policy override, then ordinary seam-free
+      cancellation. Every arm owns a fresh worker, backend, and WebGPU device.
+    </p>
+    <p>
+      The successful arms use the cache-only authenticated production packages
+      and the canonical 96-second direct request. The page compares every final
+      latent U32, every raw waveform U32, the full C2378 stitch neighborhood,
+      and every normalized WAV byte. Large Blobs are compared in bounded blocks
+      and released from the page before cancellation.
+    </p>
+    <p>
+      Supply the frozen run identity in the URL query: <code>coreCommit</code>,
+      <code>harnessCommit</code>, <code>machineModel</code>,
+      <code>osVersion</code>, <code>osBuild</code>,
+      <code>browserVersion</code>, <code>gpuCoreCount</code>, and
+      <code>memoryBytes</code>.
+    </p>
+    <button id="run" type="button" disabled>
+      Run A → B → production → cancellation
+    </button>
+    <div id="progress" role="status" aria-live="polite">
+      validating frozen run identity
+    </div>
+    <pre id="result">not started</pre>
+    <a
+      id="download"
+      hidden
+      download="opt-0080-product-integration.json"
+    >Download compact product-integration receipt</a>
+    <script type="module" src="./opt-0080-product-integration.ts"></script>
+  </body>
+</html>

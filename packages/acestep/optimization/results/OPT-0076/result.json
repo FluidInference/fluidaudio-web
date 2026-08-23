@@ -1,0 +1,153 @@
+{
+  "schema": "ace-opt-0076-vae-c256-native-k4-result-v1",
+  "experiment": "OPT-0076",
+  "status": "inconclusive",
+  "passed": false,
+  "identity": {
+    "allocationBaselineCommit": "e44788c2945f008f0a16db8bb1b04afbeac3d890",
+    "registrationCommit": "fd7df99",
+    "candidateAndHarnessCommit": "6968ed5f4fc70d43d6701a1d5117842c65c076a0",
+    "machineModel": "Mac15,12",
+    "chip": "Apple M3",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "browserSurface": "Codex in-app Browser",
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "currentSelector": "ace-opt-0057-vae-k7-row-reuse-shape-selector-v1",
+    "currentKernel": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+    "candidateSelector": "ace-opt-0076-vae-k7-c256-native-k4-selector-v1",
+    "candidateAndOracleKernel": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+    "candidateSelectorSourceSha256": "7a976e308176776cb1879bdcbaa30a886888271218fe949a0d1f2362a5dbe021",
+    "harnessSourceSha256": "c9db5a19935d86a0c450584d411ccbd26cdc22ca7a66c259576f4f1e33e8148d",
+    "harnessHtmlSha256": "4f558ed49dee6c2e630b9717c6e37bacc81bce2d12432059a8b9d0073384587a",
+    "experimentRecordSha256": "cb8b2e6a2a75d219954dc39118155c27d91a97a61338238a9a2fd6824b228c8e",
+    "browserReceiptSha256": "898faea80084b0086c56df49c15be8fed7aa7b696851473620a4f825ae9603e8",
+    "browserReceiptBytes": 112255,
+    "thermalGateSha256": "2ee242253e96e6edeb63bee76b39e38856941a00e691ed24565f07ff27dd7588",
+    "thermalTraceSha256": "c033eaf6af8100583033d6b79e1f659e0b0a87fbd727c6989366c9c9556ca927",
+    "rawThermalTraceSha256": "44d688251e1ac4806be7245b2c98eb1e2e42d994892d16946740644c60bd1bed"
+  },
+  "correctness": {
+    "passed": true,
+    "caseCount": 6,
+    "productionCaseCount": 3,
+    "adversarialCaseCount": 3,
+    "probesPerCase": 3,
+    "comparedU16CountPerCandidate": 245760,
+    "candidateOracleRawU16DifferenceCount": 0,
+    "candidateRerunDifferenceCount": 0,
+    "oracleRerunDifferenceCount": 0,
+    "allOutputsFiniteAndComplete": true,
+    "guardsTailsAndRangeWritesIntact": true,
+    "uncapturedGpuErrorCount": 0,
+    "deviceLossCount": 0,
+    "currentVersusCandidate": {
+      "comparedValueCount": 245760,
+      "rawU16MismatchCount": 60794,
+      "signedZeroDifferenceCount": 0,
+      "nrmse": 0.00022548613920154832,
+      "snrDb": 72.93760298732087,
+      "pearson": 0.9999999715712965,
+      "maximumAbsoluteError": 0.00048828125,
+      "relativeMaximumAbsoluteError": 0.0006329113924050633,
+      "passed": true
+    }
+  },
+  "thermal": {
+    "passed": true,
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "readyAtEpochMilliseconds": 1787305861092,
+    "gateStartedAtEpochMilliseconds": 1787305881208,
+    "gateCompletedAtEpochMilliseconds": 1787305929729,
+    "runStartedAtEpochMilliseconds": 1787305932630,
+    "measurementStartedAtEpochMilliseconds": 1787305932649,
+    "measurementCompletedAtEpochMilliseconds": 1787305932774,
+    "cleanupCompletedAtEpochMilliseconds": 1787305932774,
+    "traceCompletedAtEpochMilliseconds": 1787305959771,
+    "gateObservationCount": 54,
+    "traceObservationCount": 87,
+    "maximumPollGapMilliseconds": 936,
+    "nonNominalObservationCount": 0,
+    "gateToRunLaunchMilliseconds": 2901,
+    "lastObservationBeforeRunMilliseconds": 156,
+    "postCleanupCoverageMilliseconds": 26997
+  },
+  "timing": {
+    "roundCount": 6,
+    "rawSampleCount": 12,
+    "dispatchesPerSample": 9,
+    "coverage": "d1/d3/d9 times first/interior/tail",
+    "current": {
+      "meanGpuMilliseconds": 12.124160000000002,
+      "medianGpuMilliseconds": 12.582912,
+      "meanWallMilliseconds": 15.199999988079071,
+      "medianWallMilliseconds": 14.5
+    },
+    "candidate": {
+      "meanGpuMilliseconds": 3.3641813333333332,
+      "medianGpuMilliseconds": 3.3095679999999996,
+      "meanWallMilliseconds": 5.166666626930237,
+      "medianWallMilliseconds": 3.949999988079071
+    },
+    "speedup": {
+      "meanGpu": 3.6038961038961044,
+      "medianGpu": 3.8019801980198027,
+      "meanWall": 2.9419355041898876,
+      "medianWall": 3.6708860870279425
+    },
+    "savingMillisecondsPerComposite": {
+      "meanGpu": 8.759978666666668,
+      "medianGpu": 9.273344,
+      "meanWall": 10.033333361148834,
+      "medianWall": 10.550000011920929
+    },
+    "pairedWins": {
+      "gpu": 6,
+      "wall": 5,
+      "rounds": 6
+    },
+    "failedPair": {
+      "roundIndex": 5,
+      "candidateRanFirst": true,
+      "currentGpuMilliseconds": 7.20896,
+      "candidateGpuMilliseconds": 4.063232,
+      "gpuSpeedup": 1.7741935483870968,
+      "gpuWin": true,
+      "currentWallMilliseconds": 10.600000023841858,
+      "candidateWallMilliseconds": 11.699999928474426,
+      "wallSpeedup": 0.9059829135592141,
+      "wallWin": false
+    },
+    "predeclaredGates": {
+      "everyPairedAggregateGpuWin": true,
+      "everyPairedAggregateWallWin": false,
+      "meanGpuSpeedupAtLeast2": true,
+      "medianGpuSpeedupAtLeast2": true,
+      "meanWallSpeedupAtLeast2": true,
+      "medianWallSpeedupAtLeast2": true,
+      "passed": false
+    }
+  },
+  "memoryAndLifecycle": {
+    "maximumLiveBytes": 15963360,
+    "createdBufferCount": 140,
+    "destroyedBufferCount": 140,
+    "liveBufferCountAfterCleanup": 0,
+    "liveBytesAfterCleanup": 0,
+    "repeatedDestroyIdempotent": true,
+    "deviceDestroyed": true,
+    "passed": true
+  },
+  "decision": {
+    "disposition": "inconclusive-stop-selector-primitive-gate",
+    "interpretation": "The native K4 mechanism is a large and correct GPU improvement, but one of six fenced-wall pairs reversed because the candidate's 4.063232 ms GPU interval completed in 11.7 ms wall. The frozen rule required every paired GPU and wall aggregate to win, so the primitive gate does not authorize a diagnostic decoder profile.",
+    "diagnosticVaeProfileAuthorized": false,
+    "c512OrC2314EscalationAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false,
+    "trajectoryOrListeningRunAuthorized": false,
+    "revisitCondition": "Use a materially different C256 arithmetic/dataflow or changed browser/GPU compiler behavior. Do not repeat the unchanged native-K4 selector or relax the all-pairs gate."
+  }
+}

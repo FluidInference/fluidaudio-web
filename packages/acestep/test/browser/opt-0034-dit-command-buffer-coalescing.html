@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0034 DiT command-buffer coalescing</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 66rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 29rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0034 — M2250 DiT command-buffer coalescing</h1>
+    <p>
+      This exact scheduling-only A/B/C runs the authenticated 180-second direct
+      fixture with 1, 8, then 16 consecutive physical graph quanta per command
+      buffer. Each arm keeps one outstanding command buffer, drains before the
+      next batch, stops after detached final latent, and never loads VAE weights.
+    </p>
+    <p>
+      Initialize first. Once READY, leave the machine idle for one continuous
+      nominal 30-second wait, enter the one external thermal observation, and run
+      the single three-arm comparison. The receipt compares all 288,000 latent
+      U32 words and reports graph, backend, generation-to-checkpoint, queue,
+      requested-idle, and maximum cancellation-bound timings.
+    </p>
+    <button id="prepare" type="button">Initialize authenticated runtime</button>
+    <div id="progress" role="status" aria-live="polite">idle</div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>Externally observed nominal start</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Level-0 check time (epoch ms; blank uses click time)
+        <input name="thermalCheckedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="1" readonly />
+      </label>
+      <label>
+        Observed thermal-pressure level
+        <input name="thermalObservedLevel" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Start-to-check gap (ms; blank derives exact timestamps)
+        <input name="thermalMaximumObservationGapMilliseconds" inputmode="decimal" />
+      </label>
+      <button id="run" type="button" disabled>Run batch1 / batch8 / batch16 once</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0034-dit-command-buffer-coalescing.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0034-dit-command-buffer-coalescing.ts"></script>
+  </body>
+</html>

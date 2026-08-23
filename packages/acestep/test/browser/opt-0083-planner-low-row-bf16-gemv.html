@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0083 planner low-row BF16 GEMV primitive gate</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    body { margin: 1rem; max-width: 90rem; }
+    p { max-width: 84rem; line-height: 1.45; }
+    fieldset { display: grid; gap: 0.45rem; margin-block: 1rem; max-width: 78rem; }
+    label { display: grid; grid-template-columns: 40rem minmax(18rem, 1fr); gap: 0.5rem; }
+    button, input { font: inherit; }
+    button { padding: 0.55rem 0.8rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="idle">
+  <h1>OPT-0083 planner low-row packed-BF16 GEMV gate</h1>
+  <p>
+    This benchmark-only screen compares A, the current source-row-major
+    reference-BF16 M16/N128/K16 correctness GEMM; B, a direct WG128 low-row
+    GEMV; and C, a WG128/N128/K64 transposed-panel low-row GEMV. Preparation
+    compiles all arms and checks raw-U32 identity, reruns, complete writes,
+    guards, production-like data, long-K cancellation, the real 20,596-row
+    tied-head tail shard, rejection contracts, and lifecycle setup.
+  </p>
+  <p>
+    Timing is exactly sixteen interleaved A/B/C complete-layer rounds: eight
+    M1 and eight M2, with eight distinct 30 MiB seven-operation weight sets.
+    Each arm occurrence is one timestamped compute pass, command buffer,
+    submit, and drain. Diagnostic per-shape and tied-head-tail samples follow
+    without changing the primary gate. Start one absolute-cadence 1,000 ms
+    thermal trace before preparation, enter a fresh nominal level-0 interval
+    of at least 30 seconds after READY, run once, and retain the same trace
+    through cleanup. Never retry unchanged work to obtain a preferred result.
+  </p>
+
+  <button id="prepare" type="button">Prepare kernels, fixtures, and correctness</button>
+  <button id="cancel" type="button" disabled>Cancel at the next bounded checkpoint</button>
+  <div id="progress" role="status" aria-live="polite">idle; no GPU work has started</div>
+
+  <fieldset id="thermal-gate" disabled>
+    <legend>Fresh nominal launch interval from the continuous external trace</legend>
+    <label>Source
+      <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Exact command
+      <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly>
+    </label>
+    <label>Full trace start (epoch ms)
+      <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate start observation (epoch ms)
+      <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate completion observation (epoch ms)
+      <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Fresh gate observation count
+      <input name="thermalGateObservations" inputmode="numeric" value="31">
+    </label>
+    <label>Poll interval (ms)
+      <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly>
+    </label>
+    <label>Maximum adjacent observation gap (ms)
+      <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Non-nominal observations
+      <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Missing observations
+      <input name="thermalGateMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <button id="run" type="button" disabled>
+      Run the one registered sixteen-round A/B/C gate
+    </button>
+  </fieldset>
+
+  <fieldset id="thermal-completion" disabled>
+    <legend>Same external trace through measurement and cleanup</legend>
+    <label>Raw JSONL schema
+      <input name="thermalTraceSchema" value="jsonl-index-target-epoch-observed-epoch-keyed-notifyutil-v1" readonly>
+    </label>
+    <label>Raw JSONL SHA-256
+      <input name="thermalTraceSha256" spellcheck="false">
+    </label>
+    <label>Raw JSONL byte length
+      <input name="thermalTraceByteLength" inputmode="numeric">
+    </label>
+    <label>Trace completion observation (epoch ms; after cleanup)
+      <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal">
+    </label>
+    <label>Full trace observation count
+      <input name="thermalTraceObservations" inputmode="numeric">
+    </label>
+    <label>Full trace maximum adjacent gap (ms)
+      <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000">
+    </label>
+    <label>Full trace non-nominal observations
+      <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace missing observations
+      <input name="thermalTraceMissingObservations" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace initial level
+      <input name="thermalTraceInitialLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Full trace final level
+      <input name="thermalTraceFinalLevel" inputmode="numeric" value="0">
+    </label>
+    <label>Every level transition as JSON
+      <input name="thermalTraceTransitionsJson" spellcheck="false"
+        value="[]" placeholder='[{"atEpochMilliseconds":123,"level":1}]'>
+    </label>
+    <button id="finalize" type="button" disabled>
+      Finalize the stable receipt without rerunning timing
+    </button>
+  </fieldset>
+
+  <a id="download" hidden download="opt-0083-planner-low-row-bf16-gemv.json">
+    Download complete raw receipt
+  </a>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0083-planner-low-row-bf16-gemv.ts"></script>
+</body>
+</html>

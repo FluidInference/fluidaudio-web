@@ -1,0 +1,238 @@
+{
+  "schema": "ace-opt-0074-dense-k2-partials-result-v1",
+  "experimentId": "OPT-0074",
+  "status": "inconclusive",
+  "passed": false,
+  "disposition": "benchmark-only-stop-before-trajectory",
+  "summary": "K2 was materially faster in the aggregate and substantially more accurate than K4, but the predeclared consistency and non-overlap gates failed. One of six weighted rounds lost on fenced wall, absolute sample ranges overlapped, and two shapes had a paired loss in the final round. No package, trajectory, waveform, listening, or production work is authorized.",
+  "identity": {
+    "allocationBaselineCommit": "f3eb9fafc406676681b2892e08890d51a8301a6d",
+    "candidateAndHarnessCommit": "3ad45dade32cb5d53c37a685ef1f2ba01427fef0",
+    "machineModel": "Mac15,12",
+    "chip": "Apple M3",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserSurface": "Codex in-app Browser",
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "origin": "http://127.0.0.1:5173",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "subgroupSize": 32,
+    "requestedFeatures": [
+      "shader-f16",
+      "subgroups",
+      "timestamp-query"
+    ],
+    "exactKernel": "OPT-0009",
+    "k2Kernel": "ace-opt-0074-dense-fp16-k2-partials-fixed32-wg128-m32-n128-v1",
+    "k4ReferenceKernel": "ace-opt-0032-dense-fp16-k4-partials-fixed32-wg128-m32-n128-v1",
+    "k2AndK4WeightLayout": "ace-opt-0032-b-n128-k4-output4-lane32-k4-v1",
+    "kernelSourceSha256": "df12b300c93ab89536e97bcfcdf8f3bc5a69966497c815417429c93e959bcb28",
+    "harnessSourceSha256": "ec4c13ae00aaa28c98f88ebb91705a625b02261bcb5d50f17db3c900d3fa95a3",
+    "harnessHtmlSha256": "6af09d604ce75ea34b5356c12df217715e66fff66b3d4de420e303944d2da845"
+  },
+  "correctness": {
+    "passed": true,
+    "productionOutputCountPerCandidate": 25344000,
+    "adversarialOutputCountPerCandidate": 17408,
+    "k2DeterministicReruns": true,
+    "completeWrites": true,
+    "canariesIntact": true,
+    "nonFiniteOutputCount": 0,
+    "uncapturedGpuErrorCount": 0,
+    "k2NotWorseThanK4": true,
+    "full": {
+      "k2": {
+        "nrmse": 0.0002116480213450423,
+        "snrDecibels": 73.48771574606226,
+        "pearsonCorrelation": 0.999999979615792,
+        "maximumAbsoluteError": 0.009906768798828125,
+        "classChangeCount": 1636,
+        "passed": true
+      },
+      "k4": {
+        "nrmse": 0.0003114214941648823,
+        "snrDecibels": 70.13302831865582,
+        "pearsonCorrelation": 0.9999999523596047,
+        "maximumAbsoluteError": 0.01443171501159668,
+        "classChangeCount": 2484,
+        "passed": true
+      }
+    },
+    "adversarial": {
+      "k2": {
+        "nrmse": 0.00002374148450430525,
+        "snrDecibels": 92.48984258052538,
+        "pearsonCorrelation": 0.9999999997184525,
+        "maximumAbsoluteError": 0.0070896148681640625,
+        "classChangeCount": 1,
+        "passed": true
+      },
+      "k4": {
+        "nrmse": 0.000035893877746145715,
+        "snrDecibels": 88.89959241439891,
+        "pearsonCorrelation": 0.9999999993561381,
+        "maximumAbsoluteError": 0.010561823844909668,
+        "classChangeCount": 2,
+        "passed": true
+      }
+    }
+  },
+  "timing": {
+    "runStartedAtEpochMilliseconds": 1787302440377,
+    "measurementCompletedAtEpochMilliseconds": 1787302442702,
+    "cleanupCompletedAtEpochMilliseconds": 1787302442703,
+    "rawSampleCount": 72,
+    "roundCount": 6,
+    "samplesPerArmPerShape": 6,
+    "weightedProductionMultiplicities": "4/2/2/1",
+    "weightedArms": {
+      "exact": {
+        "gpuMilliseconds": 223.99112533333331,
+        "wallMilliseconds": 249.34999988476434,
+        "validGpuTflops": 1.179694738382016,
+        "validWallTflops": 1.05971988017693
+      },
+      "k2": {
+        "gpuMilliseconds": 184.36369066666668,
+        "wallMilliseconds": 216.71666675806046,
+        "validGpuTflops": 1.433260264233663,
+        "validWallTflops": 1.219293171830643
+      },
+      "k4": {
+        "gpuMilliseconds": 150.536192,
+        "wallMilliseconds": 177.66666650772095,
+        "validGpuTflops": 1.7553330430996952,
+        "validWallTflops": 1.487286035101676
+      }
+    },
+    "k2MeanSpeedup": {
+      "gpu": 1.2149416434622902,
+      "wall": 1.1505806342210647,
+      "gpuMillisecondsSaved": 39.62743466666663,
+      "wallMillisecondsSaved": 32.63333312670389
+    },
+    "k2MedianSpeedup": {
+      "gpu": 1.2753359143703027,
+      "wall": 1.2011577417816535,
+      "gpuMillisecondsSaved": 39.61651199999997,
+      "wallMillisecondsSaved": 34.74999988079071
+    },
+    "diagnosticEightEvaluationProjection": {
+      "wallMillisecondsSaved": 6265.599960327148,
+      "calculation": "32.63333312670389 ms * 24 layers * 8 evaluations",
+      "authoritative": false,
+      "reason": "The frozen consistency/non-overlap gates failed; this value is retained only to explain why the candidate was worth screening."
+    },
+    "weightedRoundSpeedups": [
+      {
+        "roundIndex": 0,
+        "wall": 1.3015364893333075,
+        "gpu": 1.2539236355118295
+      },
+      {
+        "roundIndex": 1,
+        "wall": 1.1883460891623632,
+        "gpu": 1.2625341841385596
+      },
+      {
+        "roundIndex": 2,
+        "wall": 1.2135535263595536,
+        "gpu": 1.3138347260909935
+      },
+      {
+        "roundIndex": 3,
+        "wall": 1.153412650277968,
+        "gpu": 1.2116522530723712
+      },
+      {
+        "roundIndex": 4,
+        "wall": 1.2698412646477015,
+        "gpu": 1.3030155642023344
+      },
+      {
+        "roundIndex": 5,
+        "wall": 0.8998491706531692,
+        "gpu": 1.050885507607882
+      }
+    ],
+    "predeclaredGates": {
+      "weightedMeanWallMaterialityPassed": true,
+      "weightedMeanGpuMaterialityPassed": true,
+      "weightedMedianWallMaterialityPassed": true,
+      "weightedMedianGpuMaterialityPassed": true,
+      "everyWeightedRoundWallWin": false,
+      "everyWeightedRoundGpuWin": true,
+      "weightedWallRangesSeparated": false,
+      "weightedGpuRangesSeparated": false,
+      "everyShapeConsistentAndNonOverlapped": false,
+      "passed": false
+    },
+    "interpretation": "The arithmetic mechanism is probably real: GPU means improved 21.5%, all six weighted GPU rounds won, and K2 was faster by both mean wall and mean GPU time on every shape. Evidence is nevertheless directionally mixed and variance-overlapped under the predeclared rule, so it is inconclusive rather than a genuine integration win."
+  },
+  "thermal": {
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "helperSha256": "07d05c5e733e9f66cd98c3fc72f35d50e11164bfcdd0890d6228b1de721009a7",
+    "readyObservedAtEpochMilliseconds": 1787302397177,
+    "runStartedAtEpochMilliseconds": 1787302440377,
+    "readyObservedToRunStartMilliseconds": 43200,
+    "lastObservationBeforeRun": {
+      "atEpochMilliseconds": 1787302439509,
+      "level": 0
+    },
+    "firstObservationAfterRunStart": {
+      "atEpochMilliseconds": 1787302440418,
+      "level": 0
+    },
+    "firstObservationAfterCleanup": {
+      "atEpochMilliseconds": 1787302443152,
+      "level": 0
+    },
+    "traceCompletedAtEpochMilliseconds": 1787302491840,
+    "observationCount": 329,
+    "maximumPollGapMilliseconds": 938,
+    "nonNominalObservationCount": 0,
+    "passed": true
+  },
+  "memoryAndLifecycle": {
+    "maximumLiveBytes": 388230688,
+    "createdBufferCount": 50,
+    "destroyedBufferCount": 50,
+    "liveBufferCountAfterCleanup": 0,
+    "liveBytesAfterCleanup": 0,
+    "repeatedDestroyIdempotent": true,
+    "deviceDestroyed": true,
+    "passed": true
+  },
+  "artifacts": {
+    "browserReceipt": {
+      "path": "browser-receipt.json",
+      "bytes": 248566,
+      "sha256": "cef8f63a2bf8f9b16fc683b3b83760eb38048f31be982cf0820e76d3ce058972"
+    },
+    "thermalGate": {
+      "path": "thermal-gate.json",
+      "bytes": 32267,
+      "sha256": "d81d3c8806d86777fc586f58a7de871d84f5095c92f5ac3ae8c3d05728fbce4e"
+    },
+    "thermalTrace": {
+      "path": "thermal-trace.json",
+      "bytes": 32405,
+      "sha256": "7fd34a238b9c6451309624143115464b67d75ffd5460c27b5c6bfddef4ed37d2"
+    },
+    "rawThermal": {
+      "path": "raw/thermal.jsonl",
+      "bytes": 20727,
+      "sha256": "b7f5b8fb808cdb87bfcdd3825df54e0b2621b44199a770ff6520bad530179433"
+    }
+  },
+  "decision": {
+    "primitiveFollowUpAuthorized": false,
+    "trajectoryAuthorized": false,
+    "packageChangeAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "revisitCondition": "A future standardized WebGPU matrix primitive, compiler/GPU change, or materially different arithmetic/dataflow mechanism may receive a new experiment. Do not repeat this unchanged K2 geometry or relax its gates."
+  }
+}

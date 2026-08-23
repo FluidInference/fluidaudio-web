@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0017 cooperative-dot4 K7 A/B gate</title>
+    <style>
+      body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; }
+      fieldset { display: grid; gap: 0.4rem; max-width: 62rem; }
+      label { display: grid; grid-template-columns: 27rem 1fr; gap: 0.5rem; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <h1>OPT-0017 cooperative-dot4 K7 A/B gate</h1>
+    <p>
+      Preparation authenticates the frozen cores, verifies four selected KIO
+      repacks twice and the remaining twelve once, then compares cooperative
+      dot4 against shipped fixed32 on twelve numerical probes across two
+      executions. After the page reports ready, observe one continuous
+      30-second nominal interval, enter that trace, and run once with no retry.
+    </p>
+    <p>
+      Cooperative dot4 must reach 1.75x on the weighted 2,397-range
+      representative score to unlock the complete C300 phase. A qualifier is
+      compared against shipped fixed32 over all 16 candidate operations and
+      2,399 exact ranges in AB/BA order, including one measured all-16 GPU
+      repack before each candidate run. It passes only with both paired wins
+      and at least 2.0x aggregate speedup including repack. This gate does not
+      change a production selector.
+    </p>
+    <p id="progress" role="status" aria-live="polite">
+      preparing bounded numerical and repack correctness
+    </p>
+    <fieldset id="thermal-gate" disabled>
+      <legend>One external nominal thermal interval</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Continuous nominal start (epoch ms)
+        <input name="thermalStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Gate completion (epoch ms)
+        <input name="thermalCompletedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Observation count
+        <input name="thermalObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Maximum poll gap (ms)
+        <input name="thermalMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Non-nominal observations
+        <input name="thermalNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>
+        Run bounded cooperative-dot4 A/B once
+      </button>
+    </fieldset>
+    <pre id="result">not run</pre>
+    <script type="module" src="./opt-0017-vae-k7-cooperative-dot4-ab.ts"></script>
+  </body>
+</html>

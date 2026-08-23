@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0027 VAE batch64 C512 A/B</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      body { margin: 1rem; max-width: 86rem; }
+      button { margin: 0 0.75rem 0.75rem 0; }
+      #progress { margin-block: 0.75rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="preparing">
+    <p>
+      Stock-Chrome OPT-0027 exact C512 scheduling A/B. Preparation
+      authenticates revision 6, builds independent OPT-0028 production
+      backends using the native K7 path, gives batch8 and batch64 exactly one
+      complete untimed warmup each, and requires every raw FP32/U32 output word
+      plus the accepted C512 oracle hash to match. Once READY, wait 30 seconds,
+      confirm nominal thermal state, then run the balanced batch8/batch64,
+      batch64/batch8 timing once.
+    </p>
+    <p id="progress" role="status" aria-live="polite">preparing</p>
+    <button id="run" type="button" disabled>Run balanced paired timing</button>
+    <pre id="result">timing has not run</pre>
+    <script type="module" src="./opt-0027-vae-batch64.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,119 @@
+{
+  "schema": "ace-opt-0075-width128-rmsnorm-result-v1",
+  "experiment": "OPT-0075",
+  "status": "inconclusive",
+  "passed": false,
+  "identity": {
+    "allocationBaselineCommit": "d2b0c39978d3d55b66a11d82e66e508a776ad795",
+    "candidateCommit": "7a64707c142d62e905dc5330dfc04e15e6f86ccc",
+    "candidateAndHarnessCommit": "03456cfef8d4eb42a91564808efc8532f682b246",
+    "machineModel": "Mac15,12",
+    "chip": "Apple M3",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184,
+    "browserSurface": "Codex in-app Browser",
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapterVendor": "apple",
+    "adapterArchitecture": "metal-3",
+    "modelProfile": "reference-bf16",
+    "currentKernel": "ace-correctness-rmsnorm-reference-bf16-wg256",
+    "candidateKernel": "ace-opt-0075-reference-bf16-rmsnorm-width128-wg128-v1",
+    "kernelSourceSha256": "f49ace6e346c9e13ea48be9632e505a42f678b8e9e7427cd2a1f1e9ded525b5d",
+    "harnessSourceSha256": "555551b60b35046bf20b281955c73c50264a4ea90dcaffa69619c370f8634c67",
+    "harnessHtmlSha256": "7251093329dfaf60f8acc9a68901267ddd1b2081e4976e53c4aa95808a6fa878",
+    "browserReceiptSha256": "ba99430d2657e40b159370e67eeb2e436cab2c91331eeb2d092cdd27d53ebde8",
+    "browserReceiptBytes": 91733,
+    "thermalGateSha256": "166d7135f987317a62b3f624ad0997f54283a24db6ba48f585e826df865d87b9",
+    "thermalTraceSha256": "2d590435b92695218aba54f021f5ee3a6774416ea818fe4b0ecb47265dcc0190",
+    "rawThermalTraceSha256": "74231d6e30c3b12c25b8516714cd1dca473e5d1bff03a7864492bc0500b058de"
+  },
+  "correctness": {
+    "passed": true,
+    "productionU32ComparisonsPerCandidate": 7012352,
+    "adversarialU32ComparisonsPerCandidate": 2048,
+    "rawU32DifferenceCount": 0,
+    "candidateRerunDifferenceCount": 0,
+    "productionNonFiniteCount": 0,
+    "adversarialOverflowClassIdentity": true,
+    "completeWrites": true,
+    "canariesIntact": true,
+    "uncapturedGpuErrorCount": 0,
+    "cleanupZeroLiveBuffers": true,
+    "maximumLiveGpuBytes": 140266528
+  },
+  "thermal": {
+    "passed": true,
+    "source": "notifyutil-com.apple.system.thermalpressurelevel",
+    "gateStartedAtEpochMilliseconds": 1787304175784,
+    "gateCompletedAtEpochMilliseconds": 1787304219670,
+    "measurementStartedAtEpochMilliseconds": 1787304223895,
+    "measurementCompletedAtEpochMilliseconds": 1787304225025,
+    "cleanupCompletedAtEpochMilliseconds": 1787304225028,
+    "traceCompletedAtEpochMilliseconds": 1787304235170,
+    "gateObservationCount": 49,
+    "traceObservationCount": 66,
+    "maximumPollGapMilliseconds": 923,
+    "nonNominalObservationCount": 0,
+    "launchDelayMilliseconds": 4225,
+    "postCleanupCoverageMilliseconds": 10142
+  },
+  "timing": {
+    "roundCount": 8,
+    "rawSampleCount": 48,
+    "dispatchRepetitionsPerSample": 8,
+    "weightedLayerMix": "2*T36000 + T18000",
+    "crossCache784DiagnosticOnly": true,
+    "meanSpeedup": {
+      "gpu": 1.8269534572852109,
+      "wall": 1.8011911021784526
+    },
+    "medianSpeedup": {
+      "gpu": 1.5607189829022357,
+      "wall": 1.5629771005825301
+    },
+    "meanSavingMillisecondsPerLayerMix": {
+      "gpu": 6.96832,
+      "wall": 7.146875003352761
+    },
+    "medianSavingMillisecondsPerLayerMix": {
+      "gpu": 5.238783999999999,
+      "wall": 5.531250014901161
+    },
+    "diagnosticEightEvaluationProjectionMilliseconds": {
+      "meanGpu": 1337.9174400000002,
+      "medianGpu": 1005.8465279999998,
+      "meanWall": 1372.2000006437302,
+      "medianWall": 1062.000002861023,
+      "authoritative": false
+    },
+    "pairedWins": {
+      "q36000Gpu": 5,
+      "q36000Wall": 5,
+      "k18000Gpu": 7,
+      "k18000Wall": 7,
+      "weightedGpu": 7,
+      "weightedWall": 7,
+      "rounds": 8
+    },
+    "predeclaredGates": {
+      "meanAndMedianSpeedupAtLeast1_25": true,
+      "meanAndMedianSavingAtLeast10_5MillisecondsGpu": false,
+      "meanAndMedianSavingAtLeast10_5MillisecondsWall": false,
+      "everyPrimaryShapePairedGpuWin": false,
+      "everyPrimaryShapePairedWallWin": false,
+      "everyWeightedRoundGpuWin": false,
+      "everyWeightedRoundWallWin": false,
+      "meanAndMedianWallGpuSavingAgreement": true,
+      "passed": false
+    }
+  },
+  "decision": {
+    "disposition": "inconclusive-stop-primitive-gate",
+    "interpretation": "WG128 is a real directional geometry improvement, but its 1.0-1.37 second diagnostic eight-evaluation saving is below the frozen 2.016 second engineering-materiality threshold and one weighted round reversed on both wall and GPU time.",
+    "diagnosticDitProfileAuthorized": false,
+    "productionIntegrationAuthorized": false,
+    "packageChangeAuthorized": false,
+    "trajectoryOrListeningRunAuthorized": false,
+    "revisitCondition": "Use a materially different exact dataflow such as split-head plus RMSNorm fusion, or a changed browser/GPU compiler. Do not repeat unchanged WG128 geometry or relax the materiality gate."
+  }
+}

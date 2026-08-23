@@ -1,0 +1,2459 @@
+{
+  "schema": "ace-opt-0066-vae-revision7-dual-k4-quality-c512-abba-v1",
+  "status": "passed",
+  "decision": "positive-authenticated-dual-k4-c512-quality-gate-passed",
+  "experimentId": "OPT-0066",
+  "identity": {
+    "coreCommit": "acf8dd6c4e4ee02f5556bd2495a67a853fb4aed5",
+    "harnessCommit": "acf8dd6c4e4ee02f5556bd2495a67a853fb4aed5",
+    "machineModel": "Mac15,12",
+    "osVersion": "26.5.2",
+    "osBuild": "25F84",
+    "browserVersion": "Google Chrome 151.0.7922.138",
+    "gpuCoreCount": 10,
+    "memoryBytes": 17179869184
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "executionProfile": {
+      "id": "raw-fp16-portable",
+      "modelProfile": "raw-fp16",
+      "weightStorage": "float16",
+      "matrixArithmetic": "float16",
+      "sensitiveReductions": "float32",
+      "vaeArithmetic": "float32",
+      "kernelBackend": "portable",
+      "requiredFeatures": [
+        "shader-f16"
+      ]
+    },
+    "adapterInfo": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32,
+      "isFallbackAdapter": false
+    },
+    "deviceFeatures": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "deviceLimits": {
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 268435456,
+      "maxUniformBufferBindingSize": 65536,
+      "maxBindGroups": 4,
+      "maxBindingsPerBindGroup": 1000,
+      "maxStorageBuffersPerShaderStage": 8,
+      "maxUniformBuffersPerShaderStage": 12,
+      "maxDynamicStorageBuffersPerPipelineLayout": 4,
+      "maxDynamicUniformBuffersPerPipelineLayout": 8,
+      "maxComputeWorkgroupStorageSize": 16384,
+      "maxComputeInvocationsPerWorkgroup": 256,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupSizeY": 256,
+      "maxComputeWorkgroupSizeZ": 64,
+      "maxComputeWorkgroupsPerDimension": 65535,
+      "minStorageBufferOffsetAlignment": 256,
+      "minUniformBufferOffsetAlignment": 256
+    }
+  },
+  "fixture": {
+    "frames": 512,
+    "elements": 32768,
+    "byteLength": 131072,
+    "sha256": "eff0005ae48353fbc0a9ec86a5b2824b49e6fff6e899ea89af7d1c6e5870e899"
+  },
+  "packages": {
+    "revision6": {
+      "revision": 6,
+      "manifestPath": "/model/files-fp16-vae-experimental/manifest.json",
+      "manifestUrl": "http://127.0.0.1:5173/model/files-fp16-vae-experimental/manifest.json",
+      "manifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+      "manifestByteLength": 715301,
+      "converterRevision": 6,
+      "tensorRecordCount": 145,
+      "weightFileCount": 7,
+      "residentBytes": 168791552,
+      "authenticatedBeforeGpuUpload": true
+    },
+    "revision7": {
+      "revision": 7,
+      "manifestPath": "/model/files-fp16-vae-revision7-experimental/manifest.json",
+      "manifestUrl": "http://127.0.0.1:5173/model/files-fp16-vae-revision7-experimental/manifest.json",
+      "manifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+      "manifestByteLength": 716185,
+      "converterRevision": 7,
+      "tensorRecordCount": 145,
+      "weightFileCount": 7,
+      "residentBytes": 168791552,
+      "authenticatedBeforeGpuUpload": true
+    },
+    "boundedPreDeviceNativeToPackedProof": {
+      "schema": "ace-opt-0066-package-layout-proof-v1",
+      "revision6LogicalTensorCount": 145,
+      "revision7LogicalTensorCount": 145,
+      "selectedLayoutCount": 16,
+      "selectedK7Count": 12,
+      "selectedConvTransposeCount": 4,
+      "comparedU16WordCount": 35880960,
+      "mismatchCount": 0,
+      "entries": [
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-0-res-1-conv1",
+          "tensor": "vae.decoder.block.0.res_unit1.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            1024,
+            7,
+            1024
+          ],
+          "candidateStorageShape": [
+            7,
+            256,
+            16,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-00-00.bin",
+          "sourceByteOffset": 83890176,
+          "candidateShard": "weights/vae/layer-00-00.bin",
+          "candidateByteOffset": 83890176,
+          "byteLength": 14680064,
+          "comparedU16WordCount": 7340032,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "d9f24c7c171f6a12346efd8da67f5078abfa36fc21103c4adaf0a8e92cb7348e",
+          "derivedPackedSha256": "79acd7e01e5a3e3f377c8cb10e7d2b87657345ba297acc3eb186d2fc0f4e1b8d",
+          "candidatePackedSha256": "79acd7e01e5a3e3f377c8cb10e7d2b87657345ba297acc3eb186d2fc0f4e1b8d"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-0-res-2-conv1",
+          "tensor": "vae.decoder.block.0.res_unit2.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            1024,
+            7,
+            1024
+          ],
+          "candidateStorageShape": [
+            7,
+            256,
+            16,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-00-00.bin",
+          "sourceByteOffset": 100679680,
+          "candidateShard": "weights/vae/layer-00-00.bin",
+          "candidateByteOffset": 100679680,
+          "byteLength": 14680064,
+          "comparedU16WordCount": 7340032,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "8609ac9c66cbc929e0fb1f4d7e79cd1edfe4dafe06abf9ec37988c514ac37b23",
+          "derivedPackedSha256": "9e574fa101941e3545ae1f66117984c7732463352c3cb849c0bcc013e72d66b9",
+          "candidatePackedSha256": "9e574fa101941e3545ae1f66117984c7732463352c3cb849c0bcc013e72d66b9"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-0-res-3-conv1",
+          "tensor": "vae.decoder.block.0.res_unit3.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            1024,
+            7,
+            1024
+          ],
+          "candidateStorageShape": [
+            7,
+            256,
+            16,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-00-01.bin",
+          "sourceByteOffset": 0,
+          "candidateShard": "weights/vae/layer-00-01.bin",
+          "candidateByteOffset": 0,
+          "byteLength": 14680064,
+          "comparedU16WordCount": 7340032,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "2adba8f45a7bdfb30959bd5186c9db5f0df6926047152c0634cc1fc30bce957f",
+          "derivedPackedSha256": "641848d3a2fdb819df5b1565858141b90c5cc3af918ccb633d3d5f9e259321a8",
+          "candidatePackedSha256": "641848d3a2fdb819df5b1565858141b90c5cc3af918ccb633d3d5f9e259321a8"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-1-res-1-conv1",
+          "tensor": "vae.decoder.block.1.res_unit1.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            512,
+            7,
+            512
+          ],
+          "candidateStorageShape": [
+            7,
+            128,
+            8,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-01-00.bin",
+          "sourceByteOffset": 12584960,
+          "candidateShard": "weights/vae/layer-01-00.bin",
+          "candidateByteOffset": 12584960,
+          "byteLength": 3670016,
+          "comparedU16WordCount": 1835008,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "7b1b33b2a5deb074ad6571e3f07721c2baebe05ad8157fff20e19858c907846a",
+          "derivedPackedSha256": "c4f8bc8442f9db241c7c51cc8f11aacdd98a5e7a8e8e48604b8dc40d9c8a8142",
+          "candidatePackedSha256": "c4f8bc8442f9db241c7c51cc8f11aacdd98a5e7a8e8e48604b8dc40d9c8a8142"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-1-res-2-conv1",
+          "tensor": "vae.decoder.block.1.res_unit2.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            512,
+            7,
+            512
+          ],
+          "candidateStorageShape": [
+            7,
+            128,
+            8,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-01-00.bin",
+          "sourceByteOffset": 16785408,
+          "candidateShard": "weights/vae/layer-01-00.bin",
+          "candidateByteOffset": 16785408,
+          "byteLength": 3670016,
+          "comparedU16WordCount": 1835008,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "5c4f814b14219909c93abd740c479fa59aed8361d2d5a1e95b7bf0c3daeac699",
+          "derivedPackedSha256": "3cf97bb10b248399d4133de92abb71e689256b1366f75994d614d3eaf4bb467c",
+          "candidatePackedSha256": "3cf97bb10b248399d4133de92abb71e689256b1366f75994d614d3eaf4bb467c"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-1-res-3-conv1",
+          "tensor": "vae.decoder.block.1.res_unit3.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            512,
+            7,
+            512
+          ],
+          "candidateStorageShape": [
+            7,
+            128,
+            8,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-01-00.bin",
+          "sourceByteOffset": 20985856,
+          "candidateShard": "weights/vae/layer-01-00.bin",
+          "candidateByteOffset": 20985856,
+          "byteLength": 3670016,
+          "comparedU16WordCount": 1835008,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "e94b0f2530613ecad6e893aec795b9e15aa520a7679b8da1c2c7187c61c81a2d",
+          "derivedPackedSha256": "48dd98242d042c8cfc2657c3d86ec772ed4d167bbf16d0629885a0bfb601e9b5",
+          "candidatePackedSha256": "48dd98242d042c8cfc2657c3d86ec772ed4d167bbf16d0629885a0bfb601e9b5"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-3-res-1-conv1",
+          "tensor": "vae.decoder.block.3.res_unit1.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-03-00.bin",
+          "sourceByteOffset": 524800,
+          "candidateShard": "weights/vae/layer-03-00.bin",
+          "candidateByteOffset": 524800,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "476f581fea88436c53a289506209aefca0eda84ec1590156960b77341fe65671",
+          "derivedPackedSha256": "88fb7251840aec4fc025f57b520d64e218bc8068be05eed2fc01ca786a5f2c97",
+          "candidatePackedSha256": "88fb7251840aec4fc025f57b520d64e218bc8068be05eed2fc01ca786a5f2c97"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-3-res-2-conv1",
+          "tensor": "vae.decoder.block.3.res_unit2.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-03-00.bin",
+          "sourceByteOffset": 788480,
+          "candidateShard": "weights/vae/layer-03-00.bin",
+          "candidateByteOffset": 788480,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "fe9b0c48b6044aa43526bedd43ed6951e55646e322f733fdb31620947609c89c",
+          "derivedPackedSha256": "93bee5bd216c1389c48693835a1a8c667e018fe253aa6a523c94c4693c39843b",
+          "candidatePackedSha256": "93bee5bd216c1389c48693835a1a8c667e018fe253aa6a523c94c4693c39843b"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-3-res-3-conv1",
+          "tensor": "vae.decoder.block.3.res_unit3.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-03-00.bin",
+          "sourceByteOffset": 1052160,
+          "candidateShard": "weights/vae/layer-03-00.bin",
+          "candidateByteOffset": 1052160,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "fa2ed3c1b7c6878f3e792a4a6125a09583d62349f40cddcb823b3fc8d38ff8c2",
+          "derivedPackedSha256": "f2e12281601adc09e1a10fb1cdda82acb89612a5fd8df4aa16c96ac8bea0cb6f",
+          "candidatePackedSha256": "f2e12281601adc09e1a10fb1cdda82acb89612a5fd8df4aa16c96ac8bea0cb6f"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-4-res-1-conv1",
+          "tensor": "vae.decoder.block.4.res_unit1.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-04-00.bin",
+          "sourceByteOffset": 131584,
+          "candidateShard": "weights/vae/layer-04-00.bin",
+          "candidateByteOffset": 131584,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "46fa26ffbb82bb30bfb64d994ca3c247b521ea14d89c605eb1a09b89dd6590a8",
+          "derivedPackedSha256": "272c42efe2eda78aeab2975b5d52b4f71e9c7f56a217c4e62a922d25ff0c01eb",
+          "candidatePackedSha256": "272c42efe2eda78aeab2975b5d52b4f71e9c7f56a217c4e62a922d25ff0c01eb"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-4-res-2-conv1",
+          "tensor": "vae.decoder.block.4.res_unit2.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-04-00.bin",
+          "sourceByteOffset": 395264,
+          "candidateShard": "weights/vae/layer-04-00.bin",
+          "candidateByteOffset": 395264,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "e5ba739c8c62ebfc86757e6cca74a1fa965e5df60ae247c8705b699d41e6ab56",
+          "derivedPackedSha256": "c0a737e3a185947fa1cf9547d4e23806c04cf8b14a8dd730f5997be88c9e45bc",
+          "candidatePackedSha256": "c0a737e3a185947fa1cf9547d4e23806c04cf8b14a8dd730f5997be88c9e45bc"
+        },
+        {
+          "family": "k7-conv1d",
+          "operationLabel": "block-4-res-3-conv1",
+          "tensor": "vae.decoder.block.4.res_unit3.conv1.weight",
+          "sourceLayout": "conv1d-output-kernel-input-f16-v1",
+          "candidateLayout": "k7-cin4-cout-band64-lane32-output2-cin-element4",
+          "sourceStorageShape": [
+            128,
+            7,
+            128
+          ],
+          "candidateStorageShape": [
+            7,
+            32,
+            2,
+            32,
+            2,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-04-00.bin",
+          "sourceByteOffset": 658944,
+          "candidateShard": "weights/vae/layer-04-00.bin",
+          "candidateByteOffset": 658944,
+          "byteLength": 229376,
+          "comparedU16WordCount": 114688,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "761343e62c08261563ec07517464a34b85af7cce2bea2cdd289815aa59615843",
+          "derivedPackedSha256": "cdf7addfdae614c93c4340e37b21bf6e6af76bb5a7268b7a9944efa05e93b287",
+          "candidatePackedSha256": "cdf7addfdae614c93c4340e37b21bf6e6af76bb5a7268b7a9944efa05e93b287"
+        },
+        {
+          "family": "conv-transpose1d",
+          "operationLabel": "block-1-conv-t1",
+          "tensor": "vae.decoder.block.1.conv_t1.weight",
+          "reuseAxis": "channel",
+          "sourceLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+          "candidateLayout": "ace-opt-0048-phase-tap-cin4-cout-tile-lane-output-k4-f16-v1",
+          "sourceStorageShape": [
+            6,
+            2,
+            1024,
+            512
+          ],
+          "candidateStorageShape": [
+            6,
+            2,
+            256,
+            2,
+            32,
+            8,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-01-00.bin",
+          "sourceByteOffset": 1024,
+          "candidateShard": "weights/vae/layer-01-00.bin",
+          "candidateByteOffset": 1024,
+          "byteLength": 12582912,
+          "comparedU16WordCount": 6291456,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "9b72d7acd3a896178a2e07d132532e9071cc0293df5cbe6eef3878f945910793",
+          "derivedPackedSha256": "497aa85ce9ca871332eab8104980572294745b46fa0ca56400a0175527590de6",
+          "candidatePackedSha256": "497aa85ce9ca871332eab8104980572294745b46fa0ca56400a0175527590de6",
+          "retainedAsRevision6OracleSource": true
+        },
+        {
+          "family": "conv-transpose1d",
+          "operationLabel": "block-2-conv-t1",
+          "tensor": "vae.decoder.block.2.conv_t1.weight",
+          "reuseAxis": "channel",
+          "sourceLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+          "candidateLayout": "ace-opt-0048-phase-tap-cin4-cout-tile-lane-output-k4-f16-v1",
+          "sourceStorageShape": [
+            4,
+            2,
+            512,
+            256
+          ],
+          "candidateStorageShape": [
+            4,
+            2,
+            128,
+            1,
+            32,
+            8,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-02-00.bin",
+          "sourceByteOffset": 512,
+          "candidateShard": "weights/vae/layer-02-00.bin",
+          "candidateByteOffset": 512,
+          "byteLength": 2097152,
+          "comparedU16WordCount": 1048576,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "bcbd9ba8b9ead094030fc73d3bf4da364cfa601d11b3d221bc6e1f7f343944a1",
+          "derivedPackedSha256": "1c0e215d1c5e8fea751d84163f8f4c3f9f897f1eea3e2bfbebd357829e201ace",
+          "candidatePackedSha256": "1c0e215d1c5e8fea751d84163f8f4c3f9f897f1eea3e2bfbebd357829e201ace",
+          "retainedAsRevision6OracleSource": true
+        },
+        {
+          "family": "conv-transpose1d",
+          "operationLabel": "block-3-conv-t1",
+          "tensor": "vae.decoder.block.3.conv_t1.weight",
+          "reuseAxis": "row",
+          "sourceLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+          "candidateLayout": "ace-opt-0048-phase-tap-cin4-cout-tile-lane-output-k4-f16-v1",
+          "sourceStorageShape": [
+            4,
+            2,
+            256,
+            128
+          ],
+          "candidateStorageShape": [
+            4,
+            2,
+            64,
+            1,
+            32,
+            4,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-03-00.bin",
+          "sourceByteOffset": 256,
+          "candidateShard": "weights/vae/layer-03-00.bin",
+          "candidateByteOffset": 256,
+          "byteLength": 524288,
+          "comparedU16WordCount": 262144,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "b7d586e453f16309e2c4aa036c0ae1d9bff2a2e6ea91747b88c7904579178ae0",
+          "derivedPackedSha256": "74bdbe9b9baab74918ae05f6dce0da8621a7a3182593c9d70ec76a130c8c6ddb",
+          "candidatePackedSha256": "74bdbe9b9baab74918ae05f6dce0da8621a7a3182593c9d70ec76a130c8c6ddb",
+          "retainedAsRevision6OracleSource": true
+        },
+        {
+          "family": "conv-transpose1d",
+          "operationLabel": "block-4-conv-t1",
+          "tensor": "vae.decoder.block.4.conv_t1.weight",
+          "reuseAxis": "row",
+          "sourceLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+          "candidateLayout": "ace-opt-0048-phase-tap-cin4-cout-tile-lane-output-k4-f16-v1",
+          "sourceStorageShape": [
+            2,
+            2,
+            128,
+            128
+          ],
+          "candidateStorageShape": [
+            2,
+            2,
+            32,
+            1,
+            32,
+            4,
+            4
+          ],
+          "sourceShard": "weights/vae/layer-04-00.bin",
+          "sourceByteOffset": 256,
+          "candidateShard": "weights/vae/layer-04-00.bin",
+          "candidateByteOffset": 256,
+          "byteLength": 131072,
+          "comparedU16WordCount": 65536,
+          "mismatchCount": 0,
+          "firstMismatch": null,
+          "sourceSha256": "94382a6284769bc548fc56537880bab0608c51d5780f4dd8ecfa1de9a2534ed9",
+          "derivedPackedSha256": "1ff113b3215a5333d5eb6ea435d5f7b8db07d00d4ee68984291b2ef5f10aebb8",
+          "candidatePackedSha256": "1ff113b3215a5333d5eb6ea435d5f7b8db07d00d4ee68984291b2ef5f10aebb8",
+          "retainedAsRevision6OracleSource": true
+        }
+      ]
+    },
+    "retainedRevision6DerivedConvTransposeBytes": 15335424,
+    "manifestsAndOpfsFileHandlesMayCoexist": true,
+    "gpuWeightPhasesOrBackendsMayCoexist": false
+  },
+  "topology": {
+    "scalar": {
+      "arm": "rev6-scalar",
+      "runtimeProfileId": "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
+      "kernelSetId": "opt-0040-vae-fp16-fixed32-exact-packed-shape-selected-kernel-set-v1",
+      "runtimeProfileRole": "authenticated-runtime-profile",
+      "effectiveK7Arithmetic": "scalar-fp32",
+      "operationCount": 88,
+      "graphQuantumCount": 7854,
+      "sequenceQuantumCount": 7855,
+      "kernelQuantumCounts": {
+        "ace-vae-fp16-portable-ingress-v1": 1,
+        "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 4090,
+        "ace-vae-fp16-portable-snake-v1": 1611,
+        "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 368,
+        "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+        "ace-vae-fp16-portable-add-v1": 690,
+        "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1": 276
+      },
+      "k7": {
+        "totalQuantumCount": 4090,
+        "selectedOperationCount": 12,
+        "selectedQuantumCount": 3360,
+        "unchangedNativeOperationCount": 5,
+        "unchangedNativeQuantumCount": 730,
+        "selectedKernelId": null,
+        "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+        "routes": [
+          {
+            "operationLabel": "conv1",
+            "quantumCount": 2,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-1-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-2-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-3-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-1-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-2-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-3-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "conv2",
+            "quantumCount": 8,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          }
+        ]
+      },
+      "convTranspose": {
+        "effectiveArithmetic": "scalar-fp32",
+        "totalQuantumCount": 644,
+        "routes": [
+          {
+            "operationLabel": "block-0-conv-t1",
+            "quantumCount": 92,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-1-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-2-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-3-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-4-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+          }
+        ]
+      },
+      "unrelatedOwners": {
+        "ingress": {
+          "kernelId": "ace-vae-fp16-portable-ingress-v1",
+          "quantumCount": 1
+        },
+        "k1": {
+          "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+          "quantumCount": 819
+        },
+        "snake": {
+          "kernelId": "ace-vae-fp16-portable-snake-v1",
+          "quantumCount": 1611
+        },
+        "add": {
+          "kernelId": "ace-vae-fp16-portable-add-v1",
+          "quantumCount": 690
+        },
+        "unchanged": true
+      },
+      "benchmarkPrivateCompleteSameArithmeticOverride": false
+    },
+    "completeSameArithmeticOracle": {
+      "arm": "rev6-same-arithmetic-oracle",
+      "runtimeProfileId": "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
+      "kernelSetId": "opt-0040-vae-fp16-fixed32-exact-packed-shape-selected-kernel-set-v1",
+      "runtimeProfileRole": "revision6-package-and-literal-opt0040-unselected-owner-base",
+      "effectiveK7Arithmetic": "selected-label-increasing-k-cin4-fp16-dot4-then-fp32-running-state",
+      "operationCount": 88,
+      "graphQuantumCount": 7854,
+      "sequenceQuantumCount": 7855,
+      "kernelQuantumCounts": {
+        "ace-vae-fp16-portable-ingress-v1": 1,
+        "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 730,
+        "ace-vae-fp16-portable-snake-v1": 1611,
+        "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 92,
+        "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1": 3360,
+        "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+        "ace-vae-fp16-portable-add-v1": 690,
+        "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1": 276,
+        "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1": 276
+      },
+      "k7": {
+        "totalQuantumCount": 4090,
+        "selectedOperationCount": 12,
+        "selectedQuantumCount": 3360,
+        "unchangedNativeOperationCount": 5,
+        "unchangedNativeQuantumCount": 730,
+        "selectedKernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1",
+        "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+        "routes": [
+          {
+            "operationLabel": "conv1",
+            "quantumCount": 2,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-1-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-2-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-3-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-1-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-2-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-3-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0024-direct-native-oki-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "conv2",
+            "quantumCount": 8,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          }
+        ]
+      },
+      "convTranspose": {
+        "effectiveArithmetic": "block0-scalar;blocks1-4-opt0048-fp16-dot4-then-fp32-running-state",
+        "totalQuantumCount": 644,
+        "routes": [
+          {
+            "operationLabel": "block-0-conv-t1",
+            "quantumCount": 92,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-1-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-2-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-3-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-4-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+          }
+        ]
+      },
+      "unrelatedOwners": {
+        "ingress": {
+          "kernelId": "ace-vae-fp16-portable-ingress-v1",
+          "quantumCount": 1
+        },
+        "k1": {
+          "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+          "quantumCount": 819
+        },
+        "snake": {
+          "kernelId": "ace-vae-fp16-portable-snake-v1",
+          "quantumCount": 1611
+        },
+        "add": {
+          "kernelId": "ace-vae-fp16-portable-add-v1",
+          "quantumCount": 690
+        },
+        "unchanged": true
+      },
+      "benchmarkPrivateCompleteSameArithmeticOverride": true
+    },
+    "revision7Candidate": {
+      "arm": "rev7-candidate",
+      "runtimeProfileId": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+      "kernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+      "runtimeProfileRole": "authenticated-runtime-profile",
+      "effectiveK7Arithmetic": "selected-label-increasing-k-cin4-fp16-dot4-then-fp32-running-state",
+      "operationCount": 88,
+      "graphQuantumCount": 7854,
+      "sequenceQuantumCount": 7855,
+      "kernelQuantumCounts": {
+        "ace-vae-fp16-portable-ingress-v1": 1,
+        "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 730,
+        "ace-vae-fp16-portable-snake-v1": 1611,
+        "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 92,
+        "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1": 3360,
+        "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+        "ace-vae-fp16-portable-add-v1": 690,
+        "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1": 276,
+        "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1": 276
+      },
+      "k7": {
+        "totalQuantumCount": 4090,
+        "selectedOperationCount": 12,
+        "selectedQuantumCount": 3360,
+        "unchangedNativeOperationCount": 5,
+        "unchangedNativeQuantumCount": 730,
+        "selectedKernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1",
+        "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+        "routes": [
+          {
+            "operationLabel": "conv1",
+            "quantumCount": 2,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-1-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-2-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-0-res-3-conv1",
+            "quantumCount": 160,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-1-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-2-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-1-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-2-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-3-res-3-conv1",
+            "quantumCount": 240,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-1-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-2-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "block-4-res-3-conv1",
+            "quantumCount": 480,
+            "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+          },
+          {
+            "operationLabel": "conv2",
+            "quantumCount": 8,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+          }
+        ]
+      },
+      "convTranspose": {
+        "effectiveArithmetic": "block0-scalar;blocks1-4-opt0048-fp16-dot4-then-fp32-running-state",
+        "totalQuantumCount": 644,
+        "routes": [
+          {
+            "operationLabel": "block-0-conv-t1",
+            "quantumCount": 92,
+            "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+          },
+          {
+            "operationLabel": "block-1-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-2-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-3-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+          },
+          {
+            "operationLabel": "block-4-conv-t1",
+            "quantumCount": 138,
+            "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+          }
+        ]
+      },
+      "unrelatedOwners": {
+        "ingress": {
+          "kernelId": "ace-vae-fp16-portable-ingress-v1",
+          "quantumCount": 1
+        },
+        "k1": {
+          "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+          "quantumCount": 819
+        },
+        "snake": {
+          "kernelId": "ace-vae-fp16-portable-snake-v1",
+          "quantumCount": 1611
+        },
+        "add": {
+          "kernelId": "ace-vae-fp16-portable-add-v1",
+          "quantumCount": 690
+        },
+        "unchanged": true
+      },
+      "benchmarkPrivateCompleteSameArithmeticOverride": false
+    },
+    "reconciledK7QuantumCount": 4090,
+    "selectedK7QuantumCount": 3360,
+    "unchangedNativeK7QuantumCount": 730,
+    "reconciledConvTransposeQuantumCount": 644,
+    "unchangedOtherOwners": true,
+    "stableAcrossReruns": true
+  },
+  "protocol": {
+    "correctnessOrder": [
+      "rev6-scalar",
+      "rev6-scalar",
+      "rev6-same-arithmetic-oracle",
+      "rev6-same-arithmetic-oracle",
+      "rev7-candidate",
+      "rev7-candidate"
+    ],
+    "timedOrder": [
+      "rev6-scalar",
+      "rev7-candidate",
+      "rev7-candidate",
+      "rev6-scalar"
+    ],
+    "completeUntimedRunsPerArm": 2,
+    "completeTimedRunsPerArm": 2,
+    "quantaPerCommandBuffer": 64,
+    "oneOutstandingCommandBuffer": true,
+    "queueDrainAfterEveryCommandBuffer": true,
+    "realQueueEmptyMillisecondsBetweenCommandBuffers": 1,
+    "sequentialPackageOwnership": true,
+    "maximumSimultaneousGpuPackageOwners": 1,
+    "familyTimingUsesHomogeneousCommandBuffers": true,
+    "mixedFamilyCommandBuffersReportedSeparately": true,
+    "outerWindowWallIncludesLatentUploadSubmissionDrainReadbackAndMap": true,
+    "packageAcquisitionUploadAndGraphBuildReportedSeparatelyNotTimedAsDecoder": true,
+    "dedicatedWorker": true,
+    "stockChromeWebGpuOnly": true,
+    "experimentalBrowserFlags": false,
+    "timestampQueries": false,
+    "webNn": false,
+    "thermalGate": {
+      "source": "notifyutil-com.apple.system.thermalpressurelevel",
+      "command": "notifyutil -g com.apple.system.thermalpressurelevel",
+      "protocol": "wait-30s-then-one-level0-check",
+      "startedAtEpochMilliseconds": 1786851366206,
+      "checkedAtEpochMilliseconds": 1786851512206,
+      "durationMilliseconds": 146000,
+      "observationCount": 1,
+      "observedLevel": 0,
+      "maximumObservationGapMilliseconds": 146000
+    }
+  },
+  "executions": [
+    {
+      "index": 0,
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToUntimedReference": {
+        "comparedU32WordCount": 1966080,
+        "u32MismatchCount": 0,
+        "firstU32MismatchIndex": null,
+        "comparedU16WordCount": 3932160,
+        "u16MismatchCount": 0,
+        "firstU16MismatchIndex": null,
+        "rawU32Exact": true,
+        "rawU16Exact": true
+      },
+      "topology": {
+        "arm": "rev6-scalar",
+        "runtimeProfileId": "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
+        "kernelSetId": "opt-0040-vae-fp16-fixed32-exact-packed-shape-selected-kernel-set-v1",
+        "runtimeProfileRole": "authenticated-runtime-profile",
+        "effectiveK7Arithmetic": "scalar-fp32",
+        "operationCount": 88,
+        "graphQuantumCount": 7854,
+        "sequenceQuantumCount": 7855,
+        "kernelQuantumCounts": {
+          "ace-vae-fp16-portable-ingress-v1": 1,
+          "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 4090,
+          "ace-vae-fp16-portable-snake-v1": 1611,
+          "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 368,
+          "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+          "ace-vae-fp16-portable-add-v1": 690,
+          "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1": 276
+        },
+        "k7": {
+          "totalQuantumCount": 4090,
+          "selectedOperationCount": 12,
+          "selectedQuantumCount": 3360,
+          "unchangedNativeOperationCount": 5,
+          "unchangedNativeQuantumCount": 730,
+          "selectedKernelId": null,
+          "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "routes": [
+            {
+              "operationLabel": "conv1",
+              "quantumCount": 2,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-1-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-2-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-3-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-1-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-2-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-3-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "conv2",
+              "quantumCount": 8,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            }
+          ]
+        },
+        "convTranspose": {
+          "effectiveArithmetic": "scalar-fp32",
+          "totalQuantumCount": 644,
+          "routes": [
+            {
+              "operationLabel": "block-0-conv-t1",
+              "quantumCount": 92,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-1-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-2-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-3-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-4-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+            }
+          ]
+        },
+        "unrelatedOwners": {
+          "ingress": {
+            "kernelId": "ace-vae-fp16-portable-ingress-v1",
+            "quantumCount": 1
+          },
+          "k1": {
+            "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+            "quantumCount": 819
+          },
+          "snake": {
+            "kernelId": "ace-vae-fp16-portable-snake-v1",
+            "quantumCount": 1611
+          },
+          "add": {
+            "kernelId": "ace-vae-fp16-portable-add-v1",
+            "quantumCount": 690
+          },
+          "unchanged": true
+        },
+        "benchmarkPrivateCompleteSameArithmeticOverride": false
+      },
+      "ownerLifecycle": {
+        "arm": "rev6-scalar",
+        "packageRevision": 6,
+        "packageManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "phaseBackendAndBuffersDestroyedBeforeNextOwner": true,
+        "idempotentDestroyPromises": true,
+        "liveOwnersAfterDestroy": 0,
+        "ownerLifetimeWallMs": 6897.700000047684
+      },
+      "arm": "rev6-scalar",
+      "measured": true,
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983039,
+        "minimum": -0.9420424103736877,
+        "maximum": 0.9584733843803406,
+        "peak": 0.9584733843803406,
+        "firstFrameFinite": 1,
+        "lastFrameFinite": 1
+      },
+      "timing": {
+        "ownerSetupWallMs": 270.10000002384186,
+        "outerWindowWallMs": 6610.900000095367,
+        "k7FamilySubmitThroughDrainMs": 3996.300000190735,
+        "convTransposeFamilySubmitThroughDrainMs": 387.39999997615814,
+        "decoderSubmitThroughDrainMs": 6419.600000023842,
+        "decoderCommandBufferCount": 123,
+        "totalCommandBufferCount": 124,
+        "queueDrainCount": 124,
+        "requestedCooperativeIdleMs": 123
+      },
+      "familyProfile": {
+        "windowIndex": 0,
+        "inputFrames": 512,
+        "quantaPerCommandBuffer": 64,
+        "decoderBatchCount": 123,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 6419.600000023842,
+        "homogeneousBatchCount": 68,
+        "homogeneousQuantumCount": 4352,
+        "homogeneousSubmitThroughDrainMs": 4475.700000166893,
+        "mixedBatchCount": 55,
+        "mixedQuantumCount": 3503,
+        "mixedSubmitThroughDrainMs": 1943.8999998569489,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 52,
+            "quantumCount": 3328,
+            "submitThroughDrainMs": 3996.300000190735
+          },
+          "k1-conv1d": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 51.299999952316284
+          },
+          "conv-transpose1d": {
+            "batchCount": 6,
+            "quantumCount": 384,
+            "submitThroughDrainMs": 387.39999997615814
+          },
+          "snake": {
+            "batchCount": 4,
+            "quantumCount": 256,
+            "submitThroughDrainMs": 21.40000009536743
+          },
+          "add": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 19.299999952316284
+          }
+        }
+      }
+    },
+    {
+      "index": 1,
+      "outputSha256": "84a908b8aa9cc6656b967226de69f51046c109065d38ec07599d8d2165c93564",
+      "comparisonToUntimedReference": {
+        "comparedU32WordCount": 1966080,
+        "u32MismatchCount": 0,
+        "firstU32MismatchIndex": null,
+        "comparedU16WordCount": 3932160,
+        "u16MismatchCount": 0,
+        "firstU16MismatchIndex": null,
+        "rawU32Exact": true,
+        "rawU16Exact": true
+      },
+      "topology": {
+        "arm": "rev7-candidate",
+        "runtimeProfileId": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+        "kernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+        "runtimeProfileRole": "authenticated-runtime-profile",
+        "effectiveK7Arithmetic": "selected-label-increasing-k-cin4-fp16-dot4-then-fp32-running-state",
+        "operationCount": 88,
+        "graphQuantumCount": 7854,
+        "sequenceQuantumCount": 7855,
+        "kernelQuantumCounts": {
+          "ace-vae-fp16-portable-ingress-v1": 1,
+          "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 730,
+          "ace-vae-fp16-portable-snake-v1": 1611,
+          "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 92,
+          "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1": 3360,
+          "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+          "ace-vae-fp16-portable-add-v1": 690,
+          "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1": 276,
+          "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1": 276
+        },
+        "k7": {
+          "totalQuantumCount": 4090,
+          "selectedOperationCount": 12,
+          "selectedQuantumCount": 3360,
+          "unchangedNativeOperationCount": 5,
+          "unchangedNativeQuantumCount": 730,
+          "selectedKernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1",
+          "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "routes": [
+            {
+              "operationLabel": "conv1",
+              "quantumCount": 2,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-1-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-2-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-3-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-1-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-2-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-3-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "conv2",
+              "quantumCount": 8,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            }
+          ]
+        },
+        "convTranspose": {
+          "effectiveArithmetic": "block0-scalar;blocks1-4-opt0048-fp16-dot4-then-fp32-running-state",
+          "totalQuantumCount": 644,
+          "routes": [
+            {
+              "operationLabel": "block-0-conv-t1",
+              "quantumCount": 92,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-1-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-2-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-3-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-4-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+            }
+          ]
+        },
+        "unrelatedOwners": {
+          "ingress": {
+            "kernelId": "ace-vae-fp16-portable-ingress-v1",
+            "quantumCount": 1
+          },
+          "k1": {
+            "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+            "quantumCount": 819
+          },
+          "snake": {
+            "kernelId": "ace-vae-fp16-portable-snake-v1",
+            "quantumCount": 1611
+          },
+          "add": {
+            "kernelId": "ace-vae-fp16-portable-add-v1",
+            "quantumCount": 690
+          },
+          "unchanged": true
+        },
+        "benchmarkPrivateCompleteSameArithmeticOverride": false
+      },
+      "ownerLifecycle": {
+        "arm": "rev7-candidate",
+        "packageRevision": 7,
+        "packageManifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+        "phaseBackendAndBuffersDestroyedBeforeNextOwner": true,
+        "idempotentDestroyPromises": true,
+        "liveOwnersAfterDestroy": 0,
+        "ownerLifetimeWallMs": 4240.899999976158
+      },
+      "arm": "rev7-candidate",
+      "measured": true,
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983040,
+        "minimum": -0.9416432976722717,
+        "maximum": 0.9587961435317993,
+        "peak": 0.9587961435317993,
+        "firstFrameFinite": 1,
+        "lastFrameFinite": 1
+      },
+      "timing": {
+        "ownerSetupWallMs": 244.89999997615814,
+        "outerWindowWallMs": 3979.899999976158,
+        "k7FamilySubmitThroughDrainMs": 2045.9000002145767,
+        "convTransposeFamilySubmitThroughDrainMs": 184.89999997615814,
+        "decoderSubmitThroughDrainMs": 3779.7000004053116,
+        "decoderCommandBufferCount": 123,
+        "totalCommandBufferCount": 124,
+        "queueDrainCount": 124,
+        "requestedCooperativeIdleMs": 123
+      },
+      "familyProfile": {
+        "windowIndex": 0,
+        "inputFrames": 512,
+        "quantaPerCommandBuffer": 64,
+        "decoderBatchCount": 123,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 3779.7000004053116,
+        "homogeneousBatchCount": 68,
+        "homogeneousQuantumCount": 4352,
+        "homogeneousSubmitThroughDrainMs": 2400,
+        "mixedBatchCount": 55,
+        "mixedQuantumCount": 3503,
+        "mixedSubmitThroughDrainMs": 1379.7000004053116,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 52,
+            "quantumCount": 3328,
+            "submitThroughDrainMs": 2045.9000002145767
+          },
+          "k1-conv1d": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 56.39999985694885
+          },
+          "conv-transpose1d": {
+            "batchCount": 6,
+            "quantumCount": 384,
+            "submitThroughDrainMs": 184.89999997615814
+          },
+          "snake": {
+            "batchCount": 4,
+            "quantumCount": 256,
+            "submitThroughDrainMs": 92.69999992847443
+          },
+          "add": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 20.100000023841858
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "outputSha256": "84a908b8aa9cc6656b967226de69f51046c109065d38ec07599d8d2165c93564",
+      "comparisonToUntimedReference": {
+        "comparedU32WordCount": 1966080,
+        "u32MismatchCount": 0,
+        "firstU32MismatchIndex": null,
+        "comparedU16WordCount": 3932160,
+        "u16MismatchCount": 0,
+        "firstU16MismatchIndex": null,
+        "rawU32Exact": true,
+        "rawU16Exact": true
+      },
+      "topology": {
+        "arm": "rev7-candidate",
+        "runtimeProfileId": "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+        "kernelSetId": "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1",
+        "runtimeProfileRole": "authenticated-runtime-profile",
+        "effectiveK7Arithmetic": "selected-label-increasing-k-cin4-fp16-dot4-then-fp32-running-state",
+        "operationCount": 88,
+        "graphQuantumCount": 7854,
+        "sequenceQuantumCount": 7855,
+        "kernelQuantumCounts": {
+          "ace-vae-fp16-portable-ingress-v1": 1,
+          "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 730,
+          "ace-vae-fp16-portable-snake-v1": 1611,
+          "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 92,
+          "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1": 3360,
+          "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+          "ace-vae-fp16-portable-add-v1": 690,
+          "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1": 276,
+          "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1": 276
+        },
+        "k7": {
+          "totalQuantumCount": 4090,
+          "selectedOperationCount": 12,
+          "selectedQuantumCount": 3360,
+          "unchangedNativeOperationCount": 5,
+          "unchangedNativeQuantumCount": 730,
+          "selectedKernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1",
+          "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "routes": [
+            {
+              "operationLabel": "conv1",
+              "quantumCount": 2,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-1-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-2-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-3-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-1-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-2-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-3-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-opt-0051-k4-row-reuse-16x64-fp16-dot4-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "conv2",
+              "quantumCount": 8,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            }
+          ]
+        },
+        "convTranspose": {
+          "effectiveArithmetic": "block0-scalar;blocks1-4-opt0048-fp16-dot4-then-fp32-running-state",
+          "totalQuantumCount": 644,
+          "routes": [
+            {
+              "operationLabel": "block-0-conv-t1",
+              "quantumCount": 92,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-1-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-2-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r4c8-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-3-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+            },
+            {
+              "operationLabel": "block-4-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-opt-0048-vae-convtranspose-r8c4-fp16-k4-partials-v1"
+            }
+          ]
+        },
+        "unrelatedOwners": {
+          "ingress": {
+            "kernelId": "ace-vae-fp16-portable-ingress-v1",
+            "quantumCount": 1
+          },
+          "k1": {
+            "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+            "quantumCount": 819
+          },
+          "snake": {
+            "kernelId": "ace-vae-fp16-portable-snake-v1",
+            "quantumCount": 1611
+          },
+          "add": {
+            "kernelId": "ace-vae-fp16-portable-add-v1",
+            "quantumCount": 690
+          },
+          "unchanged": true
+        },
+        "benchmarkPrivateCompleteSameArithmeticOverride": false
+      },
+      "ownerLifecycle": {
+        "arm": "rev7-candidate",
+        "packageRevision": 7,
+        "packageManifestSha256": "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7",
+        "phaseBackendAndBuffersDestroyedBeforeNextOwner": true,
+        "idempotentDestroyPromises": true,
+        "liveOwnersAfterDestroy": 0,
+        "ownerLifetimeWallMs": 4130.199999928474
+      },
+      "arm": "rev7-candidate",
+      "measured": true,
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983040,
+        "minimum": -0.9416432976722717,
+        "maximum": 0.9587961435317993,
+        "peak": 0.9587961435317993,
+        "firstFrameFinite": 1,
+        "lastFrameFinite": 1
+      },
+      "timing": {
+        "ownerSetupWallMs": 195.5,
+        "outerWindowWallMs": 3917.5,
+        "k7FamilySubmitThroughDrainMs": 2047.9000005722046,
+        "convTransposeFamilySubmitThroughDrainMs": 207.39999985694885,
+        "decoderSubmitThroughDrainMs": 3725.5000001192093,
+        "decoderCommandBufferCount": 123,
+        "totalCommandBufferCount": 124,
+        "queueDrainCount": 124,
+        "requestedCooperativeIdleMs": 123
+      },
+      "familyProfile": {
+        "windowIndex": 0,
+        "inputFrames": 512,
+        "quantaPerCommandBuffer": 64,
+        "decoderBatchCount": 123,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 3725.5000001192093,
+        "homogeneousBatchCount": 68,
+        "homogeneousQuantumCount": 4352,
+        "homogeneousSubmitThroughDrainMs": 2354.100000500679,
+        "mixedBatchCount": 55,
+        "mixedQuantumCount": 3503,
+        "mixedSubmitThroughDrainMs": 1371.3999996185303,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 52,
+            "quantumCount": 3328,
+            "submitThroughDrainMs": 2047.9000005722046
+          },
+          "k1-conv1d": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 53.300000071525574
+          },
+          "conv-transpose1d": {
+            "batchCount": 6,
+            "quantumCount": 384,
+            "submitThroughDrainMs": 207.39999985694885
+          },
+          "snake": {
+            "batchCount": 4,
+            "quantumCount": 256,
+            "submitThroughDrainMs": 27.09999990463257
+          },
+          "add": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 18.40000009536743
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "outputSha256": "893d7c7b3e2b389afbcbe781e76ee24d9f6cd29f90e88311447f26c49c07af47",
+      "comparisonToUntimedReference": {
+        "comparedU32WordCount": 1966080,
+        "u32MismatchCount": 0,
+        "firstU32MismatchIndex": null,
+        "comparedU16WordCount": 3932160,
+        "u16MismatchCount": 0,
+        "firstU16MismatchIndex": null,
+        "rawU32Exact": true,
+        "rawU16Exact": true
+      },
+      "topology": {
+        "arm": "rev6-scalar",
+        "runtimeProfileId": "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
+        "kernelSetId": "opt-0040-vae-fp16-fixed32-exact-packed-shape-selected-kernel-set-v1",
+        "runtimeProfileRole": "authenticated-runtime-profile",
+        "effectiveK7Arithmetic": "scalar-fp32",
+        "operationCount": 88,
+        "graphQuantumCount": 7854,
+        "sequenceQuantumCount": 7855,
+        "kernelQuantumCounts": {
+          "ace-vae-fp16-portable-ingress-v1": 1,
+          "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1": 4090,
+          "ace-vae-fp16-portable-snake-v1": 1611,
+          "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1": 368,
+          "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1": 819,
+          "ace-vae-fp16-portable-add-v1": 690,
+          "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1": 276
+        },
+        "k7": {
+          "totalQuantumCount": 4090,
+          "selectedOperationCount": 12,
+          "selectedQuantumCount": 3360,
+          "unchangedNativeOperationCount": 5,
+          "unchangedNativeQuantumCount": 730,
+          "selectedKernelId": null,
+          "nativeKernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1",
+          "routes": [
+            {
+              "operationLabel": "conv1",
+              "quantumCount": 2,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-1-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-2-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-0-res-3-conv1",
+              "quantumCount": 160,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-1-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-2-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-1-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-2-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-3-res-3-conv1",
+              "quantumCount": 240,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-1-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-2-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "block-4-res-3-conv1",
+              "quantumCount": 480,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            },
+            {
+              "operationLabel": "conv2",
+              "quantumCount": 8,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-k7-conv1d-v1"
+            }
+          ]
+        },
+        "convTranspose": {
+          "effectiveArithmetic": "scalar-fp32",
+          "totalQuantumCount": 644,
+          "routes": [
+            {
+              "operationLabel": "block-0-conv-t1",
+              "quantumCount": 92,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-1-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-2-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-3-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+            },
+            {
+              "operationLabel": "block-4-conv-t1",
+              "quantumCount": 138,
+              "kernelId": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1"
+            }
+          ]
+        },
+        "unrelatedOwners": {
+          "ingress": {
+            "kernelId": "ace-vae-fp16-portable-ingress-v1",
+            "quantumCount": 1
+          },
+          "k1": {
+            "kernelId": "opt-0025-vae-k1-fp16-fixed32-subgroup-gemm-v1",
+            "quantumCount": 819
+          },
+          "snake": {
+            "kernelId": "ace-vae-fp16-portable-snake-v1",
+            "quantumCount": 1611
+          },
+          "add": {
+            "kernelId": "ace-vae-fp16-portable-add-v1",
+            "quantumCount": 690
+          },
+          "unchanged": true
+        },
+        "benchmarkPrivateCompleteSameArithmeticOverride": false
+      },
+      "ownerLifecycle": {
+        "arm": "rev6-scalar",
+        "packageRevision": 6,
+        "packageManifestSha256": "94a1ae61354f7481facbb9787d003488ab1bc351a137fd2bd7ff69dd99aef949",
+        "phaseBackendAndBuffersDestroyedBeforeNextOwner": true,
+        "idempotentDestroyPromises": true,
+        "liveOwnersAfterDestroy": 0,
+        "ownerLifetimeWallMs": 6862.300000071526
+      },
+      "arm": "rev6-scalar",
+      "measured": true,
+      "scan": {
+        "elementCount": 1966080,
+        "byteLength": 7864320,
+        "nonFiniteCount": 0,
+        "nonzeroCount": 1966080,
+        "stereoDifferenceFrameCount": 983039,
+        "minimum": -0.9420424103736877,
+        "maximum": 0.9584733843803406,
+        "peak": 0.9584733843803406,
+        "firstFrameFinite": 1,
+        "lastFrameFinite": 1
+      },
+      "timing": {
+        "ownerSetupWallMs": 207.30000007152557,
+        "outerWindowWallMs": 6637,
+        "k7FamilySubmitThroughDrainMs": 3990.2999999523163,
+        "convTransposeFamilySubmitThroughDrainMs": 397.40000009536743,
+        "decoderSubmitThroughDrainMs": 6445.599999785423,
+        "decoderCommandBufferCount": 123,
+        "totalCommandBufferCount": 124,
+        "queueDrainCount": 124,
+        "requestedCooperativeIdleMs": 123
+      },
+      "familyProfile": {
+        "windowIndex": 0,
+        "inputFrames": 512,
+        "quantaPerCommandBuffer": 64,
+        "decoderBatchCount": 123,
+        "decoderQuantumCount": 7855,
+        "decoderSubmitThroughDrainMs": 6445.599999785423,
+        "homogeneousBatchCount": 68,
+        "homogeneousQuantumCount": 4352,
+        "homogeneousSubmitThroughDrainMs": 4560.700000166893,
+        "mixedBatchCount": 55,
+        "mixedQuantumCount": 3503,
+        "mixedSubmitThroughDrainMs": 1884.8999996185303,
+        "families": {
+          "k7-conv1d": {
+            "batchCount": 52,
+            "quantumCount": 3328,
+            "submitThroughDrainMs": 3990.2999999523163
+          },
+          "k1-conv1d": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 56.800000071525574
+          },
+          "conv-transpose1d": {
+            "batchCount": 6,
+            "quantumCount": 384,
+            "submitThroughDrainMs": 397.40000009536743
+          },
+          "snake": {
+            "batchCount": 4,
+            "quantumCount": 256,
+            "submitThroughDrainMs": 19.899999976158142
+          },
+          "add": {
+            "batchCount": 3,
+            "quantumCount": 192,
+            "submitThroughDrainMs": 96.30000007152557
+          }
+        }
+      }
+    }
+  ],
+  "deterministic": {
+    "passed": true
+  },
+  "numericalEnvelopeAgainstRevision6Scalar": [
+    {
+      "joint": {
+        "count": 1966080,
+        "nrmse": 0.0015684427168221327,
+        "snrDb": 56.090626762434,
+        "pearson": 0.9999987699871865,
+        "relativeRmsDrift": 0.0000011019845389320056,
+        "relativeEnergyDrift": 0.000002203967863527171,
+        "relativePeakDrift": 0.000336742946354641,
+        "relativeDcOffsetDrift": 0.0000020724293023343167,
+        "relativeMaximumAbsoluteError": 0.0038859529685460943,
+        "maximumAbsoluteError": 0.0037245824933052063,
+        "controlRms": 0.16239398088862908,
+        "candidateRms": 0.16239380193297293,
+        "controlPeak": 0.9584733843803406,
+        "candidatePeak": 0.9587961435317993,
+        "controlMean": -0.0004063913983484597,
+        "candidateMean": -0.0004060548483039434,
+        "finite": true,
+        "passed": true
+      },
+      "left": {
+        "count": 983040,
+        "nrmse": 0.0015342902552414296,
+        "snrDb": 56.28184946581954,
+        "pearson": 0.9999988229094495,
+        "relativeRmsDrift": 5.961118658326742e-7,
+        "relativeEnergyDrift": 0.0000011922233762732618,
+        "relativePeakDrift": 0.000336742946354641,
+        "relativeDcOffsetDrift": 0.0000022695852403901888,
+        "relativeMaximumAbsoluteError": 0.003504940606690768,
+        "maximumAbsoluteError": 0.003359392285346985,
+        "controlRms": 0.17059490475582553,
+        "candidateRms": 0.17059480306217856,
+        "controlPeak": 0.9584733843803406,
+        "candidatePeak": 0.9587961435317993,
+        "controlMean": -0.0013069943129626746,
+        "candidateMean": -0.001306607133284755,
+        "finite": true,
+        "passed": true
+      },
+      "right": {
+        "count": 983040,
+        "nrmse": 0.0016094903523344473,
+        "snrDb": 55.86623244468659,
+        "pearson": 0.9999987047577804,
+        "relativeRmsDrift": 0.0000017247262737493206,
+        "relativeEnergyDrift": 0.000003449449572753394,
+        "relativePeakDrift": 0.0003765079594383436,
+        "relativeDcOffsetDrift": 0.0000018595691962373533,
+        "relativeMaximumAbsoluteError": 0.004171502913630876,
+        "maximumAbsoluteError": 0.0037245824933052063,
+        "controlRms": 0.15375626338157156,
+        "candidateRms": 0.15375599819410435,
+        "controlPeak": 0.8928634524345398,
+        "candidatePeak": 0.893199622631073,
+        "controlMean": 0.0004942115162657551,
+        "candidateMean": 0.000494497436676868,
+        "finite": true,
+        "passed": true
+      }
+    },
+    {
+      "joint": {
+        "count": 1966080,
+        "nrmse": 0.0015684427168221327,
+        "snrDb": 56.090626762434,
+        "pearson": 0.9999987699871865,
+        "relativeRmsDrift": 0.0000011019845389320056,
+        "relativeEnergyDrift": 0.000002203967863527171,
+        "relativePeakDrift": 0.000336742946354641,
+        "relativeDcOffsetDrift": 0.0000020724293023343167,
+        "relativeMaximumAbsoluteError": 0.0038859529685460943,
+        "maximumAbsoluteError": 0.0037245824933052063,
+        "controlRms": 0.16239398088862908,
+        "candidateRms": 0.16239380193297293,
+        "controlPeak": 0.9584733843803406,
+        "candidatePeak": 0.9587961435317993,
+        "controlMean": -0.0004063913983484597,
+        "candidateMean": -0.0004060548483039434,
+        "finite": true,
+        "passed": true
+      },
+      "left": {
+        "count": 983040,
+        "nrmse": 0.0015342902552414296,
+        "snrDb": 56.28184946581954,
+        "pearson": 0.9999988229094495,
+        "relativeRmsDrift": 5.961118658326742e-7,
+        "relativeEnergyDrift": 0.0000011922233762732618,
+        "relativePeakDrift": 0.000336742946354641,
+        "relativeDcOffsetDrift": 0.0000022695852403901888,
+        "relativeMaximumAbsoluteError": 0.003504940606690768,
+        "maximumAbsoluteError": 0.003359392285346985,
+        "controlRms": 0.17059490475582553,
+        "candidateRms": 0.17059480306217856,
+        "controlPeak": 0.9584733843803406,
+        "candidatePeak": 0.9587961435317993,
+        "controlMean": -0.0013069943129626746,
+        "candidateMean": -0.001306607133284755,
+        "finite": true,
+        "passed": true
+      },
+      "right": {
+        "count": 983040,
+        "nrmse": 0.0016094903523344473,
+        "snrDb": 55.86623244468659,
+        "pearson": 0.9999987047577804,
+        "relativeRmsDrift": 0.0000017247262737493206,
+        "relativeEnergyDrift": 0.000003449449572753394,
+        "relativePeakDrift": 0.0003765079594383436,
+        "relativeDcOffsetDrift": 0.0000018595691962373533,
+        "relativeMaximumAbsoluteError": 0.004171502913630876,
+        "maximumAbsoluteError": 0.0037245824933052063,
+        "controlRms": 0.15375626338157156,
+        "candidateRms": 0.15375599819410435,
+        "controlPeak": 0.8928634524345398,
+        "candidatePeak": 0.893199622631073,
+        "controlMean": 0.0004942115162657551,
+        "candidateMean": 0.000494497436676868,
+        "finite": true,
+        "passed": true
+      }
+    }
+  ],
+  "numericalEnvelopeAuthority": "OPT-0044-unchanged-from-OPT-0024",
+  "numericalPassed": true,
+  "performance": {
+    "forward": {
+      "order": "AB",
+      "k7Speedup": 1.9533212765881018,
+      "convTransposeSpeedup": 2.095186587485729,
+      "decoderSpeedup": 1.6984416750894102,
+      "outerWindowSpeedup": 1.6610718862622103,
+      "k7Improved": true,
+      "convTransposeImproved": true,
+      "decoderNoRegression": true,
+      "outerWindowNoRegression": true
+    },
+    "reverse": {
+      "order": "BA",
+      "k7Speedup": 1.9484838121184553,
+      "convTransposeSpeedup": 1.9161041483580923,
+      "decoderSpeedup": 1.7301301837549794,
+      "outerWindowSpeedup": 1.6941927249521378,
+      "k7Improved": true,
+      "convTransposeImproved": true,
+      "decoderNoRegression": true,
+      "outerWindowNoRegression": true
+    },
+    "aggregate": {
+      "medianK7Speedup": 1.95090136269679,
+      "requiredMedianK7Speedup": 1.5,
+      "medianK7Passed": true,
+      "medianConvTransposeSpeedup": 2.0005098149513043,
+      "requiredMedianConvTransposeSpeedup": 1.3,
+      "medianConvTransposePassed": true,
+      "medianDecoderSpeedup": 1.7141715076094104,
+      "medianOuterWindowSpeedup": 1.6775014561925903
+    },
+    "outerWindowWallGatingNoRegression": true,
+    "passed": true
+  },
+  "performanceGate": {
+    "requiresBothDirectionsToImproveHomogeneousK7Wall": true,
+    "requiredMedianK7Speedup": 1.5,
+    "requiresBothDirectionsToImproveHomogeneousConvTransposeWall": true,
+    "requiredMedianConvTransposeSpeedup": 1.3,
+    "requiresNoCompleteDecoderRegressionInBothPairedOrders": true,
+    "requiresNoOuterWindowRegressionInBothPairedOrders": true,
+    "passed": true
+  },
+  "ownership": {
+    "active": null,
+    "liveOwners": 0,
+    "peakLiveOwners": 1,
+    "maximumAllowedLiveOwners": 1,
+    "created": {
+      "rev6-scalar": 4,
+      "rev6-same-arithmetic-oracle": 2,
+      "rev7-candidate": 4
+    },
+    "destroyed": {
+      "rev6-scalar": 4,
+      "rev6-same-arithmetic-oracle": 2,
+      "rev7-candidate": 4
+    },
+    "createdOwnerCount": 10,
+    "destroyedOwnerCount": 10,
+    "noLiveOwners": true,
+    "allCreatedOwnersDestroyed": true,
+    "everyBackendDestroyIdempotent": true
+  },
+  "runtimeEvents": [],
+  "productionDefaultChanged": false,
+  "productSelectionAuthorized": false,
+  "listeningApprovalStillRequired": true,
+  "under60SecondClaim": false,
+  "cleanup": {
+    "passed": true,
+    "reason": {
+      "name": "AbortError",
+      "message": "OPT-0066 comparison complete",
+      "code": 20
+    },
+    "ownerStateBeforeDeviceDestroy": {
+      "active": null,
+      "liveOwners": 0,
+      "peakLiveOwners": 1,
+      "maximumAllowedLiveOwners": 1,
+      "created": {
+        "rev6-scalar": 4,
+        "rev6-same-arithmetic-oracle": 2,
+        "rev7-candidate": 4
+      },
+      "destroyed": {
+        "rev6-scalar": 4,
+        "rev6-same-arithmetic-oracle": 2,
+        "rev7-candidate": 4
+      },
+      "createdOwnerCount": 10,
+      "destroyedOwnerCount": 10,
+      "noLiveOwners": true,
+      "allCreatedOwnersDestroyed": true,
+      "everyBackendDestroyIdempotent": true
+    },
+    "ownerStateAfterDeviceDestroy": {
+      "active": null,
+      "liveOwners": 0,
+      "peakLiveOwners": 1,
+      "maximumAllowedLiveOwners": 1,
+      "created": {
+        "rev6-scalar": 4,
+        "rev6-same-arithmetic-oracle": 2,
+        "rev7-candidate": 4
+      },
+      "destroyed": {
+        "rev6-scalar": 4,
+        "rev6-same-arithmetic-oracle": 2,
+        "rev7-candidate": 4
+      },
+      "createdOwnerCount": 10,
+      "destroyedOwnerCount": 10,
+      "noLiveOwners": true,
+      "allCreatedOwnersDestroyed": true,
+      "everyBackendDestroyIdempotent": true
+    },
+    "allWeightPhasesBackendsActivationControlAndReadbackDestroyed": true,
+    "deviceContextDestroyed": true,
+    "wallMs": 0.10000002384185791,
+    "completedAtEpochMilliseconds": 1786851534509
+  }
+}

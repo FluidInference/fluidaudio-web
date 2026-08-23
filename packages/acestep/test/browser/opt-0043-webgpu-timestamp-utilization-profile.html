@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPT-0043 WebGPU timestamp utilization profile</title>
+  <style>
+    body { font: 14px system-ui; margin: 24px; max-width: 960px; }
+    button { font: inherit; padding: 8px 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-status="preparing">
+  <h1>OPT-0043 WebGPU timestamp utilization profile</h1>
+  <p id="progress">preparing the unchanged OPT-0009/OPT-0032 correctness fixtures…</p>
+  <p>After READY, leave the machine nominal and idle for 30 seconds. Start the external coarse AGX utilization logger, then click once; external samples must remain outside every browser timing fence.</p>
+  <button id="run" type="button" disabled>Run balanced GPU timestamp profile</button>
+  <pre id="result"></pre>
+  <script type="module" src="./opt-0043-webgpu-timestamp-utilization-profile.ts"></script>
+</body>
+</html>

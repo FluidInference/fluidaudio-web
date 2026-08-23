@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0023 production C4500 VAE family profile</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; }
+      p { max-width: 82rem; }
+      fieldset { display: grid; gap: 0.45rem; max-width: 70rem; margin-block: 1rem; }
+      label { display: grid; grid-template-columns: 34rem 1fr; gap: 0.5rem; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0023 current-production C4500 VAE family profile</h1>
+    <p>
+      This dedicated worker authenticates and loads only the converter-revision-5
+      native FP16 VAE package, compiles the unchanged OPT-0015 fixed32 K7 plus
+      congruent ConvTranspose backend, and runs one untimed C512 warmup. The
+      measured run is the complete production C512/64 stream for 4,500 latent
+      frames: C448 + 10×C512 + C340, producing 180 seconds of raw stereo FP32.
+    </p>
+    <p>
+      Start the external 1,000 ms thermal logger before preparation. After the
+      warmup, enter the fresh continuous 30-second nominal-gate slice and run
+      once. Keep that same trace running through raw-file hashing and cleanup,
+      then enter its final summary. There is no thermal retry, normalization,
+      WAV conversion, listening gate, or full product generation under this ID.
+      Preserve every raw <code>notifyutil -g
+      com.apple.system.thermalpressurelevel</code> observation; its exact output
+      grammar is <code>com.apple.system.thermalpressurelevel &lt;integer&gt;</code>.
+      A missing key, missing/non-integer level, or level other than 0 in the
+      fresh gate invalidates launch. Each JSONL row must retain a stable
+      observation index, the absolute target epoch, the actual observed epoch,
+      and that exact keyed payload; derive cadence and maximum gap from those
+      timestamps rather than a drifting relative sleep.
+    </p>
+    <p>
+      Supply coreCommit, harnessCommit, machineModel, osVersion, osBuild,
+      browserVersion, gpuCoreCount, and memoryBytes in the URL query.
+    </p>
+
+    <button id="prepare" type="button">Prepare exact VAE-only runtime</button>
+    <div id="progress" role="status" aria-live="polite">idle</div>
+
+    <fieldset id="thermal-gate" disabled>
+      <legend>Fresh post-warmup nominal gate from the continuing trace</legend>
+      <label>
+        Source
+        <input name="thermalSource" value="notifyutil-com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Exact command
+        <input name="thermalCommand" value="notifyutil -g com.apple.system.thermalpressurelevel" readonly />
+      </label>
+      <label>
+        Full trace start (epoch ms)
+        <input name="thermalTraceStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Full trace start observation index (zero based)
+        <input name="thermalTraceStartObservationIndex" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Fresh gate start (epoch ms; must be after warmup)
+        <input name="thermalGateStartedAtEpochMilliseconds" inputmode="decimal" />
+      </label>
+      <label>
+        Fresh gate start observation index (zero based)
+        <input name="thermalGateStartObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Gate completion observation (epoch ms; required from logger)
+        <input name="thermalGateCompletedAtEpochMilliseconds" inputmode="decimal" required />
+      </label>
+      <label>
+        Gate completion observation index (zero based)
+        <input name="thermalGateCompletedObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Gate observation count
+        <input name="thermalGateObservations" inputmode="numeric" value="31" />
+      </label>
+      <label>
+        Poll interval (ms)
+        <input name="thermalPollMilliseconds" inputmode="numeric" value="1000" readonly />
+      </label>
+      <label>
+        Gate maximum poll gap (ms)
+        <input name="thermalGateMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Gate non-nominal observations
+        <input name="thermalGateNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Gate missing observations
+        <input name="thermalGateMissingObservations" inputmode="numeric" value="0" />
+      </label>
+      <button id="run" type="button" disabled>Run the one full C4500 stream</button>
+    </fieldset>
+
+    <fieldset id="thermal-completion" disabled>
+      <legend>Same full trace through raw validation and cleanup</legend>
+      <label>
+        Raw JSONL SHA-256
+        <input name="thermalTraceSha256" spellcheck="false" />
+      </label>
+      <label>
+        Raw JSONL byte length
+        <input name="thermalTraceByteLength" inputmode="numeric" />
+      </label>
+      <label>
+        Trace completion observation (epoch ms; required from logger)
+        <input name="thermalTraceCompletedAtEpochMilliseconds" inputmode="decimal" required />
+      </label>
+      <label>
+        Trace completion observation index (zero based)
+        <input name="thermalTraceCompletedObservationIndex" inputmode="numeric" />
+      </label>
+      <label>
+        Full trace observation count
+        <input name="thermalTraceObservations" inputmode="numeric" />
+      </label>
+      <label>
+        Full trace maximum poll gap (ms)
+        <input name="thermalTraceMaximumPollGapMilliseconds" inputmode="decimal" value="1000" />
+      </label>
+      <label>
+        Full trace non-nominal observations
+        <input name="thermalTraceNonNominalObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Full trace missing observations
+        <input name="thermalTraceMissingObservations" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Full trace initial level (first observation)
+        <input name="thermalTraceInitialLevel" inputmode="numeric" value="0" />
+      </label>
+      <label>
+        Transitions JSON ([{"atEpochMilliseconds":…,"level":…}])
+        <input name="thermalTraceTransitionsJson" value="[]" spellcheck="false" />
+      </label>
+      <button id="finalize" type="button" disabled>Finalize compact receipt without retry</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0023-vae-c4500-production-family-profile.json">
+      Download full authenticated raw receipt
+    </a>
+    <script type="module" src="./opt-0023-vae-c4500-production-family-profile.ts"></script>
+  </body>
+</html>

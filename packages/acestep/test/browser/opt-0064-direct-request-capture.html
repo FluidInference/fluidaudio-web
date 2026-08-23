@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACE OPT-0064 direct-request capture gate</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+      body { margin: 1rem; max-width: 84rem; }
+      textarea { box-sizing: border-box; display: block; min-height: 9rem; width: 100%; }
+      fieldset { margin: 1rem 0; }
+      #result { overflow-wrap: anywhere; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body data-status="idle">
+    <h1>OPT-0064 — capture-only direct warm-request attribution</h1>
+    <p>
+      Prime the exact production packages in the ordinary demo first. This
+      gate is cache-only: a missing shard fails instead of downloading during
+      the measurement. The request is the accepted 12-second direct
+      instrumental c0ffee fixture and must reproduce its exact WAV SHA-256.
+    </p>
+    <p>
+      “Prepare static authority” validates only the run identity and frozen
+      request. It performs no package acquisition, WebGPU device request, or
+      GPU work. After static READY, start a fresh continuous 1-second
+      <code>notifyutil -g com.apple.system.thermalpressurelevel</code> poll.
+      Keep it running through the explicit Run button, output release, backend
+      cleanup, and device disposal.
+    </p>
+    <p>
+      Run captures the unchanged request from warm-cache authentication through
+      direct uploads, pipeline/graph construction, execution, bounded WAV
+      finalization, and cleanup. It neither tries mapped-at-creation upload nor
+      overlaps package authentication or heavyweight GPU phases. Capture is
+      observational and the ordinary provenance trace remains disabled.
+    </p>
+    <details>
+      <summary>Thermal JSON contract</summary>
+      <p>
+        The gate object uses <code>source</code>, <code>command</code>,
+        <code>startedAtEpochMilliseconds</code>,
+        <code>completedAtEpochMilliseconds</code>,
+        <code>observationCount</code>,
+        <code>maximumPollGapMilliseconds</code>,
+        <code>nonNominalObservationCount</code> (zero), and
+        <code>observations</code>. Each observation is
+        <code>{"atEpochMilliseconds": ..., "level": 0, "rawValue": "0"}</code>.
+        Supply at least 31 observations over at least 30 seconds with no gap
+        above 1,250 ms, and paste it within five seconds of its last sample.
+      </p>
+      <p>
+        The final trace repeats the exact gate observations as its prefix and
+        continues through cleanup. It adds a lowercase 64-hex
+        <code>rawTraceSha256</code> and <code>transitions</code>, containing the
+        first observation plus every later level change. Its non-nominal count
+        may disclose post-start thermal pressure; it is never silently retried.
+      </p>
+    </details>
+    <button id="prepare" type="button">Prepare static authority</button>
+    <div id="progress" role="status" aria-live="polite">
+      idle — no package, device, or GPU work
+    </div>
+
+    <fieldset>
+      <legend>Fresh nominal ≥30-second pre-gate JSON (keep poll running)</legend>
+      <textarea id="thermal-gate-json" disabled spellcheck="false"></textarea>
+      <button id="run" type="button" disabled>Run one capture-only request</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Same poll's complete trace through cleanup/device disposal JSON</legend>
+      <textarea id="thermal-trace-json" disabled spellcheck="false"></textarea>
+      <button id="finalize" type="button" disabled>Authenticate full trace</button>
+    </fieldset>
+
+    <pre id="result">not run</pre>
+    <a id="download" hidden download="opt-0064-direct-request-capture.json">
+      Download receipt
+    </a>
+    <script type="module" src="./opt-0064-direct-request-capture.ts"></script>
+  </body>
+</html>

@@ -12,13 +12,19 @@ export function hfUrl(repo: string, path: string, revision = "main"): string {
   return `${HF_BASE}/${repo}/resolve/${revision}/${path}`;
 }
 
-/** Fetch a single URL as bytes, using the Cache API and streaming progress. */
-export async function fetchCached(url: string, onProgress?: ProgressCb, label = url): Promise<Uint8Array> {
+/**
+ * Fetch a single URL as bytes, using the Cache API and streaming progress.
+ * `opts.skipCache` bypasses the cache entirely — for mutable URLs (e.g. local
+ * dev exports that change when an extractor re-runs), where a stale cached
+ * manifest could silently pair with fresh sibling files.
+ */
+export async function fetchCached(url: string, onProgress?: ProgressCb, label = url, opts?: { skipCache?: boolean }): Promise<Uint8Array> {
   // Cache API is best-effort: opening/matching/putting can throw (quota, or the
   // per-entry size limit — a 600 MB weight file exceeds it in Chrome), and that
   // must never fail the load.
   let cache: Cache | null = null;
   try {
+    if (opts?.skipCache) throw new Error("skip");
     cache = await caches.open(CACHE_NAME);
     const hit = await cache.match(url);
     if (hit) return new Uint8Array(await hit.arrayBuffer());
@@ -31,6 +37,12 @@ export async function fetchCached(url: string, onProgress?: ProgressCb, label = 
   // page-level <meta name="referrer"> covers third-party libs; this covers ours.
   const res = await fetch(url, { referrerPolicy: "no-referrer" });
   if (!res.ok || !res.body) throw new Error(`fetch ${url} → ${res.status}`);
+  // SPA hosts (e.g. Cloudflare single-page-application fallback) answer missing
+  // assets with index.html + HTTP 200; caching that would poison the model
+  // cache until the user clears site storage.
+  if ((res.headers.get("content-type") || "").includes("text/html")) {
+    throw new Error(`fetch ${url} → HTML instead of a model asset (file not deployed?)`);
+  }
 
   const total = Number(res.headers.get("content-length") || 0);
   const reader = res.body.getReader();

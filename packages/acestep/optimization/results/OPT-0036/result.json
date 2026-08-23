@@ -1,0 +1,363 @@
+{
+  "schema": "ace-opt-0036-conv-transpose-reuse-axis-abc-v1",
+  "passed": true,
+  "experimentId": "OPT-0036",
+  "controlKernelId": "ace-vae-fp16-fixed32-subgroup-4row-128channel-conv-transpose1d-v1",
+  "candidateKernelIds": {
+    "rowReuse": "ace-vae-fp16-fixed32-subgroup-32row-128channel-conv-transpose1d-v1",
+    "channelReuse": "ace-vae-fp16-fixed32-subgroup-16row-256channel-conv-transpose1d-v1"
+  },
+  "weightLayout": "conv-transpose1d-phase-tap-input-output-f16-v1",
+  "correctness": {
+    "operationCount": 5,
+    "armCount": 3,
+    "sharedRevision6PolyphaseWeightU16Count": 49610752,
+    "controlOutputU16Count": 141312000,
+    "comparedOutputU16Count": 565248000,
+    "deterministicRerunOutputU16Count": 282624000,
+    "outputMismatchCount": 0,
+    "outputPrefillRemainingCount": 0,
+    "rawU16Exact": true,
+    "completeDeterministicWrites": true,
+    "completedBeforeReady": true,
+    "transientOutputDestroyedCount": 25,
+    "milliseconds": 7559.300000071526
+  },
+  "timing": {
+    "rounds": 6,
+    "order": "all six A/B/C permutations; shape order alternates forward/reverse",
+    "orders": [
+      [
+        "control",
+        "rowReuse",
+        "channelReuse"
+      ],
+      [
+        "control",
+        "channelReuse",
+        "rowReuse"
+      ],
+      [
+        "rowReuse",
+        "control",
+        "channelReuse"
+      ],
+      [
+        "rowReuse",
+        "channelReuse",
+        "control"
+      ],
+      [
+        "channelReuse",
+        "control",
+        "rowReuse"
+      ],
+      [
+        "channelReuse",
+        "rowReuse",
+        "control"
+      ]
+    ],
+    "sampleContract": "one submit and matching queue drain per sample",
+    "milliseconds": 7541.400000095367,
+    "cases": [
+      {
+        "label": "block-0-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 300,
+          "inputChannels": 2048,
+          "outputChannels": 1024,
+          "kernelSize": 20,
+          "stride": 10,
+          "dilation": 1,
+          "padding": 5,
+          "outputPadding": 0
+        },
+        "samplesMilliseconds": {
+          "control": [
+            77,
+            76.89999997615814,
+            63.89999997615814,
+            79.69999992847443,
+            77.10000002384186,
+            78.5
+          ],
+          "rowReuse": [
+            57.200000047683716,
+            55.5,
+            46.10000002384186,
+            58.59999990463257,
+            53.5,
+            46.5
+          ],
+          "channelReuse": [
+            44.5,
+            46.40000009536743,
+            34.300000071525574,
+            43.700000047683716,
+            36.10000002384186,
+            45.200000047683716
+          ]
+        },
+        "mediansMilliseconds": {
+          "control": 77.05000001192093,
+          "rowReuse": 54.5,
+          "channelReuse": 44.10000002384186
+        },
+        "speedups": {
+          "rowReuse": 1.413761468108641,
+          "channelReuse": 1.7471655322055615
+        }
+      },
+      {
+        "label": "block-1-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 3000,
+          "inputChannels": 1024,
+          "outputChannels": 512,
+          "kernelSize": 12,
+          "stride": 6,
+          "dilation": 1,
+          "padding": 3,
+          "outputPadding": 0
+        },
+        "samplesMilliseconds": {
+          "control": [
+            120.69999992847443,
+            119.10000002384186,
+            113.60000002384186,
+            109,
+            114,
+            124.20000004768372
+          ],
+          "rowReuse": [
+            81,
+            86,
+            67.59999990463257,
+            62.700000047683716,
+            89.60000002384186,
+            75.30000007152557
+          ],
+          "channelReuse": [
+            61.5,
+            64,
+            63.60000002384186,
+            52.10000002384186,
+            62.89999997615814,
+            61.60000002384186
+          ]
+        },
+        "mediansMilliseconds": {
+          "control": 116.55000001192093,
+          "rowReuse": 78.15000003576279,
+          "channelReuse": 62.25
+        },
+        "speedups": {
+          "rowReuse": 1.4913627633856128,
+          "channelReuse": 1.872289156818007
+        }
+      },
+      {
+        "label": "block-2-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 18000,
+          "inputChannels": 512,
+          "outputChannels": 256,
+          "kernelSize": 8,
+          "stride": 4,
+          "dilation": 1,
+          "padding": 2,
+          "outputPadding": 0
+        },
+        "samplesMilliseconds": {
+          "control": [
+            112.29999995231628,
+            112.10000002384186,
+            108.80000007152557,
+            103,
+            102,
+            107.09999990463257
+          ],
+          "rowReuse": [
+            73.40000009536743,
+            78.39999997615814,
+            78.60000002384186,
+            76.29999995231628,
+            64.70000004768372,
+            83
+          ],
+          "channelReuse": [
+            45.699999928474426,
+            58.39999997615814,
+            55.700000047683716,
+            57.300000071525574,
+            57.89999997615814,
+            57.5
+          ]
+        },
+        "mediansMilliseconds": {
+          "control": 107.94999998807907,
+          "rowReuse": 77.34999996423721,
+          "channelReuse": 57.40000003576279
+        },
+        "speedups": {
+          "rowReuse": 1.3956043960955369,
+          "channelReuse": 1.8806620195265045
+        }
+      },
+      {
+        "label": "block-3-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 72000,
+          "inputChannels": 256,
+          "outputChannels": 128,
+          "kernelSize": 8,
+          "stride": 4,
+          "dilation": 1,
+          "padding": 2,
+          "outputPadding": 0
+        },
+        "samplesMilliseconds": {
+          "control": [
+            99.20000004768372,
+            94,
+            119.10000002384186,
+            114.29999995231628,
+            118.60000002384186,
+            112.70000004768372
+          ],
+          "rowReuse": [
+            80.5,
+            81.59999990463257,
+            80.79999995231628,
+            84,
+            82,
+            69.19999992847443
+          ],
+          "channelReuse": [
+            106.10000002384186,
+            92.90000009536743,
+            108.09999990463257,
+            105.70000004768372,
+            94.19999992847443,
+            87.80000007152557
+          ]
+        },
+        "mediansMilliseconds": {
+          "control": 113.5,
+          "rowReuse": 81.19999992847443,
+          "channelReuse": 99.94999998807907
+        },
+        "speedups": {
+          "rowReuse": 1.397783252462774,
+          "channelReuse": 1.135567784027384
+        }
+      },
+      {
+        "label": "block-4-conv-t1",
+        "shape": {
+          "batch": 1,
+          "inputFrames": 288000,
+          "inputChannels": 128,
+          "outputChannels": 128,
+          "kernelSize": 4,
+          "stride": 2,
+          "dilation": 1,
+          "padding": 1,
+          "outputPadding": 0
+        },
+        "samplesMilliseconds": {
+          "control": [
+            121.39999997615814,
+            120.39999997615814,
+            97.79999995231628,
+            119.39999997615814,
+            118.20000004768372,
+            118.5
+          ],
+          "rowReuse": [
+            82.20000004768372,
+            81,
+            84.20000004768372,
+            83.59999990463257,
+            77.90000009536743,
+            81.39999997615814
+          ],
+          "channelReuse": [
+            109,
+            111.10000002384186,
+            91.70000004768372,
+            108.60000002384186,
+            108.79999995231628,
+            108.80000007152557
+          ]
+        },
+        "mediansMilliseconds": {
+          "control": 118.94999998807907,
+          "rowReuse": 81.80000001192093,
+          "channelReuse": 108.80000001192093
+        },
+        "speedups": {
+          "rowReuse": 1.4541564788599532,
+          "channelReuse": 1.0932904409471143
+        }
+      }
+    ],
+    "summedMediansMilliseconds": {
+      "control": 534,
+      "rowReuse": 372.99999994039536,
+      "channelReuse": 372.50000005960464
+    },
+    "candidates": [
+      {
+        "arm": "rowReuse",
+        "noSlowerEveryShape": true,
+        "summedMedianSpeedup": 1.4316353889687188,
+        "requiredSummedMedianSpeedup": 1.15,
+        "promotionEligible": true
+      },
+      {
+        "arm": "channelReuse",
+        "noSlowerEveryShape": true,
+        "summedMedianSpeedup": 1.4335570467504788,
+        "requiredSummedMedianSpeedup": 1.15,
+        "promotionEligible": true
+      }
+    ],
+    "fastestArm": "channelReuse",
+    "promotionEligibleArm": "channelReuse"
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "subgroupMinSize": 32,
+      "subgroupMaxSize": 32
+    },
+    "requestedLimits": {
+      "maxBufferSize": 4294967292,
+      "maxStorageBufferBindingSize": 4294967292,
+      "maxComputeWorkgroupsPerDimension": 65535
+    },
+    "deviceLimits": {
+      "maxBufferSize": 4294967292,
+      "maxStorageBufferBindingSize": 4294967292,
+      "maxComputeWorkgroupsPerDimension": 65535
+    },
+    "features": [
+      "core-features-and-limits",
+      "shader-f16",
+      "subgroups"
+    ],
+    "uncapturedErrors": []
+  },
+  "cleanup": {
+    "destroyedBufferCount": 25,
+    "deviceDestroyed": true
+  }
+}

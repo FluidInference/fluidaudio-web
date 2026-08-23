@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["@webgpu/types", "vite/client", "vitest/globals", "node"],
+    "moduleResolution": "Bundler",
+    "paths": {
+      "ace-step-1.5.wgsl": ["./src/index.ts"]
+    },
+    "allowImportingTsExtensions": false,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "test", "vite.config.ts", "vitest.config.ts"],
+  // The OPT-0009 contract tests statically import the pinned sibling
+  // parakeet.wgsl checkout, which is absent in the fluidaudio-web workspace.
+  "exclude": [
+    "dist",
+    "node_modules",
+    "demo",
+    "test/opt-0009-parakeet-gemm-calibration-contract.test.ts",
+    "test/opt-0009-ace-gemm-accumulation-ab-contract.test.ts"
+  ]
+}
