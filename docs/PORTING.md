@@ -82,7 +82,7 @@ to deterministic corruption (proven twice in this repo's history).
 Implement the `Engine` interface (core/types.ts): `load(onProgress)`, one of
 `transcribe/synthesize/diarize/detect`, `dispose()` (MUST
 `ctx.device.destroy()`). Register in `src/engines/registry.ts` — the
-playground, the verify page, and the SDK subpath exports all derive from it
+playground and the SDK subpath exports both derive from it
 (add the subpath in `scripts/build-sdk.mjs` ENGINE_SUBPATHS when SDK-ready).
 Engines must be lazy-importable and safe to construct without WebGPU.
 

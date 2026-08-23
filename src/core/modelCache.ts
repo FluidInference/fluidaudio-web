@@ -31,6 +31,12 @@ export async function fetchCached(url: string, onProgress?: ProgressCb, label = 
   // page-level <meta name="referrer"> covers third-party libs; this covers ours.
   const res = await fetch(url, { referrerPolicy: "no-referrer" });
   if (!res.ok || !res.body) throw new Error(`fetch ${url} → ${res.status}`);
+  // SPA hosts (e.g. Cloudflare single-page-application fallback) answer missing
+  // assets with index.html + HTTP 200; caching that would poison the model
+  // cache until the user clears site storage.
+  if ((res.headers.get("content-type") || "").includes("text/html")) {
+    throw new Error(`fetch ${url} → HTML instead of a model asset (file not deployed?)`);
+  }
 
   const total = Number(res.headers.get("content-length") || 0);
   const reader = res.body.getReader();

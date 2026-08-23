@@ -1,6 +1,6 @@
 # Benchmarks
 
-## Browser results (verify.html — formerly bench.html — real machine, WebGPU: true)
+## Browser results (measured on the since-removed verify.html harness — real machine, WebGPU: true)
 
 12 s sample, `?full=1`, Chrome 150 / macOS, `webgpu: true`. **Warm (cached)** run —
 the steady state after first load; `run` is inference only (measured 2026-08-03):

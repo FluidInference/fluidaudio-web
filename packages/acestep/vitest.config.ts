@@ -28,6 +28,10 @@ const optimizationArtifactsPresent = existsSync(
 
 export default defineConfig({
   test: {
+    // Several kernel-enumeration tests legitimately run >5s (vitest default)
+    // on CI runners; upstream ran without a vitest config and relied on fast
+    // local hardware.
+    testTimeout: 30_000,
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

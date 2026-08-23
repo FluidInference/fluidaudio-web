@@ -13,8 +13,8 @@ import { ENGINES, type EngineEntry } from "./engines/registry.js";
 import { MicCapture } from "./core/mic.js";
 import type { Engine, LoadProgress } from "./core/types.js";
 
-// Engine catalog lives in engines/registry.ts (shared with the verify page) —
-// a new engine registered there appears in both UIs automatically.
+// Engine catalog lives in engines/registry.ts — a new engine registered there
+// appears here automatically.
 const ENTRIES: Record<string, EngineEntry> = Object.fromEntries(ENGINES.map((e) => [e.id, { ...e, label: `${e.label} ✅` }]));
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -67,6 +67,17 @@ for (const [id, e] of Object.entries(ENTRIES)) {
 }
 
 engineSel.value = "asr-parakeet"; // landing default: the ASR demo, not the first registry entry (VAD)
+
+// Prune engines whose availability probe fails (e.g. local-only weights not
+// deployed on this host) — removes the option instead of 404ing at load time.
+void Promise.all(
+  ENGINES.filter((e) => e.available).map(async (e) => {
+    if (await e.available!().catch(() => false)) return;
+    engineSel.querySelector(`option[value="${e.id}"]`)?.remove();
+    delete ENTRIES[e.id];
+    if (engineSel.value === "") engineSel.value = "asr-parakeet";
+  }),
+);
 
 let engine: Engine | null = null;
 function currentEntry(): EngineEntry {

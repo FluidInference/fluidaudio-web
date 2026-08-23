@@ -15,6 +15,7 @@ import {
 } from "ace-step-1.5.wgsl";
 
 import { aceProductionWorkerConfiguration } from "./config.js";
+import { ensureCurrentAceDemoModelCache } from "./model-cache-migration.js";
 import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
 
 export {
@@ -83,6 +84,7 @@ export class AceStepMusicClient {
     if (this.active !== undefined) {
       throw new Error("A generation is already in progress");
     }
+    this.downloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     return await new Promise<AceGenerationResult>((resolve, reject) => {
       this.active = {
         resolve,
@@ -116,6 +118,11 @@ export class AceStepMusicClient {
 
   /** Release the worker's GPU/runtime resources and terminate it. */
   async dispose(): Promise<void> {
+    const active = this.active;
+    if (active !== undefined) {
+      this.active = undefined;
+      active.reject(new DOMException("Client disposed during generation", "AbortError"));
+    }
     const current = this.worker;
     if (current === undefined) return;
     if (!this.workerReady) {
@@ -139,11 +146,22 @@ export class AceStepMusicClient {
   }
 
   private startInitialization(): void {
+    // Stamp/upgrade the OPFS cache generation exactly like the /music page does
+    // — a client that downloads 5.75 GB without the marker would see that cache
+    // wiped the next time the page's migration runs on this origin.
+    ensureCurrentAceDemoModelCache().then(
+      () => this.startInitializationInner(),
+      (error) => this.fail(new Error(`Could not prepare model storage: ${String(error)}`), false),
+    );
+  }
+
+  private startInitializationInner(): void {
     const active = this.active;
     if (active === undefined) return;
     this.worker?.terminate();
     this.workerReady = false;
     this.fatalGpuDiagnostic = false;
+    this.downloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
       name: "ace-step-inference",
@@ -256,6 +274,10 @@ export class AceStepMusicClient {
   }
 
   private fail(reason: Error, resetWorker: boolean): void {
+    if (this.disposal !== undefined) {
+      this.disposal.reject(reason);
+      this.disposal = undefined;
+    }
     const active = this.active;
     this.active = undefined;
     if (resetWorker) {
@@ -268,6 +290,10 @@ export class AceStepMusicClient {
   }
 
   private resetWorker(reason: unknown): void {
+    if (this.disposal !== undefined) {
+      this.disposal.reject(reason instanceof Error ? reason : new Error(String(reason)));
+      this.disposal = undefined;
+    }
     const active = this.active;
     this.active = undefined;
     this.worker?.terminate();

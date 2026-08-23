@@ -2,7 +2,9 @@
 // sample_general.wav and must contain the reference transcript (mobius
 // test_e2e_stt.py CoreML/torch parity: "Hello, do you know what color the sky
 // is"). Weights are LOCAL (scripts/extract-voicechat-stt.py →
-// public/models/voicechat-stt/, gitignored) — run the extractor first.
+// models-local/voicechat-stt/, gitignored) — run the extractor first.
+// Skips (exit 0) when weights are absent so it can sit in CI harmlessly;
+// set VC_SMOKE_REQUIRE=1 to fail instead. VC_SMOKE_WEIGHTS/VC_SMOKE_WAV override paths.
 //   node scripts/ci-smoke-voicechat.mjs [wavPath]
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -16,11 +18,17 @@ import { StreamingMel } from "../src/engines/asr-nemotron/streaming-mel.js";
 import { loadVoicechatDecoder, createVoicechatStream, voicechatDecodeCont } from "../src/engines/asr-voicechat/raw-decoder-voicechat.js";
 import { VOICECHAT_CFG } from "../src/engines/asr-voicechat/config.js";
 
-const W = fileURLToPath(new URL("../public/models/voicechat-stt/", import.meta.url));
-const wavPath = process.argv[2] ?? `${homedir()}/Documents/models/voicechat-11b/Speech/examples/speechlm2/sample_audio/sample_general.wav`;
-if (!existsSync(`${W}encoder-f16.bin`)) {
-  console.error(`missing ${W}encoder-f16.bin — run scripts/extract-voicechat-stt.py first`);
-  process.exit(1);
+const W = process.env.VC_SMOKE_WEIGHTS ?? fileURLToPath(new URL("../models-local/voicechat-stt/", import.meta.url));
+const wavPath =
+  process.argv[2] ?? process.env.VC_SMOKE_WAV ?? `${homedir()}/Documents/models/voicechat-11b/Speech/examples/speechlm2/sample_audio/sample_general.wav`;
+if (!existsSync(`${W}encoder-f16.bin`) || !existsSync(wavPath)) {
+  const missing = existsSync(`${W}encoder-f16.bin`) ? wavPath : `${W}encoder-f16.bin`;
+  if (process.env.VC_SMOKE_REQUIRE === "1") {
+    console.error(`missing ${missing} — run scripts/extract-voicechat-stt.py first`);
+    process.exit(1);
+  }
+  console.log(`VOICECHAT SMOKE SKIPPED (missing ${missing})`);
+  process.exit(0);
 }
 
 const ctx = await createWasmContext(readFileSync(fileURLToPath(new URL("../src/gpu/wasm-kernels.wasm", import.meta.url))));

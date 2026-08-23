@@ -9,13 +9,13 @@
 # the LLM adapter) is deliberately EXCLUDED — the RNNT taps asr_emb directly.
 #
 #   uv run --with safetensors,numpy,sentencepiece python3 scripts/extract-voicechat-stt.py \
-#       ~/Documents/models/voicechat-11b public/models/voicechat-stt
+#       ~/Documents/models/voicechat-11b models-local/voicechat-stt
 import json, os, sys
 import numpy as np
 from safetensors import safe_open
 
 src = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Documents/models/voicechat-11b")
-out = sys.argv[2] if len(sys.argv) > 2 else "public/models/voicechat-stt"
+out = sys.argv[2] if len(sys.argv) > 2 else "models-local/voicechat-stt"
 os.makedirs(out, exist_ok=True)
 
 # ── encoder → fp16 manifest ──────────────────────────────────────────────────

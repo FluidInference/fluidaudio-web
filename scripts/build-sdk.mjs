@@ -21,7 +21,9 @@ execSync("npx tsc -p tsconfig.sdk.json", { stdio: "inherit" });
 
 console.log("── copy runtime assets (.js/.d.ts/.wasm/.bin/.json)");
 const KEEP = /\.(js|d\.ts|wasm|bin|json)$/;
-const SKIP_DIRS = new Set(["__pycache__"]);
+// musicgen-acestep imports the private ace-step-1.5.wgsl workspace package;
+// asr-voicechat weights are local-only — neither ships in the SDK yet.
+const SKIP_DIRS = new Set(["__pycache__", "musicgen-acestep", "asr-voicechat"]);
 let copied = 0;
 function walk(dir) {
   for (const name of readdirSync(dir)) {

@@ -15,6 +15,12 @@ export interface EngineEntry {
   kind: EngineKind;
   /** Large weight downloads (hundreds of MB). */
   heavy?: boolean;
+  /**
+   * Optional availability probe. Engines whose weights may not be deployed
+   * (e.g. local-only exports) resolve false to be hidden from pickers instead
+   * of failing at load time. Absent = always available.
+   */
+  available?: () => Promise<boolean>;
   make: () => Promise<Engine>;
 }
 
@@ -71,11 +77,23 @@ export const ENGINES: EngineEntry[] = [
     make: async () => new (await import("./eou-parakeet/index.js")).ParakeetEouEngine(),
   },
   {
-    // Local weights: scripts/extract-voicechat-stt.py → public/models/voicechat-stt/ (gitignored).
+    // Local weights: scripts/extract-voicechat-stt.py → models-local/voicechat-stt/
+    // (gitignored, served at /models by the dev middleware). Probed so deployed
+    // sites without published weights hide the engine instead of shipping a
+    // guaranteed-broken picker entry.
     id: "asr-voicechat",
     label: "VoiceChat 11B STT",
     kind: "audio",
     heavy: true,
+    available: async () => {
+      try {
+        const base = (import.meta as any).env?.BASE_URL ?? "/";
+        const res = await fetch(`${base}models/voicechat-stt/decoder-fp32.manifest.json`, { method: "HEAD" });
+        return res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      } catch {
+        return false;
+      }
+    },
     make: async () => new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(),
   },
 ];

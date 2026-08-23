@@ -109,7 +109,8 @@ so gate scripts end with `process.exit`.
 ## Entry points & SDK
 
 - `index.html` / `main.ts` — playground (ASR + TTS), `live.html` / `live.ts` —
-  mic captions with EOU finalization, `verify.html`, `bench.html`.
+  mic captions with EOU finalization, `music.html` / `music.ts` — ACE-Step
+  music generation.
 - SDK: `npm run sdk:build` → `dist-sdk/`, published as
   `@fluidinference/fluidaudio-web` with per-engine subpath exports
   (`…/asr-parakeet` etc.); asset URLs use the cross-bundler

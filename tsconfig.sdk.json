@@ -8,5 +8,5 @@
     "allowImportingTsExtensions": false
   },
   "include": ["src/index.ts", "src/core/**/*.ts", "src/engines/**/*.ts"],
-  "exclude": ["src/main.ts", "src/verify.ts"]
+  "exclude": ["src/main.ts", "src/music.ts", "src/engines/musicgen-acestep", "src/engines/asr-voicechat"]
 }

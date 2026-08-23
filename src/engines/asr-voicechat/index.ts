@@ -32,7 +32,10 @@ import { tokensToWords } from "../../core/captions.js";
 import { loadVoicechatDecoder, createVoicechatStream, voicechatDecodeCont } from "./raw-decoder-voicechat.js";
 import { VOICECHAT_CFG } from "./config.js";
 
-const DEFAULT_BASE_URL = "/models/voicechat-stt"; // local artifacts, not HF
+// Dev: served from gitignored models-local/ by the vite middleware. Deployed
+// sites must pass a real host via `baseUrl` (weights are not in the bundle).
+// BASE_URL keeps the path correct under a non-root vite base (GitHub Pages).
+const DEFAULT_BASE_URL = `${import.meta.env.BASE_URL ?? "/"}models/voicechat-stt`;
 const PROJ_D = 640; // joint enc projection width (1024→640 GEMM rides the encode batch)
 const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
 const BATCH_CHUNK = 768; // batch-transcribe pass size (subsampled frames), see EOU sweep

@@ -550,6 +550,11 @@ function failOperation(message: string, reset: boolean): void {
   initializationRequestId = undefined;
   activeJobId = undefined;
   pendingRequest = undefined;
+  if (disposal !== undefined) {
+    // A pending dispose() would otherwise await forever once the worker dies.
+    disposal.reject(new Error(message));
+    disposal = undefined;
+  }
   if (reset) resetWorker();
   setBusy(false);
   setDeterminateProgress(progressElement.value, "Generation failed", message, `${Math.round(clampFraction(progressElement.value) * 100)}%`);
@@ -557,6 +562,10 @@ function failOperation(message: string, reset: boolean): void {
 }
 
 function resetWorker(): void {
+  if (disposal !== undefined) {
+    disposal.reject(new Error("worker reset while a dispose was pending"));
+    disposal = undefined;
+  }
   worker?.terminate();
   worker = undefined;
   workerReady = false;
@@ -700,7 +709,9 @@ function formatDuration(seconds: number): string {
 function formatElapsed(milliseconds: number): string {
   if (!Number.isFinite(milliseconds) || milliseconds < 0) return "—";
   const seconds = milliseconds / 1_000;
-  return seconds < 60 ? `${seconds.toFixed(1)} s` : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  if (seconds < 60) return `${seconds.toFixed(1)} s`;
+  const whole = Math.round(seconds); // round then split so 119.6s is 2m 0s, not 1m 60s
+  return `${Math.floor(whole / 60)}m ${whole % 60}s`;
 }
 
 function clampFraction(value: number): number {
