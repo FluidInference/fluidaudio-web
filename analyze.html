@@ -3,9 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Send no Referer on any request. Hugging Face hotlink-protects some hosts
+         (e.g. *.workers.dev) by returning 404 when the Referer is theirs, which
+         surfaces as a "No Access-Control-Allow-Origin" CORS error on model
+         downloads. No Referer → HF serves the file on every host. -->
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#f5f4ef" />
-    <title>FluidAudio Web — Live Captions</title>
+    <title>FluidAudio Web — Analysis</title>
     <script>
       try {
         const savedTheme = localStorage.getItem("ace-step-wgsl-demo-theme");
@@ -16,23 +20,12 @@
         // The documented light default still works when storage is disabled.
       }
     </script>
-    <style>
-      /* Page-specific: full-height column so #history (flex: 1) pins the
-         rolling transcript above #current, matching the pre-theme layout. */
-      main {
-        display: flex;
-        flex-direction: column;
-      }
-      #history {
-        min-height: 8rem;
-      }
-    </style>
   </head>
   <body>
     <main>
       <header class="site-header">
         <div class="site-title-row">
-          <h1 class="site-title">Live Captions</h1>
+          <h1 class="site-title">FluidAudio Web <span class="badge">Analysis</span></h1>
           <div class="header-controls">
             <button
               id="theme-toggle"
@@ -48,26 +41,37 @@
         </div>
         <nav class="site-nav" aria-label="Site pages">
           <a href="./index.html">Speech to Text</a> · <a href="./tts.html">Text to Speech</a> ·
-          <a href="./analyze.html">Analysis</a> · <span class="is-current">Live captions</span> ·
+          <span class="is-current">Analysis</span> · <a href="./live.html">Live captions</a> ·
           <a href="./music.html">Music</a>
         </nav>
       </header>
 
-      <p class="site-intro" style="font-size: 0.9rem">
-        True streaming ASR on your microphone — conformer caches carried chunk to chunk, nothing re-decoded, nothing leaves your machine. EOU segments
-        utterances from the model's own end-of-utterance tokens; Nemotron adds a ~1.6s right-context lookahead (that delay is the model looking ahead, not lag).
+      <p class="site-intro">
+        Voice activity detection and speaker diarization right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model
+        weights (cached after).
+        <span id="gpu" class="badge"></span>
       </p>
-      <div id="controls">
-        <select id="engine">
-          <option value="eou-parakeet" selected>Parakeet EOU 120M (English, fastest)</option>
-          <option value="asr-nemotron">Nemotron 3.5 (multilingual)</option>
-        </select>
-        <button id="go" class="primary-button">▶ Start</button>
-        <span id="vu"></span>
-        <span id="status">Idle.</span>
+
+      <div class="row">
+        <label
+          >Engine
+          <select id="engine"></select>
+        </label>
+        <button id="load">Load model</button>
       </div>
-      <div id="history"></div>
-      <div id="current">&nbsp;</div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <div id="status">Pick an engine and load it.</div>
+
+      <h2 id="inputLabel">Audio file</h2>
+      <div class="row" id="audioInput">
+        <input type="file" id="file" accept="audio/*,video/*" />
+      </div>
+      <div class="row">
+        <button id="run" class="primary-button" disabled>Run</button>
+      </div>
+
+      <h2>Output</h2>
+      <div id="output"></div>
     </main>
 
     <footer class="site-footer">
@@ -83,6 +87,6 @@
       </div>
     </footer>
 
-    <script type="module" src="/src/live.ts"></script>
+    <script type="module" src="/src/analyze.ts"></script>
   </body>
 </html>
