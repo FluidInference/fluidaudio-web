@@ -16,13 +16,11 @@ export default defineConfig({
   worker: { format: "es" },
   build: {
     target: "es2022",
-    // Multi-page: the interactive app + the verify page (run all engines on one file).
+    // Multi-page: playground + live captions + music generation.
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        verify: resolve(__dirname, "verify.html"),
         live: resolve(__dirname, "live.html"),
-        bench: resolve(__dirname, "bench.html"),
         music: resolve(__dirname, "music.html"),
       },
     },

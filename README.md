@@ -12,8 +12,9 @@ tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
 1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
 
 **Live:** https://fluidaudio-web.hanweng9.workers.dev — playground (one engine
-at a time) and [`/verify`](https://fluidaudio-web.hanweng9.workers.dev/verify)
-(drop one file, selected engines run on it, results export as JSON).
+at a time), [`/live`](https://fluidaudio-web.hanweng9.workers.dev/live.html)
+captions, and [`/music`](https://fluidaudio-web.hanweng9.workers.dev/music.html)
+generation.
 
 > **Why hand-written kernels?** The first iteration of this repo ran the same
 > models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
@@ -82,7 +83,7 @@ Release flow: bump `version` in the root `package.json` → `npm run sdk:pack` �
 ## Engines
 
 Measured in-browser (Chrome/macOS, WebGPU, warm) on a real 284.5s recording via
-`/verify` — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
+the since-removed verify page — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
 audio _generated_ per wall-second; not comparable to ASR).
 
 | Engine                   | Model                             | RTFx                                                                                                      | Notes                                                                                                                                                                                      |
@@ -139,17 +140,12 @@ vendored as a 1 MB wasm module (pure Rust, no network):
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173 — playground; /verify.html for all-engine runs
+npm run dev        # http://localhost:5173 — playground; /live.html, /music.html
 npm run build      # static site → dist/
 npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
 
 npm run acestep:check && npm run acestep:test   # ACE-Step runtime (packages/acestep) gates
 ```
-
-`/verify.html` params: `?engines=asr-parakeet,vad-silero` preselects the
-checkboxes (all engines run by default), `?noauto=1` skips the JSON
-auto-download. "Keep models loaded between runs" makes repeat file drops
-instant at the cost of GPU memory.
 
 ## Deploy
 
@@ -171,7 +167,7 @@ src/
   engines/      one folder per model on those kernels; registry.ts is the catalog
   core/         audio I/O, model cache, text normalization, shared types
   index.ts      SDK root (engines are subpath exports)
-  main.ts / verify.ts / music.ts   demo pages (thin consumers of the registry / music client)
+  main.ts / live.ts / music.ts   demo pages (thin consumers of the registry / music client)
 packages/
   acestep/      vendored ace-step-1.5.wgsl music-gen runtime (own kernels,
                 scheduler, tests, and optimization ledger — see its AGENTS.md)

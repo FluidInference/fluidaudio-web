@@ -1,7 +1,5 @@
-// Single source of truth for "what engines exist". Consumed by BOTH pages —
-// the playground (main.ts) and the verify page (verify.ts) — so a new engine
-// added here automatically appears in both. (They previously kept separate
-// hand-maintained lists, which had already drifted.)
+// Single source of truth for "what engines exist", consumed by the
+// playground (main.ts).
 //
 // `make` is lazy: each engine's module (and its deps) loads only when selected,
 // so a broken engine can't take down the whole app at page load.
@@ -12,10 +10,10 @@ export type EngineKind = "audio" | "text";
 
 export interface EngineEntry {
   id: string;
-  /** Display label. `heavy` engines note their weight class on the verify page. */
+  /** Display label. */
   label: string;
   kind: EngineKind;
-  /** Large weight downloads (hundreds of MB) — labeled "(heavy)" on the verify page. */
+  /** Large weight downloads (hundreds of MB). */
   heavy?: boolean;
   make: () => Promise<Engine>;
 }

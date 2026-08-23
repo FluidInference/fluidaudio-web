@@ -39,7 +39,6 @@
     "acestep:build": "npm run build --workspace ace-step-1.5.wgsl",
     "acestep:check": "npm run check --workspace ace-step-1.5.wgsl",
     "acestep:test": "npm run test --workspace ace-step-1.5.wgsl",
-    "verify": "vite --open /verify.html",
     "build": "npm run acestep:build && tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
