@@ -15,7 +15,7 @@ import {
 } from "ace-step-1.5.wgsl";
 
 import { aceProductionWorkerConfiguration } from "./config.js";
-import { ensureCurrentAceDemoModelCache } from "./model-cache-migration.js";
+import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./model-cache-migration.js";
 import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
 
 export {
@@ -64,6 +64,8 @@ export class AceStepMusicClient {
   private active: ActiveOperation | undefined;
   private disposal: { requestId: number; resolve: () => void; reject: (reason: unknown) => void } | undefined;
   private fatalGpuDiagnostic = false;
+  /** Releases the shared model-cache lifecycle lock held while the worker is alive. */
+  private releaseRuntimeLock: (() => void) | undefined;
   private downloadProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
   /** Diagnostics reported by the worker's ready message, when initialized. */
   runtimeDiagnostics: AceRuntimeDiagnostics | undefined;
@@ -138,6 +140,8 @@ export class AceStepMusicClient {
     if (this.worker === current) this.worker = undefined;
     this.workerReady = false;
     this.runtimeDiagnostics = undefined;
+    this.releaseRuntimeLock?.();
+    this.releaseRuntimeLock = undefined;
   }
 
   /** Terminate immediately without an orderly runtime dispose. */
@@ -155,9 +159,24 @@ export class AceStepMusicClient {
     );
   }
 
+  private acquireRuntimeLock(): void {
+    if (this.releaseRuntimeLock !== undefined || typeof navigator.locks?.request !== "function") return;
+    // Shared with every runtime tab; the migration's exclusive request (a
+    // generation bump) waits until all runtimes shut down before wiping.
+    void navigator.locks.request(
+      ACE_MODEL_CACHE_LIFECYCLE_LOCK,
+      { mode: "shared" },
+      () =>
+        new Promise<void>((resolve) => {
+          this.releaseRuntimeLock = resolve;
+        }),
+    );
+  }
+
   private startInitializationInner(): void {
     const active = this.active;
     if (active === undefined) return;
+    this.acquireRuntimeLock();
     this.worker?.terminate();
     this.workerReady = false;
     this.fatalGpuDiagnostic = false;
@@ -285,6 +304,8 @@ export class AceStepMusicClient {
       this.worker = undefined;
       this.workerReady = false;
       this.runtimeDiagnostics = undefined;
+      this.releaseRuntimeLock?.();
+      this.releaseRuntimeLock = undefined;
     }
     active?.reject(reason);
   }
@@ -300,6 +321,8 @@ export class AceStepMusicClient {
     this.worker = undefined;
     this.workerReady = false;
     this.runtimeDiagnostics = undefined;
+    this.releaseRuntimeLock?.();
+    this.releaseRuntimeLock = undefined;
     if (active !== undefined) active.reject(reason);
   }
 }

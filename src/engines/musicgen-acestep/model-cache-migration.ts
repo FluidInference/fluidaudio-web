@@ -7,7 +7,13 @@ import { deleteAceModelCache } from "ace-step-1.5.wgsl";
  */
 export const ACE_DEMO_MODEL_CACHE_GENERATION = "direct-b44a3d157009d035-d3fc0020efcf6070-36a54d79777d6826-v1";
 
-const MIGRATION_LOCK_NAME = "ace-step-1.5.wgsl-demo-model-cache-migration";
+/**
+ * Exported so runtimes can hold this lock in "shared" mode for the lifetime of
+ * an active worker: the migration takes it exclusively, which would otherwise
+ * delete the cache out from under another tab that is downloading/generating.
+ */
+export const ACE_MODEL_CACHE_LIFECYCLE_LOCK = "ace-step-1.5.wgsl-demo-model-cache-migration";
+const MIGRATION_LOCK_NAME = ACE_MODEL_CACHE_LIFECYCLE_LOCK;
 const METADATA_DIRECTORY = "ace-step-1.5.wgsl-demo-metadata-v1";
 const GENERATION_MARKER_FILE = "model-cache-generation.txt";
 const MAX_GENERATION_MARKER_BYTES = 256;

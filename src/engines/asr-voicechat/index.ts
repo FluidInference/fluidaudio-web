@@ -94,7 +94,10 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-voicechat] backend: ${b}`) });
     const base = this.opts.baseUrl;
-    const bytes = (name: string) => fetchCached(base ? `${base}/${name}` : hfUrl(WEIGHTS_REPO, `voicechat-stt/${name}`), onProgress, name);
+    // Local exports are mutable (extractor re-runs overwrite in place) — bypass
+    // the URL-keyed cache so a stale manifest can't pair with a fresh encoder.
+    const bytes = (name: string) =>
+      fetchCached(base ? `${base}/${name}` : hfUrl(WEIGHTS_REPO, `voicechat-stt/${name}`), onProgress, name, { skipCache: base !== undefined });
     const json = async (name: string) => JSON.parse(new TextDecoder().decode(await bytes(name)));
 
     const encMan = await json("encoder-f16.manifest.json");

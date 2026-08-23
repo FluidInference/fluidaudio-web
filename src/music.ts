@@ -35,7 +35,7 @@ import {
   updateModelDownloadProgress,
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
-import { ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
 import "./engines/musicgen-acestep/style.css";
 
 type DemoTheme = "light" | "dark";
@@ -101,6 +101,8 @@ let fatalGpuDiagnostic = false;
 let output: { readonly url: string; readonly storageId: string } | undefined;
 let tooltipRenderFrame: number | undefined;
 let pendingTooltipPoint: { readonly clientX: number } | undefined;
+/** Releases the shared model-cache lifecycle lock held while a worker is alive. */
+let releaseRuntimeLock: (() => void) | undefined;
 let disposal:
   | {
       readonly requestId: number;
@@ -178,8 +180,14 @@ function wireEvents(): void {
   });
 
   window.addEventListener("pagehide", () => {
-    if (output !== undefined) URL.revokeObjectURL(output.url);
+    if (output !== undefined) {
+      URL.revokeObjectURL(output.url);
+      // Best-effort only — the reliable path is the pending-output record
+      // reclaimed on the next visit (releaseOrphanedOutputs).
+      void releaseAceAudioOutput(output.storageId).then(() => forgetPendingOutput(output?.storageId));
+    }
     worker?.terminate();
+    releaseRuntimeLock?.();
   });
 }
 
@@ -224,7 +232,58 @@ function hideProjectTooltip(): void {
   githubProjectTooltip.hidden = true;
 }
 
+const PENDING_OUTPUTS_KEY = "ace-step-pending-output-ids";
+
+function readPendingOutputs(): { id: string; at: number }[] {
+  try {
+    const raw = localStorage.getItem(PENDING_OUTPUTS_KEY);
+    const list = raw === null ? [] : (JSON.parse(raw) as { id: string; at: number }[]);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingOutputs(list: { id: string; at: number }[]): void {
+  try {
+    localStorage.setItem(PENDING_OUTPUTS_KEY, JSON.stringify(list.slice(-20)));
+  } catch {
+    // Storage unavailable — the OPFS entries just wait for a later visit.
+  }
+}
+
+function recordPendingOutput(id: string): void {
+  writePendingOutputs([...readPendingOutputs().filter((p) => p.id !== id), { id, at: Date.now() }]);
+}
+
+function forgetPendingOutput(id: string | undefined): void {
+  if (id === undefined) return;
+  writePendingOutputs(readPendingOutputs().filter((p) => p.id !== id));
+}
+
+/**
+ * Committed WAVs are deliberately excluded from the runtime's own cleanup, so
+ * a navigation that skipped releaseCurrentOutput() leaves up to ~92 MB per
+ * song in persistent OPFS. Reclaim recorded outputs from previous visits —
+ * entries younger than an hour are left alone in case another tab still owns
+ * them, and are retried on a later visit once stale.
+ */
+async function releaseOrphanedOutputs(): Promise<void> {
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  const keep: { id: string; at: number }[] = [];
+  for (const entry of readPendingOutputs()) {
+    if (entry.at > cutoff && entry.id !== output?.storageId) {
+      keep.push(entry);
+      continue;
+    }
+    if (entry.id === output?.storageId) continue;
+    await releaseAceAudioOutput(entry.id).catch(() => undefined);
+  }
+  writePendingOutputs(keep);
+}
+
 async function initializePage(): Promise<void> {
+  void releaseOrphanedOutputs();
   try {
     await ensureCurrentAceDemoModelCache();
   } catch (error) {
@@ -347,7 +406,23 @@ function readGenerationRequest(): AceGenerationRequest {
   };
 }
 
+function acquireRuntimeLock(): void {
+  if (releaseRuntimeLock !== undefined || typeof navigator.locks?.request !== "function") return;
+  // Shared mode: many tabs may run concurrently; the migration's exclusive
+  // request (a future generation bump in a new tab) waits until every tab's
+  // runtime has shut down instead of deleting the cache out from under one.
+  void navigator.locks.request(
+    ACE_MODEL_CACHE_LIFECYCLE_LOCK,
+    { mode: "shared" },
+    () =>
+      new Promise<void>((resolve) => {
+        releaseRuntimeLock = resolve;
+      }),
+  );
+}
+
 function startWorkerInitialization(): void {
+  acquireRuntimeLock();
   worker?.terminate();
   workerReady = false;
   worker = new Worker(new URL("./engines/musicgen-acestep/worker.ts", import.meta.url), {
@@ -502,6 +577,7 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
     await releaseCurrentOutput();
     const url = URL.createObjectURL(result.audio);
     output = { url, storageId: result.audioStorageId };
+    recordPendingOutput(result.audioStorageId);
     audioPlayer.src = url;
     audioPlayer.load();
     download.href = url;
@@ -544,6 +620,7 @@ async function releaseCurrentOutput(): Promise<void> {
   download.removeAttribute("href");
   URL.revokeObjectURL(current.url);
   await releaseAceAudioOutput(current.storageId);
+  forgetPendingOutput(current.storageId);
 }
 
 function failOperation(message: string, reset: boolean): void {
@@ -562,6 +639,8 @@ function failOperation(message: string, reset: boolean): void {
 }
 
 function resetWorker(): void {
+  releaseRuntimeLock?.();
+  releaseRuntimeLock = undefined;
   if (disposal !== undefined) {
     disposal.reject(new Error("worker reset while a dispose was pending"));
     disposal = undefined;
@@ -625,6 +704,8 @@ async function disposeWorker(): Promise<void> {
   current.terminate();
   if (worker === current) worker = undefined;
   workerReady = false;
+  releaseRuntimeLock?.();
+  releaseRuntimeLock = undefined;
 }
 
 function renderModelProgress(): void {
