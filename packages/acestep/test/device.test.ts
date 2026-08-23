@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ACE_WEBGPU_LIMIT_NAMES } from "../src/webgpu/capabilities.js";
+import {
+  ACE_WEBGPU_LIMIT_NAMES,
+  type AceWebGpuLimits,
+} from "../src/webgpu/capabilities.js";
 import { requestAceWebGpuDevice } from "../src/webgpu/device.js";
 
 describe("ACE WebGPU device context", () => {
@@ -33,6 +36,42 @@ describe("ACE WebGPU device context", () => {
       required: true,
       requested: true,
     });
+  });
+
+  it("derives adapter-aware capacities and still fails closed on true deficits", async () => {
+    const fixture = fakeGpu(["shader-f16"], ["shader-f16"]);
+    const derive = vi.fn((adapterLimits: AceWebGpuLimits) => ({
+      maxBufferSize: Math.min(adapterLimits.maxBufferSize, 1_069_547_520),
+      maxStorageBufferBindingSize: Math.min(
+        adapterLimits.maxStorageBufferBindingSize,
+        1_069_547_520,
+      ),
+    }));
+    const context = await requestAceWebGpuDevice({
+      modelProfile: "reference-bf16",
+      gpu: fixture.gpu,
+      deriveRequiredLimits: derive,
+    });
+    expect(derive).toHaveBeenCalledTimes(1);
+    expect(derive).toHaveBeenCalledWith(expect.objectContaining({
+      maxBufferSize: 1_073_741_824,
+      maxStorageBufferBindingSize: 1_073_741_824,
+    }));
+    expect(fixture.requestDevice.mock.calls[0]![0]).toMatchObject({
+      requiredLimits: {
+        maxBufferSize: 1_069_547_520,
+        maxStorageBufferBindingSize: 1_069_547_520,
+      },
+    });
+    context.destroy();
+
+    const deficient = fakeGpu(["shader-f16"], ["shader-f16"]);
+    await expect(requestAceWebGpuDevice({
+      modelProfile: "reference-bf16",
+      gpu: deficient.gpu,
+      deriveRequiredLimits: () => ({ maxBufferSize: 1_168_834_560 }),
+    })).rejects.toMatchObject({ code: "LIMIT_UNAVAILABLE" });
+    expect(deficient.requestDevice).not.toHaveBeenCalled();
   });
 
   it("requests only selected features/capacities and reports runtime failures", async () => {

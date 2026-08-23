@@ -15,6 +15,7 @@ import {
 } from "ace-step-1.5.wgsl";
 
 import { aceProductionWorkerConfiguration } from "./config.js";
+import { aceInferenceWorkerName } from "./worker-name.js";
 import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./model-cache-migration.js";
 import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
 
@@ -183,7 +184,7 @@ export class AceStepMusicClient {
     this.downloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
-      name: "ace-step-inference",
+      name: aceInferenceWorkerName(),
     });
     this.worker.addEventListener("message", (event) => this.onMessage(event));
     this.worker.addEventListener("error", (event) => {

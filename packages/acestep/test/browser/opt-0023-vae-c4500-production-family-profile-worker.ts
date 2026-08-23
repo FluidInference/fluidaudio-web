@@ -152,13 +152,13 @@ const OPT_0023_REGISTRATION_RECORD_SHA256 =
 
 const REGISTERED_SOURCE_SHA256 = Object.freeze({
   "src/runtime/webgpu-pipeline.ts":
-    "255e06c39470f87a50d7e3f3e4a02d0b457fd81ff86eb5b95591ba86f6e6b677",
+    "e878b69740c243c68b03b2aa5bfc1a2c972fd1d1b9451d5f33b767f7e920e139",
   "src/webgpu/vae-chunks.ts":
     "0059b79fcce3ad5679d3c05f5f3da1954db80194775540521d68002253f5baaf",
   "src/webgpu/vae-fp16-backend.ts":
-    "fcab85b55888e491458d72e915a5b8b838d948f305ed9c1ec935db980a850dd9",
+    "407c685d544ff85762658481727e642326eeeb4bde102e4cb7c92a5bfa6d4d95",
   "src/webgpu/vae-fp16-decoder.ts":
-    "c229da8de47f5ab1445cd1bbdc1356e6d07f5b35adfcda94e3d702a7ccab75b1",
+    "def5da74a7280bce4515bbc21b93a0a228487b76f22eb3dde3113280ff8d39fa",
   "src/webgpu/vae-fp16-profile.ts":
     "946dfc164759037fade6270c1bc67ed928dc6cbdf2fa63ffa785a3622be36f23",
 });

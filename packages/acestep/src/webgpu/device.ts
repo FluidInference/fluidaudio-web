@@ -15,6 +15,7 @@ import {
   type AceWebGpuCapabilityReport,
   type AceWebGpuFeatureReport,
   type AceWebGpuLimitName,
+  type AceWebGpuLimits,
 } from "./capabilities.js";
 
 export type AceGpuRuntimeEvent =
@@ -41,6 +42,14 @@ export interface AceRequestWebGpuDeviceOptions {
   readonly requiredLimits?: Readonly<
     Partial<Record<AceWebGpuLimitName, number>>
   >;
+  /**
+   * Adapter-aware capacities resolved after the adapter is known, unioned like
+   * `requiredLimits`. Lets a caller request a smaller authenticated geometry
+   * on capped adapters while still failing closed on true deficits.
+   */
+  readonly deriveRequiredLimits?: (
+    adapterLimits: AceWebGpuLimits,
+  ) => Readonly<Partial<Record<AceWebGpuLimitName, number>>>;
   readonly onRuntimeEvent?: (event: AceGpuRuntimeEvent) => void;
 }
 
@@ -138,8 +147,11 @@ export async function requestAceWebGpuDevice(
   );
   const adapterLimits = snapshotAceWebGpuLimits(adapter.limits);
   const requiredLimits = mergeRequiredLimits(
-    ACE_REQUIRED_WEBGPU_LIMITS,
-    options.requiredLimits ?? {},
+    mergeRequiredLimits(
+      ACE_REQUIRED_WEBGPU_LIMITS,
+      options.requiredLimits ?? {},
+    ),
+    options.deriveRequiredLimits?.(adapterLimits) ?? {},
   );
   const deficits = findAceWebGpuLimitDeficits(
     adapterLimits,

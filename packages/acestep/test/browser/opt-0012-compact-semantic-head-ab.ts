@@ -1019,7 +1019,7 @@ export const OPT_0012_SOURCE_IDENTITIES = Object.freeze({
   "src/webgpu/capabilities.ts":
     "b9387c2fd094c5ad77c243abb34ff441bfc4bf3e47fe7fb218d61b6c703cec31",
   "src/webgpu/device.ts":
-    "c1ed8926ccc138911540cc0dd6c48877d7c14faea85746e99ada0f12bafb7cf5",
+    "16536f25472890650a6f58603eab359c779c0dcba4b1d7e7cd82876a464e3972",
   "src/webgpu/planner-executor.ts":
     "f802db8c35701278619c0ad5c13e7543a224662d561d1db1d6e3a71271032786",
   "src/webgpu/kernels/attention.ts":

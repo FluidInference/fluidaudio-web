@@ -103,8 +103,11 @@ import {
   ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
   planAceOpt0011Fp16VaeWindowDynamicControls,
 } from "../src/webgpu/vae-fp16-decoder.js";
-import { ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE } from
-  "../src/webgpu/vae-window-profile.js";
+import {
+  ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
+  ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
+  ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
+} from "../src/webgpu/vae-window-profile.js";
 import {
   ACE_OPT_0028_VAE_FP16_MANIFEST_BYTES,
   ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256,
@@ -239,13 +242,16 @@ describe("concrete WebGPU pipeline coordinator", () => {
     ]);
     expect(harness.loadedPhases).not.toContain("planner");
     expect(harness.loadedPhases).not.toContain("semantic");
-    expect(harness.requestDevice.mock.calls[0]![0]).toMatchObject({
+    const deviceRequest = harness.requestDevice.mock.calls[0]![0];
+    expect(deviceRequest).toMatchObject({
       modelProfile: "reference-bf16",
       requiredFeatures: ["shader-f16", "subgroups"],
-      requiredLimits: {
-        maxBufferSize: 251_658_240,
-        maxStorageBufferBindingSize: 251_658_240,
-      },
+    });
+    expect(deviceRequest.requiredLimits).toBeUndefined();
+    expect(deviceRequest.deriveRequiredLimits!(testDiagnostics()
+      .capabilities.adapterLimits)).toEqual({
+      maxBufferSize: 251_658_240,
+      maxStorageBufferBindingSize: 251_658_240,
     });
     expect(harness.packageEvents).toEqual([
       "main-manifest",
@@ -369,7 +375,8 @@ describe("concrete WebGPU pipeline coordinator", () => {
         },
       },
     } as const;
-    const insufficient = createHarness();
+    // Below even the capped C2176 workspace there is no downshift: fail closed.
+    const insufficient = createHarness({ vaeLimitBytes: 800_000_000 });
     await expect(initialize(insufficient, candidate)).rejects.toThrow(
       /production device did not enable/,
     );
@@ -384,12 +391,16 @@ describe("concrete WebGPU pipeline coordinator", () => {
       onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
     })).resolves.toMatchObject({ frameCount: 480_000 });
 
-    expect(harness.requestDevice.mock.calls[0]![0]).toMatchObject({
-      requiredLimits: {
-        maxBufferSize: ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
-        maxStorageBufferBindingSize:
-          ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
-      },
+    const productionRequest = harness.requestDevice.mock.calls[0]![0];
+    expect(productionRequest.requiredLimits).toBeUndefined();
+    expect(productionRequest.deriveRequiredLimits!(Object.freeze({
+      ...testDiagnostics().capabilities.adapterLimits,
+      maxBufferSize: 2_000_000_000,
+      maxStorageBufferBindingSize: 2_000_000_000,
+    }))).toEqual({
+      maxBufferSize: ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
+      maxStorageBufferBindingSize:
+        ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
     });
     expect(harness.lastDitAttentionRuntimeProfile).toBe(
       ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
@@ -417,6 +428,44 @@ describe("concrete WebGPU pipeline coordinator", () => {
       }),
     }));
     expect(harness.packageEvents).toContain("vae-backend");
+  });
+
+  it("downshifts the production C2378 windows to capped C2176 on one-GiB adapters", async () => {
+    // The default fixture limits are exactly 2^30 bytes: the iOS adapter cap.
+    const harness = createHarness({
+      mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
+    });
+    await initialize(harness, opt0080InitializeMessage());
+
+    const cappedRequest = harness.requestDevice.mock.calls[0]![0];
+    expect(cappedRequest.requiredLimits).toBeUndefined();
+    expect(cappedRequest.deriveRequiredLimits!(
+      testDiagnostics().capabilities.adapterLimits,
+    )).toEqual({
+      maxBufferSize: ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
+      maxStorageBufferBindingSize:
+        ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
+    });
+    expect(ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES)
+      .toBeLessThanOrEqual(1_073_741_824);
+
+    await expect(harness.backend.generate(testGenerationRequest(), {
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      onDiagnostic: vi.fn(),
+    })).resolves.toMatchObject({ frameCount: 480_000 });
+
+    expect(harness.lastVaeMaximumWindowFrames).toBe(
+      ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
+    );
+    expect(harness.lastVaePlanChunkFrames).toBe(
+      ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
+    );
+    expect(harness.lastVaeRuntimeProfile).toBe(
+      ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
+    );
+    // OPT-0080 depth-two evidence covers only C2378 window families.
+    expect(harness.lastVaeProductionSchedulingPolicy).toBeUndefined();
   });
 
   it("selects VAE depth two only for seam-free direct C2314 production windows", async () => {
@@ -1910,6 +1959,8 @@ interface HarnessOptions {
   readonly uncapturedErrorAfterDit?: boolean;
   readonly ditDenseRevision?: 7 | 8;
   readonly largeVaeLimits?: boolean;
+  /** Exact adapter/device maxBufferSize + maxStorageBufferBindingSize. */
+  readonly vaeLimitBytes?: number;
   readonly mainManifestSha256?: string;
   readonly opt0081UnexpectedSetupOwner?: boolean;
   readonly opt0081WorkingOwner?: boolean;
@@ -2134,17 +2185,19 @@ function createHarness(options: HarnessOptions = {}): Harness {
     adapterFeatures: Object.freeze(["shader-f16", "subgroups"]),
     deviceFeatures: Object.freeze(["shader-f16", "subgroups"]),
     requiredFeatures: Object.freeze(["shader-f16", "subgroups"] as const),
-    ...(options.largeVaeLimits === true
+    ...(options.largeVaeLimits === true || options.vaeLimitBytes !== undefined
       ? {
           adapterLimits: Object.freeze({
             ...baseCapabilities.adapterLimits,
-            maxBufferSize: 2_000_000_000,
-            maxStorageBufferBindingSize: 2_000_000_000,
+            maxBufferSize: options.vaeLimitBytes ?? 2_000_000_000,
+            maxStorageBufferBindingSize:
+              options.vaeLimitBytes ?? 2_000_000_000,
           }),
           deviceLimits: Object.freeze({
             ...baseCapabilities.deviceLimits,
-            maxBufferSize: 2_000_000_000,
-            maxStorageBufferBindingSize: 2_000_000_000,
+            maxBufferSize: options.vaeLimitBytes ?? 2_000_000_000,
+            maxStorageBufferBindingSize:
+              options.vaeLimitBytes ?? 2_000_000_000,
           }),
         }
       : {}),

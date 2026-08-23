@@ -201,7 +201,10 @@ import {
 } from "../webgpu/vae-fp16-decoder.js";
 import {
   ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
+  ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE,
   requireAceVaeWindowRuntimeProfile,
+  selectAceVaeWindowRuntimeProfileForLimits,
+  type AceVaeWindowRuntimeProfileContract,
 } from "../webgpu/vae-window-profile.js";
 import {
   ACE_OPT_0011_VAE_FP16_WEIGHT_FILES,
@@ -810,9 +813,14 @@ function selectProductionVaeSchedulingPolicy(
   plannerMode: AceGenerationRequest["planner"]["mode"],
   selectedDitPolicy: AceDitSubmissionPolicy | undefined,
   vaeRuntimeIdentity: AceVaePackageRuntimeIdentity,
+  effectiveWindowProfile: Readonly<AceVaeWindowRuntimeProfileContract>,
 ): AceOpt0080VaeProductionSchedulingPolicy | undefined {
   if (
     plannerMode !== "disabled" ||
+    // OPT-0080's depth-two evidence covers only the C2378 window family; a
+    // capped-adapter downshift keeps the audited depth-one baseline.
+    effectiveWindowProfile.id !==
+      ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE ||
     selectedDitPolicy !== ACE_PRODUCTION_DIT_SUBMISSION_POLICY ||
     context.captureTrace === true ||
     context.opt0080ProductRun !== undefined ||
@@ -898,10 +906,18 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
           modelProfile: configuration.modelProfile,
           schedulingProfile: configuration.schedulingProfile,
           requiredFeatures: ["shader-f16", "subgroups"],
-          requiredLimits: {
-            maxBufferSize: vaeWindowProfile.requiredWorkspaceBytes,
-            maxStorageBufferBindingSize:
-              vaeWindowProfile.requiredWorkspaceBytes,
+          // The workspace capacity is adapter-aware: a one-GiB adapter that
+          // cannot bind the configured C2378 workspace requests the capped
+          // C2176 geometry instead; true deficits still fail closed.
+          deriveRequiredLimits: (adapterLimits) => {
+            const effective = selectAceVaeWindowRuntimeProfileForLimits(
+              vaeWindowProfile,
+              adapterLimits,
+            );
+            return {
+              maxBufferSize: effective.requiredWorkspaceBytes,
+              maxStorageBufferBindingSize: effective.requiredWorkspaceBytes,
+            };
           },
           ...(this.options.gpu === undefined ? {} : { gpu: this.options.gpu }),
           signal: context.signal,
@@ -912,7 +928,10 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
       );
       requireProductionDeviceCapabilities(
         deviceContext,
-        vaeWindowProfile.requiredWorkspaceBytes,
+        selectAceVaeWindowRuntimeProfileForLimits(
+          vaeWindowProfile,
+          deviceContext.capabilities.adapterLimits,
+        ).requiredWorkspaceBytes,
       );
       const initializingDevice = deviceContext;
       void initializingDevice.lost.then((event) => {
@@ -2243,9 +2262,12 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
         );
       }
 
-      const vaeWindowProfile = requireAceVaeWindowRuntimeProfile(
-        ready.configuration.vaePackage.windowRuntimeProfile,
-        ready.configuration.vaePackage.maxWindowFrames,
+      const vaeWindowProfile = selectAceVaeWindowRuntimeProfileForLimits(
+        requireAceVaeWindowRuntimeProfile(
+          ready.configuration.vaePackage.windowRuntimeProfile,
+          ready.configuration.vaePackage.maxWindowFrames,
+        ),
+        ready.deviceContext.capabilities.adapterLimits,
       );
       const vaeRuntimeIdentity = resolveAceVaePackageRuntimeIdentity(
         ready.configuration.vaePackage,
@@ -2257,6 +2279,7 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
           request.planner.mode,
           selectedProductionDitSubmissionPolicy,
           vaeRuntimeIdentity,
+          vaeWindowProfile,
         );
       const vaeBenchmarkSchedulingOverride =
         opt0080ProductRun?.vaeSchedulingPolicyOverride;
@@ -3565,10 +3588,23 @@ function createRuntimeDiagnostics(
   const vaeIdentity = resolveAceVaePackageRuntimeIdentity(
     configuration.vaePackage,
   );
-  const vaeWindowIdentity = requireAceVaeWindowRuntimeProfile(
+  const {
+    id: vaeWindowRuntimeProfile,
+    maximumWindowFrames: vaeMaxWindowFrames,
+  } = requireAceVaeWindowRuntimeProfile(
     configuration.vaePackage.windowRuntimeProfile,
     configuration.vaePackage.maxWindowFrames,
   );
+  if (
+    vaeWindowRuntimeProfile === ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE ||
+    vaeMaxWindowFrames === 2_176
+  ) {
+    // The capped geometry is an adapter-derived downshift, never a
+    // configuration identity; diagnostics report the configured contract.
+    throw new Error(
+      "ACE runtime diagnostics require a configured VAE window identity",
+    );
+  }
   return Object.freeze({
     backend: "custom-webgpu-wgsl-and-wasm",
     modelManifestId: loaded.manifestId,
@@ -3600,8 +3636,8 @@ function createRuntimeDiagnostics(
     vaeRuntimeProfile: vaeIdentity.runtimeProfile,
     vaeKernelSetId: vaeIdentity.kernelSetId,
     vaePrecisionMapSha256: vaeIdentity.precisionMapSha256,
-    vaeWindowRuntimeProfile: vaeWindowIdentity.id,
-    vaeMaxWindowFrames: vaeWindowIdentity.maximumWindowFrames,
+    vaeWindowRuntimeProfile,
+    vaeMaxWindowFrames,
     executionProfile: device.capabilities.executionProfile,
     schedulingProfile: configuration.schedulingProfile,
     capabilities: device.capabilities,
