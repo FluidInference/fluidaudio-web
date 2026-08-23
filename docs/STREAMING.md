@@ -72,7 +72,7 @@ alternative: persist h/c buffers per stream instead of zero-init.
 - `ParakeetEouEngine.push(chunk16k)`: buffer to ≥160 ms, run chunk flow,
   `decode_cont`, return accumulated text (+ EOU/EOB events).
 - `reset()`: zero caches, melTail, decoder state, subT.
-- main.ts mic loop: `if (typeof engine.push === "function")` → stream chunks
+- the STT page mic loop (pages/playground.ts): `if (typeof engine.push === "function")` → stream chunks
   as they arrive (replace the 1.5 s rolling re-decode for this engine);
   batch engines keep the rolling path.
 
@@ -90,7 +90,7 @@ alternative: persist h/c buffers per stream instead of zero-init.
       TDT streaming would still need `decode_cont` in rust.)
 - [x] streaming-encode-check.mjs parity gate — **bit-exact** (frames maxΔ 0.0,
       tokens identical) at 160 ms and coarse cadence; StreamingMel exact
-- [x] Engine push()/finish()/reset() + mic integration (main.ts streams for
+- [x] Engine push()/finish()/reset() + mic integration (the STT page streams for
       real; batch engines keep the rolling-tail fallback)
 - [x] Nemotron variant (right-context 3). DESIGN FINDING: right context
       CASCADES through layers (each layer's exact value needs ~chunk more
