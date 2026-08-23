@@ -1,5 +1,5 @@
 // CI smoke + parity gate: VoiceChat-11B TTS (Aria) vs torch goldens.
-// Self-skips (exit 0) when models-local/voicechat-tts is absent — the 2.2 GB
+// Self-skips (exit 0) when models-local/voicechat-tts is absent — the ~3.5 GB
 // export is local-only (scripts/extract-voicechat-tts.py); nothing is hosted.
 //
 // Deterministic parity track (CFG 0.2, top-p 0.95, noise 0, argmax component):
@@ -119,7 +119,10 @@ for (let t = 0; t < T; t++)
     }
 console.log(`codes: ${T * cfg.numQuantizers - mismatched}/${T * cfg.numQuantizers} match${firstBad >= 0 ? `, first mismatch at frame ${firstBad}` : ""}`);
 assert(mismatched === 0, `code matrix differs from torch reference (${mismatched} entries)`);
-const hash = createHash("sha256").update(Buffer.from(new Int32Array(codes.flatMap((c) => [...c])).buffer)).digest("hex").slice(0, 16);
+const hash = createHash("sha256")
+  .update(Buffer.from(new Int32Array(codes.flatMap((c) => [...c])).buffer))
+  .digest("hex")
+  .slice(0, 16);
 console.log(`code-matrix sha256/16: ${hash}`);
 
 // ── waveform NRMSE + stats (full-length runs only) ──

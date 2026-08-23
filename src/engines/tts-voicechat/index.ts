@@ -111,7 +111,7 @@ export class VoicechatTtsEngine implements TtsEngine {
 
     const { codes } = await synthesizeCodes(this.ctx, this.model, frameTokens, chars, this.codec.rvq, {
       deterministic: this.opts.deterministic ?? false,
-      seed: this.opts.seed ?? ((Math.random() * 2 ** 31) | 0),
+      seed: this.opts.seed ?? (Math.random() * 2 ** 31) | 0,
       rvqNormSq: this.rvqNormSq!,
     });
 
