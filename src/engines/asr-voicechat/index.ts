@@ -17,11 +17,13 @@
 // Parity gate: scripts/ci-smoke-voicechat.mjs (sample_general.wav transcript
 // matches the CoreML/torch reference from mobius test_e2e_stt.py).
 //
-// Weights are LOCAL artifacts (multi-GB source model): run
+// Weights are hosted at FluidInference/fluidaudio-web (voicechat-stt/) like the
+// other engines. To regenerate from the source checkpoint, run
 //   uv run --with safetensors,numpy,sentencepiece python3 scripts/extract-voicechat-stt.py
-// then serve public/models/voicechat-stt/ (gitignored; override via baseUrl).
+// and pass `baseUrl` pointing at the local export (the dev middleware serves
+// models-local/ at /models).
 
-import { fetchCached } from "../../core/modelCache.js";
+import { fetchCached, hfUrl } from "../../core/modelCache.js";
 import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "../asr-parakeet/raw-encoder.js";
@@ -32,10 +34,7 @@ import { tokensToWords } from "../../core/captions.js";
 import { loadVoicechatDecoder, createVoicechatStream, voicechatDecodeCont } from "./raw-decoder-voicechat.js";
 import { VOICECHAT_CFG } from "./config.js";
 
-// Dev: served from gitignored models-local/ by the vite middleware. Deployed
-// sites must pass a real host via `baseUrl` (weights are not in the bundle).
-// BASE_URL keeps the path correct under a non-root vite base (GitHub Pages).
-const DEFAULT_BASE_URL = `${import.meta.env.BASE_URL ?? "/"}models/voicechat-stt`;
+const WEIGHTS_REPO = "FluidInference/fluidaudio-web";
 const PROJ_D = 640; // joint enc projection width (1024→640 GEMM rides the encode batch)
 const FRAME_SEC = 0.08; // 10ms mel hop × 8× subsampling
 const BATCH_CHUNK = 768; // batch-transcribe pass size (subsampled frames), see EOU sweep
@@ -71,7 +70,7 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
   private stream: DecodeStream | null = null;
   private op: Promise<unknown> = Promise.resolve();
 
-  /** @param opts.baseUrl weight directory (default `/models/voicechat-stt`). */
+  /** @param opts.baseUrl weight directory override (default: the HF weights repo). */
   constructor(private opts: { baseUrl?: string } = {}) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
@@ -94,8 +93,8 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ onBackend: (b) => console.info(`[asr-voicechat] backend: ${b}`) });
-    const base = this.opts.baseUrl ?? DEFAULT_BASE_URL;
-    const bytes = (name: string) => fetchCached(`${base}/${name}`, onProgress, name);
+    const base = this.opts.baseUrl;
+    const bytes = (name: string) => fetchCached(base ? `${base}/${name}` : hfUrl(WEIGHTS_REPO, `voicechat-stt/${name}`), onProgress, name);
     const json = async (name: string) => JSON.parse(new TextDecoder().decode(await bytes(name)));
 
     const encMan = await json("encoder-f16.manifest.json");
@@ -108,7 +107,7 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
     this.dec = loadVoicechatDecoder(new Float32Array(decBin.buffer, decBin.byteOffset, decBin.byteLength / 4), decMan);
     this.projW = this.ctx.upload(this.dec.encW.slice(), 1024, PROJ_D);
     this.projB = this.ctx.upload(this.dec.encB.slice(), 1, PROJ_D);
-    onProgress?.({ file: base, loaded: 1, total: 1, fraction: 1 });
+    onProgress?.({ file: base ?? `${WEIGHTS_REPO}/voicechat-stt`, loaded: 1, total: 1, fraction: 1 });
   }
 
   // ── true streaming: per-frame causal (attRight 0) needs no lookahead —
