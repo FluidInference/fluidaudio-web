@@ -865,12 +865,12 @@ progress::-moz-progress-bar {
 
 .site-nav {
   margin-top: 10px;
-  color: var(--muted-text);
-  font-size: 0.85rem;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
 .site-nav a {
-  color: inherit;
+  color: var(--accent-text);
   text-decoration-color: color-mix(in srgb, currentcolor 55%, transparent);
   text-underline-offset: 0.16em;
 }
