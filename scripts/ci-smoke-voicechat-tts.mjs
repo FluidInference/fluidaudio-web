@@ -90,7 +90,10 @@ const { codes, trace } = await synthesizeCodes(ctx, model, frameTokens.slice(0, 
   captureWarm: true,
   captureSteps: 6,
 });
-console.log(`generation: ${T} frames in ${((Date.now() - t0) / 1000).toFixed(1)}s (${trace.msPerStep.toFixed(0)} ms/frame incl warmup amortized)`);
+console.log(
+  `generation: ${T} frames in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${trace.msPerStep.toFixed(0)} ms/frame ` +
+    `(backbone ${trace.backboneMsPerStep.toFixed(0)} + MoG/PRVQ ${trace.mogMsPerStep.toFixed(0)}, warmup amortized)`,
+);
 
 // warmup + step hiddens (diagnostics — loose gate; the hard gate is the codes)
 const wT = cfg.warmFrames;

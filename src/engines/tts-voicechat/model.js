@@ -511,6 +511,8 @@ export async function synthesizeCodes(ctx, model, frameTokens, tokenChars, rvq, 
   const nullPair = new Float32Array(D);
   nullPair.set(model.nullEmb);
   const t0 = Date.now();
+  let backboneMs = 0,
+    mogMs = 0;
   for (let i = 0; i < T; i++) {
     const tok = frameTokens[i];
     const fed = tok === cfg.textEos ? Int32Array.from(cfg.silenceTokens) : prevCode; // force silence on EOS
@@ -522,15 +524,21 @@ export async function synthesizeCodes(ctx, model, frameTokens, tokenChars, rvq, 
     const x = new Float32Array(2 * D);
     x.set(fC, 0);
     x.set(fU, D);
+    const tb = Date.now();
     const hidden = await backboneChunk(ctx, model, x, 1, warmT + i, caches);
+    backboneMs += Date.now() - tb;
     const hC = hidden.subarray(0, D),
       hU = hidden.subarray(D, 2 * D);
     if (opts.captureSteps && i < opts.captureSteps) trace.stepHidden.push(hidden.slice());
+    const tm = Date.now();
     prevCode = await generateStep(ctx, model, rvq, rvqNormSq, hC, hU, runOpts);
+    mogMs += Date.now() - tm;
     codes.push(prevCode);
     opts.onProgress?.(i + 1, T);
   }
   trace.msPerStep = (Date.now() - t0) / T;
+  trace.backboneMsPerStep = backboneMs / T;
+  trace.mogMsPerStep = mogMs / T;
   return { codes, trace };
 }
 
