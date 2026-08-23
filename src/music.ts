@@ -1,163 +1,321 @@
-// Music generation page: ACE-Step 1.5 Turbo via the musicgen-acestep client.
-// Engine module (and the 1.3 MB runtime) loads lazily after support probing.
+// Music generation page — ACE-Step 1.5 Turbo on WebGPU. This is the upstream
+// demo's UI and state machine (ace-step-1.5.wgsl-demo main.ts, MIT, Hamza
+// Qayyum) adapted to fluidaudio-web: model identities come from the
+// musicgen-acestep engine config and the inference worker lives with the
+// engine. Programmatic consumers should use engines/musicgen-acestep's
+// AceStepMusicClient instead of duplicating this wiring.
 
-import type { AceGenerationRequest, AceGenerationResult, AceModelCacheInfo, AceStepMusicClient } from "./engines/musicgen-acestep/index.js";
+import {
+  aceSeed,
+  checkSupport,
+  deleteAceModelCache,
+  inspectAceModelCache,
+  isAceFatalGpuErrorCode,
+  isAceWorkerMessage,
+  releaseAceAudioOutput,
+  requestAceModelStoragePersistence,
+  type AceGenerationRequest,
+  type AceGenerationResult,
+  type AceModelCacheInfo,
+  type AceSupportReport,
+  type AceWorkerMessage,
+} from "ace-step-1.5.wgsl";
 
-type MusicEngineModule = typeof import("./engines/musicgen-acestep/index.js");
+import lightModeIcon from "./engines/musicgen-acestep/assets/light-mode.png";
+import moonIcon from "./engines/musicgen-acestep/assets/moon.png";
 
-const $ = <T extends HTMLElement>(id: string): T => {
-  const element = document.getElementById(id);
-  if (element === null) throw new Error(`Missing #${id}`);
-  return element as T;
-};
+import { aceProductionWorkerConfiguration } from "./engines/musicgen-acestep/config.js";
+import {
+  formatDecimalBytes,
+  formatModelDownloadAmount,
+  INITIAL_MODEL_DOWNLOAD_PROGRESS,
+  isModelDownloadComplete,
+  MODEL_DOWNLOAD_TOTAL_BYTES,
+  shouldShowModelDownloadNote,
+  updateModelDownloadProgress,
+  type ModelDownloadProgress,
+} from "./engines/musicgen-acestep/model-download-progress.js";
+import { ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import "./engines/musicgen-acestep/style.css";
 
-const supportWarning = $<HTMLParagraphElement>("support-warning");
-const promptInput = $<HTMLTextAreaElement>("prompt");
-const lyricsInput = $<HTMLTextAreaElement>("lyrics");
-const durationInput = $<HTMLInputElement>("duration");
-const seedInput = $<HTMLInputElement>("seed");
-const bpmInput = $<HTMLInputElement>("bpm");
-const keyScaleInput = $<HTMLInputElement>("key-scale");
-const timeSignatureInput = $<HTMLInputElement>("time-signature");
-const vocalLanguageInput = $<HTMLInputElement>("vocal-language");
-const generateButton = $<HTMLButtonElement>("generate");
-const cancelButton = $<HTMLButtonElement>("cancel");
-const cacheStatus = $<HTMLSpanElement>("cache-status");
-const deleteModelButton = $<HTMLButtonElement>("delete-model");
-const formError = $<HTMLParagraphElement>("form-error");
-const progressPanel = $<HTMLDivElement>("progress-panel");
-const progressTitle = $<HTMLElement>("progress-title");
-const progressPercent = $<HTMLSpanElement>("progress-percent");
-const progressElement = $<HTMLProgressElement>("progress");
-const progressDetail = $<HTMLParagraphElement>("progress-detail");
-const resultHeading = $<HTMLHeadingElement>("result-heading");
-const resultPanel = $<HTMLDivElement>("result-panel");
-const audioPlayer = $<HTMLAudioElement>("audio-player");
-const download = $<HTMLAnchorElement>("download");
-const summary = $<HTMLElement>("summary");
-const status = $<HTMLParagraphElement>("status");
-const metrics = $<HTMLPreElement>("metrics");
+type DemoTheme = "light" | "dark";
 
-let engine: MusicEngineModule | undefined;
-let client: AceStepMusicClient | undefined;
-let cacheDetails: AceModelCacheInfo | undefined;
-let supported = false;
+const THEME_STORAGE_KEY = "ace-step-wgsl-demo-theme";
+const PROJECT_REPOSITORY_URL = "https://github.com/narcotic-sh/ace-step-1.5.wgsl";
+
+const form = requiredElement<HTMLFormElement>("generation-form");
+const githubProjectButton = requiredElement<HTMLButtonElement>("github-project-button");
+const githubProjectTooltip = requiredElement<HTMLDivElement>("github-project-tooltip");
+const promptInput = requiredElement<HTMLTextAreaElement>("prompt");
+const lyricsInput = requiredElement<HTMLTextAreaElement>("lyrics");
+const durationInput = requiredElement<HTMLInputElement>("duration");
+const seedInput = requiredElement<HTMLInputElement>("seed");
+const bpmInput = requiredElement<HTMLInputElement>("bpm");
+const keyScaleInput = requiredElement<HTMLInputElement>("key-scale");
+const timeSignatureInput = requiredElement<HTMLInputElement>("time-signature");
+const vocalLanguageInput = requiredElement<HTMLInputElement>("vocal-language");
+const formError = requiredElement<HTMLParagraphElement>("form-error");
+const generateButton = requiredElement<HTMLButtonElement>("generate");
+const cancelButton = requiredElement<HTMLButtonElement>("cancel");
+const supportWarning = requiredElement<HTMLParagraphElement>("support-warning");
+const downloadNote = requiredElement<HTMLParagraphElement>("download-note");
+const progressPanel = requiredElement<HTMLElement>("progress-panel");
+const progressTitle = requiredElement<HTMLHeadingElement>("progress-title");
+const progressDetail = requiredElement<HTMLParagraphElement>("progress-detail");
+const progressPercent = requiredElement<HTMLSpanElement>("progress-percent");
+const progressElement = requiredElement<HTMLProgressElement>("progress");
+const summaryDuration = requiredElement<HTMLElement>("summary-duration");
+const summaryTime = requiredElement<HTMLElement>("summary-time");
+const resultPanel = requiredElement<HTMLElement>("result-panel");
+const audioPlayer = requiredElement<HTMLAudioElement>("audio-player");
+const download = requiredElement<HTMLAnchorElement>("download");
+const settingsToggle = requiredElement<HTMLButtonElement>("settings-toggle");
+const settingsDialog = requiredElement<HTMLDialogElement>("settings-dialog");
+const settingsTitle = requiredElement<HTMLHeadingElement>("settings-dialog-title");
+const settingsClose = requiredElement<HTMLButtonElement>("settings-close");
+const cacheStatus = requiredElement<HTMLParagraphElement>("cache-status");
+const deleteModelButton = requiredElement<HTMLButtonElement>("delete-model");
+const runtimeMetrics = requiredElement<HTMLPreElement>("runtime-metrics");
+const themeToggle = requiredElement<HTMLButtonElement>("theme-toggle");
+const themeIcon = requiredElement<HTMLImageElement>("theme-icon");
+
+const formControls = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea"));
+
+let worker: Worker | undefined;
+let workerReady = false;
+let initializationRequestId: number | undefined;
+let activeJobId: number | undefined;
+let pendingRequest: AceGenerationRequest | undefined;
+let nextRequestId = 1;
+let nextJobId = 1;
 let busy = false;
+let supportDetails: AceSupportReport | undefined;
+let cacheDetails: AceModelCacheInfo | undefined;
+let workerDetails: unknown;
+let generationDetails: unknown;
+let diagnosticDetails: readonly unknown[] = [];
+let modelProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
 let coldDownload = true;
-let output: { url: string; storageId: string } | undefined;
-let diagnostics: unknown[] = [];
-let lastGeneration: unknown;
-
-void initialize();
-
-async function initialize(): Promise<void> {
-  status.textContent = "Loading runtime…";
-  try {
-    engine = await import("./engines/musicgen-acestep/index.js");
-    const support = await engine.checkSupport();
-    supported = support.supported;
-    if (!supported) {
-      supportWarning.textContent = support.errors.join(" ") || "This browser does not support the required WebGPU features.";
-      supportWarning.hidden = false;
-    } else if (support.warnings.length > 0) {
-      supportWarning.textContent = support.warnings.join(" ");
-      supportWarning.classList.remove("error");
-      supportWarning.hidden = false;
+let fatalGpuDiagnostic = false;
+let output: { readonly url: string; readonly storageId: string } | undefined;
+let tooltipRenderFrame: number | undefined;
+let pendingTooltipPoint: { readonly clientX: number } | undefined;
+let disposal:
+  | {
+      readonly requestId: number;
+      readonly resolve: () => void;
+      readonly reject: (reason: unknown) => void;
     }
-    status.textContent = supported ? "Ready." : "WebGPU unsupported.";
-    renderMetrics({ support });
-    await refreshCacheInfo();
-  } catch (error) {
-    supportWarning.textContent = `Could not initialize: ${message(error)}`;
-    supportWarning.hidden = false;
-    status.textContent = "Initialization failed.";
-  }
-  updateButtons();
+  | undefined;
+
+configureTheme();
+wireEvents();
+void initializePage();
+
+function configureTheme(): void {
+  const theme: DemoTheme = document.documentElement.dataset.aceDemoTheme === "dark" ? "dark" : "light";
+  applyTheme(theme);
 }
 
-generateButton.addEventListener("click", () => void generate());
-cancelButton.addEventListener("click", () => {
-  cancelButton.disabled = true;
-  client?.cancel();
-});
-deleteModelButton.addEventListener("click", () => void deleteModel());
-window.addEventListener("pagehide", () => {
-  if (output !== undefined) URL.revokeObjectURL(output.url);
-  client?.terminate();
-});
+function applyTheme(theme: DemoTheme): void {
+  document.documentElement.dataset.aceDemoTheme = theme;
+  const dark = theme === "dark";
+  const label = dark ? "Switch to light theme" : "Switch to dark theme";
+  themeToggle.setAttribute("aria-pressed", String(dark));
+  themeToggle.setAttribute("aria-label", label);
+  themeToggle.title = label;
+  themeIcon.src = dark ? lightModeIcon : moonIcon;
+  themeIcon.classList.toggle("is-sun", dark);
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta !== null) meta.content = dark ? "#141517" : "#f5f4ef";
+}
 
-async function generate(): Promise<void> {
-  if (engine === undefined || busy || !supported) return;
+function wireEvents(): void {
+  githubProjectButton.addEventListener("click", () => {
+    window.open(PROJECT_REPOSITORY_URL, "_blank", "noopener,noreferrer");
+  });
+  githubProjectButton.addEventListener("pointerenter", queueProjectTooltip);
+  githubProjectButton.addEventListener("pointermove", queueProjectTooltip);
+  githubProjectButton.addEventListener("pointerleave", hideProjectTooltip);
+  githubProjectButton.addEventListener("focus", showFocusedProjectTooltip);
+  githubProjectButton.addEventListener("blur", hideProjectTooltip);
+
+  themeToggle.addEventListener("click", () => {
+    const current: DemoTheme = document.documentElement.dataset.aceDemoTheme === "dark" ? "dark" : "light";
+    const next: DemoTheme = current === "dark" ? "light" : "dark";
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Theme selection still applies for the current visit.
+    }
+    applyTheme(next);
+  });
+
+  settingsToggle.addEventListener("click", () => {
+    if (settingsDialog.open) return;
+    settingsDialog.showModal();
+    document.documentElement.classList.add("has-modal-dialog");
+    settingsTitle.focus({ preventScroll: true });
+    void refreshCacheInfo();
+  });
+  settingsClose.addEventListener("click", () => settingsDialog.close());
+  settingsDialog.addEventListener("click", (event) => {
+    if (event.target === settingsDialog) settingsDialog.close();
+  });
+  settingsDialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("has-modal-dialog");
+    settingsToggle.focus({ preventScroll: true });
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void beginGeneration();
+  });
+  cancelButton.addEventListener("click", cancelActiveOperation);
+  deleteModelButton.addEventListener("click", () => {
+    void deleteDownloadedModel();
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (output !== undefined) URL.revokeObjectURL(output.url);
+    worker?.terminate();
+  });
+}
+
+function queueProjectTooltip(event: PointerEvent): void {
+  pendingTooltipPoint = { clientX: event.clientX };
+  if (tooltipRenderFrame !== undefined) return;
+  tooltipRenderFrame = requestAnimationFrame(renderProjectTooltip);
+}
+
+function renderProjectTooltip(): void {
+  tooltipRenderFrame = undefined;
+  const point = pendingTooltipPoint;
+  pendingTooltipPoint = undefined;
+  if (point === undefined) return;
+  showProjectTooltipAt(point.clientX);
+}
+
+function showFocusedProjectTooltip(): void {
+  const button = githubProjectButton.getBoundingClientRect();
+  showProjectTooltipAt(button.left + button.width / 2);
+}
+
+function showProjectTooltipAt(clientX: number): void {
+  githubProjectTooltip.hidden = false;
+  const width = githubProjectTooltip.offsetWidth;
+  const height = githubProjectTooltip.offsetHeight;
+  const button = githubProjectButton.getBoundingClientRect();
+  const margin = 8;
+  const gap = 12;
+  const left = Math.min(window.innerWidth - width - margin, Math.max(margin, clientX + gap));
+  const above = button.top - height - gap;
+  const top = above >= margin ? above : Math.min(window.innerHeight - height - margin, button.bottom + gap);
+  githubProjectTooltip.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+}
+
+function hideProjectTooltip(): void {
+  pendingTooltipPoint = undefined;
+  if (tooltipRenderFrame !== undefined) {
+    cancelAnimationFrame(tooltipRenderFrame);
+    tooltipRenderFrame = undefined;
+  }
+  githubProjectTooltip.hidden = true;
+}
+
+async function initializePage(): Promise<void> {
+  try {
+    await ensureCurrentAceDemoModelCache();
+  } catch (error) {
+    supportWarning.textContent = `Could not prepare model storage: ${errorMessage(error)} Reload to retry.`;
+    supportWarning.className = "support-warning is-error";
+    supportWarning.hidden = false;
+    updateActionAvailability();
+    updateRuntimeDetails();
+    return;
+  }
+
+  const [supportResult] = await Promise.allSettled([checkSupport({ modelProfile: "reference-bf16" }), refreshCacheInfo()]);
+  if (supportResult.status === "rejected") {
+    const message = `Could not inspect WebGPU support: ${errorMessage(supportResult.reason)}`;
+    supportWarning.textContent = message;
+    supportWarning.className = "support-warning is-error";
+    supportWarning.hidden = false;
+    updateActionAvailability();
+    updateRuntimeDetails();
+    return;
+  }
+
+  supportDetails = supportResult.value;
+  if (!supportDetails.supported) {
+    const message = supportDetails.errors.join(" ") || "This browser does not support the required WebGPU features.";
+    supportWarning.textContent = message;
+    supportWarning.className = "support-warning is-error";
+    supportWarning.hidden = false;
+  } else {
+    const warning = supportDetails.warnings.join(" ");
+    supportWarning.textContent = warning;
+    supportWarning.className = "support-warning";
+    supportWarning.hidden = warning === "";
+  }
+  updateActionAvailability();
+  updateRuntimeDetails();
+}
+
+async function beginGeneration(): Promise<void> {
+  if (busy || supportDetails?.supported !== true) return;
   let request: AceGenerationRequest;
   try {
-    request = readRequest();
+    request = readGenerationRequest();
   } catch (error) {
-    formError.textContent = message(error);
+    formError.textContent = errorMessage(error);
     formError.hidden = false;
     return;
   }
   formError.hidden = true;
+  formError.textContent = "";
   try {
-    await releaseOutput();
+    await releaseCurrentOutput();
   } catch (error) {
-    formError.textContent = `Could not release the previous song: ${message(error)}`;
+    formError.textContent = `Could not release the previous song: ${errorMessage(error)}`;
     formError.hidden = false;
     return;
   }
-
-  client ??= new engine.AceStepMusicClient();
-  diagnostics = [];
-  coldDownload = !engine.isModelDownloadComplete(cacheDetails);
+  pendingRequest = request;
+  generationDetails = undefined;
+  diagnosticDetails = [];
+  fatalGpuDiagnostic = false;
+  modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
+  coldDownload = !isModelDownloadComplete(cacheDetails);
   setBusy(true);
   resultPanel.hidden = true;
-  resultHeading.hidden = true;
-  setProgress(undefined, "Preparing model", "Checking WebGPU and browser storage");
 
-  void engine.requestAceModelStoragePersistence().catch(() => undefined);
+  void requestAceModelStoragePersistence().then(
+    (persisted) => {
+      workerDetails = { ...recordValue(workerDetails), storagePersisted: persisted };
+      updateRuntimeDetails();
+    },
+    () => {
+      // Persistence is advisory; authenticated OPFS caching remains available.
+    },
+  );
 
-  const startedAt = performance.now();
-  try {
-    const result = await client.generate(request, {
-      onDownloadProgress: (p) => {
-        setProgress(
-          p.fraction,
-          coldDownload ? "Downloading model" : "Preparing model data",
-          engine!.formatModelDownloadAmount(p),
-          `${p.percentage.toFixed(1)}%`,
-        );
-      },
-      onInitializationProgress: (p) => {
-        setProgress(undefined, "Preparing model", friendly(p.message, p.stage));
-      },
-      onGenerationProgress: (p) => {
-        const fraction = clamp(p.overallFraction);
-        setProgress(fraction, "Generating song", friendly(p.message, p.stage), `${Math.min(99, Math.round(fraction * 100))}%`);
-      },
-      onDiagnostic: (d) => {
-        diagnostics = [...diagnostics.slice(-19), d];
-      },
-    });
-    await publish(result, performance.now() - startedAt);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      setProgress(progressElement.value, "Cancelled", "The partial output was removed");
-    } else {
-      setProgress(progressElement.value, "Generation failed", message(error));
-    }
-  } finally {
-    setBusy(false);
-    await refreshCacheInfo();
+  if (workerReady && worker !== undefined) {
+    startPendingGeneration();
+    return;
   }
+  startWorkerInitialization();
 }
 
-function readRequest(): AceGenerationRequest {
-  if (engine === undefined) throw new Error("Runtime not loaded");
+function readGenerationRequest(): AceGenerationRequest {
   const prompt = promptInput.value.trim();
   if (prompt.length === 0) throw new Error("Enter a prompt for the song.");
 
-  const durationSeconds = Number(durationInput.value);
-  if (!Number.isInteger(durationSeconds) || durationSeconds < engine.ACE_MIN_DURATION_SECONDS || durationSeconds > engine.ACE_MAX_DURATION_SECONDS) {
-    throw new Error("Duration must be a whole number of seconds from 10 through 240.");
+  const minutes = Number(durationInput.value);
+  if (!Number.isFinite(minutes)) throw new Error("Enter a duration in minutes.");
+  const durationSeconds = Math.round(minutes * 60);
+  if (durationSeconds < 10 || durationSeconds > 240) {
+    throw new Error("Duration must be between 10 seconds and 4 minutes.");
   }
 
   const bpmText = bpmInput.value.trim();
@@ -167,19 +325,20 @@ function readRequest(): AceGenerationRequest {
   }
 
   const lyrics = lyricsInput.value;
+  const instrumental = lyrics.trim().length === 0;
   const metadata = {
     ...(bpm === undefined ? {} : { bpm }),
-    ...optional("keyScale", keyScaleInput.value),
-    ...optional("timeSignature", timeSignatureInput.value),
-    ...optional("vocalLanguage", vocalLanguageInput.value),
+    ...optionalText("keyScale", keyScaleInput.value),
+    ...optionalText("timeSignature", timeSignatureInput.value),
+    ...optionalText("vocalLanguage", vocalLanguageInput.value),
   };
-  const seed = seedInput.value.trim() === "" ? randomSeed() : engine.aceSeed(seedInput.value.trim());
+  const seed = seedInput.value.trim() === "" ? randomAceSeed() : aceSeed(seedInput.value.trim());
 
   return {
     generationProfile: "ace-turbo-v1-correctness",
     prompt,
     lyrics,
-    instrumental: lyrics.trim().length === 0,
+    instrumental,
     durationSeconds,
     seed,
     planner: { mode: "disabled" },
@@ -187,144 +346,354 @@ function readRequest(): AceGenerationRequest {
   };
 }
 
-async function publish(result: AceGenerationResult, elapsedMs: number): Promise<void> {
-  if (engine === undefined) return;
-  await releaseOutput();
-  const url = URL.createObjectURL(result.audio);
-  output = { url, storageId: result.audioStorageId };
-  audioPlayer.src = url;
-  audioPlayer.load();
-  download.href = url;
-  download.download = `ace-step-${result.seed}.wav`;
-  summary.textContent =
-    `${formatDuration(result.durationSeconds)} song · generated in ` +
-    `${formatElapsed(result.metrics.totalMs)} (wall ${formatElapsed(elapsedMs)}) · seed ${result.seed}`;
-  resultPanel.hidden = false;
-  resultHeading.hidden = false;
-  progressPanel.hidden = true;
-  lastGeneration = {
-    durationSeconds: result.durationSeconds,
-    seed: result.seed,
-    frameCount: result.frameCount,
-    modelManifestSha256: result.modelManifestSha256,
-    metrics: result.metrics,
-  };
-  renderMetrics();
+function startWorkerInitialization(): void {
+  worker?.terminate();
+  workerReady = false;
+  worker = new Worker(new URL("./engines/musicgen-acestep/worker.ts", import.meta.url), {
+    type: "module",
+    name: "ace-step-inference",
+  });
+  worker.addEventListener("message", onWorkerMessage);
+  worker.addEventListener("error", onWorkerError);
+  initializationRequestId = nextRequestId++;
+  setIndeterminateProgress("Preparing model", "Checking WebGPU and browser storage");
+  worker.postMessage({
+    type: "initialize",
+    requestId: initializationRequestId,
+    configuration: aceProductionWorkerConfiguration(),
+    modelSource: "cache-or-network",
+    reportProgress: true,
+    reportDiagnostics: true,
+  });
 }
 
-async function releaseOutput(): Promise<void> {
+function startPendingGeneration(): void {
+  const request = pendingRequest;
+  if (worker === undefined || !workerReady || request === undefined) return;
+  pendingRequest = undefined;
+  const jobId = nextJobId++;
+  activeJobId = jobId;
+  setDeterminateProgress(0, "Generating song", "Preparing inputs", "0%");
+  worker.postMessage({
+    type: "generate",
+    jobId,
+    request,
+    reportProgress: true,
+    reportDiagnostics: true,
+  });
+}
+
+function cancelActiveOperation(): void {
+  if (worker === undefined || !busy) return;
+  cancelButton.disabled = true;
+  if (initializationRequestId !== undefined) {
+    worker.postMessage({
+      type: "cancel-initialization",
+      requestId: initializationRequestId,
+    });
+  } else if (activeJobId !== undefined) {
+    worker.postMessage({ type: "cancel", jobId: activeJobId });
+  }
+}
+
+function onWorkerMessage(event: MessageEvent<unknown>): void {
+  if (!isAceWorkerMessage(event.data)) {
+    failOperation("The inference worker emitted an invalid message.", true);
+    return;
+  }
+  const message = event.data;
+  switch (message.type) {
+    case "initialization-progress": {
+      if (message.requestId !== initializationRequestId) return;
+      const updated = updateModelDownloadProgress(modelProgress, message);
+      if (updated !== modelProgress) {
+        modelProgress = updated;
+        renderModelProgress();
+      } else {
+        setIndeterminateProgress("Preparing model", friendlyProgressMessage(message.progress.message, message.progress.stage));
+      }
+      return;
+    }
+    case "ready":
+      if (message.requestId !== initializationRequestId) return;
+      initializationRequestId = undefined;
+      workerReady = true;
+      workerDetails = message.diagnostics;
+      updateRuntimeDetails();
+      void refreshCacheInfo();
+      startPendingGeneration();
+      return;
+    case "initialization-cancelled":
+      if (message.requestId !== initializationRequestId) return;
+      initializationRequestId = undefined;
+      pendingRequest = undefined;
+      resetWorker();
+      setBusy(false);
+      setDeterminateProgress(modelProgress.fraction, "Cancelled", formatModelDownloadAmount(modelProgress), `${modelProgress.percentage.toFixed(1)}%`);
+      void refreshCacheInfo();
+      return;
+    case "generation-progress": {
+      if (message.jobId !== activeJobId) return;
+      const updated = updateModelDownloadProgress(modelProgress, message);
+      if (updated !== modelProgress) {
+        modelProgress = updated;
+        renderModelProgress();
+      } else {
+        const fraction = clampFraction(message.progress.overallFraction);
+        setDeterminateProgress(
+          fraction,
+          "Generating song",
+          friendlyProgressMessage(message.progress.message, message.progress.stage),
+          `${Math.min(99, Math.round(fraction * 100))}%`,
+        );
+      }
+      return;
+    }
+    case "diagnostic":
+      if (message.diagnostic.code === "WEBGPU_DEVICE_LOST" || message.diagnostic.code === "WEBGPU_UNCAPTURED_ERROR") {
+        fatalGpuDiagnostic = true;
+      }
+      diagnosticDetails = [...diagnosticDetails.slice(-19), message.diagnostic];
+      updateRuntimeDetails();
+      return;
+    case "result":
+      if (message.jobId !== activeJobId) return;
+      activeJobId = undefined;
+      void publishResult(message.result);
+      return;
+    case "cancelled":
+      if (message.jobId !== activeJobId) return;
+      activeJobId = undefined;
+      pendingRequest = undefined;
+      setBusy(false);
+      setDeterminateProgress(
+        progressElement.value,
+        "Cancelled",
+        "The partial output was removed",
+        `${Math.round(clampFraction(progressElement.value) * 100)}%`,
+      );
+      return;
+    case "disposed":
+      if (disposal?.requestId !== message.requestId) return;
+      disposal.resolve();
+      disposal = undefined;
+      workerReady = false;
+      return;
+    case "error": {
+      if (disposal !== undefined && message.requestId === disposal.requestId) {
+        disposal.reject(new Error(message.error.message));
+        disposal = undefined;
+        return;
+      }
+      const fatal = fatalGpuDiagnostic || isAceFatalGpuErrorCode(message.error.code);
+      failOperation(`${message.error.code}: ${message.error.message}`, fatal);
+      return;
+    }
+  }
+}
+
+function onWorkerError(event: ErrorEvent): void {
+  failOperation(`Inference worker error: ${event.message}`, true);
+}
+
+async function publishResult(result: AceGenerationResult): Promise<void> {
+  try {
+    await releaseCurrentOutput();
+    const url = URL.createObjectURL(result.audio);
+    output = { url, storageId: result.audioStorageId };
+    audioPlayer.src = url;
+    audioPlayer.load();
+    download.href = url;
+    download.download = `ace-step-${result.seed}.wav`;
+    summaryDuration.textContent = formatDuration(result.durationSeconds);
+    summaryTime.textContent = formatElapsed(result.metrics.totalMs);
+    resultPanel.hidden = false;
+    generationDetails = {
+      durationSeconds: result.durationSeconds,
+      seed: result.seed,
+      sampleRateHz: result.sampleRateHz,
+      channelCount: result.channelCount,
+      frameCount: result.frameCount,
+      modelManifestSha256: result.modelManifestSha256,
+      metrics: result.metrics,
+    };
+    modelProgress = updateModelDownloadProgress(modelProgress, {
+      stage: "vae-load",
+      message: "network: complete 168791552/168791552 bytes",
+    });
+    setBusy(false);
+    progressPanel.hidden = true;
+    updateRuntimeDetails();
+    await refreshCacheInfo();
+  } catch (error) {
+    if (output?.storageId !== result.audioStorageId) {
+      await releaseAceAudioOutput(result.audioStorageId).catch(() => undefined);
+    }
+    failOperation(`Could not publish the WAV: ${errorMessage(error)}`, false);
+  }
+}
+
+async function releaseCurrentOutput(): Promise<void> {
   const current = output;
-  if (current === undefined || engine === undefined) return;
+  if (current === undefined) return;
   output = undefined;
   audioPlayer.pause();
   audioPlayer.removeAttribute("src");
   audioPlayer.load();
   download.removeAttribute("href");
   URL.revokeObjectURL(current.url);
-  await engine.releaseAceAudioOutput(current.storageId);
+  await releaseAceAudioOutput(current.storageId);
+}
+
+function failOperation(message: string, reset: boolean): void {
+  initializationRequestId = undefined;
+  activeJobId = undefined;
+  pendingRequest = undefined;
+  if (reset) resetWorker();
+  setBusy(false);
+  setDeterminateProgress(progressElement.value, "Generation failed", message, `${Math.round(clampFraction(progressElement.value) * 100)}%`);
+  void refreshCacheInfo();
+}
+
+function resetWorker(): void {
+  worker?.terminate();
+  worker = undefined;
+  workerReady = false;
+  workerDetails = undefined;
 }
 
 async function refreshCacheInfo(): Promise<void> {
-  if (engine === undefined) return;
   try {
-    cacheDetails = await engine.inspectAceModelCache();
+    cacheDetails = await inspectAceModelCache();
     if (!cacheDetails.supported) {
       cacheStatus.textContent = "Model storage is unavailable in this context.";
     } else if (cacheDetails.assetCount === 0 && cacheDetails.partialAssetCount === 0) {
-      cacheStatus.textContent = `Model not downloaded · ${engine.formatDecimalBytes(engine.MODEL_DOWNLOAD_TOTAL_BYTES)} on first generation`;
+      cacheStatus.textContent = `Not downloaded · ${formatDecimalBytes(MODEL_DOWNLOAD_TOTAL_BYTES)} on first generation`;
     } else {
       const partial = cacheDetails.partialAssetCount === 0 ? "" : ` · ${cacheDetails.partialAssetCount} incomplete`;
-      cacheStatus.textContent = `${engine.formatDecimalBytes(cacheDetails.sizeBytes)} · ${cacheDetails.assetCount} files${partial}`;
+      const persistence = cacheDetails.persisted ? "persistent browser storage" : "browser-managed storage";
+      cacheStatus.textContent = `${formatDecimalBytes(cacheDetails.sizeBytes)} · ` + `${cacheDetails.assetCount} files${partial} · ${persistence}`;
     }
   } catch (error) {
     cacheDetails = undefined;
-    cacheStatus.textContent = `Could not inspect model storage: ${message(error)}`;
+    cacheStatus.textContent = `Could not inspect model storage: ${errorMessage(error)}`;
   }
-  updateButtons();
-  renderMetrics();
+  downloadNote.hidden = !shouldShowModelDownloadNote(cacheDetails);
+  updateActionAvailability();
+  updateRuntimeDetails();
 }
 
-async function deleteModel(): Promise<void> {
-  if (engine === undefined || busy || !cacheDeletable()) return;
+async function deleteDownloadedModel(): Promise<void> {
+  if (busy || !cacheCanBeDeleted()) return;
   deleteModelButton.disabled = true;
   cacheStatus.textContent = "Releasing the runtime…";
   try {
-    await client?.dispose();
+    await disposeWorker();
     cacheStatus.textContent = "Deleting downloaded model…";
-    await engine.deleteAceModelCache();
+    await deleteAceModelCache();
+    modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     await refreshCacheInfo();
   } catch (error) {
-    cacheStatus.textContent = `Could not delete the model: ${message(error)}`;
+    cacheStatus.textContent = `Could not delete the model: ${errorMessage(error)}`;
   } finally {
-    updateButtons();
+    updateActionAvailability();
   }
 }
 
-function cacheDeletable(): boolean {
-  return cacheDetails?.supported === true && (cacheDetails.assetCount > 0 || cacheDetails.partialAssetCount > 0);
+async function disposeWorker(): Promise<void> {
+  const current = worker;
+  if (current === undefined) return;
+  if (!workerReady) {
+    resetWorker();
+    return;
+  }
+  const requestId = nextRequestId++;
+  await new Promise<void>((resolve, reject) => {
+    disposal = { requestId, resolve, reject };
+    current.postMessage({ type: "dispose", requestId });
+  });
+  current.terminate();
+  if (worker === current) worker = undefined;
+  workerReady = false;
+}
+
+function renderModelProgress(): void {
+  const title = coldDownload ? "Downloading model" : "Preparing model data";
+  setDeterminateProgress(modelProgress.fraction, title, formatModelDownloadAmount(modelProgress), `${modelProgress.percentage.toFixed(1)}%`);
 }
 
 function setBusy(value: boolean): void {
   busy = value;
-  for (const control of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")) {
-    control.disabled = value;
-  }
-  updateButtons();
+  form.setAttribute("aria-busy", String(value));
+  for (const control of formControls) control.disabled = value;
+  cancelButton.disabled = !value;
+  updateActionAvailability();
 }
 
-function updateButtons(): void {
-  generateButton.disabled = busy || !supported;
+function updateActionAvailability(): void {
+  generateButton.disabled = busy || supportDetails?.supported !== true;
   cancelButton.disabled = !busy;
-  deleteModelButton.disabled = busy || !cacheDeletable();
+  deleteModelButton.disabled = busy || !cacheCanBeDeleted();
 }
 
-function setProgress(fraction: number | undefined, title: string, detail: string, percent = ""): void {
+function cacheCanBeDeleted(): boolean {
+  return cacheDetails?.supported === true && (cacheDetails.assetCount > 0 || cacheDetails.partialAssetCount > 0);
+}
+
+function setDeterminateProgress(value: number, title: string, detail: string, percentage: string): void {
   progressPanel.hidden = false;
+  progressElement.max = 1;
+  progressElement.value = clampFraction(value);
   progressTitle.textContent = title;
   progressDetail.textContent = detail;
-  progressPercent.textContent = percent;
-  if (fraction === undefined) {
-    progressElement.removeAttribute("value");
-  } else {
-    progressElement.value = clamp(fraction);
-  }
+  progressPercent.textContent = percentage;
 }
 
-function renderMetrics(extra?: Record<string, unknown>): void {
-  metrics.textContent = JSON.stringify(
+function setIndeterminateProgress(title: string, detail: string): void {
+  progressPanel.hidden = false;
+  progressElement.removeAttribute("value");
+  progressTitle.textContent = title;
+  progressDetail.textContent = detail;
+  progressPercent.textContent = "";
+}
+
+function updateRuntimeDetails(): void {
+  runtimeMetrics.textContent = JSON.stringify(
     {
-      ...(extra ?? {}),
+      support: supportDetails ?? null,
       modelCache: cacheDetails ?? null,
-      runtime: client?.runtimeDiagnostics ?? null,
-      generation: lastGeneration ?? null,
-      diagnostics,
+      runtime: workerDetails ?? null,
+      generation: generationDetails ?? null,
+      diagnostics: diagnosticDetails,
     },
     null,
     2,
   );
 }
 
-function randomSeed() {
-  if (engine === undefined) throw new Error("Runtime not loaded");
-  const words = crypto.getRandomValues(new Uint32Array(2));
-  const value = (BigInt(words[0]!) << 32n) | BigInt(words[1]!);
-  return engine.aceSeed(value);
-}
-
-function optional<Key extends string>(key: Key, value: string): Readonly<Record<Key, string>> | Record<string, never> {
+function optionalText<Key extends string>(key: Key, value: string): Readonly<Record<Key, string>> | Record<string, never> {
   const text = value.trim();
   return text === "" ? {} : ({ [key]: text } as Record<Key, string>);
 }
 
-function friendly(text: string | undefined, stage: string): string {
-  if (text === undefined || text.trim() === "") return stage.replaceAll("-", " ");
-  const cleaned = text.replace(/^(?:cache|network):\s+.+?(?=\s+[0-9]+\/[0-9]+ bytes$)/u, "Processing model data");
-  return cleaned.length > 120 ? `${cleaned.slice(0, 117)}…` : cleaned;
+function randomAceSeed(): ReturnType<typeof aceSeed> {
+  const words = crypto.getRandomValues(new Uint32Array(2));
+  const value = (BigInt(words[0]!) << 32n) | BigInt(words[1]!);
+  return aceSeed(value);
+}
+
+function friendlyProgressMessage(message: string | undefined, stage: string): string {
+  if (message === undefined || message.trim() === "") {
+    return stage.replaceAll("-", " ");
+  }
+  const withoutFile = message.replace(/^(?:cache|network):\s+.+?(?=\s+[0-9]+\/[0-9]+ bytes$)/u, "Processing model data");
+  return withoutFile.length > 120 ? `${withoutFile.slice(0, 117)}…` : withoutFile;
 }
 
 function formatDuration(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  const minutes = Math.floor(whole / 60);
+  return `${minutes}:${String(whole % 60).padStart(2, "0")}`;
 }
 
 function formatElapsed(milliseconds: number): string {
@@ -333,10 +702,27 @@ function formatElapsed(milliseconds: number): string {
   return seconds < 60 ? `${seconds.toFixed(1)} s` : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
-function clamp(value: number): number {
-  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+function clampFraction(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }
 
-function message(error: unknown): string {
+function recordValue(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function requiredElement<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (element === null) throw new Error(`Missing #${id}`);
+  return element as T;
+}
+
+declare global {
+  interface DedicatedWorkerGlobalScope {
+    postMessage(message: AceWorkerMessage): void;
+  }
 }

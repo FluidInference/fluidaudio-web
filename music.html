@@ -1,158 +1,347 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ace-demo-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <title>FluidAudio Web — music generation (ACE-Step, WebGPU)</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: ui-sans-serif, system-ui, sans-serif;
+    <meta
+      name="description"
+      content="Generate music locally in your browser with ACE-Step 1.5 and WebGPU."
+    />
+    <meta name="theme-color" content="#f5f4ef" />
+    <title>Music — FluidAudio Web · ACE-Step 1.5 · WebGPU</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("ace-step-wgsl-demo-theme");
+        if (savedTheme === "dark") {
+          document.documentElement.dataset.aceDemoTheme = "dark";
+        }
+      } catch {
+        // The documented light default still works when storage is disabled.
       }
-      body {
-        max-width: 860px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-        line-height: 1.5;
-      }
-      h1 {
-        font-size: 1.4rem;
-      }
-      .row {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        align-items: center;
-        margin: 0.5rem 0;
-      }
-      [hidden] {
-        display: none !important;
-      }
-      select,
-      button,
-      input,
-      textarea {
-        font: inherit;
-        padding: 0.4rem 0.6rem;
-      }
-      textarea {
-        width: 100%;
-        min-height: 4rem;
-      }
-      label.field {
-        display: block;
-        margin: 0.5rem 0;
-        font-size: 0.9rem;
-      }
-      input.short {
-        width: 7rem;
-      }
-      #status {
-        font-size: 0.85rem;
-        opacity: 0.8;
-        min-height: 1.2rem;
-      }
-      #metrics {
-        white-space: pre-wrap;
-        background: color-mix(in srgb, Canvas 92%, CanvasText);
-        padding: 0.75rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        max-height: 18rem;
-        overflow: auto;
-      }
-      progress {
-        width: 100%;
-      }
-      .badge {
-        font-size: 0.7rem;
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        background: color-mix(in srgb, Canvas 85%, CanvasText);
-      }
-      .note {
-        font-size: 0.85rem;
-        opacity: 0.8;
-      }
-      .error {
-        color: color-mix(in srgb, red 70%, CanvasText);
-      }
-      audio {
-        width: 100%;
-      }
-    </style>
+    </script>
   </head>
   <body>
-    <h1>FluidAudio Web <span class="badge">Music generation</span></h1>
-    <nav class="row" style="font-size: 0.85rem">
-      <a href="./index.html">← Playground</a> · <a href="./verify.html">Verify all engines</a> ·
-      <a href="./live.html">🎤 Live captions</a>
-    </nav>
-    <p class="note">
-      ACE-Step 1.5 Turbo running entirely in your browser on WebGPU — no server.
-      Direct generation, stereo 48 kHz WAV, up to 4 minutes. Requires
-      <code>shader-f16</code> (Chrome on Apple Silicon or similar). First
-      generation downloads ~5.7 GB of model packages into browser storage.
-    </p>
-    <p id="support-warning" class="note error" hidden></p>
+    <main>
+      <nav class="desktop-project-links" aria-label="Project links">
+        <button
+          id="github-project-button"
+          class="project-link-button"
+          type="button"
+          aria-label="GitHub repository"
+          aria-describedby="github-project-tooltip"
+        >
+          <svg class="github-mark" viewBox="0 0 98 96" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0Z"
+            ></path>
+          </svg>
+        </button>
+      </nav>
 
-    <h2>Song</h2>
-    <label class="field">
-      Prompt
-      <textarea id="prompt" placeholder="e.g. dreamy synthwave with a driving bass line, female vocals"></textarea>
-    </label>
-    <label class="field">
-      Lyrics <span class="note">(leave empty for instrumental)</span>
-      <textarea id="lyrics" placeholder="[verse]&#10;..."></textarea>
-    </label>
-    <div class="row">
-      <label class="field">Duration (seconds)
-        <input id="duration" class="short" type="number" min="10" max="240" step="1" value="60" />
-      </label>
-      <label class="field">Seed <span class="note">(blank = random)</span>
-        <input id="seed" class="short" type="text" inputmode="numeric" />
-      </label>
-      <label class="field">BPM
-        <input id="bpm" class="short" type="number" min="30" max="300" step="1" />
-      </label>
-      <label class="field">Key/scale
-        <input id="key-scale" class="short" type="text" placeholder="C major" />
-      </label>
-      <label class="field">Time sig.
-        <input id="time-signature" class="short" type="text" placeholder="4/4" />
-      </label>
-      <label class="field">Vocal lang.
-        <input id="vocal-language" class="short" type="text" placeholder="en" />
-      </label>
-    </div>
-    <div class="row">
-      <button id="generate" disabled>Generate</button>
-      <button id="cancel" disabled>Cancel</button>
-      <span id="cache-status" class="note"></span>
-      <button id="delete-model" disabled>Delete downloaded model</button>
-    </div>
-    <p id="form-error" class="note error" hidden></p>
-    <div id="progress-panel" hidden>
-      <div class="row" style="justify-content: space-between">
-        <strong id="progress-title"></strong><span id="progress-percent"></span>
+      <div
+        id="github-project-tooltip"
+        class="project-link-tooltip"
+        role="tooltip"
+        hidden
+      >ace-step-1.5.wgsl by Hamza Qayyum</div>
+
+      <header class="demo-heading">
+        <div class="demo-title-row">
+          <h1>ACE-Step 1.5</h1>
+          <div class="header-controls">
+            <button
+              id="settings-toggle"
+              class="header-icon-button"
+              type="button"
+              aria-label="Open settings"
+              aria-haspopup="dialog"
+              aria-controls="settings-dialog"
+              title="Settings"
+            >
+              <img
+                class="gear-icon"
+                src="./src/engines/musicgen-acestep/assets/gear.png"
+                width="20"
+                height="20"
+                alt=""
+                aria-hidden="true"
+              />
+            </button>
+            <button
+              id="theme-toggle"
+              class="header-icon-button"
+              type="button"
+              aria-label="Switch to dark theme"
+              aria-pressed="false"
+              title="Switch to dark theme"
+            >
+              <img id="theme-icon" class="theme-icon" alt="" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div class="demo-intro">
+          <p class="demo-tagline">
+            Generate songs locally right here in the browser, powered by WebGPU.
+          </p>
+          <nav class="site-nav" aria-label="Site pages">
+            <a href="./index.html">Playground</a> · <a href="./verify.html">Verify</a> ·
+            <a href="./live.html">Live captions</a> · <span class="is-current">Music</span> ·
+            <a href="./bench.html">Bench</a>
+          </nav>
+          <p>
+            Part of <a href="./index.html">FluidAudio Web</a>, built on the
+            <a
+              href="https://huggingface.co/ACE-Step/Ace-Step1.5"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ace-Step 1.5</a
+            > music generation model.
+          </p>
+          <p>
+            The model is downloaded on first generation and cached for later visits.
+          </p>
+          <p id="download-note" class="download-note" hidden>
+            Total download size is <strong>5.75 GB</strong>
+          </p>
+          <p
+            id="support-warning"
+            class="support-warning"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+          <p class="mobile-project-links">
+            <a
+              href="https://github.com/narcotic-sh/ace-step-1.5.wgsl"
+              target="_blank"
+              rel="noopener noreferrer"
+              >ace-step-1.5.wgsl</a
+            > by Hamza Qayyum.
+          </p>
+        </div>
+      </header>
+
+      <form id="generation-form" class="generation-form" novalidate>
+        <label class="field-label" for="prompt">Prompt</label>
+        <textarea
+          id="prompt"
+          name="prompt"
+          rows="4"
+          maxlength="512"
+          placeholder="Describe the music you want to make…"
+          required
+        >Driving Latin percussion (congas, timbales, güiro), bright brass stabs, syncopated acoustic guitar riffs, festive accordion melody, punchy bass, euphoric fiesta energy</textarea>
+
+        <label class="field-label" for="lyrics">Lyrics</label>
+        <textarea
+          id="lyrics"
+          name="lyrics"
+          rows="7"
+          maxlength="4096"
+          placeholder="Lyrics are optional. Leave empty to generate an instrumental."
+        ></textarea>
+
+        <label class="field-label" for="duration">Duration</label>
+        <div class="unit-input">
+          <input
+            id="duration"
+            name="duration"
+            type="number"
+            min="0.17"
+            max="4"
+            step="0.25"
+            value="2"
+            inputmode="decimal"
+            aria-describedby="duration-unit"
+            required
+          />
+          <span id="duration-unit">minutes</span>
+        </div>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+
+        <details id="advanced" class="advanced-options">
+          <summary>Advanced</summary>
+          <div class="advanced-content">
+            <div class="advanced-grid">
+              <label>
+                Seed <span>(optional)</span>
+                <input
+                  id="seed"
+                  name="seed"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Random"
+                />
+              </label>
+              <label>
+                BPM <span>(optional)</span>
+                <input
+                  id="bpm"
+                  name="bpm"
+                  type="number"
+                  min="30"
+                  max="300"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="Auto"
+                />
+              </label>
+              <label>
+                Key / scale <span>(optional)</span>
+                <input
+                  id="key-scale"
+                  name="key-scale"
+                  type="text"
+                  placeholder="e.g. D minor"
+                />
+              </label>
+              <label>
+                Time signature <span>(optional)</span>
+                <input
+                  id="time-signature"
+                  name="time-signature"
+                  type="text"
+                  placeholder="e.g. 4/4"
+                />
+              </label>
+              <label>
+                Vocal language <span>(optional)</span>
+                <input
+                  id="vocal-language"
+                  name="vocal-language"
+                  type="text"
+                  placeholder="e.g. English"
+                />
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button id="generate" class="primary-button" type="submit" disabled>
+            Generate song
+          </button>
+          <button id="cancel" type="button" disabled>Cancel</button>
+        </div>
+      </form>
+
+      <section
+        id="progress-panel"
+        class="progress-panel"
+        aria-labelledby="progress-title"
+        hidden
+      >
+        <div class="panel-heading progress-heading">
+          <div>
+            <h2 id="progress-title">Preparing</h2>
+            <p id="progress-detail"></p>
+          </div>
+          <span id="progress-percent" aria-hidden="true"></span>
+        </div>
+        <div class="progress-body">
+          <div class="progress-track">
+            <progress id="progress" max="1" aria-labelledby="progress-title"></progress>
+            <span class="progress-indicator" aria-hidden="true"></span>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="result-panel"
+        class="result-panel"
+        aria-label="Generated song"
+        hidden
+      >
+        <div class="audio-row">
+          <audio
+            id="audio-player"
+            controls
+            preload="metadata"
+            aria-label="Generated song playback"
+          ></audio>
+        </div>
+        <div class="result-footer">
+          <dl class="result-details" aria-label="Generation summary">
+            <div>
+              <dt>Song length</dt>
+              <dd id="summary-duration">—</dd>
+            </div>
+            <div>
+              <dt>Generation time</dt>
+              <dd id="summary-time">—</dd>
+            </div>
+          </dl>
+          <a id="download" class="download-button" download="ace-step-song.wav">
+            Download WAV
+          </a>
+        </div>
+      </section>
+
+      <dialog
+        id="settings-dialog"
+        class="settings-dialog"
+        aria-labelledby="settings-dialog-title"
+      >
+        <div class="settings-dialog-heading">
+          <h2 id="settings-dialog-title" tabindex="-1">Settings</h2>
+          <button
+            id="settings-close"
+            class="dialog-close"
+            type="button"
+            aria-label="Close settings"
+            title="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="settings-content">
+          <div class="cache-row">
+            <div>
+              <strong>Downloaded model</strong>
+              <p
+                id="cache-status"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                Checking browser storage…
+              </p>
+            </div>
+            <button id="delete-model" class="danger-button" type="button" disabled>
+              Delete downloaded model
+            </button>
+          </div>
+          <details class="runtime-details">
+            <summary>Runtime details</summary>
+            <pre id="runtime-metrics" tabindex="0">Checking WebGPU support…</pre>
+          </details>
+        </div>
+      </dialog>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <a href="./index.html">FluidAudio Web</a> ·
+        original port by
+        <a href="https://narcotic.sh" target="_blank" rel="noopener noreferrer"
+          >Narcotic Software</a
+        >
       </div>
-      <progress id="progress" max="1"></progress>
-      <p id="progress-detail" class="note"></p>
-    </div>
-
-    <h2 id="result-heading" hidden>Result</h2>
-    <div id="result-panel" hidden>
-      <audio id="audio-player" controls></audio>
-      <p class="row">
-        <a id="download" download>Download WAV</a>
-        <span id="summary" class="note"></span>
-      </p>
-    </div>
-
-    <h2>Runtime</h2>
-    <p id="status"></p>
-    <pre id="metrics"></pre>
+      <div>
+        Made possible by
+        <a
+          href="https://github.com/FluidInference/fluidaudio-web/blob/main/THIRD-PARTY-LICENSES.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          open-source software
+        </a>
+      </div>
+    </footer>
 
     <script type="module" src="/src/music.ts"></script>
   </body>
