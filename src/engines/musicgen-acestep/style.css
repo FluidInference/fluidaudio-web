@@ -864,6 +864,7 @@ progress::-moz-progress-bar {
    Site nav row shared with the other pages (see src/theme/site.css). */
 
 .site-nav {
+  margin-top: 10px;
   color: var(--muted-text);
   font-size: 0.85rem;
 }
