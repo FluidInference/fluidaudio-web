@@ -42,6 +42,16 @@ export const ACE_OPT_0037_DIT_K4_WEIGHT_FILES = Object.freeze(
   [...ACE_OPT_0009_DIT_DENSE_WEIGHT_FILES],
 );
 
+/**
+ * OPT-0088: kernel-set identity for serving the unchanged OPT-0009 rev7
+ * dense package (`ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE`, tile layout
+ * unchanged) through the portable workgroup-memory dense kernel on devices
+ * without WebGPU subgroups. This is a kernel identity, not a package
+ * identity: the manifest, layout, and runtime profile stay OPT-0009's.
+ */
+export const ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID =
+  "opt-0088-dense-fp16-fp32-portable-v1" as const;
+
 export type AceDitDenseRuntimeProfile =
   | typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
   | typeof ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE

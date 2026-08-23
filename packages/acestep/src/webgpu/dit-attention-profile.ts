@@ -7,6 +7,14 @@ export const ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE =
 
 export const ACE_DIT_QUERY8_ATTENTION_KERNEL_SET_ID =
   "fixed32-subgroup-query8" as const;
+/**
+ * OPT-0088: the portable correctness attention oracle serving every
+ * attention family (full self, sliding self, cross) on devices without
+ * WebGPU subgroups. This is a kernel identity, not a runtime-profile
+ * identity; the existing profile contracts are unchanged.
+ */
+export const ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID =
+  "opt-0088-portable-attention-oracle-v1" as const;
 export const ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID =
   "opt-0062-query8-plus-quad-query32-full-self-v1" as const;
 export const ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID =
@@ -92,4 +100,30 @@ export function requireAceDitAttentionRuntimeProfile(
     return ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_PROFILE_CONTRACT;
   }
   throw new Error("ACE DiT attention runtime profile is not authenticated");
+}
+
+/**
+ * OPT-0088: kernel-set identity for an authenticated attention runtime
+ * profile under a given kernel backend. The portable backend serves every
+ * profile family through the single portable attention oracle; the
+ * subgroups backend keeps each profile contract's own kernel set. The
+ * profile is authenticated in both arms and the contract objects are never
+ * mutated.
+ */
+export function resolveAceDitAttentionKernelSetId(
+  profileId: AceDitAttentionRuntimeProfile,
+  kernelBackend: "portable" | "subgroups",
+):
+  | typeof ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID
+  | AceDitAttentionRuntimeProfileContract["kernelSetId"] {
+  const contract = requireAceDitAttentionRuntimeProfile(profileId);
+  if (kernelBackend === "portable") {
+    return ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID;
+  }
+  if (kernelBackend !== "subgroups") {
+    throw new Error(
+      "ACE DiT attention kernel backend is not authenticated",
+    );
+  }
+  return contract.kernelSetId;
 }

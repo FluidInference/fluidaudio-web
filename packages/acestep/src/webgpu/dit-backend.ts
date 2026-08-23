@@ -1046,7 +1046,8 @@ export type AceDitGemmBackend =
   | "fixed32-subgroups"
   | "mixed-opt-0009"
   | "mixed-opt-0037-k4"
-  | "mixed-opt-0056-selective";
+  | "mixed-opt-0056-selective"
+  | "mixed-opt-0088-portable";
 
 export interface AceDitGemmSelection {
   readonly modelProfile: AceModelProfileId;
@@ -1070,26 +1071,26 @@ export interface AceDitMixedGemmSelection {
   readonly backend:
     | "mixed-opt-0009"
     | "mixed-opt-0037-k4"
-    | "mixed-opt-0056-selective";
+    | "mixed-opt-0056-selective"
+    | "mixed-opt-0088-portable";
   readonly denseRuntimeProfile: AceDitDenseRuntimeProfile;
   readonly attentionRuntimeProfile: AceDitAttentionRuntimeProfile;
-  readonly gemmConfiguration: Extract<
-    AceDitGemmSelection["gemmConfiguration"],
-    { backend: "subgroups" }
-  >;
+  readonly gemmConfiguration: AceDitGemmSelection["gemmConfiguration"];
   readonly denseGemmConfiguration: Extract<
     AceDitDenseGemmRuntimeConfiguration,
     {
       backend:
         | "opt-0009-fp16-fp32"
         | "opt-0037-k4-fp16-partials"
-        | "opt-0056-selective-k4-exact-down";
+        | "opt-0056-selective-k4-exact-down"
+        | "opt-0088-dense-portable";
     }
   >;
   readonly attentionConfiguration: Extract<
     AceAttentionRuntimeConfiguration,
     {
       backend:
+        | "portable"
         | "fixed32-subgroup-query8"
         | "opt-0062-fixed32-quad-query32-full-self"
         | "opt-0070-fixed32-quad-query32-full-self-production";
@@ -1166,19 +1167,6 @@ export function resolveAceDitMixedGemmSelection(
     subgroupMaxSize,
   );
   if (
-    executionProfile.id !== ACE_REFERENCE_SUBGROUP_PROFILE.id ||
-    reference.modelProfile !== "reference-bf16" ||
-    reference.backend !== "fixed32-subgroups" ||
-    reference.gemmConfiguration.backend !== "subgroups"
-  ) {
-    throw new Error(
-      "Optimized mixed DiT requires the authenticated fixed32 reference profile",
-    );
-  }
-  if (subgroupMinSize !== 32 || subgroupMaxSize !== 32) {
-    throw new Error("Optimized mixed DiT requires fixed 32-lane subgroups");
-  }
-  if (
     denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
     denseRuntimeProfile !== ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE &&
     denseRuntimeProfile !== ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE
@@ -1212,6 +1200,48 @@ export function resolveAceDitMixedGemmSelection(
     throw new Error(
       "OPT-0070 production attention requires authenticated graph token counts",
     );
+  }
+  if (executionProfile.id === ACE_REFERENCE_PORTABLE_PROFILE.id) {
+    // OPT-0088: the production dense/attention runtime tuple served without
+    // WebGPU subgroups. Only the exact hosted product tuple is authenticated;
+    // every diagnostic seam continues to fail closed downstream.
+    if (
+      reference.modelProfile !== "reference-bf16" ||
+      reference.backend !== "portable" ||
+      reference.gemmConfiguration.backend !== "portable" ||
+      denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE ||
+      attentionProfile.id !==
+        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE
+    ) {
+      throw new Error(
+        "Portable mixed DiT requires the reference-bf16 portable profile " +
+          "with the OPT-0009 dense and OPT-0070 attention runtime profiles",
+      );
+    }
+    return Object.freeze({
+      modelProfile: "reference-bf16",
+      backend: "mixed-opt-0088-portable",
+      denseRuntimeProfile,
+      attentionRuntimeProfile: attentionProfile.id,
+      gemmConfiguration: reference.gemmConfiguration,
+      denseGemmConfiguration: Object.freeze({
+        backend: "opt-0088-dense-portable" as const,
+      }),
+      attentionConfiguration: Object.freeze({ backend: "portable" as const }),
+    });
+  }
+  if (
+    executionProfile.id !== ACE_REFERENCE_SUBGROUP_PROFILE.id ||
+    reference.modelProfile !== "reference-bf16" ||
+    reference.backend !== "fixed32-subgroups" ||
+    reference.gemmConfiguration.backend !== "subgroups"
+  ) {
+    throw new Error(
+      "Optimized mixed DiT requires the authenticated fixed32 reference profile",
+    );
+  }
+  if (subgroupMinSize !== 32 || subgroupMaxSize !== 32) {
+    throw new Error("Optimized mixed DiT requires fixed 32-lane subgroups");
   }
   const capability = Object.freeze({ subgroupMinSize, subgroupMaxSize });
   return Object.freeze({
@@ -5591,7 +5621,8 @@ export function planAceDitPhysicalCommandBufferCount(
     gemmBackend !== "fixed32-subgroups" &&
     gemmBackend !== "mixed-opt-0009" &&
     gemmBackend !== "mixed-opt-0037-k4" &&
-    gemmBackend !== "mixed-opt-0056-selective"
+    gemmBackend !== "mixed-opt-0056-selective" &&
+    gemmBackend !== "mixed-opt-0088-portable"
   ) {
     throw new TypeError(
       `Unknown ACE DiT GEMM backend ${String(gemmBackend)}`,
@@ -5600,14 +5631,15 @@ export function planAceDitPhysicalCommandBufferCount(
   const gemm = (rows: number, inner: number, columns: number): AceGemmShape =>
     Object.freeze({ rows, inner, columns });
   const planGemm = (shape: AceGemmShape): AceCooperativeGemmPlan =>
-    gemmBackend === "portable"
+    gemmBackend === "portable" || gemmBackend === "mixed-opt-0088-portable"
       ? planAceTiledGemm(shape)
       : planAceSubgroupGemm(shape);
   const planDenseGemm = (shape: AceGemmShape): AceCooperativeGemmPlan =>
     gemmBackend === "mixed-opt-0037-k4" ||
       gemmBackend === "mixed-opt-0056-selective"
       ? planAceOpt0032DenseK4Partials(shape)
-      : gemmBackend === "mixed-opt-0009"
+      : gemmBackend === "mixed-opt-0009" ||
+          gemmBackend === "mixed-opt-0088-portable"
         ? planAceOpt0009DenseGemm(shape)
         : planGemm(shape);
   const ranges = (shape: AceGemmShape): number =>
