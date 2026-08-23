@@ -11,8 +11,11 @@ the browser sibling of the Swift/CoreML
 tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
 1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
 
-**Live:** https://fluidaudio-web.hanweng9.workers.dev — playground (one engine
-at a time), [`/live`](https://fluidaudio-web.hanweng9.workers.dev/live.html)
+**Live:** https://fluidaudio-web.hanweng9.workers.dev — one page per function:
+[speech to text](https://fluidaudio-web.hanweng9.workers.dev) at the root
+(one engine at a time), [`/tts`](https://fluidaudio-web.hanweng9.workers.dev/tts.html)
+synthesis, [`/analyze`](https://fluidaudio-web.hanweng9.workers.dev/analyze.html)
+VAD + diarization, [`/live`](https://fluidaudio-web.hanweng9.workers.dev/live.html)
 captions, and [`/music`](https://fluidaudio-web.hanweng9.workers.dev/music.html)
 generation.
 
@@ -87,7 +90,9 @@ Release flow: bump `version` in the root `package.json` → `npm run sdk:pack` �
 
 Measured in-browser (Chrome/macOS, WebGPU, warm) on a real 284.5s recording via
 the since-removed verify page — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
-audio _generated_ per wall-second; not comparable to ASR).
+audio _generated_ per wall-second; not comparable to ASR). Each registry entry
+carries a `category` (`stt` / `tts` / `analysis`) that routes it to the matching
+demo page.
 
 | Engine                   | Model                             | RTFx                                                                                                      | Notes                                                                                                                                                                                      |
 | ------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -137,14 +142,14 @@ vendored as a 1 MB wasm module (pure Rust, no network):
   numbers/currency/times aren't in the G2P lexicon and used to be silently
   dropped from the audio.
 - **ITN** (spoken → written, `"i paid four dollars and fifty cents"` →
-  `"i paid $4.50"`) is **opt-in** (`setItn(true)` / the playground checkbox) —
+  `"i paid $4.50"`) is **opt-in** (`setItn(true)` / the STT page checkbox) —
   on everyday speech it also rewrites phrases like "no one" → "no 1".
 
 ## Quick start (repo)
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173 — playground; /live.html, /music.html
+npm run dev        # http://localhost:5173 — speech to text; /tts.html, /analyze.html, /live.html, /music.html
 npm run build      # static site → dist/
 npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
 
@@ -171,7 +176,8 @@ src/
   engines/      one folder per model on those kernels; registry.ts is the catalog
   core/         audio I/O, model cache, text normalization, shared types
   index.ts      SDK root (engines are subpath exports)
-  main.ts / live.ts / music.ts   demo pages (thin consumers of the registry / music client)
+  pages/        playground.ts — shared pick→load→run core for the demo pages
+  stt.ts / tts.ts / analyze.ts / live.ts / music.ts   demo pages (thin consumers of the registry / music client)
 packages/
   acestep/      vendored ace-step-1.5.wgsl music-gen runtime (own kernels,
                 scheduler, tests, and optimization ledger — see its AGENTS.md)

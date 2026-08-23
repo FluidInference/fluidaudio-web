@@ -39,10 +39,12 @@ export default defineConfig({
   worker: { format: "es" },
   build: {
     target: "es2022",
-    // Multi-page: playground + live captions + music generation.
+    // Multi-page: STT + TTS + analysis + live captions + music generation.
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
+        tts: resolve(__dirname, "tts.html"),
+        analyze: resolve(__dirname, "analyze.html"),
         live: resolve(__dirname, "live.html"),
         music: resolve(__dirname, "music.html"),
       },

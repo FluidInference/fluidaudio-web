@@ -9,7 +9,7 @@
          downloads. No Referer → HF serves the file on every host. -->
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#f5f4ef" />
-    <title>FluidAudio Web — in-browser inference (WebGPU/WASM)</title>
+    <title>FluidAudio Web — Speech to Text</title>
     <script>
       try {
         const savedTheme = localStorage.getItem("ace-step-wgsl-demo-theme");
@@ -25,7 +25,7 @@
     <main>
       <header class="site-header">
         <div class="site-title-row">
-          <h1 class="site-title">FluidAudio Web <span class="badge">Playground</span></h1>
+          <h1 class="site-title">FluidAudio Web <span class="badge">Speech to Text</span></h1>
           <div class="header-controls">
             <button
               id="theme-toggle"
@@ -40,13 +40,14 @@
           </div>
         </div>
         <nav class="site-nav" aria-label="Site pages">
-          <span class="is-current">Playground</span> · <a href="./live.html">Live captions</a> ·
+          <span class="is-current">Speech to Text</span> · <a href="./tts.html">Text to Speech</a> ·
+          <a href="./analyze.html">Other Audio Models</a> · <a href="./live.html">Live captions</a> ·
           <a href="./music.html">Music</a>
         </nav>
       </header>
 
       <p class="site-intro">
-        Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model weights (cached after).
+        Transcribe audio right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model weights (cached after).
         <span id="gpu" class="badge"></span>
       </p>
 
@@ -74,13 +75,9 @@
           ><input type="checkbox" id="itn" /> smart formatting (numbers → digits; can misfire on phrases like “no one”)</label
         >
       </div>
-      <div class="row" id="textInput" hidden>
-        <textarea id="text" placeholder="Text to synthesize…">Hello from FluidAudio, running entirely in your browser.</textarea>
-      </div>
       <div class="row">
         <button id="run" class="primary-button" disabled>Run</button>
         <button id="mic" disabled title="Live transcription from your microphone (rolling window)">🎤 Live</button>
-        <audio id="player" controls hidden></audio>
       </div>
 
       <h2>Output</h2>
@@ -101,6 +98,6 @@
       </div>
     </footer>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/stt.ts"></script>
   </body>
 </html>
