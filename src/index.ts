@@ -6,7 +6,7 @@
 // and the audio-decoding helper the demo pages use.
 
 export { ENGINES } from "./engines/registry.js";
-export type { EngineEntry, EngineKind } from "./engines/registry.js";
+export type { EngineEntry, EngineKind, EngineCategory } from "./engines/registry.js";
 export type {
   Engine,
   AsrEngine,

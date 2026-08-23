@@ -13,7 +13,7 @@ devDependency for offline reference generation).
 ## Layers
 
 ```
-UI / SDK consumer (main.ts, live.ts, @fluidinference/fluidaudio-web)
+UI / SDK consumer (pages/playground.ts, live.ts, @fluidinference/fluidaudio-web)
     ↓
 Engine interface (core/types.ts: AsrEngine, StreamingAsrEngine, TtsEngine, …)
     ↓  one folder per model under src/engines/, listed in core/registry.ts
@@ -108,9 +108,12 @@ so gate scripts end with `process.exit`.
 
 ## Entry points & SDK
 
-- `index.html` / `main.ts` — playground (ASR + TTS), `live.html` / `live.ts` —
-  mic captions with EOU finalization, `music.html` / `music.ts` — ACE-Step
-  music generation.
+- One page per function, each a thin entry over the shared
+  `src/pages/playground.ts` core (registry filtered by `EngineEntry.category`):
+  `index.html` / `stt.ts` — speech to text (mic mode, captions, vocab/ITN),
+  `tts.html` / `tts.ts` — synthesis, `analyze.html` / `analyze.ts` — VAD +
+  diarization. Plus `live.html` / `live.ts` — mic captions with EOU
+  finalization, and `music.html` / `music.ts` — ACE-Step music generation.
 - SDK: `npm run sdk:build` → `dist-sdk/`, published as
   `@fluidinference/fluidaudio-web` with per-engine subpath exports
   (`…/asr-parakeet` etc.); asset URLs use the cross-bundler
