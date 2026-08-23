@@ -4,13 +4,21 @@ import {
 } from "../src/webgpu/kernels/vae-conv1d-fp16-k4-row-reuse-16x64.js";
 import {
   AceOpt0057VaeK7ShapeSelectorKernel,
+  AceOpt0088VaeK7PortableShapeSelectorKernel,
 } from "../src/webgpu/kernels/vae-conv1d-fp16-k4-row-reuse-shape-selector.js";
+import {
+  ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID,
+} from "../src/webgpu/kernels/vae-conv1d-fp16-k4-row-reuse-portable.js";
 import {
   ACE_OPT_0048_VAE_CONV_TRANSPOSE1D_R8C4_K4_KERNEL_ID,
   planAceOpt0048VaeConvTranspose1dK4,
 } from "../src/webgpu/kernels/vae-conv-transpose1d-fp16-k4-partials.js";
 import {
+  ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R8C4_K4_PORTABLE_KERNEL_ID,
+} from "../src/webgpu/kernels/vae-conv-transpose1d-fp16-k4-portable.js";
+import {
   AceOpt0052VaeConvTranspose1dK4ShapeSelectorKernel,
+  AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel,
 } from "../src/webgpu/kernels/vae-conv-transpose1d-fp16-k4-shape-selector.js";
 import { planAceFp16VaeConv1d } from
   "../src/webgpu/kernels/vae-conv1d-fp16.js";
@@ -145,6 +153,130 @@ describe("OPT-0054 revision-7 selector owners", () => {
       { base: 0, count: plan.outputElements, control: range(control, 0) },
     )).rejects.toThrow(/destroyed/);
   });
+  it("caches one portable K7 pipeline/bind group and destroys both owners", async () => {
+    const device = fakeDevice();
+    const owner = AceOpt0088VaeK7PortableShapeSelectorKernel.create(device);
+    const shape = {
+      batch: 1,
+      inputFrames: 33,
+      inputChannels: 128,
+      outputChannels: 128,
+      kernelSize: 7,
+      stride: 1,
+      dilation: 1,
+      padding: 3,
+    } as const;
+    const plan = planAceFp16VaeConv1d(shape, "float16");
+    const bindings = {
+      input: fakeBinding(plan.inputBindingBytes),
+      weight: fakeBinding(plan.weightBindingBytes),
+      bias: fakeBinding(plan.biasBindingBytes),
+      output: fakeBinding(plan.outputBindingBytes),
+    };
+    const control = fakeBuffer(512);
+    const first = await owner.createDispatch(
+      "first",
+      "block-3-res-1-conv1",
+      shape,
+      bindings,
+      "float16",
+      { base: 0, count: plan.outputElements, control: range(control, 256) },
+    );
+    const second = await owner.createDispatch(
+      "second",
+      "block-3-res-1-conv1",
+      shape,
+      bindings,
+      "float16",
+      { base: 0, count: plan.outputElements, control: range(control, 0) },
+    );
+    expect(first.kernelId).toBe(
+      ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID,
+    );
+    expect(first.owner).toBe("row-reuse-k4");
+    expect(second.kernelId).toBe(first.kernelId);
+    expect(device.createShaderModule).toHaveBeenCalledOnce();
+    expect(device.createComputePipelineAsync).toHaveBeenCalledOnce();
+    expect(device.createBindGroup).toHaveBeenCalledOnce();
+    const pass = fakePass();
+    first.encode(pass);
+    second.encode(pass);
+    expect(pass.setBindGroup.mock.calls.map((call) => call[2]))
+      .toEqual([[256], [0]]);
+
+    owner.destroy();
+    owner.destroy();
+    expect(() => first.encode(pass)).toThrow(/destroyed/);
+    await expect(owner.createDispatch(
+      "after-destroy",
+      "block-3-res-1-conv1",
+      shape,
+      bindings,
+      "float16",
+      { base: 0, count: plan.outputElements, control: range(control, 0) },
+    )).rejects.toThrow(/destroyed/);
+  });
+
+  it("caches one portable K4 transpose pipeline/bind group and destroys both owners", async () => {
+    const device = fakeDevice();
+    const owner =
+      AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel.create(device);
+    const operation = planAceVaeDecoder(256).operations.find(({ label }) =>
+      label === "block-4-conv-t1"
+    )!;
+    if (operation.kind !== "conv-transpose1d") {
+      throw new Error("block-4 transpose fixture changed");
+    }
+    const plan = planAceOpt0048VaeConvTranspose1dK4(
+      operation.label,
+      operation.shape,
+    );
+    const bindings = {
+      input: fakeBinding(plan.inputBindingBytes),
+      weight: fakeBinding(plan.weightBindingBytes),
+      bias: fakeBinding(plan.biasBindingBytes),
+      output: fakeBinding(plan.outputBindingBytes),
+    };
+    const control = fakeBuffer(512);
+    const first = await owner.createDispatch(
+      "first",
+      operation.label,
+      operation.shape,
+      bindings,
+      { base: 0, count: plan.outputElements, control: range(control, 256) },
+    );
+    const second = await owner.createDispatch(
+      "second",
+      operation.label,
+      operation.shape,
+      bindings,
+      { base: 0, count: plan.outputElements, control: range(control, 0) },
+    );
+    expect(first.kernelId).toBe(
+      ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R8C4_K4_PORTABLE_KERNEL_ID,
+    );
+    expect(first.owner).toBe("k4-row-reuse");
+    expect(second.kernelId).toBe(first.kernelId);
+    expect(device.createShaderModule).toHaveBeenCalledOnce();
+    expect(device.createComputePipelineAsync).toHaveBeenCalledOnce();
+    expect(device.createBindGroup).toHaveBeenCalledOnce();
+    const pass = fakePass();
+    first.encode(pass);
+    second.encode(pass);
+    expect(pass.setBindGroup.mock.calls.map((call) => call[2]))
+      .toEqual([[256], [0]]);
+
+    owner.destroy();
+    owner.destroy();
+    expect(() => first.encode(pass)).toThrow(/destroyed/);
+    await expect(owner.createDispatch(
+      "after-destroy",
+      operation.label,
+      operation.shape,
+      bindings,
+      { base: 0, count: plan.outputElements, control: range(control, 0) },
+    )).rejects.toThrow(/destroyed/);
+  });
 });
 
 function fakeBinding(size: number): GPUBufferBinding {
@@ -169,6 +301,8 @@ function fakeDevice(): GPUDevice & {
     limits: {
       maxComputeInvocationsPerWorkgroup: 256,
       maxComputeWorkgroupSizeX: 256,
+      maxComputeWorkgroupSizeY: 8,
+      maxComputeWorkgroupStorageSize: 16_384,
       maxComputeWorkgroupsPerDimension: 65_535,
       maxStorageBufferBindingSize: 1_073_741_824,
       maxBufferSize: 1_073_741_824,

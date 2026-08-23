@@ -2,6 +2,8 @@ import {
   ACE_VAE_REVISION7_K7_ROW_REUSE_CONTRACTS,
 } from "../../model/manifest.js";
 import {
+  ACE_FP16_VAE_CONV1D_PORTABLE_KERNEL_ID,
+  AceFp16VaeConv1dKernel,
   type AceFp16VaeConv1dBindings,
   type AceFp16VaeConv1dOutputStorage,
   type AceFp16VaeConv1dPlan,
@@ -15,6 +17,10 @@ import {
   ACE_OPT_0051_VAE_CONV1D_ROW_REUSE_16X64_KERNEL_ID,
   AceOpt0051VaeConv1dK4RowReuse16x64Kernel,
 } from "./vae-conv1d-fp16-k4-row-reuse-16x64.js";
+import {
+  ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID,
+  AceOpt0088VaeConv1dK4RowReusePortableKernel,
+} from "./vae-conv1d-fp16-k4-row-reuse-portable.js";
 import type {
   AceVaeConv1dShape,
   AceVaeOutputRangeBinding,
@@ -22,6 +28,8 @@ import type {
 
 export const ACE_OPT_0057_VAE_K7_SHAPE_SELECTOR_KERNEL_ID =
   "ace-opt-0057-vae-k7-row-reuse-shape-selector-v1" as const;
+export const ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID =
+  "opt-0088-vae-k7-portable-shape-selector-v1" as const;
 
 export type AceOpt0057VaeK7Owner =
   | "row-reuse-k4"
@@ -163,6 +171,103 @@ export class AceOpt0057VaeK7ShapeSelectorKernel {
   private requireLive(): void {
     if (this.destroyed) {
       throw new Error("OPT-0057 VAE K7 selector was destroyed");
+    }
+  }
+}
+
+export interface AceOpt0088VaeK7PortableDispatch {
+  readonly label: string;
+  readonly selectorKernelId:
+    typeof ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID;
+  readonly operationLabel: string;
+  readonly owner: AceOpt0057VaeK7Owner;
+  readonly kernelId:
+    | typeof ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID
+    | typeof ACE_FP16_VAE_CONV1D_PORTABLE_KERNEL_ID;
+  readonly plan: AceFp16VaeConv1dPlan;
+  encode(pass: GPUComputePassEncoder): void;
+}
+
+/**
+ * Portable no-subgroups twin of the OPT-0057 revision-7 K7 owner. The frozen
+ * OPT-0057 route table and selection function are reused verbatim; only the
+ * owners change transports: row-reuse routes go to the OPT-0088 portable
+ * workgroup-staging kernel and native routes to the portable scalar-FP32
+ * kernel. Both owners are bit-identical to their subgroup siblings.
+ */
+export class AceOpt0088VaeK7PortableShapeSelectorKernel {
+  private destroyed = false;
+
+  private constructor(
+    private readonly native: AceFp16VaeConv1dKernel,
+    private readonly rowReuse: AceOpt0088VaeConv1dK4RowReusePortableKernel,
+  ) {}
+
+  static create(device: GPUDevice): AceOpt0088VaeK7PortableShapeSelectorKernel {
+    const native = AceFp16VaeConv1dKernel.create(device);
+    try {
+      const rowReuse = AceOpt0088VaeConv1dK4RowReusePortableKernel.create(
+        device,
+      );
+      return new AceOpt0088VaeK7PortableShapeSelectorKernel(native, rowReuse);
+    } catch (error) {
+      native.destroy();
+      throw error;
+    }
+  }
+
+  async createDispatch(
+    label: string,
+    operationLabel: string,
+    shape: AceVaeConv1dShape,
+    bindings: AceFp16VaeConv1dBindings,
+    outputStorage: AceFp16VaeConv1dOutputStorage,
+    range: AceVaeOutputRangeBinding,
+  ): Promise<AceOpt0088VaeK7PortableDispatch> {
+    this.requireLive();
+    const selection = selectAceOpt0057VaeK7(
+      operationLabel,
+      shape,
+      bindings.bias !== undefined,
+      outputStorage,
+    );
+    const dispatch = selection.route.owner === "row-reuse-k4"
+      ? await this.rowReuse.createDispatch(
+          label,
+          shape,
+          bindings,
+          outputStorage,
+          range,
+        )
+      : await this.native.createDispatch(
+          label,
+          shape,
+          bindings,
+          outputStorage,
+          range,
+        );
+    this.requireLive();
+    return Object.freeze({
+      label,
+      selectorKernelId: ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
+      operationLabel: selection.route.operationLabel,
+      owner: selection.route.owner,
+      kernelId: dispatch.kernelId,
+      plan: dispatch.plan,
+      encode: (pass: GPUComputePassEncoder): void => dispatch.encode(pass),
+    });
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.rowReuse.destroy();
+    this.native.destroy();
+  }
+
+  private requireLive(): void {
+    if (this.destroyed) {
+      throw new Error("OPT-0088 portable VAE K7 selector was destroyed");
     }
   }
 }

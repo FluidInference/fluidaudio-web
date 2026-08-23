@@ -40,6 +40,9 @@ import {
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_PRECISION_MAP_CANONICAL_JSON,
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_PRECISION_MAP_SHA256,
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
   ACE_VAE_FP32_ORACLE_PROFILE,
   ACE_VAE_RUNTIME_PROFILE_IDS,
   hashAceVaePrecisionMap,
@@ -47,6 +50,10 @@ import {
   type AceVaeAuthenticatedPackageIdentity,
   type AceVaeRuntimeProfileId,
 } from "../src/webgpu/vae-fp16-profile.js";
+import {
+  ACE_OPT_0054_VAE_REVISION7_MANIFEST_BYTES,
+  ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+} from "../src/model/package.js";
 
 const CANDIDATE = packageIdentity(
   "fp16-vae-experimental",
@@ -65,6 +72,12 @@ const PACKED_CANDIDATE = packageIdentity(
   6,
   ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256,
   ACE_OPT_0028_VAE_FP16_MANIFEST_BYTES,
+);
+const REVISION7_CANDIDATE = packageIdentity(
+  "fp16-vae-experimental",
+  7,
+  ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+  ACE_OPT_0054_VAE_REVISION7_MANIFEST_BYTES,
 );
 const DEVICE_LIMITS = Object.freeze({
   maxBufferSize: 256 * 1024 * 1024,
@@ -285,6 +298,35 @@ describe("OPT-0011 orthogonal VAE runtime profile", () => {
     })).toThrow(/requires shader-f16/);
   });
 
+  it("selects revision-7 portable dual-K4 without subgroup claims", () => {
+    const selected = selectAceVaeRuntimeProfile({
+      requestedProfile: "opt-0088-mixed-fp16-portable-dual-k4-v1",
+      package: REVISION7_CANDIDATE,
+      deviceFeatures: ["shader-f16"],
+      deviceLimits: DEVICE_LIMITS,
+      decoderPlan: planAceVaeDecoder(256),
+    });
+    expect(selected).toBe(ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE);
+    expect(selected).toMatchObject({
+      packageConverterRevision: 7,
+      manifestSha256: ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+      kernelBackend: "portable-workgroup-dual-k4",
+      kernelSetId: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+      requiredFeatures: ["shader-f16"],
+      requiredSubgroupSize: null,
+      precisionMapSha256:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256,
+    });
+    expect(selected.requiredFeatures).not.toContain("subgroups");
+    expect(() => selectAceVaeRuntimeProfile({
+      requestedProfile: "opt-0088-mixed-fp16-portable-dual-k4-v1",
+      package: REVISION7_CANDIDATE,
+      deviceFeatures: [],
+      deviceLimits: DEVICE_LIMITS,
+      decoderPlan: planAceVaeDecoder(256),
+    })).toThrow(/requires shader-f16/);
+  });
+
   it("keeps the FP32 oracle orthogonal to existing global profiles", () => {
     expect(ACE_VAE_RUNTIME_PROFILE_IDS).toEqual([
       "fp32-oracle",
@@ -296,6 +338,7 @@ describe("OPT-0011 orthogonal VAE runtime profile", () => {
       "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
       "opt-0054-mixed-fp16-fixed32-revision7-v1",
       "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+      "opt-0088-mixed-fp16-portable-dual-k4-v1",
     ]);
     expect(ACE_MODEL_PROFILE_IDS).toEqual(["reference-bf16", "raw-fp16"]);
     const selected = selectAceVaeRuntimeProfile({

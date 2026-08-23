@@ -21,6 +21,15 @@ import {
   type AceOpt0048VaeConvTranspose1dK4KernelId,
   type AceOpt0048VaeConvTranspose1dK4Plan,
 } from "./vae-conv-transpose1d-fp16-k4-partials.js";
+import {
+  ACE_OPT_0028_VAE_CONV_TRANSPOSE1D_PORTABLE_PACKED_KERNEL_ID,
+  AceOpt0028VaeConvTranspose1dPortablePackedKernel,
+  type AceOpt0028VaeConvTranspose1dPortablePackedDispatch,
+} from "./vae-conv-transpose1d-fp16-portable-packed.js";
+import {
+  AceOpt0088VaeConvTranspose1dK4PortableKernel,
+  type AceOpt0088VaeConvTranspose1dK4PortableKernelId,
+} from "./vae-conv-transpose1d-fp16-k4-portable.js";
 import type {
   AceVaeConvTranspose1dShape,
   AceVaeOutputRangeBinding,
@@ -28,6 +37,8 @@ import type {
 
 export const ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID =
   "ace-opt-0052-vae-convtranspose-exact-k4-shape-selector-v1" as const;
+export const ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID =
+  "opt-0088-vae-conv-transpose1d-k4-portable-shape-selector-v1" as const;
 
 const OUTPUT_RANGE_CONTROL_BYTES = 16;
 
@@ -259,6 +270,134 @@ export class AceOpt0052VaeConvTranspose1dK4ShapeSelectorKernel {
   private requireLive(): void {
     if (this.destroyed) {
       throw new Error("OPT-0052 ConvTranspose1D selector was destroyed");
+    }
+  }
+}
+
+export interface AceOpt0088VaeConvTranspose1dK4PortableSelectorDispatch {
+  readonly label: string;
+  readonly selectorKernelId:
+    typeof ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID;
+  readonly operationLabel: AceOpt0040VaeConvTranspose1dOperationLabel;
+  readonly owner: AceOpt0052VaeConvTranspose1dOwner;
+  readonly kernelId:
+    | typeof ACE_OPT_0028_VAE_CONV_TRANSPOSE1D_PORTABLE_PACKED_KERNEL_ID
+    | AceOpt0088VaeConvTranspose1dK4PortableKernelId;
+  readonly outputRange:
+    | AceOpt0036VaeConvTranspose1dRangePlan
+    | AceOpt0028VaeConvTranspose1dPortablePackedDispatch["outputRange"];
+  encode(pass: GPUComputePassEncoder): void;
+}
+
+/**
+ * Portable no-subgroups twin of the OPT-0052 revision-7 mixed-layout
+ * ConvTranspose owner. The frozen OPT-0052 route table and selection function
+ * are reused verbatim. Block 0 delegates to the unchanged OPT-0028 portable
+ * polyphase owner over the same rev7 polyphase tensor binding (the identical
+ * `weight` to `polyphaseWeight` rebinding the fixed32 selector applies);
+ * blocks 1-4 consume the package-native OPT-0048 K4 layout through the
+ * OPT-0088 portable K4 kernel.
+ */
+export class AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel {
+  private destroyed = false;
+
+  private constructor(
+    private readonly block0:
+      AceOpt0028VaeConvTranspose1dPortablePackedKernel,
+    private readonly k4: AceOpt0088VaeConvTranspose1dK4PortableKernel,
+  ) {}
+
+  static create(
+    device: GPUDevice,
+  ): AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel {
+    const block0 = AceOpt0028VaeConvTranspose1dPortablePackedKernel.create(
+      device,
+    );
+    try {
+      const k4 = AceOpt0088VaeConvTranspose1dK4PortableKernel.create(device);
+      return new AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel(
+        block0,
+        k4,
+      );
+    } catch (error) {
+      block0.destroy();
+      throw error;
+    }
+  }
+
+  async createDispatch(
+    label: string,
+    operationLabel: string,
+    shape: AceVaeConvTranspose1dShape,
+    bindings: AceOpt0052VaeConvTranspose1dBindings,
+    range: AceVaeOutputRangeBinding,
+  ): Promise<AceOpt0088VaeConvTranspose1dK4PortableSelectorDispatch> {
+    this.requireLive();
+    const selection = selectAceOpt0052VaeConvTranspose1d(
+      operationLabel,
+      shape,
+    );
+    if (selection.owner === "revision6-polyphase") {
+      const dispatch = await this.block0.createDispatch(
+        label,
+        shape,
+        {
+          input: bindings.input,
+          polyphaseWeight: bindings.weight,
+          bias: bindings.bias,
+          output: bindings.output,
+        },
+        range,
+      );
+      this.requireLive();
+      return Object.freeze({
+        label,
+        selectorKernelId:
+          ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
+        operationLabel: selection.operationLabel,
+        owner: selection.owner,
+        kernelId: dispatch.kernelId,
+        outputRange: dispatch.outputRange,
+        encode: (pass: GPUComputePassEncoder): void => dispatch.encode(pass),
+      });
+    }
+    const dispatch = await this.k4.createDispatch(
+      label,
+      operationLabel,
+      shape,
+      {
+        input: bindings.input,
+        weight: bindings.weight,
+        bias: bindings.bias,
+        output: bindings.output,
+      },
+      range,
+    );
+    this.requireLive();
+    return Object.freeze({
+      label,
+      selectorKernelId:
+        ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
+      operationLabel: selection.operationLabel,
+      owner: selection.owner,
+      kernelId: dispatch.kernelId,
+      outputRange: dispatch.outputRange,
+      encode: (pass: GPUComputePassEncoder): void => dispatch.encode(pass),
+    });
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.k4.destroy();
+    this.block0.destroy();
+  }
+
+  private requireLive(): void {
+    if (this.destroyed) {
+      throw new Error(
+        "OPT-0088 portable ConvTranspose1D selector was destroyed",
+      );
     }
   }
 }

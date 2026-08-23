@@ -20,6 +20,7 @@ import {
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_TOPOLOGY,
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_TOPOLOGY,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY,
   ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES,
   ACE_CAPPED_VAE_FP16_C2176_WORKSPACE_BYTES,
   ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES,
@@ -260,13 +261,18 @@ export type AceOpt0011Fp16VaeChunkGpuBackendOptions =
         readonly subgroupMinSize: 32;
         readonly subgroupMaxSize: 32;
       }>
+    | Readonly<{
+        readonly runtimeProfileId:
+          "opt-0088-mixed-fp16-portable-dual-k4-v1";
+      }>
   );
 
 type RequiredBackendRuntimeSelection =
   | Readonly<{
       readonly runtimeProfileId:
         | "opt-0011-mixed-fp16-portable-v1"
-        | "opt-0028-mixed-fp16-portable-exact-packed-v1";
+        | "opt-0028-mixed-fp16-portable-exact-packed-v1"
+        | "opt-0088-mixed-fp16-portable-dual-k4-v1";
     }>
   | Readonly<{
       readonly runtimeProfileId:
@@ -455,7 +461,9 @@ export class AceOpt0011Fp16VaeChunkGpuBackend
       const packageBindings = runtimeSelection.runtimeProfileId ===
           "opt-0054-mixed-fp16-fixed32-revision7-v1" ||
           runtimeSelection.runtimeProfileId ===
-            "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1"
+            "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1" ||
+          runtimeSelection.runtimeProfileId ===
+            "opt-0088-mixed-fp16-portable-dual-k4-v1"
         ? resolveAceOpt0054Fp16VaePackageBindings(
             planAceVaeDecoder(256),
             options.authenticatedPackage,
@@ -1641,7 +1649,9 @@ function requireBackendRuntimeSelection(
     untrusted.runtimeProfileId === undefined ||
     untrusted.runtimeProfileId === "opt-0011-mixed-fp16-portable-v1" ||
     untrusted.runtimeProfileId ===
-      "opt-0028-mixed-fp16-portable-exact-packed-v1"
+      "opt-0028-mixed-fp16-portable-exact-packed-v1" ||
+    untrusted.runtimeProfileId ===
+      "opt-0088-mixed-fp16-portable-dual-k4-v1"
   ) {
     return Object.freeze({
       runtimeProfileId: untrusted.runtimeProfileId ??
@@ -1787,6 +1797,14 @@ function requireKernelTopology(
       ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY.id
   ) {
     return ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY;
+  }
+  if (
+    runtimeProfile.id === "opt-0088-mixed-fp16-portable-dual-k4-v1" &&
+    runtimeProfile.kernelBackend === "portable-workgroup-dual-k4" &&
+    runtimeProfile.kernelSetId ===
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY.id
+  ) {
+    return ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY;
   }
   throw new Error(
     "OPT-0011 FP16 VAE retained an unsupported runtime profile topology",

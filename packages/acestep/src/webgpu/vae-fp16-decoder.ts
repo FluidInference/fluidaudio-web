@@ -42,7 +42,9 @@ import {
 } from "./kernels/vae-conv-transpose1d-fp16-shape-selector.js";
 import {
   ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID,
+  ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
   AceOpt0052VaeConvTranspose1dK4ShapeSelectorKernel,
+  AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel,
 } from "./kernels/vae-conv-transpose1d-fp16-k4-shape-selector.js";
 import {
   ACE_OPT_0048_VAE_CONV_TRANSPOSE1D_R4C8_K4_KERNEL_ID,
@@ -50,8 +52,17 @@ import {
 } from "./kernels/vae-conv-transpose1d-fp16-k4-partials.js";
 import {
   ACE_OPT_0057_VAE_K7_SHAPE_SELECTOR_KERNEL_ID,
+  ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
   AceOpt0057VaeK7ShapeSelectorKernel,
+  AceOpt0088VaeK7PortableShapeSelectorKernel,
 } from "./kernels/vae-conv1d-fp16-k4-row-reuse-shape-selector.js";
+import {
+  ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID,
+} from "./kernels/vae-conv1d-fp16-k4-row-reuse-portable.js";
+import {
+  ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R4C8_K4_PORTABLE_KERNEL_ID,
+  ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R8C4_K4_PORTABLE_KERNEL_ID,
+} from "./kernels/vae-conv-transpose1d-fp16-k4-portable.js";
 import {
   ACE_OPT_0051_VAE_CONV1D_ROW_REUSE_16X64_KERNEL_ID,
 } from "./kernels/vae-conv1d-fp16-k4-row-reuse-16x64.js";
@@ -113,6 +124,9 @@ import {
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP_SHA256,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256,
   ACE_OPT_0028_VAE_FP16_MANIFEST_BYTES,
   ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256,
   hashAceVaePrecisionMap,
@@ -179,6 +193,9 @@ export type AceOpt0011Fp16VaeDecoderKernelId =
   | typeof ACE_OPT_0051_VAE_CONV1D_ROW_REUSE_16X64_KERNEL_ID
   | typeof ACE_OPT_0048_VAE_CONV_TRANSPOSE1D_R4C8_K4_KERNEL_ID
   | typeof ACE_OPT_0048_VAE_CONV_TRANSPOSE1D_R8C4_K4_KERNEL_ID
+  | typeof ACE_OPT_0088_VAE_CONV1D_K4_ROW_REUSE_PORTABLE_KERNEL_ID
+  | typeof ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R4C8_K4_PORTABLE_KERNEL_ID
+  | typeof ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_R8C4_K4_PORTABLE_KERNEL_ID
   | typeof ACE_FP16_VAE_SNAKE_PORTABLE_KERNEL_ID
   | typeof ACE_FP16_VAE_ADD_PORTABLE_KERNEL_ID;
 
@@ -190,7 +207,8 @@ export type AceOpt0011Fp16VaeDecoderKernelSetId =
   | typeof ACE_OPT_0028_VAE_FP16_FIXED32_EXACT_PACKED_KERNEL_SET_ID
   | typeof ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_SET_ID
   | typeof ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_SET_ID
-  | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID;
+  | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID
+  | typeof ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID;
 
 export interface AceOpt0011Fp16VaeDecoderKernelTopology {
   readonly id: AceOpt0011Fp16VaeDecoderKernelSetId;
@@ -202,7 +220,8 @@ export interface AceOpt0011Fp16VaeDecoderKernelTopology {
     | "fixed32-subgroup-exact-packed"
     | "fixed32-subgroup-exact-packed-shape-selected"
     | "fixed32-subgroup-revision7-k4-shape-selected"
-    | "fixed32-subgroup-dual-k4-quality";
+    | "fixed32-subgroup-dual-k4-quality"
+    | "portable-workgroup-dual-k4";
   readonly ingress: typeof ACE_FP16_VAE_INGRESS_PORTABLE_KERNEL_ID;
   readonly conv1dK1:
     | typeof ACE_FP16_VAE_CONV1D_PORTABLE_KERNEL_ID
@@ -211,13 +230,15 @@ export interface AceOpt0011Fp16VaeDecoderKernelTopology {
   readonly conv1dK7:
     | typeof ACE_FP16_VAE_CONV1D_PORTABLE_KERNEL_ID
     | typeof ACE_FP16_VAE_CONV1D_SUBGROUP_KERNEL_ID
-    | typeof ACE_OPT_0057_VAE_K7_SHAPE_SELECTOR_KERNEL_ID;
+    | typeof ACE_OPT_0057_VAE_K7_SHAPE_SELECTOR_KERNEL_ID
+    | typeof ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID;
   readonly convTranspose1d:
     | AceFp16VaeConvTranspose1dKernelId
     | typeof ACE_OPT_0026_VAE_CONV_TRANSPOSE1D_KERNEL_ID
     | typeof ACE_OPT_0028_VAE_CONV_TRANSPOSE1D_PORTABLE_PACKED_KERNEL_ID
     | typeof ACE_OPT_0040_VAE_CONV_TRANSPOSE1D_SHAPE_SELECTOR_KERNEL_ID
-    | typeof ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID;
+    | typeof ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID
+    | typeof ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID;
   readonly snake: typeof ACE_FP16_VAE_SNAKE_PORTABLE_KERNEL_ID;
   readonly add: typeof ACE_FP16_VAE_ADD_PORTABLE_KERNEL_ID;
 }
@@ -322,6 +343,19 @@ export const ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY:
     add: ACE_FP16_VAE_ADD_PORTABLE_KERNEL_ID,
   });
 
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY:
+  Readonly<AceOpt0011Fp16VaeDecoderKernelTopology> = Object.freeze({
+    id: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+    backend: "portable-workgroup-dual-k4",
+    ingress: ACE_FP16_VAE_INGRESS_PORTABLE_KERNEL_ID,
+    conv1dK1: ACE_OPT_0028_VAE_K1_PORTABLE_PACKED_KERNEL_ID,
+    conv1dK7: ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
+    convTranspose1d:
+      ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID,
+    snake: ACE_FP16_VAE_SNAKE_PORTABLE_KERNEL_ID,
+    add: ACE_FP16_VAE_ADD_PORTABLE_KERNEL_ID,
+  });
+
 export type AceOpt0011Fp16VaeDecoderRuntimeOptions =
   | Readonly<{
       readonly runtimeProfileId?: "opt-0011-mixed-fp16-portable-v1";
@@ -365,6 +399,10 @@ export type AceOpt0011Fp16VaeDecoderRuntimeOptions =
         "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1";
       readonly subgroupMinSize: 32;
       readonly subgroupMaxSize: 32;
+    }>
+  | Readonly<{
+      readonly runtimeProfileId:
+        "opt-0088-mixed-fp16-portable-dual-k4-v1";
     }>;
 
 export interface AceOpt0011Fp16VaeWindowBindings {
@@ -447,6 +485,7 @@ export interface AceOpt0011Fp16VaeWindowDispatch {
     | "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1"
     | "opt-0054-mixed-fp16-fixed32-revision7-v1"
     | "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1"
+    | "opt-0088-mixed-fp16-portable-dual-k4-v1"
   >;
   readonly kernelSetId: AceOpt0011Fp16VaeDecoderKernelSetId;
   readonly kernelTopology: AceOpt0011Fp16VaeDecoderKernelTopology;
@@ -596,6 +635,22 @@ function requireRuntimeSelection(
       precisionMap: ACE_OPT_0028_VAE_FP16_PORTABLE_EXACT_PACKED_PRECISION_MAP,
     });
   }
+  if (runtimeProfileId === "opt-0088-mixed-fp16-portable-dual-k4-v1") {
+    if (
+      hashAceVaePrecisionMap(
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+      ) !== ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256
+    ) {
+      throw contractError(
+        "OPT-0088 portable dual-K4 precision-map identity changed",
+      );
+    }
+    return Object.freeze({
+      runtimeProfileId,
+      kernelTopology: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY,
+      precisionMap: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+    });
+  }
   if (
     runtimeProfileId !== "opt-0011-mixed-fp16-fixed32-k7-hybrid-v1" &&
     runtimeProfileId !==
@@ -693,6 +748,8 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
   private readonly subgroupConv1d: AceFp16VaeConv1dSubgroupKernel | undefined;
   private readonly revision7K7:
     AceOpt0057VaeK7ShapeSelectorKernel | undefined;
+  private readonly portableRevision7K7:
+    AceOpt0088VaeK7PortableShapeSelectorKernel | undefined;
   private readonly k1SubgroupGemm:
     AceOpt0025VaeK1SubgroupGemmKernel | undefined;
   private readonly k1PortablePacked:
@@ -708,6 +765,8 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
     AceOpt0040VaeConvTranspose1dShapeSelectorKernel | undefined;
   private readonly revision7ConvTranspose1d:
     AceOpt0052VaeConvTranspose1dK4ShapeSelectorKernel | undefined;
+  private readonly portableRevision7ConvTranspose1d:
+    AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel | undefined;
   private readonly pointwise: AceFp16VaePointwiseKernel;
   private readonly snake: AceFp16VaeSnakeKernel;
   private readonly controlBuffers = new Set<GPUBuffer>();
@@ -741,6 +800,10 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
           selection.subgroupCapability!,
         )
       : undefined;
+    this.portableRevision7K7 = selection.kernelTopology.conv1dK7 ===
+        ACE_OPT_0088_VAE_K7_PORTABLE_SHAPE_SELECTOR_KERNEL_ID
+      ? AceOpt0088VaeK7PortableShapeSelectorKernel.create(device)
+      : undefined;
     this.k1SubgroupGemm = selection.kernelTopology.conv1dK1 ===
         ACE_OPT_0025_VAE_K1_SUBGROUP_GEMM_KERNEL_ID
       ? AceOpt0025VaeK1SubgroupGemmKernel.create(
@@ -760,7 +823,9 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
           selection.kernelTopology.convTranspose1d ===
             ACE_OPT_0040_VAE_CONV_TRANSPOSE1D_SHAPE_SELECTOR_KERNEL_ID ||
           selection.kernelTopology.convTranspose1d ===
-            ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID
+            ACE_OPT_0052_VAE_CONV_TRANSPOSE1D_K4_SHAPE_SELECTOR_KERNEL_ID ||
+          selection.kernelTopology.convTranspose1d ===
+            ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID
       ? undefined
       : selection.kernelTopology.convTranspose1d ===
         ACE_FP16_VAE_CONV_TRANSPOSE1D_CONGRUENT_KERNEL_ID
@@ -793,6 +858,13 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
       ? AceOpt0052VaeConvTranspose1dK4ShapeSelectorKernel.create(
           device,
           selection.subgroupCapability!,
+        )
+      : undefined;
+    this.portableRevision7ConvTranspose1d =
+        selection.kernelTopology.convTranspose1d ===
+          ACE_OPT_0088_VAE_CONV_TRANSPOSE1D_K4_PORTABLE_SHAPE_SELECTOR_KERNEL_ID
+      ? AceOpt0088VaeConvTranspose1dK4PortableShapeSelectorKernel.create(
+          device,
         )
       : undefined;
     this.pointwise = AceFp16VaePointwiseKernel.create(device);
@@ -1060,6 +1132,7 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
     this.conv1d.destroy();
     this.subgroupConv1d?.destroy();
     this.revision7K7?.destroy();
+    this.portableRevision7K7?.destroy();
     this.k1SubgroupGemm?.destroy();
     this.k1PortablePacked?.destroy();
     this.convTranspose1d?.destroy();
@@ -1067,6 +1140,7 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
     this.portablePackedConvTranspose1d?.destroy();
     this.shapeSelectedPackedConvTranspose1d?.destroy();
     this.revision7ConvTranspose1d?.destroy();
+    this.portableRevision7ConvTranspose1d?.destroy();
     this.pointwise.destroy();
     this.snake.destroy();
   }
@@ -1165,6 +1239,26 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
             range,
           );
         }
+        if (
+          operation.shape.kernelSize === 7 &&
+          this.portableRevision7K7 !== undefined
+        ) {
+          return this.portableRevision7K7.createDispatch(
+            label,
+            operation.label,
+            operation.shape,
+            {
+              input,
+              weight: operationBindings.weight.binding,
+              ...(operationBindings.bias === undefined
+                ? {}
+                : { bias: operationBindings.bias.binding }),
+              output,
+            },
+            outputStorage,
+            range,
+          );
+        }
         const conv1d = operation.shape.kernelSize === 7 &&
             this.subgroupConv1d !== undefined
           ? this.subgroupConv1d
@@ -1192,6 +1286,20 @@ export class AceOpt0011Fp16VaeDecoderRuntime {
         }
         if (this.revision7ConvTranspose1d !== undefined) {
           return this.revision7ConvTranspose1d.createDispatch(
+            label,
+            operation.label,
+            operation.shape,
+            {
+              input,
+              weight: operationBindings.weight.binding,
+              bias: operationBindings.bias.binding,
+              output,
+            },
+            range,
+          );
+        }
+        if (this.portableRevision7ConvTranspose1d !== undefined) {
+          return this.portableRevision7ConvTranspose1d.createDispatch(
             label,
             operation.label,
             operation.shape,
@@ -2094,7 +2202,8 @@ function isRevision7RuntimeProfile(
   runtimeProfileId: AceOpt0011Fp16VaeWindowDispatch["runtimeProfileId"],
 ): boolean {
   return runtimeProfileId === "opt-0054-mixed-fp16-fixed32-revision7-v1" ||
-    runtimeProfileId === "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1";
+    runtimeProfileId === "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1" ||
+    runtimeProfileId === "opt-0088-mixed-fp16-portable-dual-k4-v1";
 }
 
 function requireOperationTensorRoles(
