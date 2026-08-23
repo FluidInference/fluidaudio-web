@@ -72,4 +72,12 @@ export const ENGINES: EngineEntry[] = [
     heavy: true,
     make: async () => new (await import("./eou-parakeet/index.js")).ParakeetEouEngine(),
   },
+  {
+    // Local weights: scripts/extract-voicechat-stt.py → public/models/voicechat-stt/ (gitignored).
+    id: "asr-voicechat",
+    label: "VoiceChat 11B STT",
+    kind: "audio",
+    heavy: true,
+    make: async () => new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(),
+  },
 ];
