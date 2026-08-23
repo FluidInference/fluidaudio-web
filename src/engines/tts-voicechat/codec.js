@@ -76,15 +76,20 @@ const softplus = (x) => (x > 20 ? x : Math.log1p(Math.exp(x)));
  * @param {*} ctx ComputeContext  @param {*} dec loadVoicechatCodec handle
  */
 export async function codecDecode(ctx, dec, latents, T) {
-  // [T,512] → [512,T]
-  let x = ctx.transpose(ctx.ensureTensor({ data: latents, rows: T, cols: 512 }));
-  for (const st of dec.stages) {
-    x = ctx.convTranspose1d(x, st.ct.w, { cout: st.ct.cout, k: st.ct.k, stride: st.ct.k });
-    for (const b of st.blocks) x = convNext(ctx, x, b);
-  }
-  const specT = ctx.matmul(ctx.transpose(x), dec.final); // [L, 18]
-  const sp = await ctx.download(specT);
-  const L = specT.rows; // 441*T spectrogram frames
+  // One batched submit for the whole conv chain (the download flushes it).
+  const arena = ctx.pushArena();
+  const [sp, L] = await ctx.withBatch(async () => {
+    // [T,512] → [512,T]
+    let x = ctx.transpose(ctx.ensureTensor({ data: latents, rows: T, cols: 512 }));
+    for (const st of dec.stages) {
+      x = ctx.convTranspose1d(x, st.ct.w, { cout: st.ct.cout, k: st.ct.k, stride: st.ct.k });
+      for (const b of st.blocks) x = convNext(ctx, x, b);
+    }
+    const specT = ctx.matmul(ctx.transpose(x), dec.final); // [L, 18]
+    return [await ctx.download(specT), specT.rows];
+  });
+  ctx.popArena(arena);
+  // L = 441*T spectrogram frames
 
   // mag/phase → complex spec → iSTFT (spec_to_wav, constrain_value_range=True)
   const win = new Float32Array(NFFT);

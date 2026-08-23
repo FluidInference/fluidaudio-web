@@ -9,11 +9,13 @@
 // and the dev middleware serves models-local/ at /models. The registry probe
 // hides the engine when the export is absent.
 //
-// Backend: forced WASM for now. The per-step loop interleaves host math
-// (RMSNorm/RoPE/attention over CPU KV caches, MoG selection, PRVQ search) with
-// ComputeContext GEMMs; on WebGPU that pattern is a sync storm, on WASM the
-// hops are free. Profiled under node (see PR): the GEMV copies dominate.
-// A GPU-resident step loop is deferred work.
+// Backend: auto (WebGPU preferred, WASM fallback). The backbone / CAS / MoG-MLP
+// tensor math runs on ComputeContext ops with backend-resident KV caches — on
+// WebGPU the per-step loop is a handful of batched submits; only the MoG
+// selection latents (2×1152 + 1024 + 512 floats/iteration) are read back for
+// the host-side f64 decision math (mixture argmax, PRVQ argmin). WASM remains
+// the bit-exact parity backend (codes == torch); WebGPU numerics drift at
+// accumulation-order level and are gated separately in the smoke.
 
 import { fetchCached } from "../../core/modelCache.js";
 import type { AudioData, ProgressCb, TtsEngine } from "../../core/types.js";
@@ -32,6 +34,9 @@ export interface VoicechatTtsOptions {
   /** Argmax-component MoG (no sampling noise) — the parity configuration. */
   deterministic?: boolean;
   seed?: number;
+  /** "auto" (default): WebGPU when available, else WASM. "wasm" pins the
+   * bit-exact parity backend (slower: no GPU-resident step loop). */
+  backend?: "auto" | "webgpu" | "wasm";
 }
 
 export class VoicechatTtsEngine implements TtsEngine {
@@ -53,8 +58,7 @@ export class VoicechatTtsEngine implements TtsEngine {
   }
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    // WASM by choice (see header): the host↔context interleave is free there.
-    this.ctx = await createContext({ backend: "wasm", onBackend: (b) => console.info(`[tts-voicechat] backend: ${b}`) });
+    this.ctx = await createContext({ backend: this.opts.backend ?? "auto", onBackend: (b) => console.info(`[tts-voicechat] backend: ${b}`) });
     // Local exports are mutable (extractor re-runs overwrite in place) — skip the cache.
     const bytes = (name: string) => fetchCached(`${this.base()}/${name}`, onProgress, name, { skipCache: true });
     const json = async (name: string) => JSON.parse(new TextDecoder().decode(await bytes(name)));

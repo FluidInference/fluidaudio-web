@@ -162,6 +162,87 @@ if (T === frameTokens.length) {
   assert(rms > 0.005 && rms < 0.2, `rms ${rms} in (0.005, 0.2)`);
 }
 
+// ── WebGPU track (dawn): GPU-resident step loop vs the same goldens ──────────
+// WASM above is the bit-exact parity backend; the GPU path drifts at
+// accumulation-order level, so its gate is codes-vs-golden measured explicitly
+// (exact today on dawn/Apple — a mismatch prints frame + count and fails).
+if (!process.argv.includes("--no-gpu")) {
+  let gctx = null;
+  try {
+    const { getDevice } = await import("./gpu-globals.mjs");
+    const { GpuContext } = await import("../src/gpu/compute.js");
+    gctx = new GpuContext(await getDevice());
+    await gctx.probeSubgroups();
+  } catch (e) {
+    console.log(`gpu track: skipped (no dawn WebGPU: ${e.message})`);
+  }
+  if (gctx) {
+    const gmodel = loadVoicechatTtsModel(gctx, ttsW, cfg);
+    const gcodec = loadVoicechatCodec(gctx, codecW);
+    const tg = Date.now();
+    const { codes: gcodes, trace: gtrace } = await synthesizeCodes(gctx, gmodel, frameTokens.slice(0, T), chars, gcodec.rvq, {
+      deterministic: true,
+      rvqNormSq,
+      syncTrace: true,
+    });
+    const genS = (Date.now() - tg) / 1000;
+    console.log(
+      `gpu generation: ${T} frames in ${genS.toFixed(1)}s — ${gtrace.msPerStep.toFixed(1)} ms/frame ` +
+        `(backbone ${gtrace.backboneMsPerStep.toFixed(1)} + MoG/PRVQ ${gtrace.mogMsPerStep.toFixed(1)}) · RTFx ${((T * 0.08) / genS).toFixed(2)}`,
+    );
+    if (process.argv.includes("--profile")) {
+      // timestamp-query truth: per-dispatch GPU times. Node wall-clock is
+      // dominated by the dawn binding's ~100 ms event-poll per dependent sync
+      // (browser mapAsync latency is sub-ms), so GPU busy time is the honest
+      // per-step hardware number. 1-step vs 2-step runs subtract out warmup.
+      const profRun = async (n) => {
+        gctx.startProfile(2040);
+        await synthesizeCodes(gctx, gmodel, frameTokens.slice(0, n), chars, gcodec.rvq, { deterministic: true, rvqNormSq });
+        return await gctx.endProfile();
+      };
+      const p1 = await profRun(1);
+      const p2 = await profRun(2);
+      const tot = (p) => p.reduce((s, e) => s + e.ms, 0);
+      console.log(`gpu profile: ${(tot(p2) - tot(p1)).toFixed(2)} GPU-ms/step (backbone+MoG); top kernels (2-step run incl. warmup):`);
+      for (const e of p2.slice(0, 10)) console.log(`  ${e.label.padEnd(16)} ${e.ms.toFixed(2)} ms × ${e.count}`);
+    }
+    let gMism = 0,
+      gFirst = -1;
+    for (let t = 0; t < T; t++)
+      for (let q = 0; q < cfg.numQuantizers; q++)
+        if (gcodes[t][q] !== goldCodes[t * cfg.numQuantizers + q]) {
+          gMism++;
+          if (gFirst < 0) gFirst = t;
+        }
+    console.log(`gpu codes: ${T * cfg.numQuantizers - gMism}/${T * cfg.numQuantizers} match${gFirst >= 0 ? `, first mismatch at frame ${gFirst}` : ""}`);
+    assert(gMism === 0, `gpu code matrix differs from torch reference (${gMism} entries, first at frame ${gFirst})`);
+    if (T === frameTokens.length) {
+      const latents = dequantize(gcodec.rvq, gcodes, cfg.latent, cfg.numQuantizers);
+      const tc = Date.now();
+      const wav = await codecDecode(gctx, gcodec, latents, T);
+      const codecS = (Date.now() - tc) / 1000;
+      const ref = golden.f32("wav_parity");
+      let se = 0,
+        ref2 = 0,
+        nan = false;
+      for (let i = 0; i < wav.length; i++) {
+        if (Number.isNaN(wav[i])) nan = true;
+        se += (wav[i] - ref[i]) ** 2;
+        ref2 += ref[i] * ref[i];
+      }
+      const nrmse = Math.sqrt(se / ref2);
+      const e2e = genS + codecS;
+      console.log(
+        `gpu codec: ${codecS.toFixed(1)}s (RTFx ${((T * 0.08) / codecS).toFixed(2)}) · NRMSE vs torch ${nrmse.toExponential(2)} · ` +
+          `e2e ${(T * 0.08).toFixed(1)}s audio in ${e2e.toFixed(1)}s (RTFx ${((T * 0.08) / e2e).toFixed(2)})`,
+      );
+      assert(!nan, "gpu waveform has no NaN samples");
+      assert(nrmse < 1e-2, `gpu waveform NRMSE ${nrmse}`);
+    }
+    gctx.destroy();
+  }
+}
+
 // ── sampled-mode sanity: seeded RNG path runs clean and actually samples ──
 {
   const N = Math.min(12, frameTokens.length);
