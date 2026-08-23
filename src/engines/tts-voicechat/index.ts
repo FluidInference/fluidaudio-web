@@ -54,13 +54,16 @@ export class VoicechatTtsEngine implements TtsEngine {
   constructor(private opts: VoicechatTtsOptions = {}) {}
 
   private base(): string {
-    return this.opts.baseUrl ?? `${import.meta.env.BASE_URL}models/voicechat-tts`;
+    // Published weights; pass baseUrl "/models/voicechat-tts" for local
+    // extractor output (dev middleware serves models-local/ there).
+    return this.opts.baseUrl ?? "https://huggingface.co/FluidInference/fluidaudio-web/resolve/main/voicechat-tts";
   }
 
   async load(onProgress?: ProgressCb): Promise<void> {
     this.ctx = await createContext({ backend: this.opts.backend ?? "auto", onBackend: (b) => console.info(`[tts-voicechat] backend: ${b}`) });
     // Local exports are mutable (extractor re-runs overwrite in place) — skip the cache.
-    const bytes = (name: string) => fetchCached(`${this.base()}/${name}`, onProgress, name, { skipCache: true });
+    // Local exports are mutable (skip cache); HF-hosted weights are immutable.
+    const bytes = (name: string) => fetchCached(`${this.base()}/${name}`, onProgress, name, { skipCache: this.opts.baseUrl !== undefined });
     const json = async (name: string) => JSON.parse(new TextDecoder().decode(await bytes(name)));
 
     this.cfg = await json("config.json");
