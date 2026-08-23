@@ -297,7 +297,7 @@ describe("OPT-0079 closed result contract", () => {
       trajectoryOrListeningClaim: false,
       unchangedTimingRetryAuthorized: false,
     });
-    expect(ledger).toContain("Next available ID: `OPT-0088`");
+    expect(ledger).toContain("Next available ID: `OPT-0089`");
     const row = ledger.split("\n").find((line) =>
       line.startsWith("| OPT-0079 |"));
     expect(row).toContain("| inconclusive | benchmark-only |");
