@@ -28,6 +28,24 @@ export interface EngineEntry {
   make: () => Promise<Engine>;
 }
 
+/**
+ * Dev convenience: when the vite middleware serves a local weight export at
+ * /models/<dir> (models-local/), prefer it over the HF default — localhost
+ * testing shouldn't re-download multi-GB weights that are already on disk.
+ * Production hosts 404/HTML here and fall through to the HF default.
+ */
+async function localWeightDir(dir: string, probeFile: string): Promise<string | undefined> {
+  try {
+    const base = (import.meta as any).env?.BASE_URL ?? "/";
+    const url = `${base}models/${dir}`;
+    const res = await fetch(`${url}/${probeFile}`, { method: "HEAD" });
+    if (res.ok && !(res.headers.get("content-type") || "").includes("text/html")) return url;
+  } catch {
+    /* fall through to hosted default */
+  }
+  return undefined;
+}
+
 export const ENGINES: EngineEntry[] = [
   {
     id: "vad-silero",
@@ -94,7 +112,10 @@ export const ENGINES: EngineEntry[] = [
     kind: "audio",
     category: "stt",
     heavy: true,
-    make: async () => new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(),
+    make: async () => {
+      const baseUrl = await localWeightDir("voicechat-stt", "decoder-fp32.manifest.json");
+      return new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(baseUrl ? { baseUrl } : {});
+    },
   },
   {
     id: "tts-voicechat",
@@ -115,6 +136,9 @@ export const ENGINES: EngineEntry[] = [
         return false;
       }
     },
-    make: async () => new (await import("./tts-voicechat/index.js")).VoicechatTtsEngine(),
+    make: async () => {
+      const baseUrl = await localWeightDir("voicechat-tts", "config.json");
+      return new (await import("./tts-voicechat/index.js")).VoicechatTtsEngine(baseUrl ? { baseUrl } : {});
+    },
   },
 ];
