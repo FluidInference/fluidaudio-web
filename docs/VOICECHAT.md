@@ -63,10 +63,18 @@ at roughly 5–6 GB of weights.
 2. **Phase 2: codec + TTS decoders** — both are conv/attention stacks well
    within existing kernel capability; useful standalone as a high-quality
    TTS voice ("Aria" latents ship in the checkpoint) even before the LLM.
-3. **Phase 3: LLM feasibility gate** — calibrated int4/mixed quant quality
-   measurement (offline, python) BEFORE any kernel work; then a WebGPU
-   Mamba2+MLP step microbenchmark at real geometry. Only if both pass does a
-   half-duplex browser VoiceChat get built.
+3. **Phase 3: LLM feasibility gate — RUN 2026-08-23: FAILED.** Calibrated
+   sub-8-bit quantization does not recover quality on this checkpoint: best
+   point within a 5.0-bit budget was **88.6% top-1 / KL 0.117** (GPTQ+AWQ
+   int4 per-block-32 body + per-channel int8 heads, 4.963 eff. bits) against
+   a ≥98% pass line; the crossover sits above 6.5 bits (int6 AWQ = 96.4%,
+   ~7.1 GB). The damage is distributed hidden-state drift across all 27
+   Mamba2 layers rather than a few sensitive ones, so mixed precision cannot
+   buy it back under budget. A half-duplex browser VoiceChat is therefore
+   shelved; reopening it requires a stronger method class (palettized LUT
+   quantization, QuIP#/SpinQuant-style rotation, or QAT on fused
+   embeddings), not more PTQ tuning. Full evidence: the calibrated-quant
+   harness and results in the mobius voicechat trial.
 4. **Full duplex** stays native (FluidAudio Swift/CoreML — encoder, RNNT, and
    the full 9B already converted and real-time viable there).
 
