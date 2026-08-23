@@ -25,6 +25,7 @@ import lightModeIcon from "./engines/musicgen-acestep/assets/light-mode.png";
 import moonIcon from "./engines/musicgen-acestep/assets/moon.png";
 
 import { aceProductionWorkerConfiguration } from "./engines/musicgen-acestep/config.js";
+import { aceInferenceWorkerName } from "./engines/musicgen-acestep/worker-name.js";
 import {
   formatDecimalBytes,
   formatModelDownloadAmount,
@@ -427,7 +428,7 @@ function startWorkerInitialization(): void {
   workerReady = false;
   worker = new Worker(new URL("./engines/musicgen-acestep/worker.ts", import.meta.url), {
     type: "module",
-    name: "ace-step-inference",
+    name: aceInferenceWorkerName(),
   });
   worker.addEventListener("message", onWorkerMessage);
   worker.addEventListener("error", onWorkerError);
