@@ -64,6 +64,101 @@ fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) t
   }
 }`;
 
+// Thin-M GEMV family (M ≤ 4, fp32 B): decode-loop GEMVs are pure weight-bandwidth
+// reads, but the 64×64 tile kernels launch only N/64 workgroups at M=2 — far too
+// few to cover memory latency (measured ~26 GB/s effective on the voicechat
+// backbone). Split-K: pass 1 launches (N-strip)·KS workgroups, each accumulating
+// a ~32-step K-slice (B reads stay coalesced across threads, all M rows share
+// every B read); pass 2 reduces the KS partials + bias + act. Consecutive
+// dispatches in a pass serialize on barriers, so per-dispatch occupancy is the
+// lever — hence KS up to 64.
+export const GEMV_PART_WGSL = `
+struct Meta { M:u32, N:u32, K:u32, KS:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read_write> P: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let n = gid.x;
+  let s = gid.y;
+  if (n >= m.N || s >= m.KS) { return; }
+  let kPer = (m.K + m.KS - 1u) / m.KS;
+  let k0 = s * kPer;
+  let k1 = min(m.K, k0 + kPer);
+  var acc: array<f32, 4>;
+  for (var i = 0u; i < 4u; i++) { acc[i] = 0.0; }
+  for (var k = k0; k < k1; k++) {
+    let b = B[k * m.N + n];
+    for (var r = 0u; r < m.M; r++) { acc[r] += A[r * m.K + k] * b; }
+  }
+  for (var r = 0u; r < m.M; r++) { P[(s * m.M + r) * m.N + n] = acc[r]; }
+}`;
+
+export const GEMV_REDUCE_WGSL = `
+struct Meta { M:u32, N:u32, KS:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> P: array<f32>;
+@group(0) @binding(1) var<storage, read> bias: array<f32>;
+@group(0) @binding(2) var<storage, read_write> C: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+${WGSL_ACTF}
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let n = gid.x;
+  if (n >= m.N) { return; }
+  for (var r = 0u; r < m.M; r++) {
+    var v = 0.0;
+    for (var s = 0u; s < m.KS; s++) { v += P[(s * m.M + r) * m.N + n]; }
+    if (m.hasBias == 1u) { v += bias[n]; }
+    C[r * m.N + n] = actf(v, m.act);
+  }
+}`;
+
+// vec4-column variant (N%4==0): each thread owns 4 consecutive columns via one
+// vec4 B load per k — 4× the bytes in flight per thread at the same thread
+// count, which is what the latency-bound weight stream needs.
+export const GEMV_PART4_WGSL = `
+struct Meta { M:u32, N4:u32, K:u32, KS:u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> P: array<vec4<f32>>;
+@group(0) @binding(3) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let n4 = gid.x;
+  let s = gid.y;
+  if (n4 >= m.N4 || s >= m.KS) { return; }
+  let kPer = (m.K + m.KS - 1u) / m.KS;
+  let k0 = s * kPer;
+  let k1 = min(m.K, k0 + kPer);
+  var acc: array<vec4<f32>, 4>;
+  for (var i = 0u; i < 4u; i++) { acc[i] = vec4<f32>(0.0); }
+  for (var k = k0; k < k1; k++) {
+    let b = B[k * m.N4 + n4];
+    for (var r = 0u; r < m.M; r++) { acc[r] += A[r * m.K + k] * b; }
+  }
+  for (var r = 0u; r < m.M; r++) { P[(s * m.M + r) * m.N4 + n4] = acc[r]; }
+}`;
+
+export const GEMV_REDUCE4_WGSL = `
+struct Meta { M:u32, N4:u32, KS:u32, act:u32, hasBias:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> P: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> bias: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> C: array<vec4<f32>>;
+@group(0) @binding(3) var<uniform> m: Meta;
+${WGSL_ACTF}
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let n4 = gid.x;
+  if (n4 >= m.N4) { return; }
+  for (var r = 0u; r < m.M; r++) {
+    var v = vec4<f32>(0.0);
+    for (var s = 0u; s < m.KS; s++) { v += P[(s * m.M + r) * m.N4 + n4]; }
+    if (m.hasBias == 1u) { v += bias[n4]; }
+    C[r * m.N4 + n4] = vec4<f32>(actf(v.x, m.act), actf(v.y, m.act), actf(v.z, m.act), actf(v.w, m.act));
+  }
+}`;
+
 // Vectorized GEMM (siboehm kernel 6): same 64×64 block / 4×4 micro-tile, but As is
 // staged TRANSPOSED ([BK][BM]) so each thread's inner-loop A read is 4 contiguous
 // floats (bank-conflict-free, vec4-loadable) and the 4×4 MAC is 4 vec4 FMAs. Cuts

@@ -78,6 +78,12 @@ test("matmul", "matmul vec4 shape + fused add", 1e-3, async () => {
   const [dg, dw] = pair(64, 256);
   return [await g.download(g.matmul(ag, bg, { act: "relu", add: dg })), await w.download(w.matmul(aw, bw, { act: "relu", add: dw }))];
 });
+test("matmulGemv", "matmulGemv (thin-M split-K route)", 1e-3, async () => {
+  const [ag, aw] = pair(2, 384);
+  const [bg, bw] = pair(384, 100);
+  const [big, biw] = pair(1, 100);
+  return [await g.download(g.matmul(ag, bg, { bias: big, act: "gelu" })), await w.download(w.matmul(aw, bw, { bias: biw, act: "gelu" }))];
+});
 test("matmulV2", "matmulV2", 1e-3, async () => {
   const [ag, aw] = pair(33, 48);
   const [bg, bw] = pair(48, 52);
@@ -221,6 +227,13 @@ test("conv2d", "conv2d cin=1 3x3 s2 (c1 route) asym pad", 1e-3, async () => {
   const [wg, ww] = pair(1, 8 * 9);
   const o = { cout: 8, cin: 1, h: 12, w: 10, kh: 3, kw: 3, strideH: 2, strideW: 2, padTop: 1, padBottom: 0, padLeft: 1, padRight: 0 };
   return [await g.download(g.conv2d(xg, wg, o)), await w.download(w.conv2d(xw, ww, o))];
+});
+test("convTranspose1d", "convTranspose1d k==stride (GEMM route)", 1e-3, async () => {
+  const [xg, xw] = pair(5, 11);
+  const [wg, ww] = pair(1, 5 * 4 * 3);
+  const [big, biw] = pair(1, 4);
+  const o = { cout: 4, k: 3, stride: 3, act: "gelu_erf" };
+  return [await g.download(g.convTranspose1d(xg, wg, { ...o, bias: big })), await w.download(w.convTranspose1d(xw, ww, { ...o, bias: biw }))];
 });
 test("convTranspose1d", "convTranspose1d s2 groups2", 1e-3, async () => {
   const [xg, xw] = pair(4, 12);

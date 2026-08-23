@@ -157,6 +157,8 @@ export interface ComputeContext<T extends Tensor = Tensor> {
    * these pin one variant — used by the bench/verify harnesses). */
   matmulV2(a: T, b: T, opts?: Omit<MatmulOpts<T>, "add">): T;
   matmulV3(a: T, b: T, opts?: Omit<MatmulOpts<T>, "add">): T;
+  /** Split-K GEMV for thin A (M ≤ 4), fp32 B (matmul() routes here automatically). */
+  matmulGemv(a: T, b: T, opts?: Omit<MatmulOpts<T>, "add">): T;
   matmulV4(a: T, b: T, opts?: Omit<MatmulOpts<T>, "add">): T;
   /** f16-compute GEMM (fp32 fallback where f16 is unavailable). */
   matmulF16(a: T, b: T, opts?: Omit<MatmulOpts<T>, "add">): T;

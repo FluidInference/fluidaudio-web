@@ -154,6 +154,9 @@ export class WasmContext {
     }
     return { data: out, rows: M, cols: N };
   }
+  matmulGemv(a, b, o) {
+    return this.matmul(a, b, o);
+  }
   matmulV2(a, b, o) {
     return this.matmul(a, b, o);
   }

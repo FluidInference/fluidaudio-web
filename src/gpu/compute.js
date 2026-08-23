@@ -23,6 +23,10 @@ import { Scheduler } from "./scheduler.js";
 import { WGSL_ACTF, ACT } from "./kernels/actf.js";
 import {
   GEMM_WGSL,
+  GEMV_PART_WGSL,
+  GEMV_REDUCE_WGSL,
+  GEMV_PART4_WGSL,
+  GEMV_REDUCE4_WGSL,
   GEMM_V2_WGSL,
   GEMM_V3_WGSL,
   GEMM_V4_WGSL,
@@ -45,6 +49,8 @@ import {
   CONV2D_C1_3X3S2_WGSL,
   CONV2D_WGSL,
   CONVT1D_WGSL,
+  CONVT_RESHAPE_WGSL,
+  CONVT_WPERM_WGSL,
   IM2COL_WGSL,
   CONV1D_IMPLICIT_WGSL,
   CONV1D_IMPLICIT_F16_WGSL,
@@ -421,6 +427,12 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     // An f16-storage B must never reach the fp32 kernels below (they bind B as
     // array<vec4<f32>> — silent garbage). Fail loudly instead.
     if (b.f16) throw new Error(`matmul: f16 B requires K%4==0 && N%4==0 && supported act (got K=${K}, N=${N}, act=${act})`);
+    // Thin-M fp32 GEMV (decode loops): the tile kernels launch only N/64
+    // workgroups at M≤4 — occupancy-starved on the pure-bandwidth weight read.
+    if (M <= 4 && K >= 64) {
+      const y = this.matmulGemv(a, b, { bias, act });
+      return add ? this.add(y, add) : y;
+    }
     // Large aligned GEMMs benefit from the 128×128/8×8 vec4 kernel (~70% of MLX,
     // vs ~58% for the scalar kernel). Thin/small GEMMs are launch/occupancy-bound —
     // v4 gives no gain there and wastes work padding M/N to 128, so keep v1.
@@ -434,6 +446,36 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const u = this._uniform(new Uint32Array([M, N, K, ACT[act], bias ? 1 : 0, 0, 0, 0]));
     this._run(pipeline, [a.buf, b.buf, biasBuf, c.buf], u, Math.ceil(N / 64), Math.ceil(M / 64));
     return add ? this.add(c, add) : c;
+  }
+
+  /** Split-K GEMV for thin A (M ≤ 4), fp32 B: (N/64)·KS partial workgroups then
+   * a reduce pass with fused bias/act. matmul() routes here automatically. */
+  matmulGemv(a, b, { bias = null, act = "none" } = {}) {
+    const M = a.rows,
+      K = a.cols,
+      N = b.cols;
+    // Slice K down to ~32-step slices (≤64 slices): consecutive dispatches in a
+    // pass serialize on barriers, so each GEMV needs enough workgroups on its
+    // own to cover the weight-stream latency.
+    const KS = Math.max(1, Math.min(Math.floor(K / 32), 64));
+    const c = this.alloc(M, N);
+    if (N % 4 === 0) {
+      const N4 = N / 4;
+      const p = this.alloc(KS * M, N);
+      const pipe1 = this._pipeline("gemvPart4", GEMV_PART4_WGSL);
+      this._run(pipe1, [a.buf, b.buf, p.buf], this._uniform(new Uint32Array([M, N4, K, KS])), Math.ceil(N4 / 64), KS);
+      const pipe2 = this._pipeline("gemvReduce4", GEMV_REDUCE4_WGSL);
+      const u2 = this._uniform(new Uint32Array([M, N4, KS, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+      this._run(pipe2, [p.buf, bias ? bias.buf : this._dummy16(), c.buf], u2, Math.ceil(N4 / 64));
+      return c;
+    }
+    const p = this.alloc(KS * M, N);
+    const pipe1 = this._pipeline("gemvPart", GEMV_PART_WGSL);
+    this._run(pipe1, [a.buf, b.buf, p.buf], this._uniform(new Uint32Array([M, N, K, KS])), Math.ceil(N / 64), KS);
+    const pipe2 = this._pipeline("gemvReduce", GEMV_REDUCE_WGSL);
+    const u2 = this._uniform(new Uint32Array([M, N, KS, ACT[act], bias ? 1 : 0, 0, 0, 0]));
+    this._run(pipe2, [p.buf, bias ? bias.buf : this._dummy(), c.buf], u2, Math.ceil(N / 64));
+    return c;
   }
 
   matmulV2(a, b, { bias = null, act = "none" } = {}) {
@@ -905,6 +947,30 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const Cin = x.rows,
       L = x.cols;
     const Lout = (L - 1) * stride - 2 * pad + dilation * (k - 1) + outputPadding + 1;
+    // k == stride ⇒ every output position has exactly one kernel tap: route as
+    // GEMM Wt[cout·k, Cin] @ x + interleave reshape (~75× the direct gather
+    // kernel on the voicechat codec upsamplers). Wt is permuted once per weight
+    // tensor on-GPU and cached on it.
+    if (stride === k && groups === 1 && dilation === 1 && pad === 0 && outputPadding === 0) {
+      let wt = this._ctWtCache?.get(w);
+      if (!wt) {
+        wt = {
+          buf: this._allocRaw(Math.max(4, Cin * cout * k * 4), GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST),
+          rows: cout * k,
+          cols: Cin,
+        };
+        const pp = this._pipeline("convtWperm", CONVT_WPERM_WGSL);
+        this._run(pp, [w.buf, wt.buf], this._uniform(new Uint32Array([Cin, cout, k, 0])), Math.ceil((Cin * cout * k) / 64));
+        this._ctWtCache = this._ctWtCache || new WeakMap();
+        this._ctWtCache.set(w, wt);
+      }
+      const cols = this.matmul(wt, x); // [cout*k, L]
+      const y = this.alloc(cout, Lout);
+      const pipe = this._pipeline("convtReshape", CONVT_RESHAPE_WGSL);
+      const u = this._uniform(new Uint32Array([cout, L, k, bias ? 1 : 0, ACT[act], 0, 0, 0]));
+      this._run(pipe, [cols.buf, bias ? bias.buf : this._dummy(), y.buf], u, Math.ceil((cout * Lout) / 64));
+      return y;
+    }
     const y = this.alloc(cout, Lout);
     const biasBuf = bias ? bias.buf : this._dummy();
     const pipeline = this._pipeline("convt1d", CONVT1D_WGSL);
