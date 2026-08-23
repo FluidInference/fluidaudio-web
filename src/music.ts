@@ -41,7 +41,8 @@ import "./engines/musicgen-acestep/style.css";
 type DemoTheme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "ace-step-wgsl-demo-theme";
-const PROJECT_REPOSITORY_URL = "https://github.com/narcotic-sh/ace-step-1.5.wgsl";
+// Upstream repo is not public yet; the button opens the author's live demo.
+const PROJECT_REPOSITORY_URL = "https://acestep.narcotic.sh";
 
 const form = requiredElement<HTMLFormElement>("generation-form");
 const githubProjectButton = requiredElement<HTMLButtonElement>("github-project-button");

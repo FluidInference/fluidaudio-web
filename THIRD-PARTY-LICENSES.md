@@ -28,7 +28,8 @@ fast, focused Parakeet implementation for the browser.
 
 ## ace-step-1.5.wgsl (MIT)
 
-https://github.com/narcotic-sh/ace-step-1.5.wgsl
+Upstream repo not yet public (author's live demo: https://acestep.narcotic.sh);
+the complete vendored source is in this repository at `packages/acestep`.
 Copyright (c) 2026 Narcotic Software (Hamza Qayyum) — MIT License.
 
 The entire music-generation runtime (`packages/acestep`) is a vendored

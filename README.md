@@ -106,7 +106,9 @@ parity is CI-gated). History and methodology: [`docs/BENCHMARKS.md`](docs/BENCHM
 [`/music.html`](music.html) generates full songs — prompt, optional lyrics, up
 to 4 minutes, stereo 48 kHz WAV — entirely client-side. The runtime is
 [`packages/acestep`](packages/acestep/), a vendored npm-workspace import of
-[ace-step-1.5.wgsl](https://github.com/narcotic-sh/ace-step-1.5.wgsl):
+ace-step-1.5.wgsl by Hamza Qayyum (upstream repo not yet public — his live
+demo is at [acestep.narcotic.sh](https://acestep.narcotic.sh); the vendored
+source lives in this repo):
 ~100k lines of TypeScript + WGSL implementing the Qwen3 text encoder, ACE
 condition encoder, 24-layer DiT, and Oobleck VAE decoder, with authenticated
 streamed model packaging, bounded GPU memory, and cooperative scheduling. It
@@ -217,7 +219,8 @@ that served as both inspiration and reference throughout our optimization
 work.
 
 Music generation is built on
-[ace-step-1.5.wgsl](https://github.com/narcotic-sh/ace-step-1.5.wgsl) by
+ace-step-1.5.wgsl ([live demo](https://acestep.narcotic.sh); upstream repo
+not yet public — the full source is vendored at `packages/acestep`) by
 **Hamza Qayyum** (Narcotic Software, MIT): he built the complete ACE-Step
 1.5 Turbo browser port — correctness-gated WGSL kernels, model packaging,
 scheduling, and the Stage-2 optimization program — and handed the project
