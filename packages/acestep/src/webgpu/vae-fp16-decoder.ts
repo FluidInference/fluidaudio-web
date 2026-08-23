@@ -154,10 +154,14 @@ export const ACE_OPT_0011_VAE_FP16_C512_COMMAND_BUFFER_COUNT_AT_BATCH8 = 983;
 /** @internal OPT-0035 benchmark-only maximum-window profile. */
 export const ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES = 2_378;
 export const ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES = 1_168_834_560;
+/** Capped C2378-family geometry for one-GiB maxBufferSize adapters (iOS). */
+export const ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES = 2_176;
+export const ACE_CAPPED_VAE_FP16_C2176_WORKSPACE_BYTES = 1_069_547_520;
 
 export type AceOpt0011Fp16VaeMaximumWindowFrames =
   | 256
   | 512
+  | typeof ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES
   | typeof ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES;
 
 export type AceOpt0011Fp16VaeDecoderKernelId =
@@ -1339,10 +1343,13 @@ export function planAceOpt0011Fp16VaeChunkDispatches(
     maximumWindowFramesProfile !== 256 &&
     maximumWindowFramesProfile !== 512 &&
     maximumWindowFramesProfile !==
+      ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES &&
+    maximumWindowFramesProfile !==
       ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES
   ) {
     throw contractError(
-      "chunk runtime supports only 256-, 512-, or OPT-0035 2378-frame profiles",
+      "chunk runtime supports only 256-, 512-, capped 2176-, or OPT-0035 " +
+        "2378-frame profiles",
     );
   }
   const chunkPlan = planAceVaeChunkedDecode(latentFrames, {

@@ -5,15 +5,33 @@ export const ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE =
 export const ACE_OPT_0070_VAE_C2378_MAXIMUM_WINDOW_FRAMES = 2_378;
 export const ACE_OPT_0070_VAE_C2378_REQUIRED_WORKSPACE_BYTES = 1_168_834_560;
 
+/**
+ * Capped production geometry for adapters whose maxBufferSize and
+ * maxStorageBufferBindingSize stop at one GiB (every iOS WebGPU adapter).
+ * Same kernels, precision maps, and 64-frame overlap-discard seams as the
+ * C2378 profile; only the maximum window length shrinks so one workspace
+ * buffer (windowFrames x 491,520 bytes) stays under 2^30. OPT-0035's
+ * correctness authority proved the chunked decode byte-identical across
+ * window geometries at this overlap.
+ */
+export const ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE =
+  "ace-vae-c2176-overlap64-capped-v1" as const;
+export const ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES = 2_176;
+export const ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES = 1_069_547_520;
+
+/** One latent frame of the widest FP16 activation: 128ch x 1920 x 2 bytes. */
+export const ACE_VAE_FP16_WORKSPACE_BYTES_PER_LATENT_FRAME = 491_520;
+
 const ACE_VAE_C512_REQUIRED_WORKSPACE_BYTES = 251_658_240;
 
 export type AceVaeWindowRuntimeProfile =
   | typeof ACE_VAE_C512_WINDOW_RUNTIME_PROFILE
-  | typeof ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE;
+  | typeof ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE
+  | typeof ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE;
 
 export interface AceVaeWindowRuntimeProfileContract {
   readonly id: AceVaeWindowRuntimeProfile;
-  readonly maximumWindowFrames: 512 | 2_378;
+  readonly maximumWindowFrames: 512 | 2_176 | 2_378;
   readonly overlapFrames: 64;
   readonly requiredWorkspaceBytes: number;
 }
@@ -32,7 +50,14 @@ const ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE_CONTRACT = Object.freeze({
   requiredWorkspaceBytes: ACE_OPT_0070_VAE_C2378_REQUIRED_WORKSPACE_BYTES,
 } as const satisfies AceVaeWindowRuntimeProfileContract);
 
-/** Authenticate the only two product window geometries; never accept a size alone. */
+const ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE_CONTRACT = Object.freeze({
+  id: ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE,
+  maximumWindowFrames: ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
+  overlapFrames: 64,
+  requiredWorkspaceBytes: ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
+} as const satisfies AceVaeWindowRuntimeProfileContract);
+
+/** Authenticate the only three product window geometries; never accept a size alone. */
 export function requireAceVaeWindowRuntimeProfile(
   profile: AceVaeWindowRuntimeProfile | undefined,
   maximumWindowFrames: number,
@@ -50,5 +75,53 @@ export function requireAceVaeWindowRuntimeProfile(
   ) {
     return ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE_CONTRACT;
   }
+  if (
+    profile === ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE &&
+    maximumWindowFrames ===
+      ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES
+  ) {
+    return ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE_CONTRACT;
+  }
   throw new Error("ACE VAE window runtime profile is not authenticated");
+}
+
+/**
+ * Resolve the window geometry an adapter can actually hold.
+ *
+ * The configured contract wins whenever the adapter can bind its workspace.
+ * A C2378 configuration downgrades to the authenticated capped C2176 contract
+ * on one-GiB adapters; any other shortfall returns the configured contract
+ * unchanged so the device request fails closed with its true deficits.
+ */
+export function selectAceVaeWindowRuntimeProfileForLimits(
+  configured: Readonly<AceVaeWindowRuntimeProfileContract>,
+  limits: Readonly<{
+    readonly maxBufferSize: number;
+    readonly maxStorageBufferBindingSize: number;
+  }>,
+): Readonly<AceVaeWindowRuntimeProfileContract> {
+  const available = Math.min(
+    requireLimitValue(limits.maxBufferSize, "maxBufferSize"),
+    requireLimitValue(
+      limits.maxStorageBufferBindingSize,
+      "maxStorageBufferBindingSize",
+    ),
+  );
+  if (available >= configured.requiredWorkspaceBytes) return configured;
+  if (
+    configured.id === ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE &&
+    available >= ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES
+  ) {
+    return ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE_CONTRACT;
+  }
+  return configured;
+}
+
+function requireLimitValue(value: number, name: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(
+      `ACE VAE window selection requires a positive integer ${name}`,
+    );
+  }
+  return value;
 }

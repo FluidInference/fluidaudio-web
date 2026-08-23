@@ -20,6 +20,8 @@ import {
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_TOPOLOGY,
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_TOPOLOGY,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY,
+  ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES,
+  ACE_CAPPED_VAE_FP16_C2176_WORKSPACE_BYTES,
   ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES,
   ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES,
   AceOpt0011Fp16VaeDecoderRuntime,
@@ -65,6 +67,7 @@ export const ACE_OPT_0080_VAE_PRODUCTION_TOTAL_COMMAND_BUFFERS = 556 as const;
 
 export type AceOpt0011Fp16VaeBackendMaximumWindowFrames =
   | typeof MAXIMUM_WINDOW_FRAMES
+  | typeof ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES
   | typeof ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES;
 
 export const ACE_OPT_0011_FP16_VAE_PROFILE_FAMILIES = Object.freeze([
@@ -188,7 +191,7 @@ interface AceOpt0011Fp16VaeChunkGpuBackendBaseOptions {
   readonly authenticatedPackage: AceVaeAuthenticatedPackageIdentity;
   /** Ownership transfers at call entry, including on factory failure. */
   readonly ownedVaeWeights: AceGpuTensorPhase;
-  /** Explicit authenticated C512 or OPT-0070 C2378 window ceiling. */
+  /** Explicit authenticated C512, capped C2176, or OPT-0070 C2378 window ceiling. */
   readonly maximumWindowFrames: AceOpt0011Fp16VaeBackendMaximumWindowFrames;
   /** @internal OPT-0027 benchmark seam; production defaults to the accepted 8. */
   readonly quantaPerCommandBuffer?: number;
@@ -1042,6 +1045,21 @@ export function planAceOpt0011Fp16VaeChunkGpuBackendMemory(
   );
 }
 
+/** Exact memory contract for the capped C2176 maximum window (one-GiB adapters). */
+export function planAceCappedFp16VaeC2176ChunkGpuBackendMemory(
+  plan: AceVaeChunkedDecodePlan,
+  recordAlignment = 256,
+  quantaPerCommandBuffer =
+    ACE_OPT_0027_VAE_FP16_WINDOW_QUANTA_PER_COMMAND_BUFFER,
+): AceOpt0011Fp16VaeChunkGpuBackendMemoryPlan {
+  return planFp16VaeChunkGpuBackendMemory(
+    plan,
+    recordAlignment,
+    quantaPerCommandBuffer,
+    ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES,
+  );
+}
+
 /** Exact memory contract for the C2378 maximum window. */
 export function planAceOpt0035Fp16VaeC2378ChunkGpuBackendMemory(
   plan: AceVaeChunkedDecodePlan,
@@ -1150,7 +1168,9 @@ async function createBuffers(
     },
   ], maximumWindowFrames === MAXIMUM_WINDOW_FRAMES
     ? "OPT-0011 FP16 VAE production allocation"
-    : "OPT-0070 FP16 VAE C2378 production allocation");
+    : maximumWindowFrames === ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES
+      ? "Capped FP16 VAE C2176 production allocation"
+      : "OPT-0070 FP16 VAE C2378 production allocation");
   return Object.freeze({
     stagingInput: buffers[0]!,
     decoderInput: buffers[1]!,
@@ -1590,10 +1610,12 @@ function requireBackendPlan(
   if (
     maximumWindowFrames !== MAXIMUM_WINDOW_FRAMES &&
     maximumWindowFrames !==
+      ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES &&
+    maximumWindowFrames !==
       ACE_OPT_0035_VAE_FP16_C2378_MAXIMUM_WINDOW_FRAMES
   ) {
     throw new Error(
-      "FP16 VAE backend requires authenticated maxWindowFrames=512 or 2378",
+      "FP16 VAE backend requires authenticated maxWindowFrames=512, 2176, or 2378",
     );
   }
   const expected = planAceVaeChunkedDecode(plan.latentFrames, {
@@ -1791,7 +1813,9 @@ function requireMaximumWindowDeviceLimits(
 ): void {
   const requiredWorkspaceBytes = maximumWindowFrames === MAXIMUM_WINDOW_FRAMES
     ? ACE_OPT_0011_VAE_FP16_C512_WORKSPACE_BYTES
-    : ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES;
+    : maximumWindowFrames === ACE_CAPPED_VAE_FP16_C2176_MAXIMUM_WINDOW_FRAMES
+      ? ACE_CAPPED_VAE_FP16_C2176_WORKSPACE_BYTES
+      : ACE_OPT_0035_VAE_FP16_C2378_WORKSPACE_BYTES;
   for (const name of ["maxBufferSize", "maxStorageBufferBindingSize"] as const) {
     const value = Number(device.limits[name]);
     if (
