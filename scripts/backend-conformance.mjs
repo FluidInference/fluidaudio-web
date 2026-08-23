@@ -78,6 +78,12 @@ test("matmul", "matmul vec4 shape + fused add", 1e-3, async () => {
   const [dg, dw] = pair(64, 256);
   return [await g.download(g.matmul(ag, bg, { act: "relu", add: dg })), await w.download(w.matmul(aw, bw, { act: "relu", add: dw }))];
 });
+test("matmulGemv", "matmulGemv (thin-M split-K route)", 1e-3, async () => {
+  const [ag, aw] = pair(2, 384);
+  const [bg, bw] = pair(384, 100);
+  const [big, biw] = pair(1, 100);
+  return [await g.download(g.matmul(ag, bg, { bias: big, act: "gelu" })), await w.download(w.matmul(aw, bw, { bias: biw, act: "gelu" }))];
+});
 test("matmulV2", "matmulV2", 1e-3, async () => {
   const [ag, aw] = pair(33, 48);
   const [bg, bw] = pair(48, 52);
@@ -222,6 +228,13 @@ test("conv2d", "conv2d cin=1 3x3 s2 (c1 route) asym pad", 1e-3, async () => {
   const o = { cout: 8, cin: 1, h: 12, w: 10, kh: 3, kw: 3, strideH: 2, strideW: 2, padTop: 1, padBottom: 0, padLeft: 1, padRight: 0 };
   return [await g.download(g.conv2d(xg, wg, o)), await w.download(w.conv2d(xw, ww, o))];
 });
+test("convTranspose1d", "convTranspose1d k==stride (GEMM route)", 1e-3, async () => {
+  const [xg, xw] = pair(5, 11);
+  const [wg, ww] = pair(1, 5 * 4 * 3);
+  const [big, biw] = pair(1, 4);
+  const o = { cout: 4, k: 3, stride: 3, act: "gelu_erf" };
+  return [await g.download(g.convTranspose1d(xg, wg, { ...o, bias: big })), await w.download(w.convTranspose1d(xw, ww, { ...o, bias: biw }))];
+});
 test("convTranspose1d", "convTranspose1d s2 groups2", 1e-3, async () => {
   const [xg, xw] = pair(4, 12);
   const [wg, ww] = pair(1, 4 * 3 * 4);
@@ -276,6 +289,44 @@ test("relShiftStream", "relShiftStream", 0, async () => {
   const o = { H: 3, n: 6, Lk: 20, dMax: 16, Lc: 12, subT: 24, C: 8, left: 8, right: 0 };
   const [xg, xw] = pair(3 * 6, 33);
   return [await g.download(g.relShiftStream(xg, o)), await w.download(w.relShiftStream(xw, o))];
+});
+test("rmsNorm", "rmsNorm (gemma 1+w)", 1e-5, async () => {
+  const [xg, xw] = pair(5, 96);
+  const [wg, ww] = pair(1, 96);
+  return [await g.download(g.rmsNorm(xg, wg, 1e-6)), await w.download(w.rmsNorm(xw, ww, 1e-6))];
+});
+test("rmsNorm", "rmsNorm + residual add", 1e-5, async () => {
+  const [xg, xw] = pair(5, 96);
+  const [wg, ww] = pair(1, 96);
+  const [ag, aw] = pair(5, 96);
+  return [await g.download(g.rmsNorm(xg, wg, 1e-6, { add: ag })), await w.download(w.rmsNorm(xw, ww, 1e-6, { add: aw }))];
+});
+test("headRmsRope", "headRmsRope (norm + rope, 2 streams)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 24, M: 4, pos0: 5, scale: 0.25, eps: 1e-6 };
+  const invFreq = Float64Array.from({ length: 12 }, (_, i) => 1 / Math.pow(10000, (2 * i) / 24));
+  const [xg, xw] = pair(2 * 4, 3 * 24);
+  const [wg, ww] = pair(1, 24);
+  return [await g.download(g.headRmsRope(xg, wg, invFreq, o)), await w.download(w.headRmsRope(xw, ww, invFreq, o))];
+});
+test("headRmsRope", "headRmsRope (rope only, w=null)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 24, M: 6, pos0: 0, scale: 1 };
+  const invFreq = Float64Array.from({ length: 12 }, (_, i) => 1 / Math.pow(500, (2 * i) / 24));
+  const [xg, xw] = pair(6, 3 * 24);
+  return [await g.download(g.headRmsRope(xg, null, invFreq, o)), await w.download(w.headRmsRope(xw, null, invFreq, o))];
+});
+test("attnCache", "attnCache causal, 2 streams, strided cache", 1e-4, async () => {
+  const o = { heads: 3, headDim: 16, M: 4, pos0: 6, cacheStride: 12, causal: true };
+  const [qg, qw] = pair(2 * 4, 3 * 16);
+  const [kg, kw] = pair(2 * 12, 3 * 16);
+  const [vg, vw] = pair(2 * 12, 3 * 16);
+  return [await g.download(g.attnCache(qg, kg, vg, o)), await w.download(w.attnCache(qw, kw, vw, o))];
+});
+test("attnCache", "attnCache bidirectional + softcap (CAS)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 16, M: 7, causal: false, fixedT: 7, softcap: 50 };
+  const [qg, qw] = pair(7, 3 * 16);
+  const [kg, kw] = pair(7, 3 * 16);
+  const [vg, vw] = pair(7, 3 * 16);
+  return [await g.download(g.attnCache(qg, kg, vg, o)), await w.download(w.attnCache(qw, kw, vw, o))];
 });
 
 // ── elementwise & data movement ──────────────────────────────────────────────

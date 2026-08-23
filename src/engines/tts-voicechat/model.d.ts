@@ -11,6 +11,7 @@ export function synthesizeCodes(
     rvqNormSq?: Float64Array;
     captureWarm?: boolean;
     captureSteps?: number;
+    syncTrace?: boolean;
     onProgress?: (done: number, total: number) => void;
   },
 ): Promise<{ codes: Int32Array[]; trace: any }>;

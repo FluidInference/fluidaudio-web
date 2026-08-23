@@ -230,6 +230,48 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   Y[co * m.Lout + lo] = acc;
 }`;
 
+// ConvTranspose1d with k == stride (no output-position overlap, e.g. the
+// voicechat codec upsamplers) is a plain GEMM Wt[cout*k, Cin] @ x[Cin, L]
+// followed by this interleave: Y[co, t*k + kk] = cols[(co*k + kk)*L + t]
+// (+ bias/act). The direct gather kernel walks Cin*K with divmod checks per
+// output -- measured 1157 ms vs ~15 ms for GEMM+reshape on the codec stages.
+export const CONVT_RESHAPE_WGSL = `
+struct Meta { Cout:u32, L:u32, K:u32, hasBias:u32, act:u32, _p0:u32, _p1:u32, _p2:u32 };
+@group(0) @binding(0) var<storage, read> cols: array<f32>;
+@group(0) @binding(1) var<storage, read> bias: array<f32>;
+@group(0) @binding(2) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(3) var<uniform> m: Meta;
+${WGSL_ACTF}
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  let Lout = m.L * m.K;
+  if (idx >= m.Cout * Lout) { return; }
+  let co = idx / Lout;
+  let j = idx % Lout;
+  let t = j / m.K;
+  let kk = j % m.K;
+  var v = cols[(co * m.K + kk) * m.L + t];
+  if (m.hasBias == 1u) { v += bias[co]; }
+  Y[idx] = actf(v, m.act);
+}`;
+
+// One-time weight permute for the GEMM route: W flat [Cin, Cout, K] ->
+// Wt [(co*K + kk), ci] row-major (matmul A operand).
+export const CONVT_WPERM_WGSL = `
+struct Meta { Cin:u32, Cout:u32, K:u32, _p:u32 };
+@group(0) @binding(0) var<storage, read> W: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Wt: array<f32>;
+@group(0) @binding(2) var<uniform> m: Meta;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) nwg: vec3<u32>) {
+  let idx = gid.y * (nwg.x * 64u) + gid.x;
+  if (idx >= m.Cin * m.Cout * m.K) { return; }
+  let ci = idx / (m.Cout * m.K);
+  let rest = idx % (m.Cout * m.K);
+  Wt[rest * m.Cin + ci] = W[idx];
+}`;
+
 // im2col for conv1d: X[Cin,L] -> Cols[Cin*K, Lout], so a conv becomes a single
 // GEMM  W[Cout, Cin*K] @ Cols  — hitting tiled-GEMM throughput instead of the
 // direct kernel's memory-bound rate. Row (ci*K+k), col lo.

@@ -154,6 +154,9 @@ export class WasmContext {
     }
     return { data: out, rows: M, cols: N };
   }
+  matmulGemv(a, b, o) {
+    return this.matmul(a, b, o);
+  }
   matmulV2(a, b, o) {
     return this.matmul(a, b, o);
   }
@@ -341,6 +344,103 @@ export class WasmContext {
     }
     return { data: out, rows: R, cols: C };
   }
+  /** Gemma RMSNorm rows: y = x·rsqrt(mean(x²)+eps)·(1+w) [+ add]. f64 accumulate
+   * with per-element f32 store — the parity reference for the GPU kernel. */
+  rmsNorm(x, w, eps = 1e-6, { add = null } = {}) {
+    const rows = x.rows,
+      cols = x.cols;
+    const out = new Float32Array(rows * cols);
+    for (let r = 0; r < rows; r++) {
+      const o = r * cols;
+      let s = 0;
+      for (let j = 0; j < cols; j++) s += x.data[o + j] * x.data[o + j];
+      const inv = 1 / Math.sqrt(s / cols + eps);
+      for (let j = 0; j < cols; j++) {
+        const v = Math.fround(x.data[o + j] * inv * (1 + w.data[j]));
+        out[o + j] = add ? add.data[o + j] + v : v;
+      }
+    }
+    return { data: out, rows, cols };
+  }
+
+  /** Per-head RMSNorm (skipped when w is null) + rotate-half RoPE; see the
+   * GpuContext doc. invFreq is consumed at f64 here (parity reference). */
+  headRmsRope(x, w, invFreq, { heads, headDim, M, pos0 = 0, scale = 1, eps = 1e-6 }) {
+    const rows = x.rows,
+      D = x.cols,
+      half = headDim / 2;
+    const out = x.data.slice();
+    if (w) {
+      for (let r = 0; r < rows; r++)
+        for (let h = 0; h < heads; h++) {
+          const o = r * D + h * headDim;
+          let s = 0;
+          for (let j = 0; j < headDim; j++) s += out[o + j] * out[o + j];
+          const inv = 1 / Math.sqrt(s / headDim + eps);
+          for (let j = 0; j < headDim; j++) out[o + j] = out[o + j] * inv * (1 + w.data[j]);
+        }
+    }
+    for (let r = 0; r < rows; r++) {
+      const p = pos0 + (r % M);
+      for (let h = 0; h < heads; h++) {
+        const o = r * D + h * headDim;
+        for (let i = 0; i < half; i++) {
+          const f = p * invFreq[i],
+            c = Math.cos(f),
+            s = Math.sin(f);
+          const a = out[o + i],
+            b = out[o + half + i];
+          out[o + i] = (a * c - b * s) * scale;
+          out[o + half + i] = (b * c + a * s) * scale;
+        }
+      }
+    }
+    return { data: out, rows, cols: D };
+  }
+
+  /** Cached multi-head attention (see GpuContext.attnCache). Scores max/exp/sum
+   * and the probs@V accumulation run at f64 per head (parity reference). */
+  attnCache(q, k, v, { heads, headDim, M, pos0 = 0, cacheStride = 0, causal = true, fixedT = 0, softcap = 0 }) {
+    const D = heads * headDim;
+    const W = q.rows / M;
+    const stride = cacheStride || k.rows / W;
+    const Tk = fixedT || pos0 + M;
+    const out = new Float32Array(W * M * D);
+    for (let w = 0; w < W; w++) {
+      const qo0 = w * M * D,
+        co0 = w * stride * D;
+      const scores = new Float32Array(Tk);
+      for (let r = 0; r < M; r++) {
+        const T = causal ? pos0 + r + 1 : Tk;
+        for (let h = 0; h < heads; h++) {
+          const qo = qo0 + r * D + h * headDim;
+          let mx = -Infinity;
+          for (let j = 0; j < T; j++) {
+            const ko = co0 + j * D + h * headDim;
+            let s = 0;
+            for (let d = 0; d < headDim; d++) s += q.data[qo + d] * k.data[ko + d];
+            if (softcap) s = softcap * Math.tanh(s / softcap);
+            scores[j] = s;
+            if (s > mx) mx = s;
+          }
+          let sum = 0;
+          for (let j = 0; j < T; j++) {
+            const e = Math.exp(scores[j] - mx);
+            scores[j] = e;
+            sum += e;
+          }
+          const oo = qo0 + r * D + h * headDim;
+          for (let j = 0; j < T; j++) {
+            const p = scores[j] / sum;
+            const vo = co0 + j * D + h * headDim;
+            for (let d = 0; d < headDim; d++) out[oo + d] += p * v.data[vo + d];
+          }
+        }
+      }
+    }
+    return { data: out, rows: W * M, cols: D };
+  }
+
   adain(x, scale, shift, eps = 1e-5) {
     const C = x.rows,
       L = x.cols,
