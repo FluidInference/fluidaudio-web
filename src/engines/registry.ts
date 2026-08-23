@@ -83,4 +83,15 @@ export const ENGINES: EngineEntry[] = [
     heavy: true,
     make: async () => new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(),
   },
+  {
+    id: "tts-voicechat",
+    label: "VoiceChat TTS (Aria)",
+    kind: "text",
+    heavy: true,
+    // Local-only weights (scripts/extract-voicechat-tts.py → models-local/,
+    // served at /models by the dev middleware) — not hosted on HF yet. Probe
+    // the export so the picker hides the engine when it is absent.
+    available: async () => (await fetch(`${import.meta.env.BASE_URL}models/voicechat-tts/config.json`)).ok,
+    make: async () => new (await import("./tts-voicechat/index.js")).VoicechatTtsEngine(),
+  },
 ];

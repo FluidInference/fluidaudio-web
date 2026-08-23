@@ -17,8 +17,8 @@ Per 80 ms frame the full-duplex loop runs:
 | Fast Conformer encoder (24L, d1024, att [70,0] causal, 8× subsample) | 609M | 11–12 ms/frame ANE | **Ships now** — same runtime family as our Nemotron streaming ASR |
 | RNNT user-transcript head (2-layer LSTM 640, vocab 1025) | 34 MB | 0.5 ms/step | **Ships now** |
 | NemotronH 9B LLM (Mamba2-hybrid, 56 layers) + lm/function heads | 9B / 19 GB fp16 | 43.5 ms/step (CoreML int8 stateful shards, 100% prefill parity); 21.2 ms/tok (MLX 4-bit) | **Blocked** (see below) |
-| TTS: Gemma3 backbone 28L×1152 + MoG head | 595M + 159M | ~6 ms/step proxy; CFG 0.2 → 2 evals/step | Feasible later; not useful without the LLM |
-| Audio codec decoder (31-quantizer PRVQ, 12.5 Hz → 22.05 kHz) | 763 MB | unmeasured | Feasible later (conv stack) |
+| TTS: Gemma3 backbone 28L×1152 + MoG head | 595M + 159M | ~6 ms/step proxy; CFG 0.2 → 2 evals/step | **Ships now** — `tts-voicechat` (standalone Aria voice, code-matrix bit-exact vs torch; see phase 2) |
+| Audio codec decoder (31-quantizer PRVQ, 12.5 Hz → 22.05 kHz) | 763 MB | unmeasured | **Ships now** — part of `tts-voicechat` (waveform NRMSE 1.3e-6; RTFx 0.33 node/WASM) |
 
 ## What ships now: the STT slice (`asr-voicechat`)
 
@@ -60,9 +60,25 @@ at roughly 5–6 GB of weights.
 1. **Phase 1 (now): `asr-voicechat` STT engine** — encoder + RNNT, batch +
    streaming, parity-gated on the reference transcript. Local weights first;
    HF hosting after the FluidInference repo target is confirmed.
-2. **Phase 2: codec + TTS decoders** — both are conv/attention stacks well
-   within existing kernel capability; useful standalone as a high-quality
-   TTS voice ("Aria" latents ship in the checkpoint) even before the LLM.
+2. **Phase 2: codec + TTS decoders — SHIPPED 2026-08 as `tts-voicechat`.**
+   The full speech-decoder slice runs standalone as a TTS voice: Gemma3
+   backbone (28L×1152, CFG 0.2 → 2 evals/step, KV-cached) + CAS t5gemma
+   char-aware text conditioning + gated audio/text fusion + MoG head with
+   8-iteration PRVQ unmasking + the 31-quantizer codec decoder (12.5 Hz →
+   22.05 kHz). Parity-gated against a torch reference run of the real
+   checkpoint (`scripts/voicechat-tts-reference.py` → goldens;
+   `scripts/ci-smoke-voicechat-tts.mjs` → gate): the deterministic track
+   (noise 0, argmax-component MoG, CFG kept at 0.2) is **bit-exact on the
+   full 50×31 audio-code matrix** and waveform NRMSE 1.3e-6. Two
+   reference-as-run findings are baked into the export: the HF sdpa path
+   silently drops T5Gemma's attn softcapping (the CAS runs uncapped), and
+   backbone GEMMs ship f32 because f16 flips an MoG/PRVQ near-tie around
+   frame 22 (`--backbone-dtype f16` remains available, 1147/1550 codes).
+   Weights are a local export for now (~3.5 GB via
+   `scripts/extract-voicechat-tts.py`; the registry probe hides the engine
+   without it). Perf under node/WASM: 185 ms per 80 ms frame in the AR loop
+   + codec RTFx 0.33 (~0.19× overall) — a GPU-resident step loop and weight
+   residency in wasm memory are the deferred optimizations.
 3. **Phase 3: LLM feasibility gate — RUN 2026-08-23: FAILED.** Calibrated
    sub-8-bit quantization does not recover quality on this checkpoint: best
    point within a 5.0-bit budget was **88.6% top-1 / KL 0.117** (GPTQ+AWQ
