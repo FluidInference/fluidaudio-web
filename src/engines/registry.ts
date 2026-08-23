@@ -100,11 +100,21 @@ export const ENGINES: EngineEntry[] = [
     id: "tts-voicechat",
     label: "VoiceChat TTS (Aria)",
     kind: "text",
+    category: "tts",
     heavy: true,
-    // Local-only weights (scripts/extract-voicechat-tts.py → models-local/,
-    // served at /models by the dev middleware) — not hosted on HF yet. Probe
-    // the export so the picker hides the engine when it is absent.
-    available: async () => (await fetch(`${import.meta.env.BASE_URL}models/voicechat-tts/config.json`)).ok,
+    // Weights on HF; probe keeps the picker honest if the files are ever
+    // unreachable (or on forks without them).
+    available: async () => {
+      try {
+        const res = await fetch("https://huggingface.co/FluidInference/fluidaudio-web/resolve/main/voicechat-tts/config.json", {
+          method: "HEAD",
+          referrerPolicy: "no-referrer",
+        });
+        return res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      } catch {
+        return false;
+      }
+    },
     make: async () => new (await import("./tts-voicechat/index.js")).VoicechatTtsEngine(),
   },
 ];
