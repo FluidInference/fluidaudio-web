@@ -50,6 +50,14 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run format:check
+      # Machine-local cache/weight dirs must never be committed — a tracked
+      # symlink here once self-looped on checkout, crashing watchers and
+      # deleting local model exports.
+      - name: no tracked symlinks
+        run: |
+          if git ls-files -s | awk '$1 == 120000 { print $4; found=1 } END { exit !found }'; then
+            echo "::error::tracked symlink(s) found — remove with git rm --cached"; exit 1
+          fi
 
   # Kernel unit tests: every WasmContext kernel vs CPU references (synthetic
   # weights, no downloads, no GPU) + the Rust crates still build for wasm32.
