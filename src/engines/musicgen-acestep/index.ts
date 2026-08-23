@@ -183,7 +183,7 @@ export class AceStepMusicClient {
     this.downloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
-      name: "ace-step-inference",
+      name: aceInferenceWorkerName(),
     });
     this.worker.addEventListener("message", (event) => this.onMessage(event));
     this.worker.addEventListener("error", (event) => {
@@ -325,4 +325,17 @@ export class AceStepMusicClient {
     this.releaseRuntimeLock = undefined;
     if (active !== undefined) active.reject(reason);
   }
+}
+
+/**
+ * TEST-ONLY: `?aceTestMaxGpuBufferBytes=N` on the page URL threads a WebGPU
+ * buffer-limit cap to the inference worker through its name, so desktop
+ * Chrome can emulate iOS adapters (N=1073741824). See worker.ts.
+ */
+function aceInferenceWorkerName(): string {
+  const raw = new URLSearchParams(location.search).get("aceTestMaxGpuBufferBytes");
+  if (raw === null) return "ace-step-inference";
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value <= 0) return "ace-step-inference";
+  return `ace-step-inference?testMaxGpuBufferBytes=${value}`;
 }
