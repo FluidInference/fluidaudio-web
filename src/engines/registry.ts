@@ -96,4 +96,25 @@ export const ENGINES: EngineEntry[] = [
     heavy: true,
     make: async () => new (await import("./asr-voicechat/index.js")).VoicechatSttEngine(),
   },
+  {
+    id: "tts-voicechat",
+    label: "VoiceChat TTS (Aria)",
+    kind: "text",
+    category: "tts",
+    heavy: true,
+    // Weights on HF; probe keeps the picker honest if the files are ever
+    // unreachable (or on forks without them).
+    available: async () => {
+      try {
+        const res = await fetch("https://huggingface.co/FluidInference/fluidaudio-web/resolve/main/voicechat-tts/config.json", {
+          method: "HEAD",
+          referrerPolicy: "no-referrer",
+        });
+        return res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      } catch {
+        return false;
+      }
+    },
+    make: async () => new (await import("./tts-voicechat/index.js")).VoicechatTtsEngine(),
+  },
 ];
