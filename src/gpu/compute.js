@@ -50,6 +50,7 @@ import {
   CONV1D_IMPLICIT_F16_WGSL,
 } from "./kernels/convolution.js";
 import { LAYERNORM_WGSL, SOFTMAX_WGSL, ADAIN_WGSL } from "./kernels/normalization.js";
+import { RMSNORM_WGSL, HEADRMS_ROPE_WGSL, ATTN_SCORES_WGSL, ATTN_PV_WGSL } from "./kernels/gemma.js";
 import { JBATCH_WGSL, ARGMAX_ROWS_WGSL, TDT_JOINT_WGSL, LSTM_WGSL } from "./kernels/decode.js";
 import { GLU_WGSL, GATHERCOLS_WGSL, LEAKY_WGSL, SNAKE_WGSL, EWISE_WGSL, TRANSPOSE_WGSL, SLICECOLS_WGSL, SETCOLS_WGSL } from "./kernels/tensor-ops.js";
 
@@ -533,6 +534,66 @@ fn main(@builtin(local_invocation_index) i: u32, @builtin(subgroup_size) ss: u32
     const pipeline = this._pipeline("softmax", SOFTMAX_WGSL);
     const u = this._uniform(new Uint32Array([x.rows, x.cols, 0, 0]));
     this._run(pipeline, [x.buf, y.buf], u, x.rows);
+    return y;
+  }
+
+  /** Gemma RMSNorm rows: y = x·rsqrt(mean(x²)+eps)·(1+w) [+ add]. w:[1,cols]. */
+  rmsNorm(x, w, eps = 1e-6, { add = null } = {}) {
+    const y = this.alloc(x.rows, x.cols);
+    const pipeline = this._pipeline("rmsnorm", RMSNORM_WGSL);
+    const meta = new ArrayBuffer(16);
+    new Uint32Array(meta, 0, 3).set([x.rows, x.cols, add ? 1 : 0]);
+    new Float32Array(meta, 12, 1)[0] = eps;
+    const u = this._uniform(meta);
+    this._run(pipeline, [x.buf, w.buf, add ? add.buf : this._dummy(), y.buf], u, x.rows);
+    return y;
+  }
+
+  /** Fused per-head RMSNorm (skipped when w is null) + rotate-half RoPE on a
+   * [rows, heads*headDim] projection. Row r sits at position pos0 + (r % M)
+   * (rows are stream-major: CFG/window s occupies rows [s*M, (s+1)*M)).
+   * invFreq: HOST Float64Array of headDim/2 inverse frequencies — the WASM
+   * backend consumes it at f64 (parity), the GPU caches an f32 copy per array. */
+  headRmsRope(x, w, invFreq, { heads, headDim, M, pos0 = 0, scale = 1, eps = 1e-6 }) {
+    const y = this.alloc(x.rows, x.cols);
+    this._ropeCache = this._ropeCache || new WeakMap();
+    let f = this._ropeCache.get(invFreq);
+    if (!f) {
+      f = this.upload(Float32Array.from(invFreq), 1, invFreq.length);
+      this._ropeCache.set(invFreq, f);
+    }
+    const pipeline = this._pipeline("headrmsrope", HEADRMS_ROPE_WGSL);
+    const meta = new ArrayBuffer(32);
+    new Uint32Array(meta, 0, 6).set([x.rows, heads, headDim, M, pos0, w ? 1 : 0]);
+    new Float32Array(meta, 24, 2).set([scale, eps]);
+    const u = this._uniform(meta);
+    this._run(pipeline, [x.buf, w ? w.buf : this._dummy(), f.buf, y.buf], u, x.rows * heads);
+    return y;
+  }
+
+  /**
+   * Multi-head attention of M new positions per stream against a stream-strided
+   * KV cache: q [W*M, heads*headDim] (W = q.rows/M streams), k/v [W*cacheStride,
+   * heads*headDim] with stream w's entries at rows [w*cacheStride, …). Causal:
+   * query i attends keys j ≤ pos0+i; fixedT attends a fixed window (bidirectional,
+   * e.g. CAS). softcap>0 applies cap·tanh(s/cap) to scores. Returns [W*M, heads*headDim].
+   */
+  attnCache(q, k, v, { heads, headDim, M, pos0 = 0, cacheStride = 0, causal = true, fixedT = 0, softcap = 0 }) {
+    const W = q.rows / M;
+    const stride = cacheStride || k.rows / W;
+    const Tk = fixedT || pos0 + M;
+    const R = W * heads * M;
+    const s = this.alloc(R, Tk);
+    const pipe = this._pipeline("attnscores", ATTN_SCORES_WGSL);
+    const meta = new ArrayBuffer(48);
+    new Uint32Array(meta, 0, 8).set([R, Tk, heads, headDim, M, pos0, stride, causal ? 1 : 0]);
+    new Float32Array(meta, 32, 1)[0] = softcap;
+    this._run(pipe, [q.buf, k.buf, s.buf], this._uniform(meta), Math.ceil((R * Tk) / 64));
+    const p = this.softmax(s);
+    const y = this.alloc(W * M, heads * headDim);
+    const pipe2 = this._pipeline("attnpv", ATTN_PV_WGSL);
+    const u2 = this._uniform(new Uint32Array([W * M, Tk, heads, headDim, M, pos0, stride, causal ? 1 : 0]));
+    this._run(pipe2, [p.buf, v.buf, y.buf], u2, Math.ceil((W * M * heads * headDim) / 64));
     return y;
   }
 

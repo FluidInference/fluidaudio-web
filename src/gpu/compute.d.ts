@@ -166,6 +166,8 @@ export interface ComputeContext<T extends Tensor = Tensor> {
   matmulNBits(a: T, bq: PackedBytes, scales: T, zp: PackedBytes, N: number, blockSize?: number): T;
   layernorm(x: T, gamma: T, beta: T, eps?: number): T;
   softmax(x: T): T;
+  /** Gemma RMSNorm rows: y = x·rsqrt(mean(x²)+eps)·(1+w) [+ add]. w:[1,cols]. */
+  rmsNorm(x: T, w: T, eps?: number, opts?: { add?: T | null }): T;
 
   // ── convolution ───────────────────────────────────────────────────────────
   /** 1-D conv. x:[Cin,L], w = Cout*(Cin/groups)*K f32 -> [Cout,Lout]. */
@@ -197,6 +199,20 @@ export interface ComputeContext<T extends Tensor = Tensor> {
   relShiftB(x: T, H: number): T;
   /** Streaming rel_shift + chunk mask for cache-aware attention. */
   relShiftStream(x: T, opts: { H: number; n: number; Lk: number; dMax: number; Lc: number; subT: number; C: number; left: number; right: number }): T;
+  /** Per-head RMSNorm (skipped when w is null) + rotate-half RoPE on a
+   * [rows, heads*headDim] projection; row r sits at position pos0 + (r % M).
+   * invFreq is a HOST array (f64 on WASM — parity; f32 upload cached on GPU). */
+  headRmsRope(x: T, w: T | null, invFreq: Float64Array, opts: { heads: number; headDim: number; M: number; pos0?: number; scale?: number; eps?: number }): T;
+  /** Multi-head attention of M positions per stream against a stream-strided KV
+   * cache (stream w's keys/values at rows [w*cacheStride, …)). Causal masks
+   * j > pos0+i; fixedT attends a fixed bidirectional window; softcap>0 applies
+   * cap·tanh(s/cap) to scores. Returns [W*M, heads*headDim], W = q.rows/M. */
+  attnCache(
+    q: T,
+    k: T,
+    v: T,
+    opts: { heads: number; headDim: number; M: number; pos0?: number; cacheStride?: number; causal?: boolean; fixedT?: number; softcap?: number },
+  ): T;
 
   // ── elementwise & data movement ───────────────────────────────────────────
   ewise(a: T, b: T, op: "add" | "mul"): T;

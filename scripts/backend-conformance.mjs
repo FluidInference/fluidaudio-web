@@ -277,6 +277,44 @@ test("relShiftStream", "relShiftStream", 0, async () => {
   const [xg, xw] = pair(3 * 6, 33);
   return [await g.download(g.relShiftStream(xg, o)), await w.download(w.relShiftStream(xw, o))];
 });
+test("rmsNorm", "rmsNorm (gemma 1+w)", 1e-5, async () => {
+  const [xg, xw] = pair(5, 96);
+  const [wg, ww] = pair(1, 96);
+  return [await g.download(g.rmsNorm(xg, wg, 1e-6)), await w.download(w.rmsNorm(xw, ww, 1e-6))];
+});
+test("rmsNorm", "rmsNorm + residual add", 1e-5, async () => {
+  const [xg, xw] = pair(5, 96);
+  const [wg, ww] = pair(1, 96);
+  const [ag, aw] = pair(5, 96);
+  return [await g.download(g.rmsNorm(xg, wg, 1e-6, { add: ag })), await w.download(w.rmsNorm(xw, ww, 1e-6, { add: aw }))];
+});
+test("headRmsRope", "headRmsRope (norm + rope, 2 streams)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 24, M: 4, pos0: 5, scale: 0.25, eps: 1e-6 };
+  const invFreq = Float64Array.from({ length: 12 }, (_, i) => 1 / Math.pow(10000, (2 * i) / 24));
+  const [xg, xw] = pair(2 * 4, 3 * 24);
+  const [wg, ww] = pair(1, 24);
+  return [await g.download(g.headRmsRope(xg, wg, invFreq, o)), await w.download(w.headRmsRope(xw, ww, invFreq, o))];
+});
+test("headRmsRope", "headRmsRope (rope only, w=null)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 24, M: 6, pos0: 0, scale: 1 };
+  const invFreq = Float64Array.from({ length: 12 }, (_, i) => 1 / Math.pow(500, (2 * i) / 24));
+  const [xg, xw] = pair(6, 3 * 24);
+  return [await g.download(g.headRmsRope(xg, null, invFreq, o)), await w.download(w.headRmsRope(xw, null, invFreq, o))];
+});
+test("attnCache", "attnCache causal, 2 streams, strided cache", 1e-4, async () => {
+  const o = { heads: 3, headDim: 16, M: 4, pos0: 6, cacheStride: 12, causal: true };
+  const [qg, qw] = pair(2 * 4, 3 * 16);
+  const [kg, kw] = pair(2 * 12, 3 * 16);
+  const [vg, vw] = pair(2 * 12, 3 * 16);
+  return [await g.download(g.attnCache(qg, kg, vg, o)), await w.download(w.attnCache(qw, kw, vw, o))];
+});
+test("attnCache", "attnCache bidirectional + softcap (CAS)", 1e-4, async () => {
+  const o = { heads: 3, headDim: 16, M: 7, causal: false, fixedT: 7, softcap: 50 };
+  const [qg, qw] = pair(7, 3 * 16);
+  const [kg, kw] = pair(7, 3 * 16);
+  const [vg, vw] = pair(7, 3 * 16);
+  return [await g.download(g.attnCache(qg, kg, vg, o)), await w.download(w.attnCache(qw, kw, vw, o))];
+});
 
 // ── elementwise & data movement ──────────────────────────────────────────────
 test("ewise", "ewise mul + row broadcast", 1e-6, async () => {
