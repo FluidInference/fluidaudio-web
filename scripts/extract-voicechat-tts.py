@@ -30,7 +30,15 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--src", default=os.path.expanduser("~/Documents/models/voicechat-11b"))
 ap.add_argument("--out", default="models-local/voicechat-tts")
 ap.add_argument("--golden", default=None, help=".npz from voicechat-tts-reference.py")
+ap.add_argument(
+    "--backbone-dtype",
+    default="f32",
+    choices=["f16", "f32"],
+    help="backbone + CAS GEMM storage. f32 is the default: with f16 the parity run is code-exact "
+    "only through ~frame 22 before an MoG/PRVQ near-tie flips (1147/1550); f32 restores exactness.",
+)
 args = ap.parse_args()
+GEMM_DT = args.backbone_dtype
 os.makedirs(args.out, exist_ok=True)
 
 tf = safe_open(os.path.join(args.src, "components/tts.safetensors"), "np")
@@ -40,8 +48,14 @@ C = lambda k: cf.get_tensor("tts_model.audio_codec." + k)
 
 
 class Bin:
+    """Sharded blob writer: node readFileSync and safe browser fetches cap out
+    around 2 GiB, so tensors spill into <path>.<i>.bin shards (manifest entries
+    carry a per-tensor shard index)."""
+
+    MAX_SHARD = 1_600_000_000
+
     def __init__(self):
-        self.man, self.blob = {}, bytearray()
+        self.man, self.shards = {}, [bytearray()]
 
     def add(self, name, a, dtype="f32"):
         a = np.ascontiguousarray(a)
@@ -51,15 +65,27 @@ class Bin:
             payload = a.astype(np.uint8)
         else:
             payload = a.astype(np.float32)
-        while len(self.blob) % 4:
-            self.blob.append(0)
-        self.man[name] = {"dims": list(a.shape), "dtype": dtype, "byteOffset": len(self.blob), "count": int(a.size)}
-        self.blob.extend(payload.tobytes())
+        blob = self.shards[-1]
+        if len(blob) + payload.nbytes > self.MAX_SHARD:
+            self.shards.append(bytearray())
+            blob = self.shards[-1]
+        while len(blob) % 4:
+            blob.append(0)
+        self.man[name] = {
+            "dims": list(a.shape),
+            "dtype": dtype,
+            "bin": len(self.shards) - 1,
+            "byteOffset": len(blob),
+            "count": int(a.size),
+        }
+        blob.extend(payload.tobytes())
 
     def write(self, path):
-        open(path + ".bin", "wb").write(self.blob)
-        json.dump(self.man, open(path + ".manifest.json", "w"))
-        print(f"{path}.bin: {len(self.man)} tensors, {len(self.blob)/1e6:.1f} MB")
+        for i, blob in enumerate(self.shards):
+            open(f"{path}.{i}.bin", "wb").write(blob)
+        json.dump({"shards": len(self.shards), "tensors": self.man}, open(path + ".manifest.json", "w"))
+        total = sum(len(b) for b in self.shards)
+        print(f"{path}.*.bin: {len(self.man)} tensors, {len(self.shards)} shard(s), {total/1e6:.1f} MB")
 
 
 tts = Bin()
@@ -69,23 +95,23 @@ NL = 28
 for L in range(NL):
     g = lambda s: T(f"backbone.layers.{L}.{s}")
     for nm, key in [("q", "self_attn.q_proj"), ("k", "self_attn.k_proj"), ("v", "self_attn.v_proj"), ("o", "self_attn.o_proj")]:
-        tts.add(f"B{L}_{nm}", g(key + ".weight").T, "f16")
+        tts.add(f"B{L}_{nm}", g(key + ".weight").T, GEMM_DT)
     tts.add(f"B{L}_qn", g("self_attn.q_norm.weight"))
     tts.add(f"B{L}_kn", g("self_attn.k_norm.weight"))
     tts.add(f"B{L}_ln_in", g("input_layernorm.weight"))
     tts.add(f"B{L}_ln_postatt", g("post_attention_layernorm.weight"))
     tts.add(f"B{L}_ln_preff", g("pre_feedforward_layernorm.weight"))
     tts.add(f"B{L}_ln_postff", g("post_feedforward_layernorm.weight"))
-    tts.add(f"B{L}_gate", g("mlp.gate_proj.weight").T, "f16")
-    tts.add(f"B{L}_up", g("mlp.up_proj.weight").T, "f16")
-    tts.add(f"B{L}_down", g("mlp.down_proj.weight").T, "f16")
+    tts.add(f"B{L}_gate", g("mlp.gate_proj.weight").T, GEMM_DT)
+    tts.add(f"B{L}_up", g("mlp.up_proj.weight").T, GEMM_DT)
+    tts.add(f"B{L}_down", g("mlp.down_proj.weight").T, GEMM_DT)
 tts.add("B_norm", T("backbone.norm.weight"))
 
 # ── CAS encoder (1-layer t5gemma) ────────────────────────────────────────────
 E = "embed_subword."
 tts.add("cas_char_emb", T(E + "embed_tokens.weight"))  # [257, 1152] f32
 for nm, key in [("q", "self_attn.q_proj"), ("k", "self_attn.k_proj"), ("v", "self_attn.v_proj"), ("o", "self_attn.o_proj")]:
-    tts.add(f"C0_{nm}", T(E + f"backbone.encoder.layers.0.{key}.weight").T, "f16")
+    tts.add(f"C0_{nm}", T(E + f"backbone.encoder.layers.0.{key}.weight").T, GEMM_DT)
 for nm, key in [
     ("ln_preatt", "pre_self_attn_layernorm"),
     ("ln_postatt", "post_self_attn_layernorm"),
@@ -93,9 +119,9 @@ for nm, key in [
     ("ln_postff", "post_feedforward_layernorm"),
 ]:
     tts.add(f"C0_{nm}", T(E + f"backbone.encoder.layers.0.{key}.weight"))
-tts.add("C0_gate", T(E + "backbone.encoder.layers.0.mlp.gate_proj.weight").T, "f16")
-tts.add("C0_up", T(E + "backbone.encoder.layers.0.mlp.up_proj.weight").T, "f16")
-tts.add("C0_down", T(E + "backbone.encoder.layers.0.mlp.down_proj.weight").T, "f16")
+tts.add("C0_gate", T(E + "backbone.encoder.layers.0.mlp.gate_proj.weight").T, GEMM_DT)
+tts.add("C0_up", T(E + "backbone.encoder.layers.0.mlp.up_proj.weight").T, GEMM_DT)
+tts.add("C0_down", T(E + "backbone.encoder.layers.0.mlp.down_proj.weight").T, GEMM_DT)
 tts.add("cas_norm", T(E + "backbone.encoder.norm.weight"))
 tts.add("cas_proj", T(E + "proj_embedding.weight").T)  # [1152, 1152] f32
 tts.add("cas_cont_emb", T(E + "subword_flag_emb.cont_emb.weight"))  # [2, 1152]
@@ -210,7 +236,11 @@ config = {
     "ropeThetaGlobal": 1000000.0,
     # HF Gemma3 layer_types with _sliding_window_pattern=6 (transformers 5.15.1)
     "globalLayers": [5, 11, 17, 23],
-    "cas": {"softcap": 50.0, "ropeTheta": 10000.0, "attnScale": 256 ** -0.5, "normalizer": math.sqrt(1152)},
+    # softcap 0: T5Gemma's config carries attn_logit_softcapping=50, but the HF
+    # sdpa attention path (used at training time and by the torch reference)
+    # silently drops softcapping — verified: golden CAS attention matches the
+    # uncapped computation to 5e-6 and diverges by 4.1 with the cap applied.
+    "cas": {"softcap": 0.0, "ropeTheta": 10000.0, "attnScale": 256 ** -0.5, "normalizer": math.sqrt(1152)},
     "latent": 512,
     "numQuantizers": 31,
     "codebook": 1024,
@@ -219,6 +249,10 @@ config = {
     "minLogStd": -4.0,
     "exponent": 3.0,
     "numIter": 8,
+    # per-iteration quantizer counts of the 8-step unmasking schedule
+    # (torch: ceil((1-linspace(0,1,9)[:-1]^3)^(1/3) * 31) diffs) — baked to keep
+    # the JS side off float-precision cliffs at the ceil()
+    "unmaskKs": [0, 0, 0, 1, 1, 3, 4, 22],
     "guidanceScale": 0.2,
     "topP": 0.95,
     "noiseScale": 0.001,
