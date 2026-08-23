@@ -18,7 +18,7 @@ Per 80 ms frame the full-duplex loop runs:
 | RNNT user-transcript head (2-layer LSTM 640, vocab 1025) | 34 MB | 0.5 ms/step | **Ships now** |
 | NemotronH 9B LLM (Mamba2-hybrid, 56 layers) + lm/function heads | 9B / 19 GB fp16 | 43.5 ms/step (CoreML int8 stateful shards, 100% prefill parity); 21.2 ms/tok (MLX 4-bit) | **Blocked** (see below) |
 | TTS: Gemma3 backbone 28L×1152 + MoG head | 595M + 159M | ~6 ms/step proxy; CFG 0.2 → 2 evals/step | **Ships now** — `tts-voicechat` (standalone Aria voice, code-matrix bit-exact vs torch; see phase 2) |
-| Audio codec decoder (31-quantizer PRVQ, 12.5 Hz → 22.05 kHz) | 763 MB | unmeasured | **Ships now** — part of `tts-voicechat` (waveform NRMSE 1.3e-6; RTFx 0.33 node/WASM) |
+| Audio codec decoder (31-quantizer PRVQ, 12.5 Hz → 22.05 kHz) | 763 MB | unmeasured | **Ships now** — part of `tts-voicechat` (waveform NRMSE 1.1e-6; ~24 GPU-ms/s of audio on WebGPU, RTFx 0.33 node/WASM) |
 
 ## What ships now: the STT slice (`asr-voicechat`)
 
@@ -76,9 +76,21 @@ at roughly 5–6 GB of weights.
    frame 22 (`--backbone-dtype f16` remains available, 1147/1550 codes).
    Weights are a local export for now (~3.5 GB via
    `scripts/extract-voicechat-tts.py`; the registry probe hides the engine
-   without it). Perf under node/WASM: 185 ms per 80 ms frame in the AR loop
-   + codec RTFx 0.33 (~0.19× overall) — a GPU-resident step loop and weight
-   residency in wasm memory are the deferred optimizations.
+   without it). Perf: the decode loop is GPU-RESIDENT on WebGPU (2026-08-23)
+   — per 80 ms frame, embed → fusion → 28-layer backbone records as one
+   batched submit against GPU KV caches, each of the 5 active MoG unmask
+   iterations is one submit + one overlapped readback set {xg, logits,
+   mu_res}, and the mixture-argmax / PRVQ-argmin / noise decisions stay
+   host-side f64. Timestamp-query on M5 Pro (dawn): 23.7 GPU-ms/frame
+   backbone+MoG (was 92.8 before the thin-M split-K GEMV route), ~16 ms
+   host decisions, codec ~97 GPU-ms per 4 s utterance (was 1247 — the
+   k==stride ConvT stages route as GEMM+reshape). The parity gate holds ON
+   THE GPU PATH TOO: 1550/1550 codes exact vs torch, waveform NRMSE 1.1e-6.
+   Node wall-clock stays 0.12× because the dawn binding resolves every
+   mapAsync on a ~100 ms event poll (5 dependent syncs/frame ≈ 500 ms);
+   browsers resolve mapAsync in well under a millisecond, so the in-browser
+   estimate is ~48 ms/frame ≈ 1.6× realtime (unverified in a real browser).
+   WASM remains the bit-exact parity backend at 0.19× overall.
 3. **Phase 3: LLM feasibility gate — RUN 2026-08-23: FAILED.** Calibrated
    sub-8-bit quantization does not recover quality on this checkpoint: best
    point within a 5.0-bit budget was **88.6% top-1 / KL 0.117** (GPTQ+AWQ
