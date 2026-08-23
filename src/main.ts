@@ -1,3 +1,7 @@
+import "./theme/site.css";
+import { initSiteTheme } from "./theme/theme.js";
+initSiteTheme();
+
 // Minimal demo UI wiring. Each engine implements a common interface (core/types),
 // so the UI treats them uniformly: pick → load → run. Audio engines take a file;
 // TTS takes text.

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ace-demo-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,117 +8,99 @@
          surfaces as a "No Access-Control-Allow-Origin" CORS error on model
          downloads. No Referer → HF serves the file on every host. -->
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#f5f4ef" />
     <title>FluidAudio Web — in-browser inference (WebGPU/WASM)</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: ui-sans-serif, system-ui, sans-serif;
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("ace-step-wgsl-demo-theme");
+        if (savedTheme === "dark") {
+          document.documentElement.dataset.aceDemoTheme = "dark";
+        }
+      } catch {
+        // The documented light default still works when storage is disabled.
       }
-      body {
-        max-width: 860px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-        line-height: 1.5;
-      }
-      h1 {
-        font-size: 1.4rem;
-      }
-      h2 {
-        font-size: 1.05rem;
-        margin-top: 1.5rem;
-      }
-      .row {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        align-items: center;
-        margin: 0.5rem 0;
-      }
-      /* [hidden] must win over .row's display:flex (else TTS shows the file picker
-         and audio engines show the text box). */
-      [hidden] {
-        display: none !important;
-      }
-      select,
-      button,
-      input,
-      textarea {
-        font: inherit;
-        padding: 0.4rem 0.6rem;
-      }
-      textarea {
-        width: 100%;
-        min-height: 4rem;
-      }
-      #status {
-        font-size: 0.85rem;
-        opacity: 0.8;
-        min-height: 1.2rem;
-      }
-      #output {
-        white-space: pre-wrap;
-        background: color-mix(in srgb, Canvas 92%, CanvasText);
-        padding: 0.75rem;
-        border-radius: 6px;
-        min-height: 3rem;
-      }
-      progress {
-        width: 100%;
-      }
-      .badge {
-        font-size: 0.7rem;
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        background: color-mix(in srgb, Canvas 85%, CanvasText);
-      }
-    </style>
+    </script>
   </head>
   <body>
-    <h1>FluidAudio Web <span class="badge">Playground</span></h1>
-    <nav class="row" style="font-size: 0.85rem">
-      <strong>Try it</strong> · <a href="verify.html">Verify all engines →</a> · <a href="./live.html">🎤 Live captions</a> · <a href="./music.html">🎵 Music generation</a>
-    </nav>
-    <p>
-      Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model weights (cached after).
-      <span id="gpu" class="badge"></span>
-    </p>
+    <main>
+      <header class="site-header">
+        <div class="site-title-row">
+          <h1 class="site-title">FluidAudio Web <span class="badge">Playground</span></h1>
+          <div class="header-controls">
+            <button
+              id="theme-toggle"
+              class="header-icon-button"
+              type="button"
+              aria-label="Switch to dark theme"
+              aria-pressed="false"
+              title="Switch to dark theme"
+            >
+              <img id="theme-icon" class="theme-icon" alt="" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <nav class="site-nav" aria-label="Site pages">
+          <span class="is-current">Playground</span> · <a href="./verify.html">Verify</a> · <a href="./live.html">Live captions</a> ·
+          <a href="./music.html">Music</a> ·
+          <a href="./bench.html">Bench</a>
+        </nav>
+      </header>
 
-    <div class="row">
-      <label
-        >Engine
-        <select id="engine"></select>
-      </label>
-      <button id="load">Load model</button>
-    </div>
-    <progress id="progress" value="0" max="1" hidden></progress>
-    <div id="status">Pick an engine and load it.</div>
+      <p class="site-intro">
+        Pick a model, load it, and run it right here — WebGPU + WebAssembly, nothing leaves your machine. First load downloads the model weights (cached after).
+        <span id="gpu" class="badge"></span>
+      </p>
 
-    <h2 id="inputLabel">Input</h2>
-    <div class="row" id="audioInput">
-      <input type="file" id="file" accept="audio/*,video/*" />
-    </div>
-    <div class="row" id="vocabInput" hidden>
-      <input
-        id="vocab"
-        style="width: 100%"
-        placeholder="Custom vocabulary, comma-separated (e.g. NVIDIA, Newrez, Bank of America) — fuzzy-corrects the transcript"
-      />
-      <label style="white-space: nowrap; cursor: pointer"
-        ><input type="checkbox" id="itn" /> smart formatting (numbers → digits; can misfire on phrases like “no one”)</label
-      >
-    </div>
-    <div class="row" id="textInput" hidden>
-      <textarea id="text" placeholder="Text to synthesize…">Hello from FluidAudio, running entirely in your browser.</textarea>
-    </div>
-    <div class="row">
-      <button id="run" disabled>Run</button>
-      <button id="mic" disabled title="Live transcription from your microphone (rolling window)">🎤 Live</button>
-      <audio id="player" controls hidden></audio>
-    </div>
+      <div class="row">
+        <label
+          >Engine
+          <select id="engine"></select>
+        </label>
+        <button id="load">Load model</button>
+      </div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <div id="status">Pick an engine and load it.</div>
 
-    <h2>Output</h2>
-    <div id="captionLinks" style="font-size: 0.9rem; margin: 0.4rem 0"></div>
-    <div id="output"></div>
+      <h2 id="inputLabel">Input</h2>
+      <div class="row" id="audioInput">
+        <input type="file" id="file" accept="audio/*,video/*" />
+      </div>
+      <div class="row" id="vocabInput" hidden>
+        <input
+          id="vocab"
+          style="width: 100%"
+          placeholder="Custom vocabulary, comma-separated (e.g. NVIDIA, Newrez, Bank of America) — fuzzy-corrects the transcript"
+        />
+        <label style="white-space: nowrap; cursor: pointer"
+          ><input type="checkbox" id="itn" /> smart formatting (numbers → digits; can misfire on phrases like “no one”)</label
+        >
+      </div>
+      <div class="row" id="textInput" hidden>
+        <textarea id="text" placeholder="Text to synthesize…">Hello from FluidAudio, running entirely in your browser.</textarea>
+      </div>
+      <div class="row">
+        <button id="run" class="primary-button" disabled>Run</button>
+        <button id="mic" disabled title="Live transcription from your microphone (rolling window)">🎤 Live</button>
+        <audio id="player" controls hidden></audio>
+      </div>
+
+      <h2>Output</h2>
+      <div id="captionLinks" style="font-size: 0.9rem; margin: 0.4rem 0"></div>
+      <div id="output"></div>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <a href="./index.html">FluidAudio Web</a> · original ACE-Step port by
+        <a href="https://narcotic.sh" target="_blank" rel="noopener noreferrer">Narcotic Software</a>
+      </div>
+      <div>
+        Made possible by
+        <a href="https://github.com/FluidInference/fluidaudio-web/blob/main/THIRD-PARTY-LICENSES.md" target="_blank" rel="noopener noreferrer">
+          open-source software
+        </a>
+      </div>
+    </footer>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

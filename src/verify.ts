@@ -1,3 +1,7 @@
+import "./theme/site.css";
+import { initSiteTheme } from "./theme/theme.js";
+initSiteTheme();
+
 // Verify: pick (or drop) ONE audio file and every engine runs on it — VAD,
 // both ASRs, diarization; TTS engines synthesize a fixed sentence (they consume
 // text, not audio). Records load/run timings + RTFx + a short output per engine

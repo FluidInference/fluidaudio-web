@@ -1,3 +1,7 @@
+import "./theme/site.css";
+import { initSiteTheme } from "./theme/theme.js";
+initSiteTheme();
+
 // In-browser GEMM bench at the encoder's real shapes — pins down kernel truth
 // on actual Chrome/Metal (dawn-node numbers can differ). Mirrors
 // /tmp scripts/gemm bench methodology: warmup, then N iters between

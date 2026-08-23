@@ -1,99 +1,88 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ace-demo-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#f5f4ef" />
     <title>FluidAudio Web — Live Captions</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: system-ui, sans-serif;
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("ace-step-wgsl-demo-theme");
+        if (savedTheme === "dark") {
+          document.documentElement.dataset.aceDemoTheme = "dark";
+        }
+      } catch {
+        // The documented light default still works when storage is disabled.
       }
-      body {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 0 1rem;
+    </script>
+    <style>
+      /* Page-specific: full-height column so #history (flex: 1) pins the
+         rolling transcript above #current, matching the pre-theme layout. */
+      main {
         display: flex;
         flex-direction: column;
-        min-height: 92vh;
-      }
-      h1 {
-        font-size: 1.3rem;
-        margin-bottom: 0.25rem;
-      }
-      #controls {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-        margin: 0.75rem 0;
-        flex-wrap: wrap;
-      }
-      select,
-      button {
-        font-size: 1rem;
-        padding: 0.4rem 0.8rem;
-      }
-      #go {
-        min-width: 9rem;
-      }
-      #status {
-        opacity: 0.8;
-        font-size: 0.9rem;
       }
       #history {
-        flex: 1;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        gap: 0.6rem;
-        padding-bottom: 0.5rem;
-      }
-      .utt {
-        font-size: 1.5rem;
-        line-height: 1.35;
-        opacity: 0.55;
-      }
-      .utt .t {
-        font-size: 0.8rem;
-        opacity: 0.7;
-        margin-right: 0.5rem;
-        font-variant-numeric: tabular-nums;
-      }
-      #current {
-        font-size: 2rem;
-        line-height: 1.35;
-        min-height: 3.5rem;
-        font-weight: 500;
-        border-top: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
-        padding-top: 0.6rem;
-      }
-      #vu {
-        display: inline-block;
-        width: 1.2rem;
-        text-align: center;
+        min-height: 8rem;
       }
     </style>
   </head>
   <body>
-    <h1>Live Captions</h1>
-    <nav style="font-size: 0.85rem"><a href="./">← Playground</a> · <a href="./verify.html">Verify</a></nav>
-    <p style="font-size: 0.9rem; opacity: 0.85">
-      True streaming ASR on your microphone — conformer caches carried chunk to chunk, nothing re-decoded, nothing leaves your machine. EOU segments utterances
-      from the model's own end-of-utterance tokens; Nemotron adds a ~1.6s right-context lookahead (that delay is the model looking ahead, not lag).
-    </p>
-    <div id="controls">
-      <select id="engine">
-        <option value="eou-parakeet" selected>Parakeet EOU 120M (English, fastest)</option>
-        <option value="asr-nemotron">Nemotron 3.5 (multilingual)</option>
-      </select>
-      <button id="go">▶ Start</button>
-      <span id="vu"></span>
-      <span id="status">Idle.</span>
-    </div>
-    <div id="history"></div>
-    <div id="current">&nbsp;</div>
+    <main>
+      <header class="site-header">
+        <div class="site-title-row">
+          <h1 class="site-title">Live Captions</h1>
+          <div class="header-controls">
+            <button
+              id="theme-toggle"
+              class="header-icon-button"
+              type="button"
+              aria-label="Switch to dark theme"
+              aria-pressed="false"
+              title="Switch to dark theme"
+            >
+              <img id="theme-icon" class="theme-icon" alt="" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <nav class="site-nav" aria-label="Site pages">
+          <a href="./index.html">Playground</a> · <a href="./verify.html">Verify</a> · <span class="is-current">Live captions</span> ·
+          <a href="./music.html">Music</a> ·
+          <a href="./bench.html">Bench</a>
+        </nav>
+      </header>
+
+      <p class="site-intro" style="font-size: 0.9rem">
+        True streaming ASR on your microphone — conformer caches carried chunk to chunk, nothing re-decoded, nothing leaves your machine. EOU segments
+        utterances from the model's own end-of-utterance tokens; Nemotron adds a ~1.6s right-context lookahead (that delay is the model looking ahead, not lag).
+      </p>
+      <div id="controls">
+        <select id="engine">
+          <option value="eou-parakeet" selected>Parakeet EOU 120M (English, fastest)</option>
+          <option value="asr-nemotron">Nemotron 3.5 (multilingual)</option>
+        </select>
+        <button id="go" class="primary-button">▶ Start</button>
+        <span id="vu"></span>
+        <span id="status">Idle.</span>
+      </div>
+      <div id="history"></div>
+      <div id="current">&nbsp;</div>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <a href="./index.html">FluidAudio Web</a> · original ACE-Step port by
+        <a href="https://narcotic.sh" target="_blank" rel="noopener noreferrer">Narcotic Software</a>
+      </div>
+      <div>
+        Made possible by
+        <a href="https://github.com/FluidInference/fluidaudio-web/blob/main/THIRD-PARTY-LICENSES.md" target="_blank" rel="noopener noreferrer">
+          open-source software
+        </a>
+      </div>
+    </footer>
+
     <script type="module" src="/src/live.ts"></script>
   </body>
 </html>
