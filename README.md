@@ -39,7 +39,10 @@ const asr = new ParakeetV3Engine();
 await asr.load((p) => console.log(p.file, p.fraction));
 asr.setVocabulary(["NVIDIA", "Newrez"]); // optional: fuzzy-correct domain terms
 asr.setItn(true); // optional: "twenty one" → "21"
-const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer));
+const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer), {
+  // optional: transcription progress on long files, emitted at window boundaries
+  onProgress: (p) => console.log(`${(p.fraction * 100).toFixed(0)}% — ${p.processedSeconds.toFixed(0)}s / ${p.totalSeconds.toFixed(0)}s`),
+});
 await asr.dispose();
 ```
 

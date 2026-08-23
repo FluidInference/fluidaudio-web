@@ -16,7 +16,8 @@
 // Full raw path == ORT reference transcript; encoder maxΔ 4.4e-2 (fp16) vs ORT.
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine, TranscribeOpts } from "../../core/types.js";
+import { makeTranscribeProgress } from "../../core/progress.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "../asr-parakeet/raw-encoder.js";
 import { loadEouDecoder, loadEouWasmDecoder, eouWasmDecodeCont, eouWasmReset } from "../asr-parakeet/raw-decoder-eou.js";
@@ -170,11 +171,11 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
     return this.worker;
   }
 
-  transcribe(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
-    return this.serialize(() => this.transcribeInner(audio)) as Promise<AsrResult & { events?: { type: string; time: number }[] }>;
+  transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
+    return this.serialize(() => this.transcribeInner(audio, opts)) as Promise<AsrResult & { events?: { type: string; time: number }[] }>;
   }
 
-  private async transcribeInner(audio: AudioData): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
+  private async transcribeInner(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult & { events?: { type: string; time: number }[] }> {
     if (!this.enc || !this.wdec || !this.mel || !this.tokenizer) throw new Error("ParakeetEouEngine.load() not called");
     if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe (shared decoder state)");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -224,6 +225,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       }
     };
     const SLICE = 240 * 16000; // feed 4-min slices so chunk passes reach BATCH_CHUNK
+    const progress = makeTranscribeProgress(audio.samples.length / 16000, opts?.onProgress);
     try {
       for (let off = 0; off < audio.samples.length; off += SLICE) {
         const tm = now();
@@ -235,6 +237,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
           encMs += now() - te;
           if (out) consume(out);
         }
+        progress?.update(Math.min(off + SLICE, audio.samples.length) / 16000);
       }
       const tm = now();
       const fl = mel.flush();
@@ -256,6 +259,7 @@ export class ParakeetEouEngine implements AsrEngine, StreamingAsrEngine {
       disposeEncodeStream(this.ctx, encSt);
       this.ctx.trimPool();
     }
+    progress?.done();
     return {
       text: this.tokenizer.decode(ids),
       segments: tokensToWords(ids, idTimes, this.tokenizer.id2token),

@@ -38,7 +38,17 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   // decodePool (decode-pool.js): windows decode in parallel on worker threads;
   // browsers where decode dominates the wall (encode 355ms vs decode 1821ms on
   // one measured machine) gain ~pool-size× on the decode term.
-  const { sampleRate = 16000, windowSec = 15, overlapSec = 2, wb = 6, pipelined = true, decodePool = null, gpuDecoder = null, melPool = null } = opts;
+  const {
+    sampleRate = 16000,
+    windowSec = 15,
+    overlapSec = 2,
+    wb = 6,
+    pipelined = true,
+    decodePool = null,
+    gpuDecoder = null,
+    melPool = null,
+    onWindowDone = null,
+  } = opts;
   const winSamples = windowSec * sampleRate;
   const overlapSamples = overlapSec * sampleRate;
   const hop = winSamples - overlapSamples;
@@ -49,7 +59,15 @@ export async function transcribeWindowed(ctx, enc, dec, mel, projW, projB, sampl
   const groups = groupWindows(starts, samples.length, winSamples, wb);
 
   const { melsFor, resolveMels } = createMelScheduler({ mel, melPool, groups, starts, samples, winSamples, single, stats, now });
-  const { ids, idTimes, stitch } = createStitcher({ hop, sampleRate, overlapSamples });
+  const { ids, idTimes, stitch: stitchRaw } = createStitcher({ hop, sampleRate, overlapSamples });
+  // Progress rides the stitch: windows stitch strictly in order across all three
+  // decode paths, so the end sample of the just-stitched window is monotonic.
+  const stitch = onWindowDone
+    ? (w, sliceLen, Tsub, wids, idFrames) => {
+        stitchRaw(w, sliceLen, Tsub, wids, idFrames);
+        onWindowDone(Math.min(starts[w] + winSamples, samples.length));
+      }
+    : stitchRaw;
   const sink = createDecodeSink({ dec, D, decodePool, stitch, stats, now, starts, winSamples, totalSamples: samples.length });
 
   // Joint encoder projection [W*Tsub,1024]→[W*Tsub,640] + staging copy, recorded

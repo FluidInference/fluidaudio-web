@@ -24,7 +24,8 @@
 // models-local/ at /models).
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine, TranscribeOpts } from "../../core/types.js";
+import { makeTranscribeProgress } from "../../core/progress.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "../asr-parakeet/raw-encoder.js";
 import { createEncodeStream, encodeStreamPush, encodeStreamFlush, disposeEncodeStream } from "../asr-parakeet/streaming-encoder.js";
@@ -184,13 +185,13 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
     st.subT += n;
   }
 
-  transcribe(audio: AudioData): Promise<AsrResult> {
+  transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     // Serialized on the same chain as push/finish (see asr-nemotron: a queued
     // push would otherwise race the batch loop on this.stream).
-    return this.serialize(() => this.transcribeInner(audio));
+    return this.serialize(() => this.transcribeInner(audio, opts));
   }
 
-  private async transcribeInner(audio: AudioData): Promise<AsrResult> {
+  private async transcribeInner(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.vocab) throw new Error("VoicechatSttEngine.load() not called");
     if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -218,6 +219,7 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
       decMs += now() - td;
     };
     const SLICE = 240 * 16000;
+    const progress = makeTranscribeProgress(audio.samples.length / 16000, opts?.onProgress);
     try {
       for (let off = 0; off < audio.samples.length; off += SLICE) {
         const tm = now();
@@ -229,6 +231,7 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
           encMs += now() - te;
           if (out) consumeB(out);
         }
+        progress?.update(Math.min(off + SLICE, audio.samples.length) / 16000);
       }
       const tm = now();
       const fl = mel.flush();
@@ -245,6 +248,7 @@ export class VoicechatSttEngine implements AsrEngine, StreamingAsrEngine {
       disposeEncodeStream(this.ctx, encSt);
       this.ctx.trimPool();
     }
+    progress?.done();
     return {
       text: this.idsToText(st.ids),
       segments: tokensToWords(st.ids, st.idTimes, this.vocab as Record<number, string>, (id) => (this.vocab![id] ?? "<").startsWith("<")),

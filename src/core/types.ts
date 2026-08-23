@@ -52,12 +52,29 @@ export interface AsrResult {
   metrics?: AsrStageMetrics;
 }
 
+/** Batch-transcription progress, emitted at engine window/slice boundaries. */
+export interface TranscribeProgress {
+  /** Audio seconds whose transcription work has completed. */
+  processedSeconds: number;
+  /** Duration of the input clip in seconds. */
+  totalSeconds: number;
+  /** 0..1, monotonic; exactly 1 only on the final emit. */
+  fraction: number;
+}
+
+export interface TranscribeOpts {
+  /** Progress at the engine's natural window boundary (~15s–4min of audio per
+   * emit depending on the engine). Best-effort: engines that cannot estimate
+   * progress simply never call it. */
+  onProgress?: (p: TranscribeProgress) => void;
+}
+
 export interface AsrEngine extends Engine {
   /** Optional: custom-vocabulary fuzzy correction (Parakeet). */
   setVocabulary?(terms: Array<string | { text: string; aliases?: string[]; minSimilarity?: number }>): void;
   /** Optional: opt-in inverse text normalization on transcripts (Parakeet). */
   setItn?(enabled: boolean): void;
-  transcribe(audio: AudioData): Promise<AsrResult>;
+  transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult>;
 }
 
 /** Streaming ASR (Nemotron, EOU): push chunks, get incremental text. */

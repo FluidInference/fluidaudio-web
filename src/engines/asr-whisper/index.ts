@@ -9,7 +9,8 @@
 // chunking is a follow-up). Weights from FluidInference/fluidaudio-web (fp32).
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, TranscribeOpts } from "../../core/types.js";
+import { makeTranscribeProgress } from "../../core/progress.js";
 import { createContext } from "../../gpu/context.js";
 import { loadWhisperEncoder, whisperEncode } from "./raw-whisper-encoder.js";
 import { loadWhisperDecoder, whisperCrossKV, whisperDecodeInit, whisperDecodeNext } from "./raw-whisper-decoder.js";
@@ -54,13 +55,14 @@ export class WhisperEngine implements AsrEngine {
     onProgress?.({ file: WEIGHTS_REPO, loaded: 1, total: 1, fraction: 1 });
   }
 
-  async transcribe(audio: AudioData): Promise<AsrResult> {
+  async transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("WhisperEngine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
     // Long-form: sequential 30s chunks (Whisper's fixed context), text
     // concatenated. Previously only the FIRST 30s was transcribed — silently.
     const CHUNK = 30 * 16000;
+    const progress = makeTranscribeProgress(audio.samples.length / 16000, opts?.onProgress);
     const parts: string[] = [];
     let melMs = 0;
     let decMs = 0;
@@ -99,7 +101,9 @@ export class WhisperEngine implements AsrEngine {
       const text = this.tokenizer.decode(tokens.slice(PREFIX.length)).trim();
       if (text) parts.push(text);
       this.ctx.trimPool(); // chunk drained — evict to budget
+      progress?.update(Math.min(off + CHUNK, audio.samples.length) / 16000);
     }
+    progress?.done();
     return {
       text: parts.join(" "),
       metrics: { melMs: +melMs.toFixed(0), encodeMs: 0, decodeMs: +decMs.toFixed(0), totalMs: +(now() - t0).toFixed(0) },

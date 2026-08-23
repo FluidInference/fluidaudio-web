@@ -8,7 +8,8 @@
 // round-trip per token (the ~20× wall). WASM-SIMD decodes on CPU with no GPU sync.
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, TranscribeOpts } from "../../core/types.js";
+import { makeTranscribeProgress } from "../../core/progress.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "./raw-encoder.js";
 import { loadWasmDecoder } from "./raw-decoder-wasm.js";
@@ -207,7 +208,7 @@ export class ParakeetV3Engine implements AsrEngine {
     return this.melPool;
   }
 
-  async transcribe(audio: AudioData): Promise<AsrResult> {
+  async transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     if (!this.enc || !this.dec || !this.mel || !this.tokenizer) throw new Error("ParakeetV3Engine.load() not called");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const t0 = now();
@@ -215,6 +216,7 @@ export class ParakeetV3Engine implements AsrEngine {
       await this.ensurePool(); // multi-window → parallel decode pays
       await this.ensureMelPool();
     }
+    const progress = makeTranscribeProgress(audio.samples.length / SAMPLE_RATE, opts?.onProgress);
     // Windowed 3-stage pipeline (pipeline.js, shared with the node gates):
     // GPU encodes group g+1 while the CPU runs mel for g+2 and decodes g.
     const { ids, idTimes, stats } = await transcribeWindowed(this.ctx, this.enc, this.dec, this.mel, this.encProjW, this.encProjB, audio.samples, {
@@ -223,6 +225,7 @@ export class ParakeetV3Engine implements AsrEngine {
       overlapSec: OVERLAP_SEC,
       decodePool: this.decodePool,
       melPool: this.melPool,
+      onWindowDone: progress ? (s: number) => progress.update(s / SAMPLE_RATE) : undefined,
     });
     // Stages overlap (pipelined); encodeMs is the GPU wait NOT hidden behind CPU
     // work, so mel + encode + decode ≈ wall. GPU-bound shows encode dominating.
@@ -234,6 +237,7 @@ export class ParakeetV3Engine implements AsrEngine {
     // Word segments come from the RAW token stream (rescorer/ITN edit only the
     // flat text — captions keep spoken-form words with true timings).
     const segments = tokensToWords(ids, idTimes, this.tokenizer.id2token, (id) => id === this.tokenizer!.blankId);
+    progress?.done();
     return {
       text,
       segments,
