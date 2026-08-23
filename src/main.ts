@@ -11,7 +11,7 @@ import { segmentsToSrt, segmentsToVtt } from "./core/captions.js";
 import { webgpuAvailable } from "./core/webgpu.js";
 import { ENGINES, type EngineEntry } from "./engines/registry.js";
 import { MicCapture } from "./core/mic.js";
-import type { Engine, LoadProgress } from "./core/types.js";
+import type { Engine, LoadProgress, TranscribeProgress } from "./core/types.js";
 
 // Engine catalog lives in engines/registry.ts — a new engine registered there
 // appears here automatically.
@@ -282,6 +282,13 @@ micBtn.addEventListener("click", () => {
   else void startLive();
 });
 
+/** m:ss for the transcription-progress status line (minutes don't wrap: 1h → 60:00). */
+function fmtClock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampleRate: number }): Promise<string> {
   const any = eng as any;
   if (typeof any.detect === "function") {
@@ -302,7 +309,34 @@ async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampl
           : [],
       );
     }
-    const r = await any.transcribe(audio);
+    // Determinate progress during long transcriptions (engines emit at their
+    // window boundaries). Reuses the model-load bar; status shows a live
+    // position + realtime factor, both restored on completion/error.
+    const prevStatus = status.textContent;
+    const t0 = performance.now();
+    let shown = false;
+    let r: any;
+    try {
+      r = await any.transcribe(audio, {
+        onProgress: (p: TranscribeProgress) => {
+          if (!shown) {
+            shown = true;
+            progress.value = 0;
+            progress.hidden = false;
+          }
+          progress.value = p.fraction;
+          const wall = (performance.now() - t0) / 1000;
+          const rt = wall > 0 ? ` (${(p.processedSeconds / wall).toFixed(1)}× RT)` : "";
+          status.textContent = `Transcribing… ${fmtClock(p.processedSeconds)} / ${fmtClock(p.totalSeconds)}${rt}`;
+        },
+      });
+    } finally {
+      if (shown) {
+        progress.hidden = true;
+        progress.value = 0;
+        status.textContent = prevStatus;
+      }
+    }
     if (r.segments?.length) lastSegments = r.segments;
     const events = r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : "";
     if (r.metrics) {

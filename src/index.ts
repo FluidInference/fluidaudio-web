@@ -19,6 +19,8 @@ export type {
   DiarSegment,
   LoadProgress,
   ProgressCb,
+  TranscribeOpts,
+  TranscribeProgress,
 } from "./core/types.js";
 export { decodeToMono16k, pcmToWav } from "./core/audio.js";
 export { webgpuAvailable } from "./core/webgpu.js";

@@ -15,7 +15,8 @@
 // Full offline int8 path == coherent transcript matching the ORT streaming reference.
 
 import { fetchCached, hfUrl } from "../../core/modelCache.js";
-import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine } from "../../core/types.js";
+import type { AsrEngine, AsrResult, AudioData, ProgressCb, StreamingAsrEngine, TranscribeOpts } from "../../core/types.js";
+import { makeTranscribeProgress } from "../../core/progress.js";
 import { createContext } from "../../gpu/context.js";
 import { loadParakeetEncoder } from "../asr-parakeet/raw-encoder.js";
 import { loadNemotronDecoder, loadPromptKernel, loadNemoWasmDecoder, nemoWasmDecodeCont, nemoWasmReset } from "./raw-decoder-nemotron.js";
@@ -196,14 +197,14 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
       ctx.matmul(ctx.matmul(ctx.matmul(x, this.pk0c, { bias: lb, act: "relu" }), this.pk2w, { bias: this.pk2b }), this.projW, { bias: this.projB });
   }
 
-  transcribe(audio: AudioData): Promise<AsrResult> {
+  transcribe(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     // Serialized on the same chain as push/finish — a queued-but-unexecuted
     // push would otherwise race the segment loop (TOCTOU on this.stream) and
     // trimPool() mid-stream violates the drained-queue contract.
-    return this.serialize(() => this.transcribeInner(audio));
+    return this.serialize(() => this.transcribeInner(audio, opts));
   }
 
-  private async transcribeInner(audio: AudioData): Promise<AsrResult> {
+  private async transcribeInner(audio: AudioData, opts?: TranscribeOpts): Promise<AsrResult> {
     if (!this.enc || !this.wdec || !this.pk || !this.vocab) throw new Error("NemotronEngine.load() not called");
     if (this.stream) throw new Error("a live stream is active — reset() before batch transcribe");
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -234,6 +235,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
     };
     const SLICE = 240 * 16000;
     const BATCH_CHUNK = 768;
+    const progress = makeTranscribeProgress(audio.samples.length / 16000, opts?.onProgress);
     try {
       for (let off = 0; off < audio.samples.length; off += SLICE) {
         const tm = now();
@@ -245,6 +247,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
           encMs += now() - te;
           if (out) consumeB(out);
         }
+        progress?.update(Math.min(off + SLICE, audio.samples.length) / 16000);
       }
       const tm = now();
       const fl = mel.flush();
@@ -261,6 +264,7 @@ export class NemotronEngine implements AsrEngine, StreamingAsrEngine {
       disposeEncodeStream(this.ctx, encSt);
       this.ctx.trimPool();
     }
+    progress?.done();
     return {
       text: this.idsToText(ids),
       segments: tokensToWords(ids, idTimes, this.vocab as Record<number, string>, (id) => (this.vocab![id] ?? "<").startsWith("<")),
