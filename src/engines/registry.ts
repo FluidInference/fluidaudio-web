@@ -34,7 +34,7 @@ export interface EngineEntry {
  * testing shouldn't re-download multi-GB weights that are already on disk.
  * Production hosts 404/HTML here and fall through to the HF default.
  */
-async function localWeightDir(dir: string, probeFile: string): Promise<string | undefined> {
+export async function localWeightDir(dir: string, probeFile: string): Promise<string | undefined> {
   try {
     const base = (import.meta as any).env?.BASE_URL ?? "/";
     const url = `${base}models/${dir}`;

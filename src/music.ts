@@ -38,6 +38,7 @@ import {
 } from "./engines/musicgen-acestep/model-download-progress.js";
 import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
 import { pcmToWav } from "./core/audio.js";
+import { localWeightDir } from "./engines/registry.js";
 import type { DicoseStemEngine } from "./engines/stem-dicose/index.js";
 import type { StemAudio } from "./core/types.js";
 import "./engines/musicgen-acestep/style.css";
@@ -662,7 +663,12 @@ async function splitStems(): Promise<void> {
   try {
     setIndeterminateProgress("Splitting stems", "Loading the DiCoSe separator");
     const { DicoseStemEngine } = await import("./engines/stem-dicose/index.js");
-    stemEngine ??= new DicoseStemEngine();
+    if (stemEngine === undefined) {
+      // Same local-weights-first behavior as the registry entry: a dev-served
+      // models-local/dicose export beats the 623 MB HF download.
+      const baseUrl = await localWeightDir("dicose", "manifest.json");
+      stemEngine = new DicoseStemEngine(baseUrl ? { baseUrl } : {});
+    }
     await stemEngine.load((p) => {
       if (p.total > 0) {
         setDeterminateProgress(
