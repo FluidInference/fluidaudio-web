@@ -1,7 +1,8 @@
 /// <reference types="@webgpu/types" />
 /// <reference types="vite/client" />
 
-import opt0012CoreSource from "../../benchmark/opt-0012-compact-semantic-head.ts?raw";
+import opt0012CoreSource from
+  "../../benchmark/opt-0012-compact-semantic-head.ts?raw";
 import apiSource from "../../src/api.ts?raw";
 import graphContractSource from "../../src/model/graph-contract.ts?raw";
 import strictJsonSource from "../../src/model/strict-json.ts?raw";
@@ -13,7 +14,8 @@ import qwenBpeSource from "../../src/tokenizer/qwen-bpe.ts?raw";
 import tokenizerIndexSource from "../../src/tokenizer/index.ts?raw";
 import tokenizerLoaderSource from "../../src/tokenizer/loader.ts?raw";
 import tokenizerChatSource from "../../src/tokenizer/chat.ts?raw";
-import tokenizerConditioningTextSource from "../../src/tokenizer/conditioning-text.ts?raw";
+import tokenizerConditioningTextSource from
+  "../../src/tokenizer/conditioning-text.ts?raw";
 import plannerModelSource from "../../src/webgpu/planner-model.ts?raw";
 import capabilitiesSource from "../../src/webgpu/capabilities.ts?raw";
 import attentionSource from "../../src/webgpu/kernels/attention.ts?raw";
@@ -23,8 +25,10 @@ import gemmSource from "../../src/webgpu/kernels/gemm.ts?raw";
 import kvCacheSource from "../../src/webgpu/kernels/kv-cache.ts?raw";
 import rmsnormSource from "../../src/webgpu/kernels/rmsnorm.ts?raw";
 import tensorCopySource from "../../src/webgpu/kernels/tensor-copy.ts?raw";
-import transformerPlumbingSource from "../../src/webgpu/kernels/transformer-plumbing.ts?raw";
-import correctnessUtilsSource from "../../src/webgpu/kernels/correctness-utils.ts?raw";
+import transformerPlumbingSource from
+  "../../src/webgpu/kernels/transformer-plumbing.ts?raw";
+import correctnessUtilsSource from
+  "../../src/webgpu/kernels/correctness-utils.ts?raw";
 import qwen3Source from "../../src/webgpu/qwen3.ts?raw";
 import acquireSource from "../../src/model/acquire.ts?raw";
 import cacheSource from "../../src/model/cache.ts?raw";
@@ -36,7 +40,8 @@ import schedulerSource from "../../src/runtime/scheduler.ts?raw";
 import deviceSource from "../../src/webgpu/device.ts?raw";
 import plannerExecutorSource from "../../src/webgpu/planner-executor.ts?raw";
 import arenaSource from "../../src/webgpu/arena.ts?raw";
-import scopedBufferSource from "../../src/webgpu/scoped-buffer-allocation.ts?raw";
+import scopedBufferSource from
+  "../../src/webgpu/scoped-buffer-allocation.ts?raw";
 
 import {
   ACE_OPT_0012_CORE_SOURCE_IDENTITIES,
@@ -64,7 +69,12 @@ import { ACE_REQUIRED_WEBGPU_LIMITS } from "../../src/webgpu/capabilities.js";
 import { acquireAceModelFiles } from "../../src/model/acquire.js";
 import { AceOpfsModelCache } from "../../src/model/cache.js";
 import { AceGpuTensorPhase } from "../../src/model/gpu-tensors.js";
-import { ACE_PACKAGE_CONVERTER_REVISION, type AcePackageFileRecord, type AcePackageManifest, type AcePackageTensorRecord } from "../../src/model/manifest.js";
+import {
+  ACE_PACKAGE_CONVERTER_REVISION,
+  type AcePackageFileRecord,
+  type AcePackageManifest,
+  type AcePackageTensorRecord,
+} from "../../src/model/manifest.js";
 import { loadAcePackageManifest } from "../../src/model/package.js";
 import { aceSha256Hex } from "../../src/model/sha256.js";
 import {
@@ -86,12 +96,33 @@ import {
   sampleAcePlannerToken,
   type AcePlannerSamplingParameters,
 } from "../../src/runtime/planner-sampling.js";
-import { aceCategoricalTokenFromWord, aceRandomWord, canonicalizeSeed } from "../../src/runtime/seed.js";
-import { ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS } from "../../src/runtime/scheduler.js";
-import { ACE_QWEN_IM_END_TOKEN_ID, ACE_QWEN_PAD_TOKEN_ID, loadPinnedAceTokenizer, type AceQwenBpeTokenizer } from "../../src/tokenizer/index.js";
-import { requestAceWebGpuDevice, type AceGpuRuntimeEvent, type AceWebGpuDeviceContext } from "../../src/webgpu/device.js";
-import { AceCorrectnessGemmKernel, aceCorrectnessGemmWgsl, type AceGemmDispatch } from "../../src/webgpu/kernels/gemm.js";
-import { ACE_PLANNER_EMBEDDING_ROW_PARTS, type AcePlannerModelDispatch } from "../../src/webgpu/planner-model.js";
+import {
+  aceCategoricalTokenFromWord,
+  aceRandomWord,
+  canonicalizeSeed,
+} from "../../src/runtime/seed.js";
+import { ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS } from
+  "../../src/runtime/scheduler.js";
+import {
+  ACE_QWEN_IM_END_TOKEN_ID,
+  ACE_QWEN_PAD_TOKEN_ID,
+  loadPinnedAceTokenizer,
+  type AceQwenBpeTokenizer,
+} from "../../src/tokenizer/index.js";
+import {
+  requestAceWebGpuDevice,
+  type AceGpuRuntimeEvent,
+  type AceWebGpuDeviceContext,
+} from "../../src/webgpu/device.js";
+import {
+  AceCorrectnessGemmKernel,
+  aceCorrectnessGemmWgsl,
+  type AceGemmDispatch,
+} from "../../src/webgpu/kernels/gemm.js";
+import {
+  ACE_PLANNER_EMBEDDING_ROW_PARTS,
+  type AcePlannerModelDispatch,
+} from "../../src/webgpu/planner-model.js";
 import {
   AcePlannerGpuExecutor,
   reconstructAcePlannerLogits,
@@ -100,16 +131,26 @@ import {
   type AcePlannerPreparedGpuExecutorResources,
   type AcePlannerPreparedPhaseGpuResources,
 } from "../../src/webgpu/planner-executor.js";
-import { ACE_PLANNER_QWEN3_CONFIG, createAceQwen3CausalControlData } from "../../src/webgpu/qwen3.js";
+import {
+  ACE_PLANNER_QWEN3_CONFIG,
+  createAceQwen3CausalControlData,
+} from "../../src/webgpu/qwen3.js";
 
-export const OPT_0012_ALLOCATION_COMMIT = "f5e8e5db0b88a9a44dc96b73319183114daf136a" as const;
-export const OPT_0012_CORE_COMMIT = "f73380bceebdd5568d93908a67ff33cea2b7d8f0" as const;
-export const OPT_0012_CORE_SOURCE_SHA256 = "f8f2eb7cd72d8cdf2414be1d13a501553a44d30752bde02754d4ae43e88e1681" as const;
-export const OPT_0012_FP16_MANIFEST_SHA256 = "c5b547cd08aa5e6d2971b2c9c84940b8af193f2e230ce689258ca81fcd292a3b" as const;
+export const OPT_0012_ALLOCATION_COMMIT =
+  "f5e8e5db0b88a9a44dc96b73319183114daf136a" as const;
+export const OPT_0012_CORE_COMMIT =
+  "f73380bceebdd5568d93908a67ff33cea2b7d8f0" as const;
+export const OPT_0012_CORE_SOURCE_SHA256 =
+  "f8f2eb7cd72d8cdf2414be1d13a501553a44d30752bde02754d4ae43e88e1681" as const;
+export const OPT_0012_FP16_MANIFEST_SHA256 =
+  "c5b547cd08aa5e6d2971b2c9c84940b8af193f2e230ce689258ca81fcd292a3b" as const;
 export const OPT_0012_FP16_MANIFEST_PATH = "/model/files-fp16/manifest.json";
-export const OPT_0012_ACCEPTED_SEMANTIC_CODE_SHA256 = "42c83500063bf85d7856940620f7d8e7b97307e9584cd9ebd03e0b7ae7b8a3be" as const;
-export const OPT_0012_ACCEPTED_COT_RECEIPT_SHA256 = "554106761fde0a5fab8075324d34fc08cb31b885f044c173cd4ba1ab1facb678" as const;
-export const OPT_0012_THERMAL_SOURCE = "notifyutil-com.apple.system.thermalpressurelevel" as const;
+export const OPT_0012_ACCEPTED_SEMANTIC_CODE_SHA256 =
+  "42c83500063bf85d7856940620f7d8e7b97307e9584cd9ebd03e0b7ae7b8a3be" as const;
+export const OPT_0012_ACCEPTED_COT_RECEIPT_SHA256 =
+  "554106761fde0a5fab8075324d34fc08cb31b885f044c173cd4ba1ab1facb678" as const;
+export const OPT_0012_THERMAL_SOURCE =
+  "notifyutil-com.apple.system.thermalpressurelevel" as const;
 export const OPT_0012_THERMAL_POLL_MILLISECONDS = 1_000;
 export const OPT_0012_THERMAL_POLL_TOLERANCE_MILLISECONDS = 250;
 export const OPT_0012_MINIMUM_NOMINAL_MILLISECONDS = 30_000;
@@ -140,9 +181,12 @@ export const OPT_0012_EOS_COPY_COUNT = 2;
 export const OPT_0012_FP16_DOMAIN_WORD_COUNT = 0x1_0000;
 export const OPT_0012_FP16_NON_NAN_WORD_COUNT = 63_490;
 export const OPT_0012_FP16_NAN_WORD_COUNT = 2_046;
-export const OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 = "b636c5716ff84d972782faf02d0194cb8951526bea4cc487082feb47b1860ddf" as const;
-export const OPT_0012_FP16_NON_NAN_OUTPUT_SHA256 = "680bbc22915f61aa1bbfc7265bc3882a6aa42d299bfd2c571807196e5544de2e" as const;
-export const OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256 = "32f37d24c421f50695da47516d20cffa27c96fb2be53d1ac6f88cfbc1cec9039" as const;
+export const OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 =
+  "b636c5716ff84d972782faf02d0194cb8951526bea4cc487082feb47b1860ddf" as const;
+export const OPT_0012_FP16_NON_NAN_OUTPUT_SHA256 =
+  "680bbc22915f61aa1bbfc7265bc3882a6aa42d299bfd2c571807196e5544de2e" as const;
+export const OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256 =
+  "32f37d24c421f50695da47516d20cffa27c96fb2be53d1ac6f88cfbc1cec9039" as const;
 export const OPT_0012_PRIMARY_TIMING_FP16_NAN_CENSUS_COUNT = 54;
 
 const STATUS_UPDATE_INTERVAL_MILLISECONDS = 200;
@@ -189,14 +233,22 @@ export function opt0012ExpectedCommandBufferTopology(
   if (phaseKind === "prefill") {
     return Object.freeze({
       preHeadCommandBufferCount: OPT_0012_PREFILL_PRE_HEAD_QUANTUM_COUNT,
-      modelCommandBufferCount: arm === "A" ? OPT_0012_PREFILL_MODEL_QUANTUM_COUNT : OPT_0012_CANDIDATE_PREFILL_COMMAND_BUFFER_COUNT - 1,
-      totalCommandBufferCount: arm === "A" ? OPT_0012_FULL_PREFILL_COMMAND_BUFFER_COUNT : OPT_0012_CANDIDATE_PREFILL_COMMAND_BUFFER_COUNT,
+      modelCommandBufferCount: arm === "A"
+        ? OPT_0012_PREFILL_MODEL_QUANTUM_COUNT
+        : OPT_0012_CANDIDATE_PREFILL_COMMAND_BUFFER_COUNT - 1,
+      totalCommandBufferCount: arm === "A"
+        ? OPT_0012_FULL_PREFILL_COMMAND_BUFFER_COUNT
+        : OPT_0012_CANDIDATE_PREFILL_COMMAND_BUFFER_COUNT,
     });
   }
   return Object.freeze({
     preHeadCommandBufferCount: OPT_0012_PRE_HEAD_QUANTUM_COUNT,
-    modelCommandBufferCount: arm === "A" ? OPT_0012_MODEL_QUANTUM_COUNT : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT - 1,
-    totalCommandBufferCount: arm === "A" ? OPT_0012_FULL_COMMAND_BUFFER_COUNT : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT,
+    modelCommandBufferCount: arm === "A"
+      ? OPT_0012_MODEL_QUANTUM_COUNT
+      : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT - 1,
+    totalCommandBufferCount: arm === "A"
+      ? OPT_0012_FULL_COMMAND_BUFFER_COUNT
+      : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT,
   });
 }
 export type Opt0012CasePosition = "short" | "mid" | "long";
@@ -223,67 +275,70 @@ export interface Opt0012ObservedCopyDescriptor {
   readonly copiedBytes: number;
 }
 
-export function authenticateOpt0012ObservedCopies(arm: Opt0012Arm, state: AceOpt0012SemanticState, copies: readonly Opt0012ObservedCopyDescriptor[]): number {
+export function authenticateOpt0012ObservedCopies(
+  arm: Opt0012Arm,
+  state: AceOpt0012SemanticState,
+  copies: readonly Opt0012ObservedCopyDescriptor[],
+): number {
   const fullLogitBytes = [196_608, 196_608, 196_608, 196_608, 82_384];
   const fullDestinations = [0, 196_608, 393_216, 589_824, 786_432];
-  const expected =
-    arm === "A"
+  const expected = arm === "A"
+    ? [
+        ...fullLogitBytes.map((copiedBytes, index) => ({
+          sourceBufferLabel: `logits-${index}`,
+          sourceOffset: 0,
+          destinationBufferLabel: "ace-planner-logit-readback",
+          destinationOffset: fullDestinations[index]!,
+          copiedBytes,
+        })),
+        {
+          sourceBufferLabel: "write-status",
+          sourceOffset: 0,
+          destinationBufferLabel: "ace-planner-logit-readback",
+          destinationOffset: OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET,
+          copiedBytes: OPT_0012_FULL_READBACK_STATUS_BYTES,
+        },
+      ]
+    : state === "regular-code"
       ? [
-          ...fullLogitBytes.map((copiedBytes, index) => ({
-            sourceBufferLabel: `logits-${index}`,
-            sourceOffset: 0,
-            destinationBufferLabel: "ace-planner-logit-readback",
-            destinationOffset: fullDestinations[index]!,
-            copiedBytes,
-          })),
+          {
+            sourceBufferLabel: "opt-0012-regular-code-shard-3-output",
+            sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
+            destinationBufferLabel: "opt-0012-compact-head-readback",
+            destinationOffset: 0,
+            copiedBytes: 179_756,
+          },
+          {
+            sourceBufferLabel: "opt-0012-regular-code-shard-4-output",
+            sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
+            destinationBufferLabel: "opt-0012-compact-head-readback",
+            destinationOffset: 179_756,
+            copiedBytes: 76_244,
+          },
           {
             sourceBufferLabel: "write-status",
             sourceOffset: 0,
-            destinationBufferLabel: "ace-planner-logit-readback",
-            destinationOffset: OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET,
-            copiedBytes: OPT_0012_FULL_READBACK_STATUS_BYTES,
+            destinationBufferLabel: "opt-0012-compact-head-readback",
+            destinationOffset: 256_000,
+            copiedBytes: 8,
           },
         ]
-      : state === "regular-code"
-        ? [
-            {
-              sourceBufferLabel: "opt-0012-regular-code-shard-3-output",
-              sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
-              destinationBufferLabel: "opt-0012-compact-head-readback",
-              destinationOffset: 0,
-              copiedBytes: 179_756,
-            },
-            {
-              sourceBufferLabel: "opt-0012-regular-code-shard-4-output",
-              sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
-              destinationBufferLabel: "opt-0012-compact-head-readback",
-              destinationOffset: 179_756,
-              copiedBytes: 76_244,
-            },
-            {
-              sourceBufferLabel: "write-status",
-              sourceOffset: 0,
-              destinationBufferLabel: "opt-0012-compact-head-readback",
-              destinationOffset: 256_000,
-              copiedBytes: 8,
-            },
-          ]
-        : [
-            {
-              sourceBufferLabel: "opt-0012-forced-eos-shard-3-output",
-              sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
-              destinationBufferLabel: "opt-0012-compact-head-readback",
-              destinationOffset: 0,
-              copiedBytes: 4,
-            },
-            {
-              sourceBufferLabel: "write-status",
-              sourceOffset: 0,
-              destinationBufferLabel: "opt-0012-compact-head-readback",
-              destinationOffset: 4,
-              copiedBytes: 8,
-            },
-          ];
+      : [
+          {
+            sourceBufferLabel: "opt-0012-forced-eos-shard-3-output",
+            sourceOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
+            destinationBufferLabel: "opt-0012-compact-head-readback",
+            destinationOffset: 0,
+            copiedBytes: 4,
+          },
+          {
+            sourceBufferLabel: "write-status",
+            sourceOffset: 0,
+            destinationBufferLabel: "opt-0012-compact-head-readback",
+            destinationOffset: 4,
+            copiedBytes: 8,
+          },
+        ];
   if (copies.length !== expected.length) {
     throw new Error("OPT-0012 observed readback copy count changed");
   }
@@ -310,27 +365,32 @@ export function authenticateOpt0012ObservedHeadDispatches(
   state: AceOpt0012SemanticState,
   dispatches: readonly Opt0012ObservedHeadDispatchDescriptor[],
 ): void {
-  const expected =
-    arm === "A"
-      ? ACE_PLANNER_EMBEDDING_ROW_PARTS.map((shard, shardIndex) => ({
-          shardIndex,
-          firstRow: shard.firstRow,
-          columns: shard.rowCount,
-          labelFragment: `-lm-head-rows-${shard.firstRow}-source-row-major-range-0-bindings`,
-        }))
-      : state === "regular-code"
-        ? [
-            { shardIndex: 3, firstRow: 151_669, columns: 44_939, labelFragment: "opt-0012-regular-code-shard-3-source-row-major-range-0-bindings" },
-            { shardIndex: 4, firstRow: 196_608, columns: 19_061, labelFragment: "opt-0012-regular-code-shard-4-source-row-major-range-0-bindings" },
-          ]
-        : [{ shardIndex: 3, firstRow: ACE_QWEN_IM_END_TOKEN_ID, columns: 1, labelFragment: "opt-0012-forced-eos-shard-3-source-row-major-range-0-bindings" }];
+  const expected = arm === "A"
+    ? ACE_PLANNER_EMBEDDING_ROW_PARTS.map((shard, shardIndex) => ({
+        shardIndex,
+        firstRow: shard.firstRow,
+        columns: shard.rowCount,
+        labelFragment: `-lm-head-rows-${shard.firstRow}-source-row-major-range-0-bindings`,
+      }))
+    : state === "regular-code"
+      ? [
+          { shardIndex: 3, firstRow: 151_669, columns: 44_939,
+            labelFragment: "opt-0012-regular-code-shard-3-source-row-major-range-0-bindings" },
+          { shardIndex: 4, firstRow: 196_608, columns: 19_061,
+            labelFragment: "opt-0012-regular-code-shard-4-source-row-major-range-0-bindings" },
+        ]
+      : [
+          { shardIndex: 3, firstRow: ACE_QWEN_IM_END_TOKEN_ID, columns: 1,
+            labelFragment: "opt-0012-forced-eos-shard-3-source-row-major-range-0-bindings" },
+        ];
   if (dispatches.length !== expected.length) {
     throw new Error("OPT-0012 observed tied-head shard count changed");
   }
   for (let index = 0; index < expected.length; index += 1) {
     const actual = dispatches[index]!;
     const shard = expected[index]!;
-    const expectedPipeline = `ace-correctness-gemm-raw-fp16-source-row-major-2x1024x${shard.columns}-no-bias`;
+    const expectedPipeline =
+      `ace-correctness-gemm-raw-fp16-source-row-major-2x1024x${shard.columns}-no-bias`;
     const expectedWorkgroups = Math.ceil(shard.columns / 128);
     if (
       !actual.bindGroupLabel.endsWith(shard.labelFragment) ||
@@ -339,7 +399,9 @@ export function authenticateOpt0012ObservedHeadDispatches(
       actual.workgroups[1] !== 1 ||
       actual.workgroups[2] !== 1
     ) {
-      throw new Error(`OPT-0012 observed tied-head shard ${shard.shardIndex} identity/work changed`);
+      throw new Error(
+        `OPT-0012 observed tied-head shard ${shard.shardIndex} identity/work changed`,
+      );
     }
   }
 }
@@ -363,8 +425,11 @@ export function validateOpt0012TrackedBufferCleanup(
   if (!tracking.destructionTrackingSupported || !tracking.mapTrackingSupported) {
     throw new Error("OPT-0012 GPUBuffer lifecycle instrumentation is unsupported");
   }
-  const offending = records.find(
-    (record) => !record.destroyed || record.destroyCallCount !== 1 || record.mapped || record.mapCallCount !== record.unmapCallCount,
+  const offending = records.find((record) =>
+    !record.destroyed ||
+    record.destroyCallCount !== 1 ||
+    record.mapped ||
+    record.mapCallCount !== record.unmapCallCount
   );
   if (offending !== undefined) {
     throw new Error(
@@ -469,9 +534,11 @@ interface Opt0012Fp16ConversionPass {
 }
 
 /** Two fixed target-browser passes under the stable synthetic-NaN envelope. */
-export function runOpt0012Fp16ConversionCorrectnessGate(): Readonly<Record<string, unknown>> {
+export function runOpt0012Fp16ConversionCorrectnessGate():
+Readonly<Record<string, unknown>> {
   const orders = OPT_0012_PREPACKAGE_CONVERSION_ORDERS;
-  const passes = orders.map((order, passIndex) => runOpt0012Fp16ConversionPass(order, passIndex));
+  const passes = orders.map((order, passIndex) =>
+    runOpt0012Fp16ConversionPass(order, passIndex));
   const firstCandidate = passes[0]!.candidateWords;
   const secondCandidate = passes[1]!.candidateWords;
   let candidateCrossPassMismatchCount = 0;
@@ -491,12 +558,15 @@ export function runOpt0012Fp16ConversionCorrectnessGate(): Readonly<Record<strin
     wordForWordIdentical: candidateCrossPassMismatchCount === 0,
   });
   const publicPasses = Object.freeze(passes.map((pass) => pass.receipt));
-  const everyPassAccepted = publicPasses.every((pass) => pass["acceptedStableNanEnvelope"] === true);
+  const everyPassAccepted = publicPasses.every((pass) =>
+    pass["acceptedStableNanEnvelope"] === true);
   if (
     !everyPassAccepted ||
     candidateCrossPassMismatchCount !== 0 ||
-    candidateCrossPass.firstOutputU32LeSha256 !== OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 ||
-    candidateCrossPass.secondOutputU32LeSha256 !== OPT_0012_FP16_DOMAIN_OUTPUT_SHA256
+    candidateCrossPass.firstOutputU32LeSha256 !==
+      OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 ||
+    candidateCrossPass.secondOutputU32LeSha256 !==
+      OPT_0012_FP16_DOMAIN_OUTPUT_SHA256
   ) {
     throw new Error(
       "OPT-0012 stable FP16 NaN-envelope gate failed: " +
@@ -524,7 +594,8 @@ export function runOpt0012Fp16ConversionCorrectnessGate(): Readonly<Record<strin
       nanWordCount: OPT_0012_FP16_NAN_WORD_COUNT,
       candidateU32LeSha256: OPT_0012_FP16_DOMAIN_OUTPUT_SHA256,
       nonNaNU32LeSha256: OPT_0012_FP16_NON_NAN_OUTPUT_SHA256,
-      canonicalNaNU32LeSha256: OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256,
+      canonicalNaNU32LeSha256:
+        OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256,
     }),
     passes: publicPasses,
     candidateCrossPass,
@@ -532,17 +603,17 @@ export function runOpt0012Fp16ConversionCorrectnessGate(): Readonly<Record<strin
   });
 }
 
-function runOpt0012Fp16ConversionPass(order: readonly Opt0012ConversionArm[], passIndex: number): Opt0012Fp16ConversionPass {
+function runOpt0012Fp16ConversionPass(
+  order: readonly Opt0012ConversionArm[],
+  passIndex: number,
+): Opt0012Fp16ConversionPass {
   const outputs = new Map<Opt0012ConversionArm, Opt0012Fp16ConversionOutput>();
   for (const arm of ["legacy-allocating", "allocation-free"] as const) {
     const floats = new Float32Array(OPT_0012_FP16_DOMAIN_WORD_COUNT);
-    outputs.set(
-      arm,
-      Object.freeze({
-        floats,
-        words: new Uint32Array(floats.buffer),
-      }),
-    );
+    outputs.set(arm, Object.freeze({
+      floats,
+      words: new Uint32Array(floats.buffer),
+    }));
   }
   for (const arm of order) {
     const output = outputs.get(arm)!;
@@ -550,8 +621,14 @@ function runOpt0012Fp16ConversionPass(order: readonly Opt0012ConversionArm[], pa
   }
   const legacyWords = outputs.get("legacy-allocating")!.words;
   const candidateWords = outputs.get("allocation-free")!.words;
-  const legacy = analyzeOpt0012Fp16ConversionEnvelope("legacy-allocating", legacyWords);
-  const candidate = analyzeOpt0012Fp16ConversionEnvelope("allocation-free", candidateWords);
+  const legacy = analyzeOpt0012Fp16ConversionEnvelope(
+    "legacy-allocating",
+    legacyWords,
+  );
+  const candidate = analyzeOpt0012Fp16ConversionEnvelope(
+    "allocation-free",
+    candidateWords,
+  );
   let rawDifferenceCount = 0;
   let firstRawDifference: Readonly<Record<string, number>> | null = null;
   for (let bits = 0; bits < OPT_0012_FP16_DOMAIN_WORD_COUNT; bits += 1) {
@@ -564,7 +641,9 @@ function runOpt0012Fp16ConversionPass(order: readonly Opt0012ConversionArm[], pa
       });
     }
   }
-  const acceptedStableNanEnvelope = legacy.acceptedStableNanEnvelope === true && candidate.acceptedStableNanEnvelope === true;
+  const acceptedStableNanEnvelope =
+    legacy.acceptedStableNanEnvelope === true &&
+    candidate.acceptedStableNanEnvelope === true;
   return Object.freeze({
     receipt: Object.freeze({
       passIndex,
@@ -584,7 +663,10 @@ function runOpt0012Fp16ConversionPass(order: readonly Opt0012ConversionArm[], pa
   });
 }
 
-function analyzeOpt0012Fp16ConversionEnvelope(arm: Opt0012ConversionArm, words: Uint32Array): Readonly<Record<string, unknown>> {
+function analyzeOpt0012Fp16ConversionEnvelope(
+  arm: Opt0012ConversionArm,
+  words: Uint32Array,
+): Readonly<Record<string, unknown>> {
   if (words.length !== OPT_0012_FP16_DOMAIN_WORD_COUNT) {
     throw new Error("OPT-0012 FP16 envelope received an incomplete domain");
   }
@@ -640,7 +722,8 @@ function analyzeOpt0012Fp16ConversionEnvelope(arm: Opt0012ConversionArm, words: 
     const inputQuiet = (mantissa & 0x0200) !== 0;
     inputClasses[inputQuiet ? "quietNaN" : "signalingNaN"] += 1;
     const canonicalExpected = (rawExpected | 0x0040_0000) >>> 0;
-    const actualIsNaN = (actual & 0x7f80_0000) === 0x7f80_0000 && (actual & 0x007f_ffff) !== 0;
+    const actualIsNaN = (actual & 0x7f80_0000) === 0x7f80_0000 &&
+      (actual & 0x007f_ffff) !== 0;
     const actualQuiet = (actual & 0x0040_0000) !== 0;
     const positive = (bits & 0x8000) === 0;
     const classCounts = positive
@@ -693,11 +776,13 @@ function analyzeOpt0012Fp16ConversionEnvelope(arm: Opt0012ConversionArm, words: 
     disallowedWordMismatchCount === 0 &&
     nonNaNOutputU32LeSha256 === OPT_0012_FP16_NON_NAN_OUTPUT_SHA256 &&
     canonicalOutputU32LeSha256 === OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 &&
-    canonicalNaNOutputU32LeSha256 === OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256;
-  const acceptedStableNanEnvelope =
-    commonAccepted &&
+    canonicalNaNOutputU32LeSha256 ===
+      OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256;
+  const acceptedStableNanEnvelope = commonAccepted &&
     (arm === "legacy-allocating" ||
-      (rawOutputU32LeSha256 === OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 && signalingOutputCount === 0 && quietOutputCount === OPT_0012_FP16_NAN_WORD_COUNT));
+      (rawOutputU32LeSha256 === OPT_0012_FP16_DOMAIN_OUTPUT_SHA256 &&
+        signalingOutputCount === 0 &&
+        quietOutputCount === OPT_0012_FP16_NAN_WORD_COUNT));
   return Object.freeze({
     arm,
     rawOutputU32LeSha256,
@@ -706,9 +791,13 @@ function analyzeOpt0012Fp16ConversionEnvelope(arm: Opt0012ConversionArm, words: 
     canonicalNaNOutputU32LeSha256,
     inputClasses: Object.freeze(inputClasses),
     nanOutputClassesByInputClassAndSign: Object.freeze({
-      positiveSignalingInput: Object.freeze(nanOutputClasses.positiveSignalingInput),
+      positiveSignalingInput: Object.freeze(
+        nanOutputClasses.positiveSignalingInput,
+      ),
       positiveQuietInput: Object.freeze(nanOutputClasses.positiveQuietInput),
-      negativeSignalingInput: Object.freeze(nanOutputClasses.negativeSignalingInput),
+      negativeSignalingInput: Object.freeze(
+        nanOutputClasses.negativeSignalingInput,
+      ),
       negativeQuietInput: Object.freeze(nanOutputClasses.negativeQuietInput),
     }),
     signalingOutputCount,
@@ -722,8 +811,13 @@ function analyzeOpt0012Fp16ConversionEnvelope(arm: Opt0012ConversionArm, words: 
     legacyRawHashIsDiagnosticOnly: arm === "legacy-allocating",
     everyNonNaNExact: nonNaNMismatchCount === 0,
     everyNaNAllowedRawOrQuietBitOnly:
-      nanClassificationMismatchCount === 0 && signMismatchCount === 0 && payloadExcludingQuietMismatchCount === 0 && disallowedWordMismatchCount === 0,
-    candidateDeterministicQuietAll: arm === "allocation-free" && signalingOutputCount === 0 && quietOutputCount === OPT_0012_FP16_NAN_WORD_COUNT,
+      nanClassificationMismatchCount === 0 &&
+      signMismatchCount === 0 &&
+      payloadExcludingQuietMismatchCount === 0 &&
+      disallowedWordMismatchCount === 0,
+    candidateDeterministicQuietAll:
+      arm === "allocation-free" && signalingOutputCount === 0 &&
+      quietOutputCount === OPT_0012_FP16_NAN_WORD_COUNT,
     acceptedStableNanEnvelope,
   });
 }
@@ -748,8 +842,16 @@ function expandOpt0012Fp16ToRawFp32U32(bits: number): number {
   return (sign | ((exponent + 112) << 23) | (mantissa << 13)) >>> 0;
 }
 
-function writeOpt0012Fp16ConversionDomain(arm: Opt0012ConversionArm, floats: Float32Array, words: Uint32Array): void {
-  if (floats.length !== OPT_0012_FP16_DOMAIN_WORD_COUNT || words.length !== OPT_0012_FP16_DOMAIN_WORD_COUNT || floats.buffer !== words.buffer) {
+function writeOpt0012Fp16ConversionDomain(
+  arm: Opt0012ConversionArm,
+  floats: Float32Array,
+  words: Uint32Array,
+): void {
+  if (
+    floats.length !== OPT_0012_FP16_DOMAIN_WORD_COUNT ||
+    words.length !== OPT_0012_FP16_DOMAIN_WORD_COUNT ||
+    floats.buffer !== words.buffer
+  ) {
     throw new Error("OPT-0012 FP16 conversion domain output changed");
   }
   if (arm === "legacy-allocating") {
@@ -850,51 +952,92 @@ export const OPT_0012_OPT10_SAMPLE_AUTHORITIES = Object.freeze({
 } as const);
 
 export const OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS = Object.freeze([
-  44_244, 2_430, 7_541, 38_339, 43_500, 14_023, 63_719, 16_071, 63_855, 58_755, 37_828, 20_336, 52_689, 20_856, 53_201, 11_240, 17_873, 15_217, 22_037, 12_976,
-  20_848, 47_248, 54_461, 28_656, 28_812, 12_669, 10_110, 63_939, 48_579, 19_199, 63_718, 28_871, 51_055, 45_955, 27_133, 22_832, 53_202, 20_920, 53_200, 9_720,
-  22_992, 17_785, 15_536, 12_797, 12_715, 40_782, 28_800, 41_083, 28_411, 11_130, 21_929, 29_754, 10_008, 33_298, 35_986, 25_049, 7_613, 57_560, 45_964, 14_910,
-  34_822, 18_567, 53_535, 28_710, 7_230, 25_184, 7_480, 25_456, 25_572, 9_702, 61_421, 62_781, 12_723, 63_314, 13_779, 57_352, 2_705, 51_234, 61_459, 50_923,
-  28_968, 15_224, 19_416, 26_752, 26_688, 26_752, 39_560, 42_256, 57_104, 57_176, 56_728, 56_800, 5_544, 8_112, 23_480, 24_568, 28_820, 12_669, 10_101, 63_426,
-  58_828, 16_583, 18_435, 16_709, 53_300, 20_421, 62_950, 36_528, 53_202, 10_236, 53_196, 37_950, 57_820, 33_075, 31_276, 10_168, 10_171, 40_847, 26_434,
-  28_159, 41_684, 12_669, 10_101, 63_426, 58_860, 16_583, 38_467, 903, 53_357, 31_175, 62_934, 35_992, 22_938, 23_158, 1_621, 23_534, 2_501, 24_576, 18_421,
-  12_279, 25_460, 51_159, 25_986, 50_117, 33_807, 35_847, 35_847, 35_847, 35_847, 35_847,
+  44_244, 2_430, 7_541, 38_339, 43_500, 14_023, 63_719, 16_071,
+  63_855, 58_755, 37_828, 20_336, 52_689, 20_856, 53_201, 11_240,
+  17_873, 15_217, 22_037, 12_976, 20_848, 47_248, 54_461, 28_656,
+  28_812, 12_669, 10_110, 63_939, 48_579, 19_199, 63_718, 28_871,
+  51_055, 45_955, 27_133, 22_832, 53_202, 20_920, 53_200, 9_720,
+  22_992, 17_785, 15_536, 12_797, 12_715, 40_782, 28_800, 41_083,
+  28_411, 11_130, 21_929, 29_754, 10_008, 33_298, 35_986, 25_049,
+  7_613, 57_560, 45_964, 14_910, 34_822, 18_567, 53_535, 28_710,
+  7_230, 25_184, 7_480, 25_456, 25_572, 9_702, 61_421, 62_781,
+  12_723, 63_314, 13_779, 57_352, 2_705, 51_234, 61_459, 50_923,
+  28_968, 15_224, 19_416, 26_752, 26_688, 26_752, 39_560, 42_256,
+  57_104, 57_176, 56_728, 56_800, 5_544, 8_112, 23_480, 24_568,
+  28_820, 12_669, 10_101, 63_426, 58_828, 16_583, 18_435, 16_709,
+  53_300, 20_421, 62_950, 36_528, 53_202, 10_236, 53_196, 37_950,
+  57_820, 33_075, 31_276, 10_168, 10_171, 40_847, 26_434, 28_159,
+  41_684, 12_669, 10_101, 63_426, 58_860, 16_583, 38_467, 903,
+  53_357, 31_175, 62_934, 35_992, 22_938, 23_158, 1_621, 23_534,
+  2_501, 24_576, 18_421, 12_279, 25_460, 51_159, 25_986, 50_117,
+  33_807, 35_847, 35_847, 35_847, 35_847, 35_847,
 ]);
 
 export const OPT_0012_CANDIDATE_SHADER_SHA256 = Object.freeze({
-  "regular-shard-3": "b780701ae4d0015ad0b78be146d4fedd0e161b1cc44f95527aae30a1945a0d41",
-  "regular-shard-4": "a5c23e10b3b5bf69c4632f61fc92ada7e7852fa822bf5faf40115581ed40b4ce",
-  "forced-eos-shard-3": "c824f31396311a52ff48005b3124bc8d05564060b584bc113758c7f77071437d",
+  "regular-shard-3":
+    "b780701ae4d0015ad0b78be146d4fedd0e161b1cc44f95527aae30a1945a0d41",
+  "regular-shard-4":
+    "a5c23e10b3b5bf69c4632f61fc92ada7e7852fa822bf5faf40115581ed40b4ce",
+  "forced-eos-shard-3":
+    "c824f31396311a52ff48005b3124bc8d05564060b584bc113758c7f77071437d",
 } as const);
 
 export const OPT_0012_SOURCE_IDENTITIES = Object.freeze({
   ...ACE_OPT_0012_CORE_SOURCE_IDENTITIES,
-  "benchmark/opt-0012-compact-semantic-head.ts": OPT_0012_CORE_SOURCE_SHA256,
-  "src/api.ts": "d5768d9059a235ea483268a73a4a37437d4203b5bd6971a0fba1b8876abe72c7",
-  "src/model/graph-contract.ts": "ad6de30e8c089f1b0d1dd86951518150904bf1761a7285b2f5f1a2e4304aa116",
-  "src/model/strict-json.ts": "1f431ca4db4cc919308769a85acdf1ce8d1febde4af9fb72dd87540b64c51fba",
-  "src/model/acquire.ts": "4dae4fee7497ce77640819936388e44c2eca14757e1646f5ad85493542169c78",
-  "src/model/cache.ts": "4b7599bfacc99fe2451fa7cb902d1ad7046100aeb3e82ef3995034b8e3b41a25",
-  "src/model/gpu-tensors.ts": "7bf1b358e1b3fd15873457974cd26c2c04f96d988a1c0cc099346a8b50c77797",
-  "src/model/gpu-upload.ts": "061ebb1e6f078b6b56a21f67afadcaf60d2d051790f667d481299c4e10abb319",
-  "src/model/package.ts": "78a616a9ca6561ae8f6248ac222608bacf5c5412ca30e063fc4562857f04c6ef",
-  "src/model/sha256.ts": "9c14ea19291acb490cf3d5a884881700d873400ca2f2bb4aa4bf7efa8b7138d1",
-  "src/runtime/scheduler.ts": "a3c319b7bf7f8d4141c1a0814072d1b9f2a9b50a54b54ef82290a40ed49698c7",
-  "src/tokenizer/index.ts": "18a9815b18f79248933087bf8c04b6f3ae653fae80fbb0e58004ce9ae38a7419",
-  "src/tokenizer/loader.ts": "70ddb6303b5751496c9c4ce3f77e30d37cbdf36e6bd0ccada565942c23d45930",
-  "src/tokenizer/chat.ts": "b0a3244f8291e56c7ae381b0ea293b274bed1c25de74fff4b9446b584acbc852",
-  "src/tokenizer/conditioning-text.ts": "f589799f856ef962226c16585af4ec90434867c5857fe44b1601087d64bc9095",
-  "src/webgpu/arena.ts": "11ae7e88b9b6f2ca1529e265c6e20e2576684c99396d25ee2d76d361cd0cd093",
-  "src/webgpu/capabilities.ts": "b9387c2fd094c5ad77c243abb34ff441bfc4bf3e47fe7fb218d61b6c703cec31",
-  "src/webgpu/device.ts": "16536f25472890650a6f58603eab359c779c0dcba4b1d7e7cd82876a464e3972",
-  "src/webgpu/planner-executor.ts": "f802db8c35701278619c0ad5c13e7543a224662d561d1db1d6e3a71271032786",
-  "src/webgpu/kernels/attention.ts": "824d86bca3cdd4be4de425a482eb516ac8fa318148d1324a750f7b7c8e8035b2",
-  "src/webgpu/kernels/batched-rope.ts": "05301c6d020ab720c004b6a85fad76aaee725ac96df3fba6ff8c1ac57d81377b",
-  "src/webgpu/kernels/embedding.ts": "049750864bd389978c6b90575b7f91e18fb046a884d5092db66b06527fe161d4",
-  "src/webgpu/kernels/kv-cache.ts": "a08e5c94396771a22ebb92f90124fec71721792c31c25751dcdc57bfdabd3a79",
-  "src/webgpu/kernels/rmsnorm.ts": "f49ace6e346c9e13ea48be9632e505a42f678b8e9e7427cd2a1f1e9ded525b5d",
-  "src/webgpu/kernels/tensor-copy.ts": "b00963d03be8c4d29e6c2a0f504efa513b841e8641e193a8e43a43df5b7ac193",
-  "src/webgpu/kernels/transformer-plumbing.ts": "baeb6a3931b1593d6b3a9396e27ea527a4f2083cb91571410d7ebac12053e92f",
-  "src/webgpu/scoped-buffer-allocation.ts": "599cab5d15b441c516c75d2b4c632e35116e2b4c3c2b115415874c8119c8b7c0",
+  "benchmark/opt-0012-compact-semantic-head.ts":
+    OPT_0012_CORE_SOURCE_SHA256,
+  "src/api.ts":
+    "d5768d9059a235ea483268a73a4a37437d4203b5bd6971a0fba1b8876abe72c7",
+  "src/model/graph-contract.ts":
+    "ad6de30e8c089f1b0d1dd86951518150904bf1761a7285b2f5f1a2e4304aa116",
+  "src/model/strict-json.ts":
+    "1f431ca4db4cc919308769a85acdf1ce8d1febde4af9fb72dd87540b64c51fba",
+  "src/model/acquire.ts":
+    "4dae4fee7497ce77640819936388e44c2eca14757e1646f5ad85493542169c78",
+  "src/model/cache.ts":
+    "4b7599bfacc99fe2451fa7cb902d1ad7046100aeb3e82ef3995034b8e3b41a25",
+  "src/model/gpu-tensors.ts":
+    "7bf1b358e1b3fd15873457974cd26c2c04f96d988a1c0cc099346a8b50c77797",
+  "src/model/gpu-upload.ts":
+    "061ebb1e6f078b6b56a21f67afadcaf60d2d051790f667d481299c4e10abb319",
+  "src/model/package.ts":
+    "78a616a9ca6561ae8f6248ac222608bacf5c5412ca30e063fc4562857f04c6ef",
+  "src/model/sha256.ts":
+    "9c14ea19291acb490cf3d5a884881700d873400ca2f2bb4aa4bf7efa8b7138d1",
+  "src/runtime/scheduler.ts":
+    "a3c319b7bf7f8d4141c1a0814072d1b9f2a9b50a54b54ef82290a40ed49698c7",
+  "src/tokenizer/index.ts":
+    "18a9815b18f79248933087bf8c04b6f3ae653fae80fbb0e58004ce9ae38a7419",
+  "src/tokenizer/loader.ts":
+    "70ddb6303b5751496c9c4ce3f77e30d37cbdf36e6bd0ccada565942c23d45930",
+  "src/tokenizer/chat.ts":
+    "b0a3244f8291e56c7ae381b0ea293b274bed1c25de74fff4b9446b584acbc852",
+  "src/tokenizer/conditioning-text.ts":
+    "f589799f856ef962226c16585af4ec90434867c5857fe44b1601087d64bc9095",
+  "src/webgpu/arena.ts":
+    "11ae7e88b9b6f2ca1529e265c6e20e2576684c99396d25ee2d76d361cd0cd093",
+  "src/webgpu/capabilities.ts":
+    "b9387c2fd094c5ad77c243abb34ff441bfc4bf3e47fe7fb218d61b6c703cec31",
+  "src/webgpu/device.ts":
+    "16536f25472890650a6f58603eab359c779c0dcba4b1d7e7cd82876a464e3972",
+  "src/webgpu/planner-executor.ts":
+    "f802db8c35701278619c0ad5c13e7543a224662d561d1db1d6e3a71271032786",
+  "src/webgpu/kernels/attention.ts":
+    "824d86bca3cdd4be4de425a482eb516ac8fa318148d1324a750f7b7c8e8035b2",
+  "src/webgpu/kernels/batched-rope.ts":
+    "05301c6d020ab720c004b6a85fad76aaee725ac96df3fba6ff8c1ac57d81377b",
+  "src/webgpu/kernels/embedding.ts":
+    "049750864bd389978c6b90575b7f91e18fb046a884d5092db66b06527fe161d4",
+  "src/webgpu/kernels/kv-cache.ts":
+    "a08e5c94396771a22ebb92f90124fec71721792c31c25751dcdc57bfdabd3a79",
+  "src/webgpu/kernels/rmsnorm.ts":
+    "f49ace6e346c9e13ea48be9632e505a42f678b8e9e7427cd2a1f1e9ded525b5d",
+  "src/webgpu/kernels/tensor-copy.ts":
+    "b00963d03be8c4d29e6c2a0f504efa513b841e8641e193a8e43a43df5b7ac193",
+  "src/webgpu/kernels/transformer-plumbing.ts":
+    "baeb6a3931b1593d6b3a9396e27ea527a4f2083cb91571410d7ebac12053e92f",
+  "src/webgpu/scoped-buffer-allocation.ts":
+    "599cab5d15b441c516c75d2b4c632e35116e2b4c3c2b115415874c8119c8b7c0",
 });
 
 const OPT_0012_SOURCE_TEXT = Object.freeze({
@@ -959,7 +1102,9 @@ export interface Opt0012ThermalGateMetadata {
   readonly nonNominalObservationCount: 0;
 }
 
-export function parseOpt0012RunIdentity(parameters: URLSearchParams): Opt0012RunIdentity {
+export function parseOpt0012RunIdentity(
+  parameters: URLSearchParams,
+): Opt0012RunIdentity {
   const harnessCommit = requiredIdentityString(parameters, "harnessCommit");
   const coreCommit = requiredIdentityString(parameters, "coreCommit");
   const allocationCommit = requiredIdentityString(parameters, "allocationCommit");
@@ -991,12 +1136,27 @@ export function parseOpt0012ThermalGateMetadata(
   nowEpochMilliseconds: number,
 ): Opt0012ThermalGateMetadata {
   const source = parameters.get("thermalSource");
-  const startedAtEpochMilliseconds = requiredFiniteNumber(parameters, "thermalStartedAtEpochMilliseconds");
-  const completedAtEpochMilliseconds = requiredFiniteNumber(parameters, "thermalCompletedAtEpochMilliseconds");
+  const startedAtEpochMilliseconds = requiredFiniteNumber(
+    parameters,
+    "thermalStartedAtEpochMilliseconds",
+  );
+  const completedAtEpochMilliseconds = requiredFiniteNumber(
+    parameters,
+    "thermalCompletedAtEpochMilliseconds",
+  );
   const observationCount = requiredFiniteNumber(parameters, "thermalObservations");
-  const pollMilliseconds = requiredFiniteNumber(parameters, "thermalPollMilliseconds");
-  const maximumPollGapMilliseconds = requiredFiniteNumber(parameters, "thermalMaximumPollGapMilliseconds");
-  const nonNominalObservationCount = requiredFiniteNumber(parameters, "thermalNonNominalObservations");
+  const pollMilliseconds = requiredFiniteNumber(
+    parameters,
+    "thermalPollMilliseconds",
+  );
+  const maximumPollGapMilliseconds = requiredFiniteNumber(
+    parameters,
+    "thermalMaximumPollGapMilliseconds",
+  );
+  const nonNominalObservationCount = requiredFiniteNumber(
+    parameters,
+    "thermalNonNominalObservations",
+  );
   if (source !== OPT_0012_THERMAL_SOURCE) {
     throw new Error("OPT-0012 requires the accepted notifyutil thermal source");
   }
@@ -1005,20 +1165,29 @@ export function parseOpt0012ThermalGateMetadata(
     completedAtEpochMilliseconds < startedAtEpochMilliseconds ||
     completedAtEpochMilliseconds > nowEpochMilliseconds + 1_000
   ) {
-    throw new Error("OPT-0012 thermal gate must begin after correctness/warmup and be current");
+    throw new Error(
+      "OPT-0012 thermal gate must begin after correctness/warmup and be current",
+    );
   }
-  const durationMilliseconds = completedAtEpochMilliseconds - startedAtEpochMilliseconds;
+  const durationMilliseconds =
+    completedAtEpochMilliseconds - startedAtEpochMilliseconds;
   if (
     durationMilliseconds < OPT_0012_MINIMUM_NOMINAL_MILLISECONDS ||
     !Number.isSafeInteger(observationCount) ||
-    observationCount < Math.floor(durationMilliseconds / OPT_0012_THERMAL_POLL_MILLISECONDS) + 1
+    observationCount <
+      Math.floor(durationMilliseconds / OPT_0012_THERMAL_POLL_MILLISECONDS) + 1
   ) {
     throw new Error("OPT-0012 requires 30 continuous nominal seconds");
   }
   if (pollMilliseconds !== OPT_0012_THERMAL_POLL_MILLISECONDS) {
     throw new Error("OPT-0012 thermal polling must use 1,000 ms intervals");
   }
-  if (maximumPollGapMilliseconds < 0 || maximumPollGapMilliseconds > OPT_0012_THERMAL_POLL_MILLISECONDS + OPT_0012_THERMAL_POLL_TOLERANCE_MILLISECONDS) {
+  if (
+    maximumPollGapMilliseconds < 0 ||
+    maximumPollGapMilliseconds >
+      OPT_0012_THERMAL_POLL_MILLISECONDS +
+        OPT_0012_THERMAL_POLL_TOLERANCE_MILLISECONDS
+  ) {
     throw new Error("OPT-0012 thermal poll gap exceeds tolerance");
   }
   if (nonNominalObservationCount !== 0) {
@@ -1075,8 +1244,12 @@ type WorkerMessage =
   | Readonly<{ readonly type: "failed"; readonly error: unknown }>;
 
 if (typeof document !== "undefined") initializePage();
-if (typeof document === "undefined" && typeof self !== "undefined" && "WorkerGlobalScope" in globalThis && self instanceof WorkerGlobalScope)
-  initializeWorker();
+if (
+  typeof document === "undefined" &&
+  typeof self !== "undefined" &&
+  "WorkerGlobalScope" in globalThis &&
+  self instanceof WorkerGlobalScope
+) initializeWorker();
 
 function initializePage(): void {
   const prepare = requireElement<HTMLButtonElement>("#prepare");
@@ -1091,65 +1264,62 @@ function initializePage(): void {
     finishPageFailure(error);
     return;
   }
-  const worker = new Worker(new URL("./opt-0012-compact-semantic-head-ab.ts", import.meta.url), { type: "module", name: "ace-opt-0012-worker" });
+  const worker = new Worker(
+    new URL("./opt-0012-compact-semantic-head-ab.ts", import.meta.url),
+    { type: "module", name: "ace-opt-0012-worker" },
+  );
   let heartbeat: ReturnType<typeof startPageHeartbeat> | undefined;
   let warmupCompletedAtEpochMilliseconds: number | undefined;
   let enableTimer: number | undefined;
   let settled = false;
 
   populateThermalInputs(new URL(location.href).searchParams);
-  prepare.addEventListener(
-    "click",
-    () => {
-      prepare.disabled = true;
-      document.body.dataset.status = "preparing";
-      updatePageProgress("authenticating package/source identities and running A/B/C correctness");
-      heartbeat = startPageHeartbeat();
-      worker.postMessage({ type: "initialize", identity });
-    },
-    { once: true },
-  );
+  prepare.addEventListener("click", () => {
+    prepare.disabled = true;
+    document.body.dataset.status = "preparing";
+    updatePageProgress("authenticating package/source identities and running A/B/C correctness");
+    heartbeat = startPageHeartbeat();
+    worker.postMessage({ type: "initialize", identity });
+  }, { once: true });
 
-  runTimed.addEventListener(
-    "click",
-    () => {
-      try {
-        if (warmupCompletedAtEpochMilliseconds === undefined) {
-          throw new Error("OPT-0012 correctness/warmup has not completed");
-        }
-        setBlankThermalCompletionToNow();
-        const thermal = parseOpt0012ThermalGateMetadata(thermalParameters(), warmupCompletedAtEpochMilliseconds, Date.now());
-        runTimed.disabled = true;
-        runTrajectory.disabled = true;
-        thermalGate.disabled = true;
-        document.body.dataset.status = "running";
-        updatePageProgress("running balanced A/B/C short/mid/long timing");
-        worker.postMessage({ type: "run-timed", thermal });
-      } catch (error) {
-        settled = true;
-        worker.terminate();
-        finishPageFailure(error, heartbeat?.stop());
-      }
-    },
-    { once: true },
-  );
-
-  runTrajectory.addEventListener(
-    "click",
-    () => {
+  runTimed.addEventListener("click", () => {
+    try {
       if (warmupCompletedAtEpochMilliseconds === undefined) {
-        finishPageFailure(new Error("OPT-0012 correctness/warmup has not completed"));
-        return;
+        throw new Error("OPT-0012 correctness/warmup has not completed");
       }
+      setBlankThermalCompletionToNow();
+      const thermal = parseOpt0012ThermalGateMetadata(
+        thermalParameters(),
+        warmupCompletedAtEpochMilliseconds,
+        Date.now(),
+      );
       runTimed.disabled = true;
       runTrajectory.disabled = true;
       thermalGate.disabled = true;
       document.body.dataset.status = "running";
-      updatePageProgress("running the raw-FP16 six-run 150-code plus forced-EOS equality gate");
-      worker.postMessage({ type: "run-trajectory" });
-    },
-    { once: true },
-  );
+      updatePageProgress("running balanced A/B/C short/mid/long timing");
+      worker.postMessage({ type: "run-timed", thermal });
+    } catch (error) {
+      settled = true;
+      worker.terminate();
+      finishPageFailure(error, heartbeat?.stop());
+    }
+  }, { once: true });
+
+  runTrajectory.addEventListener("click", () => {
+    if (warmupCompletedAtEpochMilliseconds === undefined) {
+      finishPageFailure(new Error("OPT-0012 correctness/warmup has not completed"));
+      return;
+    }
+    runTimed.disabled = true;
+    runTrajectory.disabled = true;
+    thermalGate.disabled = true;
+    document.body.dataset.status = "running";
+    updatePageProgress(
+      "running the raw-FP16 six-run 150-code plus forced-EOS equality gate",
+    );
+    worker.postMessage({ type: "run-trajectory" });
+  }, { once: true });
 
   worker.addEventListener("message", (event: MessageEvent<WorkerMessage>) => {
     if (settled) return;
@@ -1159,23 +1329,29 @@ function initializePage(): void {
       return;
     }
     if (message.type === "ready-for-thermal-gate") {
-      warmupCompletedAtEpochMilliseconds = message.warmupCompletedAtEpochMilliseconds;
+      warmupCompletedAtEpochMilliseconds =
+        message.warmupCompletedAtEpochMilliseconds;
       thermalGate.disabled = false;
       runTrajectory.disabled = false;
       setBlankThermalStartToNow();
       const eligibleAt = Date.now() + OPT_0012_MINIMUM_NOMINAL_MILLISECONDS;
-      updatePageProgress("correctness and symmetric warmups passed; begin/reset the external nominal trace");
+      updatePageProgress(
+        "correctness and symmetric warmups passed; begin/reset the external nominal trace",
+      );
       enableTimer = window.setInterval(() => {
         const remaining = Math.max(0, eligibleAt - Date.now());
         if (remaining > 0) {
-          updatePageProgress(`external nominal pre-gate: ${(remaining / 1_000).toFixed(1)} s remaining`);
+          updatePageProgress(
+            `external nominal pre-gate: ${(remaining / 1_000).toFixed(1)} s remaining`,
+          );
           return;
         }
         if (enableTimer !== undefined) clearInterval(enableTimer);
         runTimed.disabled = false;
         updatePageProgress("enter the external trace metadata, run timing, or run trajectory-only");
       }, 250);
-      requireElement<HTMLElement>("#preparation").textContent = JSON.stringify(message.preparation, null, 2);
+      requireElement<HTMLElement>("#preparation").textContent =
+        JSON.stringify(message.preparation, null, 2);
       return;
     }
     settled = true;
@@ -1238,7 +1414,10 @@ export function sliceOpt0012RawResultChunk(
   ) {
     throw new Error("OPT-0012 raw-result chunk offset splits a surrogate pair");
   }
-  let end = Math.min(offset + OPT_0012_RAW_RESULT_CHUNK_CODE_UNITS, rawResultJson.length);
+  let end = Math.min(
+    offset + OPT_0012_RAW_RESULT_CHUNK_CODE_UNITS,
+    rawResultJson.length,
+  );
   if (
     end < rawResultJson.length &&
     end > offset &&
@@ -1259,7 +1438,10 @@ export function sliceOpt0012RawResultChunk(
   });
 }
 
-function publishPageResult(result: Readonly<Record<string, unknown>>, pageHeartbeat: HeartbeatSnapshot | undefined): void {
+function publishPageResult(
+  result: Readonly<Record<string, unknown>>,
+  pageHeartbeat: HeartbeatSnapshot | undefined,
+): void {
   const rawResultJson = JSON.stringify({
     ...result,
     pageHeartbeat,
@@ -1274,26 +1456,24 @@ function publishPageResult(result: Readonly<Record<string, unknown>>, pageHeartb
   ) {
     throw new Error("OPT-0012 could not publish the raw result receipt");
   }
-  requireElement<HTMLElement>("#result").textContent = JSON.stringify(
-    {
-      experiment: result["experiment"],
-      mode: result["mode"],
-      status: "passed",
-      rawResultJsonCodeUnitLength: rawResultJson.length,
-      rawResultRetrieval: "bounded-dom-chunks",
-      rawResultMainWorldGlobal: OPT_0012_RAW_RESULT_GLOBAL,
-      rawResultChunkCodeUnitLimit: OPT_0012_RAW_RESULT_CHUNK_CODE_UNITS,
-      fullReceiptIntentionallyKeptOutOfDom: true,
-    },
-    null,
-    2,
-  );
+  requireElement<HTMLElement>("#result").textContent = JSON.stringify({
+    experiment: result["experiment"],
+    mode: result["mode"],
+    status: "passed",
+    rawResultJsonCodeUnitLength: rawResultJson.length,
+    rawResultRetrieval: "bounded-dom-chunks",
+    rawResultMainWorldGlobal: OPT_0012_RAW_RESULT_GLOBAL,
+    rawResultChunkCodeUnitLimit: OPT_0012_RAW_RESULT_CHUNK_CODE_UNITS,
+    fullReceiptIntentionallyKeptOutOfDom: true,
+  }, null, 2);
   enableRawResultChunkRetrieval();
 }
 
 function enableRawResultChunkRetrieval(): void {
   const retrieval = requireElement<HTMLFieldSetElement>("#raw-result-retrieval");
-  const offsetInput = requireElement<HTMLInputElement>('input[name="rawResultOffset"]');
+  const offsetInput = requireElement<HTMLInputElement>(
+    'input[name="rawResultOffset"]',
+  );
   const publish = requireElement<HTMLButtonElement>("#publish-raw-result-chunk");
   const output = requireElement<HTMLElement>("#raw-result-chunk");
   offsetInput.value = "0";
@@ -1317,7 +1497,10 @@ function enableRawResultChunkRetrieval(): void {
       if (typeof rawResultJson !== "string") {
         throw new Error("OPT-0012 raw-result main-world receipt is unavailable");
       }
-      const slice = sliceOpt0012RawResultChunk(rawResultJson, parseOpt0012RawResultChunkOffset(offsetInput.value));
+      const slice = sliceOpt0012RawResultChunk(
+        rawResultJson,
+        parseOpt0012RawResultChunkOffset(offsetInput.value),
+      );
       output.textContent = slice.chunk;
       output.dataset.startOffset = String(slice.start);
       output.dataset.endOffsetExclusive = String(slice.end);
@@ -1345,7 +1528,10 @@ function startPageHeartbeat(): { stop(): HeartbeatSnapshot } {
   let stopped = false;
   let animationHandle = 0;
   const animation = (now: number): void => {
-    maximumAnimationFrameGapMilliseconds = Math.max(maximumAnimationFrameGapMilliseconds, now - lastAnimationFrame);
+    maximumAnimationFrameGapMilliseconds = Math.max(
+      maximumAnimationFrameGapMilliseconds,
+      now - lastAnimationFrame,
+    );
     lastAnimationFrame = now;
     animationFrameCount += 1;
     if (!stopped) animationHandle = requestAnimationFrame(animation);
@@ -1353,7 +1539,10 @@ function startPageHeartbeat(): { stop(): HeartbeatSnapshot } {
   animationHandle = requestAnimationFrame(animation);
   const timerHandle = window.setInterval(() => {
     const now = performance.now();
-    maximumTimerGapMilliseconds = Math.max(maximumTimerGapMilliseconds, now - lastTimer);
+    maximumTimerGapMilliseconds = Math.max(
+      maximumTimerGapMilliseconds,
+      now - lastTimer,
+    );
     lastTimer = now;
     timerTickCount += 1;
   }, HEARTBEAT_INTERVAL_MILLISECONDS);
@@ -1362,8 +1551,14 @@ function startPageHeartbeat(): { stop(): HeartbeatSnapshot } {
       if (!stopped) {
         stopped = true;
         const terminalNow = performance.now();
-        maximumAnimationFrameGapMilliseconds = Math.max(maximumAnimationFrameGapMilliseconds, terminalNow - lastAnimationFrame);
-        maximumTimerGapMilliseconds = Math.max(maximumTimerGapMilliseconds, terminalNow - lastTimer);
+        maximumAnimationFrameGapMilliseconds = Math.max(
+          maximumAnimationFrameGapMilliseconds,
+          terminalNow - lastAnimationFrame,
+        );
+        maximumTimerGapMilliseconds = Math.max(
+          maximumTimerGapMilliseconds,
+          terminalNow - lastTimer,
+        );
         cancelAnimationFrame(animationHandle);
         clearInterval(timerHandle);
       }
@@ -1404,7 +1599,9 @@ function setBlankThermalCompletionToNow(): void {
 
 function thermalParameters(): URLSearchParams {
   const parameters = new URLSearchParams();
-  for (const input of document.querySelectorAll<HTMLInputElement>("#thermal-gate input[name]")) parameters.set(input.name, input.value);
+  for (const input of document.querySelectorAll<HTMLInputElement>(
+    "#thermal-gate input[name]",
+  )) parameters.set(input.name, input.value);
   return parameters;
 }
 
@@ -1412,7 +1609,10 @@ function thermalInput(name: string): HTMLInputElement {
   return requireElement<HTMLInputElement>(`input[name=\"${name}\"]`);
 }
 
-function requiredIdentityString(parameters: URLSearchParams, name: string): string {
+function requiredIdentityString(
+  parameters: URLSearchParams,
+  name: string,
+): string {
   const value = parameters.get(name);
   if (value === null || value.trim() === "" || value !== value.trim()) {
     throw new Error(`OPT-0012 requires run identity ${name}`);
@@ -1420,7 +1620,10 @@ function requiredIdentityString(parameters: URLSearchParams, name: string): stri
   return value;
 }
 
-function requiredIdentityInteger(parameters: URLSearchParams, name: string): number {
+function requiredIdentityInteger(
+  parameters: URLSearchParams,
+  name: string,
+): number {
   const value = Number(requiredIdentityString(parameters, name));
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new Error(`OPT-0012 run identity ${name} must be positive`);
@@ -1428,7 +1631,10 @@ function requiredIdentityInteger(parameters: URLSearchParams, name: string): num
   return value;
 }
 
-function requiredFiniteNumber(parameters: URLSearchParams, name: string): number {
+function requiredFiniteNumber(
+  parameters: URLSearchParams,
+  name: string,
+): number {
   const raw = parameters.get(name);
   const value = raw === null || raw.trim() === "" ? Number.NaN : Number(raw);
   if (!Number.isFinite(value)) throw new Error(`OPT-0012 requires ${name}`);
@@ -1448,14 +1654,10 @@ function updatePageProgress(message: string): void {
 function finishPageFailure(error: unknown, heartbeat?: HeartbeatSnapshot): void {
   document.body.dataset.status = "failed";
   updatePageProgress("failed");
-  requireElement<HTMLElement>("#result").textContent = JSON.stringify(
-    {
-      error: serializeError(error),
-      ...(heartbeat === undefined ? {} : { pageHeartbeat: heartbeat }),
-    },
-    null,
-    2,
-  );
+  requireElement<HTMLElement>("#result").textContent = JSON.stringify({
+    error: serializeError(error),
+    ...(heartbeat === undefined ? {} : { pageHeartbeat: heartbeat }),
+  }, null, 2);
 }
 
 // Worker implementation is below the pure page/contract surface so importing
@@ -1481,7 +1683,8 @@ function initializeWorker(): void {
           workerLifecycle = "ready";
           self.postMessage({
             type: "ready-for-thermal-gate",
-            warmupCompletedAtEpochMilliseconds: prepared.warmupCompletedAtEpochMilliseconds,
+            warmupCompletedAtEpochMilliseconds:
+              prepared.warmupCompletedAtEpochMilliseconds,
             preparation: publicPreparationSummary(prepared),
           } satisfies WorkerMessage);
         },
@@ -1540,7 +1743,10 @@ function startWorkerHeartbeat(): { stop(): WorkerHeartbeatSnapshot } {
     stop(): WorkerHeartbeatSnapshot {
       if (!stopped) {
         stopped = true;
-        maximumTimerGapMilliseconds = Math.max(maximumTimerGapMilliseconds, performance.now() - last);
+        maximumTimerGapMilliseconds = Math.max(
+          maximumTimerGapMilliseconds,
+          performance.now() - last,
+        );
         clearInterval(handle);
       }
       return Object.freeze({
@@ -1553,7 +1759,10 @@ function startWorkerHeartbeat(): { stop(): WorkerHeartbeatSnapshot } {
   };
 }
 
-async function failWorkerAndCleanup(error: unknown, prepared = workerSession): Promise<void> {
+async function failWorkerAndCleanup(
+  error: unknown,
+  prepared = workerSession,
+): Promise<void> {
   workerSession = undefined;
   workerLifecycle = "settled";
   let cleanupError: unknown;
@@ -1578,7 +1787,9 @@ function postProgress(message: string): void {
 }
 
 function serializeError(error: unknown): unknown {
-  return error instanceof Error ? Object.freeze({ name: error.name, message: error.message, stack: error.stack }) : error;
+  return error instanceof Error
+    ? Object.freeze({ name: error.name, message: error.message, stack: error.stack })
+    : error;
 }
 
 // Concrete session, GPU instrumentation, and correctness/timing routines are
@@ -1620,7 +1831,8 @@ interface PreparedPackage {
   readonly summary: Readonly<Record<string, unknown>>;
 }
 
-type CaseSpec = (typeof OPT_0012_CASE_SPECS)[number] | typeof OPT_0012_EOS_CASE_SPEC;
+type CaseSpec = (typeof OPT_0012_CASE_SPECS)[number] |
+  typeof OPT_0012_EOS_CASE_SPEC;
 
 interface PlannerCaseFixture {
   readonly spec: CaseSpec;
@@ -1670,9 +1882,14 @@ interface SameByteReplayExecution {
 }
 
 interface SameByteReplayMeasuredExecution {
-  readonly timing: Omit<SameByteReplayExecution, "decodedRowSha256" | "reconstructedFullRowSha256" | "exactSampleAuthority">;
+  readonly timing: Omit<
+    SameByteReplayExecution,
+    "decodedRowSha256" | "reconstructedFullRowSha256" |
+      "exactSampleAuthority"
+  >;
   readonly decoded: AceOpt0012DecodedCompactLogits;
-  readonly reconstructedFullRows: readonly [Float32Array, Float32Array] | null;
+  readonly reconstructedFullRows:
+    readonly [Float32Array, Float32Array] | null;
 }
 
 interface SameByteReplayPair {
@@ -1739,9 +1956,16 @@ async function initializeSession(identity: unknown): Promise<PreparedSession> {
   postProgress("authenticating converter-revision-4 raw-FP16 package inventory");
   const acquisitionStarted = performance.now();
   const preparedPackage = await preparePackage();
-  const packageAcquisitionWallMilliseconds = performance.now() - acquisitionStarted;
-  const regularPlan = createAuthenticatedPlan("regular-code", preparedPackage.tiedWeightShards);
-  const eosPlan = createAuthenticatedPlan("forced-eos", preparedPackage.tiedWeightShards);
+  const packageAcquisitionWallMilliseconds =
+    performance.now() - acquisitionStarted;
+  const regularPlan = createAuthenticatedPlan(
+    "regular-code",
+    preparedPackage.tiedWeightShards,
+  );
+  const eosPlan = createAuthenticatedPlan(
+    "forced-eos",
+    preparedPackage.tiedWeightShards,
+  );
   validateFrozenPlans(regularPlan, eosPlan);
   // This is the browser-level M1 fail-closed proof. A candidate plan never
   // exists for M1, and the execution wrapper also requires rows===2.
@@ -1771,20 +1995,29 @@ async function initializeSession(identity: unknown): Promise<PreparedSession> {
     postProgress("uploading only the authenticated planner phase");
     const uploadStarted = performance.now();
     let lastStatusAt = 0;
-    phase = await AceGpuTensorPhase.load(observer.device, preparedPackage.manifest, preparedPackage.acquiredFiles, ["planner"], {
-      signal: abortController.signal,
-      onProgress: (progress) => {
-        const now = performance.now();
-        if (now - lastStatusAt >= STATUS_UPDATE_INTERVAL_MILLISECONDS || progress.loadedPhaseBytes === progress.totalPhaseBytes) {
-          lastStatusAt = now;
-          postProgress(
-            `uploading planner shard ${progress.phaseFileIndex + 1}/` +
-              `${progress.phaseFileCount} (${formatBytes(progress.loadedPhaseBytes)}/` +
-              `${formatBytes(progress.totalPhaseBytes)})`,
-          );
-        }
+    phase = await AceGpuTensorPhase.load(
+      observer.device,
+      preparedPackage.manifest,
+      preparedPackage.acquiredFiles,
+      ["planner"],
+      {
+        signal: abortController.signal,
+        onProgress: (progress) => {
+          const now = performance.now();
+          if (
+            now - lastStatusAt >= STATUS_UPDATE_INTERVAL_MILLISECONDS ||
+            progress.loadedPhaseBytes === progress.totalPhaseBytes
+          ) {
+            lastStatusAt = now;
+            postProgress(
+              `uploading planner shard ${progress.phaseFileIndex + 1}/` +
+                `${progress.phaseFileCount} (${formatBytes(progress.loadedPhaseBytes)}/` +
+                `${formatBytes(progress.totalPhaseBytes)})`,
+            );
+          }
+        },
       },
-    });
+    );
     if (
       phase.phases.length !== 1 ||
       phase.phases[0] !== "planner" ||
@@ -1797,9 +2030,18 @@ async function initializeSession(identity: unknown): Promise<PreparedSession> {
     const phaseUploadWallMilliseconds = performance.now() - uploadStarted;
 
     const loadedTokenizer = await loadPinnedAceTokenizer("planner", {
-      tokenizerJson: requirePackageFile(preparedPackage.acquiredFiles, "assets/planner/tokenizer.json"),
-      tokenizerConfigJson: requirePackageFile(preparedPackage.acquiredFiles, "assets/planner/tokenizer_config.json"),
-      chatTemplate: requirePackageFile(preparedPackage.acquiredFiles, "assets/planner/chat_template.jinja"),
+      tokenizerJson: requirePackageFile(
+        preparedPackage.acquiredFiles,
+        "assets/planner/tokenizer.json",
+      ),
+      tokenizerConfigJson: requirePackageFile(
+        preparedPackage.acquiredFiles,
+        "assets/planner/tokenizer_config.json",
+      ),
+      chatTemplate: requirePackageFile(
+        preparedPackage.acquiredFiles,
+        "assets/planner/chat_template.jinja",
+      ),
     });
     const tokenizer = loadedTokenizer.tokenizer;
     const fixtures = createCaseFixtures(tokenizer);
@@ -1815,20 +2057,42 @@ async function initializeSession(identity: unknown): Promise<PreparedSession> {
     });
     installOpt0012ExecutorIdleHook(executor, progressRecorder);
     phase = undefined;
-    candidateRunner = new CandidateHeadRunner(observer, executor, progressRecorder, abortController.signal, regularPlan, eosPlan);
+    candidateRunner = new CandidateHeadRunner(
+      observer,
+      executor,
+      progressRecorder,
+      abortController.signal,
+      regularPlan,
+      eosPlan,
+    );
     const adversarialSampling = runAdversarialSamplingGate(regularPlan, eosPlan);
     const correctness: Array<Readonly<Record<string, unknown>>> = [];
     for (let index = 0; index < fixtures.length; index += 1) {
       const fixture = fixtures[index]!;
-      postProgress(`correctness ${index + 1}/${fixtures.length}: ${fixture.spec.id} A/B/C`);
-      correctness.push(await runPackageCorrectnessCase(observer, executor, candidateRunner, fixture, regularPlan));
+      postProgress(
+        `correctness ${index + 1}/${fixtures.length}: ${fixture.spec.id} A/B/C`,
+      );
+      correctness.push(await runPackageCorrectnessCase(
+        observer,
+        executor,
+        candidateRunner,
+        fixture,
+        regularPlan,
+      ));
     }
     postProgress("correctness: forced-EOS A/B/C at the long cache point");
-    correctness.push(await runPackageCorrectnessCase(observer, executor, candidateRunner, eosFixture, eosPlan));
+    correctness.push(await runPackageCorrectnessCase(
+      observer,
+      executor,
+      candidateRunner,
+      eosFixture,
+      eosPlan,
+    ));
     if (runtimeEvents.length !== 0) {
       throw new Error("OPT-0012 correctness observed a WebGPU runtime event");
     }
-    const executorCompileAndCorrectnessWallMilliseconds = performance.now() - compileAndCorrectnessStarted;
+    const executorCompileAndCorrectnessWallMilliseconds =
+      performance.now() - compileAndCorrectnessStarted;
     return {
       identity: runIdentity,
       context,
@@ -1893,12 +2157,18 @@ function validateWorkerRunIdentity(identity: unknown): Opt0012RunIdentity {
   return parseOpt0012RunIdentity(parameters);
 }
 
-function authenticateOpt0012Capabilities(context: AceWebGpuDeviceContext): Readonly<Record<string, unknown>> {
+function authenticateOpt0012Capabilities(
+  context: AceWebGpuDeviceContext,
+): Readonly<Record<string, unknown>> {
   const capabilities = context.capabilities;
   const profile = capabilities.executionProfile;
-  const requiredLimits = Object.entries(ACE_REQUIRED_WEBGPU_LIMITS).sort(([left], [right]) => left.localeCompare(right));
-  const expectedRequestedLimits = requiredLimits.filter(([name]) => name !== "minStorageBufferOffsetAlignment" && name !== "minUniformBufferOffsetAlignment");
-  const observedRequestedLimits = Object.entries(capabilities.requestedLimits).sort(([left], [right]) => left.localeCompare(right));
+  const requiredLimits = Object.entries(ACE_REQUIRED_WEBGPU_LIMITS)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const expectedRequestedLimits = requiredLimits.filter(([name]) =>
+    name !== "minStorageBufferOffsetAlignment" &&
+    name !== "minUniformBufferOffsetAlignment");
+  const observedRequestedLimits = Object.entries(capabilities.requestedLimits)
+    .sort(([left], [right]) => left.localeCompare(right));
   if (
     profile.id !== "raw-fp16-portable" ||
     profile.modelProfile !== "raw-fp16" ||
@@ -1916,17 +2186,25 @@ function authenticateOpt0012Capabilities(context: AceWebGpuDeviceContext): Reado
     !capabilities.stockFeatures["shader-f16"].deviceEnabled ||
     !capabilities.stockFeatures["shader-f16"].required ||
     !capabilities.stockFeatures["shader-f16"].requested ||
-    JSON.stringify(observedRequestedLimits) !== JSON.stringify(expectedRequestedLimits)
+    JSON.stringify(observedRequestedLimits) !==
+      JSON.stringify(expectedRequestedLimits)
   ) {
     throw new Error("OPT-0012 WebGPU capability identity changed");
   }
   for (const [name, requested] of requiredLimits) {
-    const deviceActual = capabilities.deviceLimits[name as keyof typeof capabilities.deviceLimits];
-    const adapterActual = capabilities.adapterLimits[name as keyof typeof capabilities.adapterLimits];
-    const minimumAlignment = name === "minStorageBufferOffsetAlignment" || name === "minUniformBufferOffsetAlignment";
+    const deviceActual = capabilities.deviceLimits[
+      name as keyof typeof capabilities.deviceLimits
+    ];
+    const adapterActual = capabilities.adapterLimits[
+      name as keyof typeof capabilities.adapterLimits
+    ];
+    const minimumAlignment = name === "minStorageBufferOffsetAlignment" ||
+      name === "minUniformBufferOffsetAlignment";
     if (
       typeof requested !== "number" ||
-      (minimumAlignment ? deviceActual > requested || adapterActual > requested : deviceActual < requested || adapterActual < requested)
+      (minimumAlignment
+        ? deviceActual > requested || adapterActual > requested
+        : deviceActual < requested || adapterActual < requested)
     ) {
       throw new Error(`OPT-0012 adapter/device limit ${name} changed`);
     }
@@ -1949,8 +2227,12 @@ function authenticateOpt0012Sources(): Readonly<Record<string, string>> {
   }
   const result: Record<string, string> = {};
   for (const name of identityNames) {
-    const source = OPT_0012_SOURCE_TEXT[name as keyof typeof OPT_0012_SOURCE_TEXT];
-    const expected = OPT_0012_SOURCE_IDENTITIES[name as keyof typeof OPT_0012_SOURCE_IDENTITIES];
+    const source = OPT_0012_SOURCE_TEXT[
+      name as keyof typeof OPT_0012_SOURCE_TEXT
+    ];
+    const expected = OPT_0012_SOURCE_IDENTITIES[
+      name as keyof typeof OPT_0012_SOURCE_IDENTITIES
+    ];
     const actual = aceSha256Hex(new TextEncoder().encode(source));
     if (actual !== expected) {
       throw new Error(`OPT-0012 source authentication failed for ${name}`);
@@ -1989,7 +2271,8 @@ async function preparePackage(): Promise<PreparedPackage> {
       const now = performance.now();
       if (
         now - lastStatusAt >= STATUS_UPDATE_INTERVAL_MILLISECONDS ||
-        (progress.fileIndex + 1 === progress.fileCount && progress.fileReceivedBytes === progress.fileBytes)
+        progress.fileIndex + 1 === progress.fileCount &&
+          progress.fileReceivedBytes === progress.fileBytes
       ) {
         lastStatusAt = now;
         postProgress(
@@ -2000,7 +2283,10 @@ async function preparePackage(): Promise<PreparedPackage> {
       }
     },
   });
-  if (acquired.files.size !== OPT_0012_ACQUIRED_FILE_COUNT || acquired.plan.files.length !== OPT_0012_ACQUIRED_FILE_COUNT) {
+  if (
+    acquired.files.size !== OPT_0012_ACQUIRED_FILE_COUNT ||
+    acquired.plan.files.length !== OPT_0012_ACQUIRED_FILE_COUNT
+  ) {
     throw new Error("OPT-0012 bounded planner acquisition changed");
   }
   for (const file of inventory.files) {
@@ -2026,15 +2312,11 @@ async function preparePackage(): Promise<PreparedPackage> {
       cachedFileCount: acquired.plan.cachedFiles.length,
       downloadedFileCount: acquired.plan.downloadFiles.length,
       everyAcquiredFileAuthenticatedByManifestSha256: true,
-      files: Object.freeze(
-        inventory.files.map((file) =>
-          Object.freeze({
-            name: file.name,
-            byteLength: file.byteLength,
-            sha256: file.sha256,
-          }),
-        ),
-      ),
+      files: Object.freeze(inventory.files.map((file) => Object.freeze({
+        name: file.name,
+        byteLength: file.byteLength,
+        sha256: file.sha256,
+      }))),
       tiedWeightShards: inventory.tiedWeightShards,
     }),
   });
@@ -2047,10 +2329,17 @@ function validatePlannerInventory(manifest: AcePackageManifest): Readonly<{
   residentBytes: number;
   tiedWeightShards: readonly AceOpt0012SourceShardBinding[];
 }> {
-  const tensors = Object.values(manifest.tensors).filter((tensor) => tensor.phase === "planner");
+  const tensors = Object.values(manifest.tensors).filter(
+    (tensor) => tensor.phase === "planner",
+  );
   const weightNames = new Set(tensors.map((tensor) => tensor.shard));
-  const tokenizerNames = new Set(["assets/planner/tokenizer.json", "assets/planner/tokenizer_config.json", "assets/planner/chat_template.jinja"]);
-  const files = manifest.files.filter((file) => weightNames.has(file.name) || tokenizerNames.has(file.name));
+  const tokenizerNames = new Set([
+    "assets/planner/tokenizer.json",
+    "assets/planner/tokenizer_config.json",
+    "assets/planner/chat_template.jinja",
+  ]);
+  const files = manifest.files.filter((file) =>
+    weightNames.has(file.name) || tokenizerNames.has(file.name));
   const weightFiles = files.filter((file) => weightNames.has(file.name));
   const fileByName = new Map(files.map((file) => [file.name, file]));
   const residentBytes = sumSafe(
@@ -2098,7 +2387,10 @@ function validatePlannerInventory(manifest: AcePackageManifest): Readonly<{
   });
 }
 
-function authenticateTiedTensorRecord(tensor: AcePackageTensorRecord, expected: AceOpt0012SourceShardBinding): void {
+function authenticateTiedTensorRecord(
+  tensor: AcePackageTensorRecord,
+  expected: AceOpt0012SourceShardBinding,
+): void {
   if (
     tensor.phase !== "planner" ||
     tensor.lifetime !== "planner" ||
@@ -2123,7 +2415,10 @@ function authenticateTiedTensorRecord(tensor: AcePackageTensorRecord, expected: 
   }
 }
 
-function createAuthenticatedPlan(state: AceOpt0012SemanticState, shards: readonly AceOpt0012SourceShardBinding[]): AceOpt0012CompactSemanticHeadPlan {
+function createAuthenticatedPlan(
+  state: AceOpt0012SemanticState,
+  shards: readonly AceOpt0012SourceShardBinding[],
+): AceOpt0012CompactSemanticHeadPlan {
   const base = createAceOpt0012PlanRequest(state);
   const request: AceOpt0012PlanRequest = Object.freeze({
     ...base,
@@ -2132,13 +2427,20 @@ function createAuthenticatedPlan(state: AceOpt0012SemanticState, shards: readonl
   return createAceOpt0012CompactSemanticHeadPlan(request);
 }
 
-function validateFrozenPlans(regular: AceOpt0012CompactSemanticHeadPlan, eos: AceOpt0012CompactSemanticHeadPlan): void {
+function validateFrozenPlans(
+  regular: AceOpt0012CompactSemanticHeadPlan,
+  eos: AceOpt0012CompactSemanticHeadPlan,
+): void {
   if (
     ACE_PLANNER_SEMANTIC_CODE_COUNT !== 64_000 ||
-    DEFAULT_ACE_PLANNER_CONFIGURATION.temperature !== ACE_OPT_0012_SAMPLING_PARAMETERS.temperature ||
-    DEFAULT_ACE_PLANNER_CONFIGURATION.guidanceScale !== ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale ||
-    DEFAULT_ACE_PLANNER_CONFIGURATION.topK !== ACE_OPT_0012_SAMPLING_PARAMETERS.topK ||
-    DEFAULT_ACE_PLANNER_CONFIGURATION.topP !== ACE_OPT_0012_SAMPLING_PARAMETERS.topP ||
+    DEFAULT_ACE_PLANNER_CONFIGURATION.temperature !==
+      ACE_OPT_0012_SAMPLING_PARAMETERS.temperature ||
+    DEFAULT_ACE_PLANNER_CONFIGURATION.guidanceScale !==
+      ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale ||
+    DEFAULT_ACE_PLANNER_CONFIGURATION.topK !==
+      ACE_OPT_0012_SAMPLING_PARAMETERS.topK ||
+    DEFAULT_ACE_PLANNER_CONFIGURATION.topP !==
+      ACE_OPT_0012_SAMPLING_PARAMETERS.topP ||
     regular.intersections.length !== 2 ||
     regular.intersections[0]?.shardIndex !== 3 ||
     regular.intersections[0].localFirstRow !== 4_213 ||
@@ -2162,56 +2464,35 @@ function validateFrozenPlans(regular: AceOpt0012CompactSemanticHeadPlan, eos: Ac
     throw new Error("OPT-0012 frozen regular/EOS plan changed");
   }
   const generated = {
-    "regular-shard-3": aceSha256Hex(
-      new TextEncoder().encode(
-        aceCorrectnessGemmWgsl(
-          "raw-fp16",
-          {
-            rows: 2,
-            inner: 1_024,
-            columns: 44_939,
-          },
-          false,
-          "source-row-major",
-        ),
-      ),
-    ),
-    "regular-shard-4": aceSha256Hex(
-      new TextEncoder().encode(
-        aceCorrectnessGemmWgsl(
-          "raw-fp16",
-          {
-            rows: 2,
-            inner: 1_024,
-            columns: 19_061,
-          },
-          false,
-          "source-row-major",
-        ),
-      ),
-    ),
-    "forced-eos-shard-3": aceSha256Hex(
-      new TextEncoder().encode(
-        aceCorrectnessGemmWgsl(
-          "raw-fp16",
-          {
-            rows: 2,
-            inner: 1_024,
-            columns: 1,
-          },
-          false,
-          "source-row-major",
-        ),
-      ),
-    ),
+    "regular-shard-3": aceSha256Hex(new TextEncoder().encode(
+      aceCorrectnessGemmWgsl("raw-fp16", {
+        rows: 2, inner: 1_024, columns: 44_939,
+      }, false, "source-row-major"),
+    )),
+    "regular-shard-4": aceSha256Hex(new TextEncoder().encode(
+      aceCorrectnessGemmWgsl("raw-fp16", {
+        rows: 2, inner: 1_024, columns: 19_061,
+      }, false, "source-row-major"),
+    )),
+    "forced-eos-shard-3": aceSha256Hex(new TextEncoder().encode(
+      aceCorrectnessGemmWgsl("raw-fp16", {
+        rows: 2, inner: 1_024, columns: 1,
+      }, false, "source-row-major"),
+    )),
   };
   for (const [name, sha256] of Object.entries(generated)) {
-    if (sha256 !== OPT_0012_CANDIDATE_SHADER_SHA256[name as keyof typeof OPT_0012_CANDIDATE_SHADER_SHA256])
-      throw new Error(`OPT-0012 candidate shader changed: ${name}`);
+    if (
+      sha256 !== OPT_0012_CANDIDATE_SHADER_SHA256[
+        name as keyof typeof OPT_0012_CANDIDATE_SHADER_SHA256
+      ]
+    ) throw new Error(`OPT-0012 candidate shader changed: ${name}`);
   }
 }
 
-function authenticateResidentTiedBindings(phase: AceGpuTensorPhase, expected: readonly AceOpt0012SourceShardBinding[]): void {
+function authenticateResidentTiedBindings(
+  phase: AceGpuTensorPhase,
+  expected: readonly AceOpt0012SourceShardBinding[],
+): void {
   const logical = phase.logicalTensor("planner.model.embed_tokens.weight");
   if (logical.parts.length !== expected.length) {
     throw new Error("OPT-0012 resident tied-head shard count changed");
@@ -2230,54 +2511,92 @@ function authenticateResidentTiedBindings(phase: AceGpuTensorPhase, expected: re
   }
 }
 
-function createCaseFixtures(tokenizer: AceQwenBpeTokenizer): readonly PlannerCaseFixture[] {
-  const prompts = createAcePlannerCodePrompts(ACCEPTED_RESOLVED_CAPTION, ACCEPTED_LYRICS, ACCEPTED_COT_TEXT);
-  const promptRows = Object.freeze([Object.freeze(tokenizer.encode(prompts.conditional)), Object.freeze(tokenizer.encode(prompts.unconditional))]);
-  const continuation = OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS.map((code) => ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID + code);
+function createCaseFixtures(
+  tokenizer: AceQwenBpeTokenizer,
+): readonly PlannerCaseFixture[] {
+  const prompts = createAcePlannerCodePrompts(
+    ACCEPTED_RESOLVED_CAPTION,
+    ACCEPTED_LYRICS,
+    ACCEPTED_COT_TEXT,
+  );
+  const promptRows = Object.freeze([
+    Object.freeze(tokenizer.encode(prompts.conditional)),
+    Object.freeze(tokenizer.encode(prompts.unconditional)),
+  ]);
+  const continuation = OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS.map(
+    (code) => ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID + code,
+  );
   if (
     promptRows[0]!.length !== 253 ||
     promptRows[1]!.length !== 33 ||
     continuation.length !== 150 ||
-    sha256U32Le(OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS) !== OPT_0012_ACCEPTED_SEMANTIC_CODE_SHA256
+    sha256U32Le(OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS) !==
+      OPT_0012_ACCEPTED_SEMANTIC_CODE_SHA256
   ) {
     throw new Error("OPT-0012 historical packed-BF16 teacher fixture changed");
   }
-  return Object.freeze(
-    OPT_0012_CASE_SPECS.map((spec) => {
-      const prefill = createPaddedSemanticPrefill(promptRows, continuation, spec.cachedTokensBeforeAppend, spec.cacheCapacity);
-      const promptWidth = Math.max(...promptRows.map((row) => row.length));
-      const continuationIndex = spec.cachedTokensBeforeAppend - promptWidth;
-      const decodeTokenId = continuation[continuationIndex]!;
-      const decode = createSemanticDecodeBatch(decodeTokenId, spec.cachedTokensBeforeAppend, spec.cacheCapacity);
-      return Object.freeze({
-        spec,
-        prefill,
-        decode,
+  return Object.freeze(OPT_0012_CASE_SPECS.map((spec) => {
+    const prefill = createPaddedSemanticPrefill(
+      promptRows,
+      continuation,
+      spec.cachedTokensBeforeAppend,
+      spec.cacheCapacity,
+    );
+    const promptWidth = Math.max(...promptRows.map((row) => row.length));
+    const continuationIndex = spec.cachedTokensBeforeAppend - promptWidth;
+    const decodeTokenId = continuation[continuationIndex]!;
+    const decode = createSemanticDecodeBatch(
+      decodeTokenId,
+      spec.cachedTokensBeforeAppend,
+      spec.cacheCapacity,
+    );
+    return Object.freeze({
+      spec,
+      prefill,
+      decode,
+      decodeTokenId,
+      seenTokenIds: Object.freeze([
+        ...prefill.inputIds.slice(0, spec.cachedTokensBeforeAppend),
         decodeTokenId,
-        seenTokenIds: Object.freeze([...prefill.inputIds.slice(0, spec.cachedTokensBeforeAppend), decodeTokenId]),
-        promptRows,
-      });
-    }),
-  );
+      ]),
+      promptRows,
+    });
+  }));
 }
 
-function createEosCaseFixture(promptRows: readonly (readonly number[])[]): PlannerCaseFixture {
-  const continuation = OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS.map((code) => ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID + code);
+function createEosCaseFixture(
+  promptRows: readonly (readonly number[])[],
+): PlannerCaseFixture {
+  const continuation = OPT_0012_ACCEPTED_SEMANTIC_CODE_IDS.map(
+    (code) => ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID + code,
+  );
   const spec = OPT_0012_EOS_CASE_SPEC;
-  const prefill = createPaddedSemanticPrefill(promptRows, continuation, spec.cachedTokensBeforeAppend, spec.cacheCapacity);
+  const prefill = createPaddedSemanticPrefill(
+    promptRows,
+    continuation,
+    spec.cachedTokensBeforeAppend,
+    spec.cacheCapacity,
+  );
   const promptWidth = Math.max(...promptRows.map((row) => row.length));
   const continuationIndex = spec.cachedTokensBeforeAppend - promptWidth;
   if (continuationIndex !== 149 || continuation[continuationIndex] === undefined) {
     throw new Error("OPT-0012 forced-EOS teacher fixture lost its 150th code");
   }
   const decodeTokenId = continuation[continuationIndex]!;
-  const decode = createSemanticDecodeBatch(decodeTokenId, spec.cachedTokensBeforeAppend, spec.cacheCapacity);
+  const decode = createSemanticDecodeBatch(
+    decodeTokenId,
+    spec.cachedTokensBeforeAppend,
+    spec.cacheCapacity,
+  );
   return Object.freeze({
     spec,
     prefill,
     decode,
     decodeTokenId,
-    seenTokenIds: Object.freeze([...prefill.inputIds.slice(0, spec.cachedTokensBeforeAppend), decodeTokenId]),
+    seenTokenIds: Object.freeze([
+      ...prefill.inputIds.slice(0, spec.cachedTokensBeforeAppend),
+      decodeTokenId,
+    ]),
     promptRows,
   });
 }
@@ -2331,7 +2650,11 @@ function createPaddedSemanticPrefill(
   });
 }
 
-function createSemanticDecodeBatch(tokenId: number, cachedTokensBeforeAppend: number, cacheCapacity: number): AcePlannerDecodeBatch {
+function createSemanticDecodeBatch(
+  tokenId: number,
+  cachedTokensBeforeAppend: number,
+  cacheCapacity: number,
+): AcePlannerDecodeBatch {
   const causal = createAceQwen3CausalControlData({
     batch: 2,
     tokens: 1,
@@ -2354,18 +2677,21 @@ function createSemanticDecodeBatch(tokenId: number, cachedTokensBeforeAppend: nu
   });
 }
 
-function authenticateDecodeControls(decode: AcePlannerDecodeBatch): Readonly<Record<string, unknown>> {
+function authenticateDecodeControls(
+  decode: AcePlannerDecodeBatch,
+): Readonly<Record<string, unknown>> {
   const cached = decode.cachedTokensBeforeAppend;
   const expectedValidLengths = [1, cached + 1, 1, cached + 1];
   const expectedRows = [cached, cached];
   if (
-    decode.rows !== 2 ||
-    decode.tokens !== 1 ||
-    decode.inputIds.length !== 2 ||
-    decode.inputIds[0] !== decode.inputIds[1] ||
-    JSON.stringify([...decode.causal.validLengths]) !== JSON.stringify(expectedValidLengths) ||
-    JSON.stringify([...decode.causal.rowStartPositions]) !== JSON.stringify(expectedRows) ||
-    JSON.stringify([...decode.causal.queryPositions]) !== JSON.stringify(expectedRows) ||
+    decode.rows !== 2 || decode.tokens !== 1 ||
+    decode.inputIds.length !== 2 || decode.inputIds[0] !== decode.inputIds[1] ||
+    JSON.stringify([...decode.causal.validLengths]) !==
+      JSON.stringify(expectedValidLengths) ||
+    JSON.stringify([...decode.causal.rowStartPositions]) !==
+      JSON.stringify(expectedRows) ||
+    JSON.stringify([...decode.causal.queryPositions]) !==
+      JSON.stringify(expectedRows) ||
     JSON.stringify([...decode.causal.sourceValidity]) !== JSON.stringify([1, 1])
   ) {
     throw new Error("OPT-0012 decode cache-append controls changed");
@@ -2382,153 +2708,91 @@ function authenticateDecodeControls(decode: AcePlannerDecodeBatch): Readonly<Rec
   });
 }
 
-function runAdversarialSamplingGate(regular: AceOpt0012CompactSemanticHeadPlan, eos: AceOpt0012CompactSemanticHeadPlan): Readonly<Record<string, unknown>> {
+function runAdversarialSamplingGate(
+  regular: AceOpt0012CompactSemanticHeadPlan,
+  eos: AceOpt0012CompactSemanticHeadPlan,
+): Readonly<Record<string, unknown>> {
   const cases = [
-    adversarialRows(
-      regular,
-      "boundary-ties",
-      (conditional, unconditional) => {
-        conditional.fill(-20);
-        unconditional.fill(-20);
-        conditional[44_938] = 5;
-        conditional[44_939] = 5;
-        unconditional[44_938] = 1;
-        unconditional[44_939] = 1;
-      },
-      {
-        temperature: 1,
-        guidanceScale: 2,
-        topK: 1,
-        topP: 0.49,
-        repetitionPenalty: 1,
-      },
-      [],
-      0xffff_ffff,
-    ),
-    adversarialRows(
-      regular,
-      "top-p-boundary-tie",
-      (conditional, unconditional) => {
-        conditional.fill(-120);
-        unconditional.fill(-120);
-        conditional[44_938] = 5;
-        conditional[44_939] = 5;
-        unconditional[44_938] = 1;
-        unconditional[44_939] = 1;
-      },
-      {
-        temperature: 1,
-        guidanceScale: 2,
-        topK: 0,
-        topP: 0.49,
-        repetitionPenalty: 1,
-      },
-      [],
-      0xffff_ffff,
-    ),
-    adversarialRows(
-      regular,
-      "first-dominant",
-      (conditional, unconditional) => {
-        conditional.fill(-120);
-        unconditional.fill(-120);
-        conditional[0] = 12;
-        conditional[conditional.length - 1] = 11.5;
-      },
-      {
-        temperature: 2,
-        guidanceScale: 2,
-        topK: regular.vocabularySize,
-        topP: 0.000_001,
-        repetitionPenalty: 1,
-      },
-      [],
-      0x8000_0000,
-    ),
-    adversarialRows(
-      regular,
-      "last-dominant",
-      (conditional, unconditional) => {
-        conditional.fill(-120);
-        unconditional.fill(-120);
-        conditional[0] = 11.5;
-        conditional[conditional.length - 1] = 12;
-      },
-      {
-        temperature: 2,
-        guidanceScale: 2,
-        topK: regular.vocabularySize,
-        topP: 0.000_001,
-        repetitionPenalty: 1,
-      },
-      [],
-      0xffff_ffff,
-    ),
-    adversarialRows(
-      regular,
-      "repetition-top-p-boundary",
-      (conditional, unconditional) => {
-        for (let index = 0; index < conditional.length; index += 1) {
-          conditional[index] = Math.fround((((index * 73) % 257) - 128) / 16);
-          unconditional[index] = Math.fround((((index * 31) % 193) - 96) / 24);
-        }
-      },
-      {
-        temperature: 0.25,
-        guidanceScale: 1.5,
-        topK: 31,
-        topP: 0.37,
-        repetitionPenalty: 1.3,
-      },
-      [regular.firstCandidateTokenId + 17, regular.firstCandidateTokenId + 31_999],
-      0,
-    ),
-    adversarialRows(
-      regular,
-      "subnormal-zero-tail",
-      (conditional, unconditional) => {
-        conditional.fill(-110);
-        unconditional.fill(-110);
-        conditional[0] = 0;
-        unconditional[0] = 0;
-        conditional[conditional.length - 1] = -103.9;
-        unconditional[unconditional.length - 1] = -103.9;
-      },
-      {
-        temperature: 1,
-        guidanceScale: 2,
-        topK: 0,
-        topP: 1,
-        repetitionPenalty: 1,
-      },
-      [],
-      0xffff_ffff,
-    ),
-    adversarialRows(
-      eos,
-      "one-positive-forced-eos",
-      (conditional, unconditional) => {
-        conditional[0] = 3;
-        unconditional[0] = -2;
-      },
-      {
-        temperature: 0.85,
-        guidanceScale: 2,
-        topK: 32,
-        topP: 0.9,
-        repetitionPenalty: 1,
-      },
-      [ACE_QWEN_IM_END_TOKEN_ID],
-      0x1234_5678,
-    ),
+    adversarialRows(regular, "boundary-ties", (conditional, unconditional) => {
+      conditional.fill(-20);
+      unconditional.fill(-20);
+      conditional[44_938] = 5;
+      conditional[44_939] = 5;
+      unconditional[44_938] = 1;
+      unconditional[44_939] = 1;
+    }, {
+      temperature: 1, guidanceScale: 2, topK: 1, topP: 0.49,
+      repetitionPenalty: 1,
+    }, [], 0xffff_ffff),
+    adversarialRows(regular, "top-p-boundary-tie", (conditional, unconditional) => {
+      conditional.fill(-120);
+      unconditional.fill(-120);
+      conditional[44_938] = 5;
+      conditional[44_939] = 5;
+      unconditional[44_938] = 1;
+      unconditional[44_939] = 1;
+    }, {
+      temperature: 1, guidanceScale: 2, topK: 0, topP: 0.49,
+      repetitionPenalty: 1,
+    }, [], 0xffff_ffff),
+    adversarialRows(regular, "first-dominant", (conditional, unconditional) => {
+      conditional.fill(-120);
+      unconditional.fill(-120);
+      conditional[0] = 12;
+      conditional[conditional.length - 1] = 11.5;
+    }, {
+      temperature: 2, guidanceScale: 2, topK: regular.vocabularySize,
+      topP: 0.000_001, repetitionPenalty: 1,
+    }, [], 0x8000_0000),
+    adversarialRows(regular, "last-dominant", (conditional, unconditional) => {
+      conditional.fill(-120);
+      unconditional.fill(-120);
+      conditional[0] = 11.5;
+      conditional[conditional.length - 1] = 12;
+    }, {
+      temperature: 2, guidanceScale: 2, topK: regular.vocabularySize,
+      topP: 0.000_001, repetitionPenalty: 1,
+    }, [], 0xffff_ffff),
+    adversarialRows(regular, "repetition-top-p-boundary", (conditional, unconditional) => {
+      for (let index = 0; index < conditional.length; index += 1) {
+        conditional[index] = Math.fround(((index * 73) % 257 - 128) / 16);
+        unconditional[index] = Math.fround(((index * 31) % 193 - 96) / 24);
+      }
+    }, {
+      temperature: 0.25, guidanceScale: 1.5, topK: 31, topP: 0.37,
+      repetitionPenalty: 1.3,
+    }, [regular.firstCandidateTokenId + 17,
+      regular.firstCandidateTokenId + 31_999], 0),
+    adversarialRows(regular, "subnormal-zero-tail", (conditional, unconditional) => {
+      conditional.fill(-110);
+      unconditional.fill(-110);
+      conditional[0] = 0;
+      unconditional[0] = 0;
+      conditional[conditional.length - 1] = -103.9;
+      unconditional[unconditional.length - 1] = -103.9;
+    }, {
+      temperature: 1, guidanceScale: 2, topK: 0, topP: 1,
+      repetitionPenalty: 1,
+    }, [], 0xffff_ffff),
+    adversarialRows(eos, "one-positive-forced-eos", (conditional, unconditional) => {
+      conditional[0] = 3;
+      unconditional[0] = -2;
+    }, {
+      temperature: 0.85, guidanceScale: 2, topK: 32, topP: 0.9,
+      repetitionPenalty: 1,
+    }, [ACE_QWEN_IM_END_TOKEN_ID], 0x1234_5678),
   ];
   const topPBoundaryTie = cases.find((entry) => entry.id === "top-p-boundary-tie");
   if (
     topPBoundaryTie === undefined ||
-    (topPBoundaryTie.topKGlobalTokenIds as readonly number[]).length !== regular.candidateCount ||
-    !(topPBoundaryTie.topKGlobalTokenIds as readonly number[]).includes(196_607) ||
-    !(topPBoundaryTie.topKGlobalTokenIds as readonly number[]).includes(196_608) ||
-    JSON.stringify(topPBoundaryTie.topPGlobalTokenIds) !== JSON.stringify([196_607])
+    (topPBoundaryTie.topKGlobalTokenIds as readonly number[]).length !==
+      regular.candidateCount ||
+    !(topPBoundaryTie.topKGlobalTokenIds as readonly number[])
+      .includes(196_607) ||
+    !(topPBoundaryTie.topKGlobalTokenIds as readonly number[])
+      .includes(196_608) ||
+    JSON.stringify(topPBoundaryTie.topPGlobalTokenIds) !==
+      JSON.stringify([196_607])
   ) {
     throw new Error("OPT-0012 adversarial top-p tie no longer crosses shard boundary");
   }
@@ -2554,7 +2818,14 @@ function adversarialRows(
   const conditional = new Float32Array(plan.candidateCount);
   const unconditional = new Float32Array(plan.candidateCount);
   mutate(conditional, unconditional);
-  const comparison = compareFullAndCompactSampling(plan, conditional, unconditional, seenTokenIds, parameters, word);
+  const comparison = compareFullAndCompactSampling(
+    plan,
+    conditional,
+    unconditional,
+    seenTokenIds,
+    parameters,
+    word,
+  );
   return Object.freeze({ id, ...comparison });
 }
 
@@ -2574,7 +2845,14 @@ function compareFullAndCompactSampling(
     parameters,
     word,
   });
-  const full = fullVectorTrace(plan, conditional, unconditional, seenTokenIds, parameters, word);
+  const full = fullVectorTrace(
+    plan,
+    conditional,
+    unconditional,
+    seenTokenIds,
+    parameters,
+    word,
+  );
   const u32Equivalence = requireCompactTraceEqualsFull(plan, compact, full);
   return Object.freeze({
     tokenId: compact.tokenId,
@@ -2597,19 +2875,24 @@ function fullVectorTrace(
   parameters: AcePlannerSamplingParameters,
   word: number,
 ): FullSamplingTrace {
-  const [conditional, unconditional] = reconstructAceOpt0012FullPlannerLogits(
-    {
-      conditionalLogits: conditionalCompact,
-      unconditionalLogits: unconditionalCompact,
-      writeStatus: new Uint32Array([1, 1]),
-    },
-    plan,
+  const [conditional, unconditional] = reconstructAceOpt0012FullPlannerLogits({
+    conditionalLogits: conditionalCompact,
+    unconditionalLogits: unconditionalCompact,
+    writeStatus: new Uint32Array([1, 1]),
+  }, plan);
+  const compactCfg = combineAcePlannerCfgLogits(
+    conditionalCompact,
+    unconditionalCompact,
+    parameters.guidanceScale,
   );
-  const compactCfg = combineAcePlannerCfgLogits(conditionalCompact, unconditionalCompact, parameters.guidanceScale);
   const cfg = new Float32Array(plan.vocabularySize);
   cfg.fill(Number.NEGATIVE_INFINITY);
   cfg.set(compactCfg, plan.firstCandidateTokenId);
-  const penalized = applyAcePlannerRepetitionPenalty(cfg, seenTokenIds, parameters.repetitionPenalty);
+  const penalized = applyAcePlannerRepetitionPenalty(
+    cfg,
+    seenTokenIds,
+    parameters.repetitionPenalty,
+  );
   const topK = applyAcePlannerTopK(penalized, parameters.topK);
   const topPKeep = createAcePlannerBrowserTopPKeep(topK, parameters.topP);
   const topP = topK.slice();
@@ -2617,8 +2900,13 @@ function fullVectorTrace(
     if (topPKeep[tokenId] === 0) topP[tokenId] = Number.NEGATIVE_INFINITY;
   }
   const scaled = scaleTemperature(topP, parameters.temperature);
-  const weights = createAcePlannerBrowserSamplingWeights(topP, parameters.temperature);
-  const allowedTokens = plan.state === "regular-code" ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS;
+  const weights = createAcePlannerBrowserSamplingWeights(
+    topP,
+    parameters.temperature,
+  );
+  const allowedTokens = plan.state === "regular-code"
+    ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS
+    : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS;
   const filtered = createAcePlannerFilteredLogits({
     conditionalLogits: conditional,
     unconditionalLogits: unconditional,
@@ -2658,16 +2946,56 @@ function requireCompactTraceEqualsFull(
 ): Readonly<Record<string, unknown>> {
   const first = plan.firstCandidateTokenId;
   const end = first + plan.candidateCount;
-  const cfg = requireFloat32BoundaryReceipt(compact.cfgLogits, full.cfg.subarray(first, end), "CFG");
-  const finalMask = requireFloat32BoundaryReceipt(compact.finalMaskedLogits, full.cfg.subarray(first, end), "final mask");
-  const repetition = requireFloat32BoundaryReceipt(compact.repetitionPenalizedLogits, full.penalized.subarray(first, end), "repetition");
-  const topKLogits = requireFloat32BoundaryReceipt(compact.topKLogits, full.topK.subarray(first, end), "top-k");
-  const topKGlobalTokenIds = requireU32IdBoundaryReceipt(compact.topKGlobalTokenIds, finiteTokenIds(full.topK), "top-k global IDs");
-  const topPKeep = requireByteBoundaryReceipt(compact.topPKeep, full.topPKeep.slice(first, end), "top-p keep");
-  const topPGlobalTokenIds = requireU32IdBoundaryReceipt(compact.topPGlobalTokenIds, finiteTokenIds(full.topP), "top-p global IDs");
-  const topPLogits = requireFloat32BoundaryReceipt(compact.topPLogits, full.topP.subarray(first, end), "top-p logits");
-  const temperature = requireFloat32BoundaryReceipt(compact.temperatureScaledLogits, full.scaled.subarray(first, end), "temperature");
-  const weights = requireFloat32BoundaryReceipt(compact.weights, full.weights.subarray(first, end), "softmax weights");
+  const cfg = requireFloat32BoundaryReceipt(
+    compact.cfgLogits,
+    full.cfg.subarray(first, end),
+    "CFG",
+  );
+  const finalMask = requireFloat32BoundaryReceipt(
+    compact.finalMaskedLogits,
+    full.cfg.subarray(first, end),
+    "final mask",
+  );
+  const repetition = requireFloat32BoundaryReceipt(
+    compact.repetitionPenalizedLogits,
+    full.penalized.subarray(first, end),
+    "repetition",
+  );
+  const topKLogits = requireFloat32BoundaryReceipt(
+    compact.topKLogits,
+    full.topK.subarray(first, end),
+    "top-k",
+  );
+  const topKGlobalTokenIds = requireU32IdBoundaryReceipt(
+    compact.topKGlobalTokenIds,
+    finiteTokenIds(full.topK),
+    "top-k global IDs",
+  );
+  const topPKeep = requireByteBoundaryReceipt(
+    compact.topPKeep,
+    full.topPKeep.slice(first, end),
+    "top-p keep",
+  );
+  const topPGlobalTokenIds = requireU32IdBoundaryReceipt(
+    compact.topPGlobalTokenIds,
+    finiteTokenIds(full.topP),
+    "top-p global IDs",
+  );
+  const topPLogits = requireFloat32BoundaryReceipt(
+    compact.topPLogits,
+    full.topP.subarray(first, end),
+    "top-p logits",
+  );
+  const temperature = requireFloat32BoundaryReceipt(
+    compact.temperatureScaledLogits,
+    full.scaled.subarray(first, end),
+    "temperature",
+  );
+  const weights = requireFloat32BoundaryReceipt(
+    compact.weights,
+    full.weights.subarray(first, end),
+    "softmax weights",
+  );
   if (
     compact.tokenId !== full.tokenId ||
     compact.word !== full.word ||
@@ -2698,7 +3026,11 @@ function requireCompactTraceEqualsFull(
   });
 }
 
-function requireFloat32BoundaryReceipt(candidate: Float32Array, reference: Float32Array, label: string): Readonly<Record<string, unknown>> {
+function requireFloat32BoundaryReceipt(
+  candidate: Float32Array,
+  reference: Float32Array,
+  label: string,
+): Readonly<Record<string, unknown>> {
   requireU32ArraysEqual(candidate, reference, label);
   const candidateSha256 = sha256FloatWords(candidate);
   const referenceSha256 = sha256FloatWords(reference);
@@ -2716,7 +3048,11 @@ function requireFloat32BoundaryReceipt(candidate: Float32Array, reference: Float
   });
 }
 
-function requireU32IdBoundaryReceipt(candidate: readonly number[], reference: readonly number[], label: string): Readonly<Record<string, unknown>> {
+function requireU32IdBoundaryReceipt(
+  candidate: readonly number[],
+  reference: readonly number[],
+  label: string,
+): Readonly<Record<string, unknown>> {
   requireNumberArraysEqual(candidate, reference, label);
   const candidateSha256 = sha256U32Le(candidate);
   const referenceSha256 = sha256U32Le(reference);
@@ -2734,7 +3070,11 @@ function requireU32IdBoundaryReceipt(candidate: readonly number[], reference: re
   });
 }
 
-function requireByteBoundaryReceipt(candidate: Uint8Array, reference: Uint8Array, label: string): Readonly<Record<string, unknown>> {
+function requireByteBoundaryReceipt(
+  candidate: Uint8Array,
+  reference: Uint8Array,
+  label: string,
+): Readonly<Record<string, unknown>> {
   requireByteArraysEqual(candidate, reference, label);
   const candidateSha256 = aceSha256Hex(candidate);
   const referenceSha256 = aceSha256Hex(reference);
@@ -2759,13 +3099,81 @@ async function runPackageCorrectnessCase(
   fixture: PlannerCaseFixture,
   plan: AceOpt0012CompactSemanticHeadPlan,
 ): Promise<Readonly<Record<string, unknown>>> {
-  const drawIndex = plan.state === "regular-code" ? fixture.spec.drawIndex : fixture.spec.drawIndex + 1;
-  const aFirst = await executePackageArm(observer, executor, runner, fixture, plan, "A", drawIndex, SENTINEL_A, false, "correctness-first");
-  const aRepeat = await executePackageArm(observer, executor, runner, fixture, plan, "A", drawIndex, SENTINEL_B, false, "deterministic-rerun");
-  const b = await executePackageArm(observer, executor, runner, fixture, plan, "B", drawIndex, SENTINEL_A, true, "correctness-first");
-  const bRepeat = await executePackageArm(observer, executor, runner, fixture, plan, "B", drawIndex, SENTINEL_B, true, "deterministic-rerun");
-  const c = await executePackageArm(observer, executor, runner, fixture, plan, "C", drawIndex, SENTINEL_A, true, "correctness-first");
-  const cRepeat = await executePackageArm(observer, executor, runner, fixture, plan, "C", drawIndex, SENTINEL_B, true, "deterministic-rerun");
+  const drawIndex = plan.state === "regular-code"
+    ? fixture.spec.drawIndex
+    : fixture.spec.drawIndex + 1;
+  const aFirst = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "A",
+    drawIndex,
+    SENTINEL_A,
+    false,
+    "correctness-first",
+  );
+  const aRepeat = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "A",
+    drawIndex,
+    SENTINEL_B,
+    false,
+    "deterministic-rerun",
+  );
+  const b = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "B",
+    drawIndex,
+    SENTINEL_A,
+    true,
+    "correctness-first",
+  );
+  const bRepeat = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "B",
+    drawIndex,
+    SENTINEL_B,
+    true,
+    "deterministic-rerun",
+  );
+  const c = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "C",
+    drawIndex,
+    SENTINEL_A,
+    true,
+    "correctness-first",
+  );
+  const cRepeat = await executePackageArm(
+    observer,
+    executor,
+    runner,
+    fixture,
+    plan,
+    "C",
+    drawIndex,
+    SENTINEL_B,
+    true,
+    "deterministic-rerun",
+  );
   if (
     aFirst.fullMappedBytes === null ||
     aRepeat.fullMappedBytes === null ||
@@ -2775,8 +3183,8 @@ async function runPackageCorrectnessCase(
     cRepeat.compactMappedBytes === null ||
     b.compact === null ||
     bRepeat.compact === null ||
-    c.compact === null ||
-    cRepeat.compact === null
+    c.compact === null
+    || cRepeat.compact === null
   ) {
     throw new Error("OPT-0012 correctness omitted a raw readback receipt");
   }
@@ -2786,35 +3194,77 @@ async function runPackageCorrectnessCase(
     `${fixture.spec.id} A deterministic raw logits`,
   );
   requireByteArraysEqual(
-    new Uint8Array(aFirst.fullMappedBytes, OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET, OPT_0012_FULL_READBACK_STATUS_BYTES),
-    new Uint8Array(aRepeat.fullMappedBytes, OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET, OPT_0012_FULL_READBACK_STATUS_BYTES),
+    new Uint8Array(
+      aFirst.fullMappedBytes,
+      OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET,
+      OPT_0012_FULL_READBACK_STATUS_BYTES,
+    ),
+    new Uint8Array(
+      aRepeat.fullMappedBytes,
+      OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET,
+      OPT_0012_FULL_READBACK_STATUS_BYTES,
+    ),
     `${fixture.spec.id} A deterministic write status`,
   );
-  requireByteArraysEqual(new Uint8Array(b.compactMappedBytes), new Uint8Array(bRepeat.compactMappedBytes), `${fixture.spec.id} B deterministic readback`);
-  requireByteArraysEqual(new Uint8Array(c.compactMappedBytes), new Uint8Array(cRepeat.compactMappedBytes), `${fixture.spec.id} C deterministic readback`);
-  requireByteArraysEqual(new Uint8Array(b.compactMappedBytes), new Uint8Array(c.compactMappedBytes), `${fixture.spec.id} B/C common GPU readback`);
-  const retainedB = compareRetainedFp16Bits(plan, aFirst.fullMappedBytes, b.compactMappedBytes);
-  const retainedC = compareRetainedFp16Bits(plan, aFirst.fullMappedBytes, c.compactMappedBytes);
-  const reconstructedB = compareReconstructedFullVectors(plan, aFirst.logits, b.compact);
-  const reconstructedC = compareReconstructedFullVectors(plan, aFirst.logits, c.compact);
+  requireByteArraysEqual(
+    new Uint8Array(b.compactMappedBytes),
+    new Uint8Array(bRepeat.compactMappedBytes),
+    `${fixture.spec.id} B deterministic readback`,
+  );
+  requireByteArraysEqual(
+    new Uint8Array(c.compactMappedBytes),
+    new Uint8Array(cRepeat.compactMappedBytes),
+    `${fixture.spec.id} C deterministic readback`,
+  );
+  requireByteArraysEqual(
+    new Uint8Array(b.compactMappedBytes),
+    new Uint8Array(c.compactMappedBytes),
+    `${fixture.spec.id} B/C common GPU readback`,
+  );
+  const retainedB = compareRetainedFp16Bits(
+    plan,
+    aFirst.fullMappedBytes,
+    b.compactMappedBytes,
+  );
+  const retainedC = compareRetainedFp16Bits(
+    plan,
+    aFirst.fullMappedBytes,
+    c.compactMappedBytes,
+  );
+  const reconstructedB = compareReconstructedFullVectors(
+    plan,
+    aFirst.logits,
+    b.compact,
+  );
+  const reconstructedC = compareReconstructedFullVectors(
+    plan,
+    aFirst.logits,
+    c.compact,
+  );
   requireSameSample(aFirst.sample, aRepeat.sample, "A rerun");
   requireSameSample(aFirst.sample, b.sample, "A/B");
   requireSameSample(b.sample, bRepeat.sample, "B rerun");
   requireSameSample(b.sample, c.sample, "B/C");
   requireSameSample(c.sample, cRepeat.sample, "C rerun");
-  const fullHostDecodeCalibration = measureFullHostFp16Decode(aFirst.fullMappedBytes, aFirst.logits);
-  const expectedSample =
-    plan.state === "forced-eos"
-      ? Object.freeze({
-          tokenId: ACE_QWEN_IM_END_TOKEN_ID,
-          word: aFirst.sample.word,
-          positiveCandidateCount: 1,
-          drawIndex: "259",
-          drawEnd: "260",
-        })
-      : OPT_0012_OPT10_SAMPLE_AUTHORITIES[fixture.spec.id as keyof typeof OPT_0012_OPT10_SAMPLE_AUTHORITIES];
+  const fullHostDecodeCalibration = measureFullHostFp16Decode(
+    aFirst.fullMappedBytes,
+    aFirst.logits,
+  );
+  const expectedSample = plan.state === "forced-eos"
+    ? Object.freeze({
+        tokenId: ACE_QWEN_IM_END_TOKEN_ID,
+        word: aFirst.sample.word,
+        positiveCandidateCount: 1,
+        drawIndex: "259",
+        drawEnd: "260",
+      })
+    : OPT_0012_OPT10_SAMPLE_AUTHORITIES[
+        fixture.spec.id as keyof typeof OPT_0012_OPT10_SAMPLE_AUTHORITIES
+      ];
   if (expectedSample === undefined || !sameSample(aFirst.sample, expectedSample)) {
-    throw new Error(`OPT-0012 ${fixture.spec.id} differs from its raw-FP16 arm-A authority`);
+    throw new Error(
+      `OPT-0012 ${fixture.spec.id} differs from its raw-FP16 arm-A authority`,
+    );
   }
   return Object.freeze({
     case: fixture.spec,
@@ -2856,9 +3306,13 @@ async function executePackageArm(
   const cacheAppendControls = authenticateDecodeControls(fixture.decode);
   await executor.prefill(fixture.prefill);
   const statusPoison = await runner.poisonActiveWriteStatusOutsidePrimaryWall();
-  const candidatePreparation = arm === "A" ? null : await runner.prepareCandidateResourcesOutsidePrimaryWall(plan, sentinel);
+  const candidatePreparation = arm === "A" ? null :
+    await runner.prepareCandidateResourcesOutsidePrimaryWall(plan, sentinel);
   const captureFullReadback = arm === "A" && purpose !== "timing";
-  observer.beginTrace(`${fixture.spec.id}-${plan.state}-${arm}-${purpose}`, captureFullReadback);
+  observer.beginTrace(
+    `${fixture.spec.id}-${plan.state}-${arm}-${purpose}`,
+    captureFullReadback,
+  );
   const wallStarted = performance.now();
   const startedAtEpochMilliseconds = Date.now();
   let returned: readonly ArrayLike<number>[];
@@ -2871,18 +3325,26 @@ async function executePackageArm(
   let candidateHostDecodeMilliseconds: number | null = null;
   try {
     const decodeStarted = performance.now();
-    returned = await runner.invoke(() => executor.decode(fixture.decode), {
-      arm,
-      phaseKind: "decode",
-      plan,
-      sentinel,
-      guardProof,
-      cancellationBoundary: null,
-      boundaryAbortController: null,
-      allowCorrectnessOnlyInsideTracePreparation: false,
-    });
+    returned = await runner.invoke(
+      () => executor.decode(fixture.decode),
+      {
+        arm,
+        phaseKind: "decode",
+        plan,
+        sentinel,
+        guardProof,
+        cancellationBoundary: null,
+        boundaryAbortController: null,
+        allowCorrectnessOnlyInsideTracePreparation: false,
+      },
+    );
     const decodeEnded = performance.now();
-    const explicitProgress = runner.takeProgressReceipt(arm === "A" ? OPT_0012_FULL_COMMAND_BUFFER_COUNT : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT, true);
+    const explicitProgress = runner.takeProgressReceipt(
+      arm === "A"
+        ? OPT_0012_FULL_COMMAND_BUFFER_COUNT
+        : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT,
+      true,
+    );
     const candidateReceipt = arm === "A" ? null : runner.takeReceipt();
     if (candidateReceipt !== null) {
       if (candidateReceipt.preparation !== candidatePreparation) {
@@ -2892,10 +3354,17 @@ async function executePackageArm(
       compactMappedBytes = candidateReceipt.mappedBytes;
       candidateHostDecodeMilliseconds = candidateReceipt.hostDecodeMilliseconds;
     }
-    const logits = requireFloat32Rows(returned, arm === "A" ? plan.vocabularySize : plan.candidateCount);
+    const logits = requireFloat32Rows(returned, arm === "A"
+      ? plan.vocabularySize
+      : plan.candidateCount);
     let sampling: TimedSamplingExecution;
     if (arm === "C") {
-      sampling = sampleCompactRows(plan, compact!, fixture.seenTokenIds, drawIndex);
+      sampling = sampleCompactRows(
+        plan,
+        compact!,
+        fixture.seenTokenIds,
+        drawIndex,
+      );
     } else {
       let fullRows = logits;
       if (arm === "B") {
@@ -2903,30 +3372,43 @@ async function executePackageArm(
         fullRows = reconstructAceOpt0012FullPlannerLogits(compact!, plan);
         reconstructionMilliseconds = performance.now() - reconstructionStarted;
       }
-      sampling = sampleFullRows(plan, fullRows, fixture.seenTokenIds, drawIndex);
+      sampling = sampleFullRows(
+        plan,
+        fullRows,
+        fixture.seenTokenIds,
+        drawIndex,
+      );
     }
     const sample = sampling.sample;
     samplingMilliseconds = sampling.intervals.samplingMilliseconds;
     if (purpose !== "timing") {
-      const unchangedAuthority =
-        arm === "C"
-          ? sampleCompactRowsAuthority(plan, compact!, fixture.seenTokenIds, drawIndex)
-          : sampleFullRowsAuthority(plan, arm === "B" ? reconstructAceOpt0012FullPlannerLogits(compact!, plan) : logits, fixture.seenTokenIds, drawIndex);
-      requireSameSample(sample, unchangedAuthority, `${arm} decomposed/unchanged browser-v1 sampler`);
+      const unchangedAuthority = arm === "C"
+        ? sampleCompactRowsAuthority(plan, compact!, fixture.seenTokenIds, drawIndex)
+        : sampleFullRowsAuthority(plan, arm === "B"
+          ? reconstructAceOpt0012FullPlannerLogits(compact!, plan)
+          : logits, fixture.seenTokenIds, drawIndex);
+      requireSameSample(
+        sample,
+        unchangedAuthority,
+        `${arm} decomposed/unchanged browser-v1 sampler`,
+      );
     }
     const wallEnded = performance.now();
     const observedTrace = observer.endTrace({
       arm,
       phaseKind: "decode",
       state: plan.state,
-      expectedPhysicalDispatchCount:
-        arm === "A"
-          ? OPT_0012_FULL_PHYSICAL_DISPATCH_COUNT
-          : plan.state === "regular-code"
-            ? OPT_0012_REGULAR_PHYSICAL_DISPATCH_COUNT
-            : OPT_0012_EOS_PHYSICAL_DISPATCH_COUNT,
-      expectedCopyCount: arm === "A" ? OPT_0012_FULL_COPY_COUNT : plan.readback.copies.length,
-      expectedCommandBufferCount: arm === "A" ? OPT_0012_FULL_COMMAND_BUFFER_COUNT : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT,
+      expectedPhysicalDispatchCount: arm === "A"
+        ? OPT_0012_FULL_PHYSICAL_DISPATCH_COUNT
+        : plan.state === "regular-code"
+          ? OPT_0012_REGULAR_PHYSICAL_DISPATCH_COUNT
+          : OPT_0012_EOS_PHYSICAL_DISPATCH_COUNT,
+      expectedCopyCount: arm === "A"
+        ? OPT_0012_FULL_COPY_COUNT
+        : plan.readback.copies.length,
+      expectedCommandBufferCount: arm === "A"
+        ? OPT_0012_FULL_COMMAND_BUFFER_COUNT
+        : OPT_0012_CANDIDATE_COMMAND_BUFFER_COUNT,
       roundIndex,
       order,
       orderPosition,
@@ -2955,17 +3437,31 @@ async function executePackageArm(
       }),
       cacheAppendControls,
       candidatePreparation,
-      candidateAllocationDispatchPreparationExcludedFromPrimaryWall: arm === "A" || candidatePreparation !== null,
+      candidateAllocationDispatchPreparationExcludedFromPrimaryWall:
+        arm === "A" || candidatePreparation !== null,
     });
-    const fullMappedBytes = captureFullReadback ? observer.takeFullReadbackBytes() : null;
-    const fp16NaNCensus =
-      purpose === "timing"
-        ? null
-        : arm === "A"
-          ? fullMappedBytes === null
-            ? requireZeroOpt0012DecodedFullFp16NaNs(logits, `${fixture.spec.id} ${arm} ${purpose}`, plan.state)
-            : requireZeroOpt0012RawFullFp16NaNs(fullMappedBytes, `${fixture.spec.id} ${arm} ${purpose}`, plan.state)
-          : requireZeroOpt0012RawCompactFp16NaNs(plan, compactMappedBytes!, `${fixture.spec.id} ${arm} ${purpose}`);
+    const fullMappedBytes = captureFullReadback
+      ? observer.takeFullReadbackBytes()
+      : null;
+    const fp16NaNCensus = purpose === "timing"
+      ? null
+      : arm === "A"
+        ? fullMappedBytes === null
+          ? requireZeroOpt0012DecodedFullFp16NaNs(
+              logits,
+              `${fixture.spec.id} ${arm} ${purpose}`,
+              plan.state,
+            )
+          : requireZeroOpt0012RawFullFp16NaNs(
+              fullMappedBytes,
+              `${fixture.spec.id} ${arm} ${purpose}`,
+              plan.state,
+            )
+        : requireZeroOpt0012RawCompactFp16NaNs(
+            plan,
+            compactMappedBytes!,
+            `${fixture.spec.id} ${arm} ${purpose}`,
+          );
     // Common-byte B/C attribution is deliberately outside the primary token
     // wall and GPU trace. It replays both CPU representations over the exact
     // same retained mapped bytes and categorical word.
@@ -3005,14 +3501,18 @@ async function executePackageArm(
         decodeMilliseconds: decodeEnded - decodeStarted,
         reconstructionMilliseconds,
         samplingMilliseconds,
-        preCfgConstraintMilliseconds: sampling.intervals.preCfgConstraintMilliseconds,
+        preCfgConstraintMilliseconds:
+          sampling.intervals.preCfgConstraintMilliseconds,
         cfgMilliseconds: sampling.intervals.cfgMilliseconds,
-        postCfgConstraintAndRepetitionMilliseconds: sampling.intervals.postCfgConstraintAndRepetitionMilliseconds,
+        postCfgConstraintAndRepetitionMilliseconds:
+          sampling.intervals.postCfgConstraintAndRepetitionMilliseconds,
         constraintMilliseconds: sampling.intervals.constraintMilliseconds,
         topKMilliseconds: sampling.intervals.topKMilliseconds,
         topPMilliseconds: sampling.intervals.topPMilliseconds,
-        temperatureAndSoftmaxMilliseconds: sampling.intervals.temperatureAndSoftmaxMilliseconds,
-        categoricalWordAndGlobalMappingMilliseconds: sampling.intervals.categoricalWordAndGlobalMappingMilliseconds,
+        temperatureAndSoftmaxMilliseconds:
+          sampling.intervals.temperatureAndSoftmaxMilliseconds,
+        categoricalWordAndGlobalMappingMilliseconds:
+          sampling.intervals.categoricalWordAndGlobalMappingMilliseconds,
         callbackMilliseconds: sampling.intervals.callbackMilliseconds,
       }),
     });
@@ -3068,30 +3568,50 @@ function sampleFullRows(
   const samplingStarted = performance.now();
   let stageStarted = performance.now();
   const preCfgAllowedTokens = ACE_OPT_0012_PRE_CFG_ALLOWED_TOKENS;
-  const allowedTokens = plan.state === "regular-code" ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS;
+  const allowedTokens = plan.state === "regular-code"
+    ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS
+    : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS;
   const conditionalAllowed = maskAcePlannerLogits(rows[0]!, preCfgAllowedTokens);
   const unconditionalAllowed = maskAcePlannerLogits(rows[1]!, preCfgAllowedTokens);
   const preCfgConstraintMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  let filtered = combineOpt0012AllowedCfgForTiming(conditionalAllowed, unconditionalAllowed, ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale);
+  let filtered = combineOpt0012AllowedCfgForTiming(
+    conditionalAllowed,
+    unconditionalAllowed,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale,
+  );
   const cfgMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
   filtered = maskAcePlannerLogits(filtered, allowedTokens);
-  filtered = applyAcePlannerRepetitionPenalty(filtered, seenTokenIds, ACE_OPT_0012_SAMPLING_PARAMETERS.repetitionPenalty);
-  const postCfgConstraintAndRepetitionMilliseconds = performance.now() - stageStarted;
+  filtered = applyAcePlannerRepetitionPenalty(
+    filtered,
+    seenTokenIds,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.repetitionPenalty,
+  );
+  const postCfgConstraintAndRepetitionMilliseconds =
+    performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  filtered = applyAcePlannerTopK(filtered, ACE_OPT_0012_SAMPLING_PARAMETERS.topK);
+  filtered = applyAcePlannerTopK(
+    filtered,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.topK,
+  );
   const topKMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  filtered = applyOpt0012BrowserTopPForTiming(filtered, ACE_OPT_0012_SAMPLING_PARAMETERS.topP);
+  filtered = applyOpt0012BrowserTopPForTiming(
+    filtered,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.topP,
+  );
   const topPMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  const weights = createAcePlannerBrowserSamplingWeights(filtered, ACE_OPT_0012_SAMPLING_PARAMETERS.temperature);
+  const weights = createAcePlannerBrowserSamplingWeights(
+    filtered,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.temperature,
+  );
   const temperatureAndSoftmaxMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
@@ -3099,7 +3619,8 @@ function sampleFullRows(
   const word = aceRandomWord(ACCEPTED_SEED, "planner-sampling", draw);
   const tokenId = aceCategoricalTokenFromWord(weights, word);
   const positiveCandidateCount = countPositiveWeights(weights);
-  const categoricalWordAndGlobalMappingMilliseconds = performance.now() - stageStarted;
+  const categoricalWordAndGlobalMappingMilliseconds =
+    performance.now() - stageStarted;
 
   stageStarted = performance.now();
   const sample = publishOpt0012SampleCallback({
@@ -3139,7 +3660,9 @@ function sampleFullRowsAuthority(
     unconditionalLogits: rows[1]!,
     seenTokenIds,
     preCfgAllowedTokens: ACE_OPT_0012_PRE_CFG_ALLOWED_TOKENS,
-    allowedTokens: plan.state === "regular-code" ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS,
+    allowedTokens: plan.state === "regular-code"
+      ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS
+      : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS,
     parameters: ACE_OPT_0012_SAMPLING_PARAMETERS,
   });
   return Object.freeze({
@@ -3159,12 +3682,22 @@ function sampleCompactRows(
 ): TimedSamplingExecution {
   const samplingStarted = performance.now();
   let stageStarted = performance.now();
-  const conditionalAllowed = maskAcePlannerLogits(decoded.conditionalLogits, { kind: "all" });
-  const unconditionalAllowed = maskAcePlannerLogits(decoded.unconditionalLogits, { kind: "all" });
+  const conditionalAllowed = maskAcePlannerLogits(
+    decoded.conditionalLogits,
+    { kind: "all" },
+  );
+  const unconditionalAllowed = maskAcePlannerLogits(
+    decoded.unconditionalLogits,
+    { kind: "all" },
+  );
   const preCfgConstraintMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  let filtered = combineAcePlannerCfgLogits(conditionalAllowed, unconditionalAllowed, ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale);
+  let filtered = combineAcePlannerCfgLogits(
+    conditionalAllowed,
+    unconditionalAllowed,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.guidanceScale,
+  );
   const cfgMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
@@ -3174,19 +3707,28 @@ function sampleCompactRows(
     mapOpt0012SeenTokensToCandidateDomain(seenTokenIds, plan),
     ACE_OPT_0012_SAMPLING_PARAMETERS.repetitionPenalty,
   );
-  const postCfgConstraintAndRepetitionMilliseconds = performance.now() - stageStarted;
+  const postCfgConstraintAndRepetitionMilliseconds =
+    performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  const compactTopK = ACE_OPT_0012_SAMPLING_PARAMETERS.topK >= plan.candidateCount ? 0 : ACE_OPT_0012_SAMPLING_PARAMETERS.topK;
+  const compactTopK = ACE_OPT_0012_SAMPLING_PARAMETERS.topK >= plan.candidateCount
+    ? 0
+    : ACE_OPT_0012_SAMPLING_PARAMETERS.topK;
   filtered = applyAcePlannerTopK(filtered, compactTopK);
   const topKMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  filtered = applyOpt0012BrowserTopPForTiming(filtered, ACE_OPT_0012_SAMPLING_PARAMETERS.topP);
+  filtered = applyOpt0012BrowserTopPForTiming(
+    filtered,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.topP,
+  );
   const topPMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
-  const weights = createAcePlannerBrowserSamplingWeights(filtered, ACE_OPT_0012_SAMPLING_PARAMETERS.temperature);
+  const weights = createAcePlannerBrowserSamplingWeights(
+    filtered,
+    ACE_OPT_0012_SAMPLING_PARAMETERS.temperature,
+  );
   const temperatureAndSoftmaxMilliseconds = performance.now() - stageStarted;
 
   stageStarted = performance.now();
@@ -3195,7 +3737,8 @@ function sampleCompactRows(
   const selectedCandidateIndex = aceCategoricalTokenFromWord(weights, word);
   const tokenId = plan.firstCandidateTokenId + selectedCandidateIndex;
   const positiveCandidateCount = countPositiveWeights(weights);
-  const categoricalWordAndGlobalMappingMilliseconds = performance.now() - stageStarted;
+  const categoricalWordAndGlobalMappingMilliseconds =
+    performance.now() - stageStarted;
 
   stageStarted = performance.now();
   const sample = publishOpt0012SampleCallback({
@@ -3245,7 +3788,11 @@ function sampleCompactRowsAuthority(
   });
 }
 
-function combineOpt0012AllowedCfgForTiming(conditional: Float32Array, unconditional: Float32Array, guidanceScale: number): Float32Array {
+function combineOpt0012AllowedCfgForTiming(
+  conditional: Float32Array,
+  unconditional: Float32Array,
+  guidanceScale: number,
+): Float32Array {
   if (conditional.length !== unconditional.length) {
     throw new Error("OPT-0012 timed CFG row lengths changed");
   }
@@ -3256,11 +3803,18 @@ function combineOpt0012AllowedCfgForTiming(conditional: Float32Array, unconditio
   for (let tokenId = 0; tokenId < output.length; tokenId += 1) {
     const conditionalValue = conditional[tokenId]!;
     const unconditionalValue = unconditional[tokenId]!;
-    if (conditionalValue === Number.NEGATIVE_INFINITY && unconditionalValue === Number.NEGATIVE_INFINITY) continue;
+    if (
+      conditionalValue === Number.NEGATIVE_INFINITY &&
+      unconditionalValue === Number.NEGATIVE_INFINITY
+    ) continue;
     if (!Number.isFinite(conditionalValue) || !Number.isFinite(unconditionalValue)) {
       throw new Error("OPT-0012 timed CFG allowed subspaces differ");
     }
-    output[tokenId] = Math.fround(unconditionalValue + Math.fround(scale * Math.fround(conditionalValue - unconditionalValue)));
+    output[tokenId] = Math.fround(
+      unconditionalValue + Math.fround(
+        scale * Math.fround(conditionalValue - unconditionalValue),
+      ),
+    );
     finiteCandidateCount += 1;
   }
   if (finiteCandidateCount === 0) {
@@ -3269,7 +3823,10 @@ function combineOpt0012AllowedCfgForTiming(conditional: Float32Array, unconditio
   return output;
 }
 
-function applyOpt0012BrowserTopPForTiming(logits: Float32Array, topP: number): Float32Array {
+function applyOpt0012BrowserTopPForTiming(
+  logits: Float32Array,
+  topP: number,
+): Float32Array {
   const output = logits.slice();
   const keep = createAcePlannerBrowserTopPKeep(output, topP);
   if (keep.length !== output.length) {
@@ -3281,7 +3838,10 @@ function applyOpt0012BrowserTopPForTiming(logits: Float32Array, topP: number): F
   return output;
 }
 
-function mapOpt0012SeenTokensToCandidateDomain(seenTokenIds: readonly number[], plan: AceOpt0012CompactSemanticHeadPlan): number[] {
+function mapOpt0012SeenTokensToCandidateDomain(
+  seenTokenIds: readonly number[],
+  plan: AceOpt0012CompactSemanticHeadPlan,
+): number[] {
   const local: number[] = [];
   for (const tokenId of seenTokenIds) {
     if (!Number.isSafeInteger(tokenId) || tokenId < 0 || tokenId >= plan.vocabularySize) {
@@ -3314,14 +3874,19 @@ function publishOpt0012SampleCallback(input: SampleReceipt): SampleReceipt {
   return Object.freeze({ ...input });
 }
 
-function createSamplingStageIntervals(input: Omit<SamplingStageIntervals, "constraintMilliseconds" | "callbackInvocationCount">): SamplingStageIntervals {
+function createSamplingStageIntervals(
+  input: Omit<SamplingStageIntervals, "constraintMilliseconds" |
+    "callbackInvocationCount">,
+): SamplingStageIntervals {
   const values = Object.values(input);
   if (values.some((value) => !Number.isFinite(value) || value < 0)) {
     throw new Error("OPT-0012 timed sampling interval is invalid");
   }
   return Object.freeze({
     ...input,
-    constraintMilliseconds: input.preCfgConstraintMilliseconds + input.postCfgConstraintAndRepetitionMilliseconds,
+    constraintMilliseconds:
+      input.preCfgConstraintMilliseconds +
+      input.postCfgConstraintAndRepetitionMilliseconds,
     callbackInvocationCount: 1,
   });
 }
@@ -3353,7 +3918,9 @@ function compareRetainedFp16Bits(
     mismatchCount,
     firstMismatchRow,
     firstMismatchCandidate,
-    firstMismatchGlobalTokenId: firstMismatchCandidate === null ? null : plan.firstCandidateTokenId + firstMismatchCandidate,
+    firstMismatchGlobalTokenId: firstMismatchCandidate === null
+      ? null
+      : plan.firstCandidateTokenId + firstMismatchCandidate,
     worstMismatchRow: null,
     worstMismatchCandidate: null,
     worstMismatchGlobalTokenId: null,
@@ -3377,8 +3944,11 @@ function compareReconstructedFullVectors(
   const candidateWords = new Uint32Array(2 * plan.vocabularySize);
   for (let row = 0; row < 2; row += 1) {
     for (let tokenId = 0; tokenId < plan.vocabularySize; tokenId += 1) {
-      const admitted = tokenId >= plan.firstCandidateTokenId && tokenId <= plan.lastCandidateTokenId;
-      const expected = admitted ? floatWord(armA[row]![tokenId]!) : ACE_OPT_0012_NEGATIVE_INFINITY_U32;
+      const admitted = tokenId >= plan.firstCandidateTokenId &&
+        tokenId <= plan.lastCandidateTokenId;
+      const expected = admitted
+        ? floatWord(armA[row]![tokenId]!)
+        : ACE_OPT_0012_NEGATIVE_INFINITY_U32;
       const actual = floatWord(reconstructed[row]![tokenId]!);
       referenceWords[comparedU32Count] = expected;
       candidateWords[comparedU32Count] = actual;
@@ -3409,7 +3979,10 @@ function compareReconstructedFullVectors(
   });
 }
 
-function extractFullRetainedFp16Bits(plan: AceOpt0012CompactSemanticHeadPlan, mapped: ArrayBuffer): Uint16Array {
+function extractFullRetainedFp16Bits(
+  plan: AceOpt0012CompactSemanticHeadPlan,
+  mapped: ArrayBuffer,
+): Uint16Array {
   if (mapped.byteLength !== OPT_0012_FULL_READBACK_ALLOCATION_BYTES) {
     throw new Error("OPT-0012 full mapped readback allocation changed");
   }
@@ -3427,14 +4000,25 @@ function extractFullRetainedFp16Bits(plan: AceOpt0012CompactSemanticHeadPlan, ma
     const shard = ACE_PLANNER_EMBEDDING_ROW_PARTS[intersection.shardIndex]!;
     const base = shardOffsets[intersection.shardIndex]!;
     for (let row = 0; row < 2; row += 1) {
-      const source = new Uint16Array(mapped, base + (row * shard.rowCount + intersection.localFirstRow) * 2, intersection.rowCount);
-      output.set(source, row * plan.candidateCount + intersection.globalFirstRow - plan.firstCandidateTokenId);
+      const source = new Uint16Array(
+        mapped,
+        base + (row * shard.rowCount + intersection.localFirstRow) * 2,
+        intersection.rowCount,
+      );
+      output.set(
+        source,
+        row * plan.candidateCount +
+          intersection.globalFirstRow - plan.firstCandidateTokenId,
+      );
     }
   }
   return output;
 }
 
-function measureFullHostFp16Decode(mapped: ArrayBuffer, expected: readonly Float32Array[]): Readonly<Record<string, unknown>> {
+function measureFullHostFp16Decode(
+  mapped: ArrayBuffer,
+  expected: readonly Float32Array[],
+): Readonly<Record<string, unknown>> {
   let cursor = 0;
   const shards = ACE_PLANNER_EMBEDDING_ROW_PARTS.map((shard, sourceShardIndex) => {
     cursor = align256(cursor);
@@ -3478,31 +4062,54 @@ function measureFullHostFp16Decode(mapped: ArrayBuffer, expected: readonly Float
   });
 }
 
-function extractCompactLogicalFp16Bits(plan: AceOpt0012CompactSemanticHeadPlan, mapped: ArrayBuffer): Uint16Array {
+function extractCompactLogicalFp16Bits(
+  plan: AceOpt0012CompactSemanticHeadPlan,
+  mapped: ArrayBuffer,
+): Uint16Array {
   if (mapped.byteLength !== plan.readback.allocationBytes) {
     throw new Error("OPT-0012 compact mapped allocation changed");
   }
   const output = new Uint16Array(2 * plan.candidateCount);
   for (const span of plan.readback.logicalSpans) {
-    output.set(new Uint16Array(mapped, span.sourceByteOffset, span.candidateCount), span.physicalRow * plan.candidateCount + span.destinationCandidateOffset);
+    output.set(
+      new Uint16Array(mapped, span.sourceByteOffset, span.candidateCount),
+      span.physicalRow * plan.candidateCount + span.destinationCandidateOffset,
+    );
   }
   return output;
 }
 
-function requireZeroOpt0012RawFullFp16NaNs(mapped: ArrayBuffer, label: string, state: AceOpt0012SemanticState): Readonly<Record<string, unknown>> {
+function requireZeroOpt0012RawFullFp16NaNs(
+  mapped: ArrayBuffer,
+  label: string,
+  state: AceOpt0012SemanticState,
+): Readonly<Record<string, unknown>> {
   if (mapped.byteLength !== OPT_0012_FULL_READBACK_ALLOCATION_BYTES) {
     throw new Error("OPT-0012 full FP16 NaN census allocation changed");
   }
   return requireZeroOpt0012RawFp16NaNs(
-    new Uint16Array(mapped, 0, OPT_0012_FULL_HEAD_LOGIT_BYTES / Uint16Array.BYTES_PER_ELEMENT),
+    new Uint16Array(
+      mapped,
+      0,
+      OPT_0012_FULL_HEAD_LOGIT_BYTES / Uint16Array.BYTES_PER_ELEMENT,
+    ),
     label,
     state,
     "raw-full-vocabulary-readback-U16",
   );
 }
 
-function requireZeroOpt0012RawCompactFp16NaNs(plan: AceOpt0012CompactSemanticHeadPlan, mapped: ArrayBuffer, label: string): Readonly<Record<string, unknown>> {
-  return requireZeroOpt0012RawFp16NaNs(extractCompactLogicalFp16Bits(plan, mapped), label, plan.state, "raw-compact-logical-span-readback-U16");
+function requireZeroOpt0012RawCompactFp16NaNs(
+  plan: AceOpt0012CompactSemanticHeadPlan,
+  mapped: ArrayBuffer,
+  label: string,
+): Readonly<Record<string, unknown>> {
+  return requireZeroOpt0012RawFp16NaNs(
+    extractCompactLogicalFp16Bits(plan, mapped),
+    label,
+    plan.state,
+    "raw-compact-logical-span-readback-U16",
+  );
 }
 
 function requireZeroOpt0012RawFp16NaNs(
@@ -3552,7 +4159,10 @@ function requireZeroOpt0012RawFp16NaNs(
     excludedFromPrimaryTimingWall: true,
   });
   if (nanCount !== 0) {
-    throw new Error("OPT-0012 actual package readback contains FP16 NaN: " + JSON.stringify(receipt));
+    throw new Error(
+      "OPT-0012 actual package readback contains FP16 NaN: " +
+        JSON.stringify(receipt),
+    );
   }
   return receipt;
 }
@@ -3562,7 +4172,10 @@ function requireZeroOpt0012DecodedFullFp16NaNs(
   label: string,
   state: AceOpt0012SemanticState,
 ): Readonly<Record<string, unknown>> {
-  if (rows.length !== 2 || rows.some((row) => row.length !== ACE_PLANNER_QWEN3_CONFIG.vocabularySize)) {
+  if (
+    rows.length !== 2 ||
+    rows.some((row) => row.length !== ACE_PLANNER_QWEN3_CONFIG.vocabularySize)
+  ) {
     throw new Error("OPT-0012 decoded full FP16 NaN census shape changed");
   }
   let nanCount = 0;
@@ -3580,7 +4193,8 @@ function requireZeroOpt0012DecodedFullFp16NaNs(
     label,
     state,
     authority: "lossless-full-FP16-readback-decode-NaN-classification",
-    inspectedBinary16WordCount: 2 * ACE_PLANNER_QWEN3_CONFIG.vocabularySize,
+    inspectedBinary16WordCount:
+      2 * ACE_PLANNER_QWEN3_CONFIG.vocabularySize,
     binary16NaNCount: nanCount,
     firstNanRow,
     firstNanTokenId,
@@ -3591,35 +4205,42 @@ function requireZeroOpt0012DecodedFullFp16NaNs(
     excludedFromPrimaryTimingWall: true,
   });
   if (nanCount !== 0) {
-    throw new Error("OPT-0012 decoded full package readback contains FP16 NaN: " + JSON.stringify(receipt));
+    throw new Error(
+      "OPT-0012 decoded full package readback contains FP16 NaN: " +
+        JSON.stringify(receipt),
+    );
   }
   return receipt;
 }
 
-function publicArmExecution(execution: PackageArmExecution): Readonly<Record<string, unknown>> {
+function publicArmExecution(
+  execution: PackageArmExecution,
+): Readonly<Record<string, unknown>> {
   return Object.freeze({
     arm: execution.arm,
     state: execution.state,
     sample: execution.sample,
     trace: execution.trace,
-    fp16NaNCensus:
-      execution.fp16NaNCensus ??
-      Object.freeze({
-        status: "deferred-until-after-entire-primary-timing-window",
-        authority: "primaryTimingFp16NaNCensuses",
-        join: Object.freeze({
-          traceLabel: execution.trace["traceLabel"],
-          arm: execution.arm,
-          roundIndex: execution.trace["roundIndex"],
-          order: execution.trace["order"],
-          orderPosition: execution.trace["orderPosition"],
-        }),
+    fp16NaNCensus: execution.fp16NaNCensus ?? Object.freeze({
+      status: "deferred-until-after-entire-primary-timing-window",
+      authority: "primaryTimingFp16NaNCensuses",
+      join: Object.freeze({
+        traceLabel: execution.trace["traceLabel"],
+        arm: execution.arm,
+        roundIndex: execution.trace["roundIndex"],
+        order: execution.trace["order"],
+        orderPosition: execution.trace["orderPosition"],
       }),
+    }),
     guard: execution.guard,
     commonCandidateReplay: execution.commonCandidateReplay,
     intervals: execution.intervals,
-    fullReadbackSha256: execution.fullMappedBytes === null ? null : sha256FullSemanticReadback(execution.fullMappedBytes),
-    compactReadbackSha256: execution.compactMappedBytes === null ? null : aceSha256Hex(new Uint8Array(execution.compactMappedBytes)),
+    fullReadbackSha256: execution.fullMappedBytes === null
+      ? null
+      : sha256FullSemanticReadback(execution.fullMappedBytes),
+    compactReadbackSha256: execution.compactMappedBytes === null
+      ? null
+      : aceSha256Hex(new Uint8Array(execution.compactMappedBytes)),
   });
 }
 
@@ -3633,28 +4254,54 @@ async function runSameImmutableByteReplayCase(
   if (b.compactMappedBytes === null || c.compactMappedBytes === null) {
     throw new Error("OPT-0012 same-byte replay omitted candidate bytes");
   }
-  requireByteArraysEqual(new Uint8Array(b.compactMappedBytes), new Uint8Array(c.compactMappedBytes), `${fixture.spec.id} B/C same-byte source`);
+  requireByteArraysEqual(
+    new Uint8Array(b.compactMappedBytes),
+    new Uint8Array(c.compactMappedBytes),
+    `${fixture.spec.id} B/C same-byte source`,
+  );
   const mappedBytes = b.compactMappedBytes;
   const sourceSha256 = aceSha256Hex(new Uint8Array(mappedBytes));
-  const fp16NaNCensus = requireZeroOpt0012RawCompactFp16NaNs(plan, mappedBytes, `${fixture.spec.id} same-immutable-byte replay`);
+  const fp16NaNCensus = requireZeroOpt0012RawCompactFp16NaNs(
+    plan,
+    mappedBytes,
+    `${fixture.spec.id} same-immutable-byte replay`,
+  );
   const pairs: SameByteReplayPair[] = [];
-  for (let pairIndex = 0; pairIndex < OPT_0012_REPLAY_BALANCED_ORDERS.length; pairIndex += 1) {
+  for (let pairIndex = 0; pairIndex < OPT_0012_REPLAY_BALANCED_ORDERS.length;
+    pairIndex += 1) {
     const order = OPT_0012_REPLAY_BALANCED_ORDERS[pairIndex]!;
     const before = aceSha256Hex(new Uint8Array(mappedBytes));
     let bMeasured: SameByteReplayMeasuredExecution | undefined;
     let cMeasured: SameByteReplayMeasuredExecution | undefined;
     // Deliberately no await/yield between the two arms in a pair.
     for (const arm of order) {
-      const measured = runSameByteReplayExecution(arm, mappedBytes, plan, fixture);
+      const measured = runSameByteReplayExecution(
+        arm,
+        mappedBytes,
+        plan,
+        fixture,
+      );
       if (arm === "B") bMeasured = measured;
       else cMeasured = measured;
     }
     if (bMeasured === undefined || cMeasured === undefined) {
       throw new Error("OPT-0012 same-byte replay pair omitted an arm");
     }
-    requireSameSample(bMeasured.timing.sample, authority, `${fixture.spec.id} replay pair ${pairIndex} B authority`);
-    requireSameSample(cMeasured.timing.sample, authority, `${fixture.spec.id} replay pair ${pairIndex} C authority`);
-    requireSameSample(bMeasured.timing.sample, cMeasured.timing.sample, `${fixture.spec.id} replay pair ${pairIndex} B/C`);
+    requireSameSample(
+      bMeasured.timing.sample,
+      authority,
+      `${fixture.spec.id} replay pair ${pairIndex} B authority`,
+    );
+    requireSameSample(
+      cMeasured.timing.sample,
+      authority,
+      `${fixture.spec.id} replay pair ${pairIndex} C authority`,
+    );
+    requireSameSample(
+      bMeasured.timing.sample,
+      cMeasured.timing.sample,
+      `${fixture.spec.id} replay pair ${pairIndex} B/C`,
+    );
     // Hashing and receipt expansion start only after both timed arms finish.
     const bExecution = finalizeSameByteReplayExecution(bMeasured);
     const cExecution = finalizeSameByteReplayExecution(cMeasured);
@@ -3662,18 +4309,16 @@ async function runSameImmutableByteReplayCase(
     if (before !== sourceSha256 || after !== sourceSha256) {
       throw new Error("OPT-0012 same-byte replay mutated its mapped input");
     }
-    pairs.push(
-      Object.freeze({
-        pairIndex,
-        order,
-        mappedBytesSha256Before: before,
-        mappedBytesSha256After: after,
-        B: bExecution,
-        C: cExecution,
-        sameImmutableBytes: true,
-        noYieldInsidePair: true,
-      }),
-    );
+    pairs.push(Object.freeze({
+      pairIndex,
+      order,
+      mappedBytesSha256Before: before,
+      mappedBytesSha256After: after,
+      B: bExecution,
+      C: cExecution,
+      sameImmutableBytes: true,
+      noYieldInsidePair: true,
+    }));
     await yieldToBrowser();
   }
   const decoded = decodeAceOpt0012CompactFp16Readback(mappedBytes, plan);
@@ -3749,10 +4394,9 @@ function runSameByteReplayExecution(
     reconstructionMilliseconds = performance.now() - reconstructionStarted;
   }
   const samplingWallStarted = performance.now();
-  const sampling =
-    arm === "B"
-      ? sampleFullRows(plan, fullRows!, fixture.seenTokenIds, fixture.spec.drawIndex)
-      : sampleCompactRows(plan, decoded, fixture.seenTokenIds, fixture.spec.drawIndex);
+  const sampling = arm === "B"
+    ? sampleFullRows(plan, fullRows!, fixture.seenTokenIds, fixture.spec.drawIndex)
+    : sampleCompactRows(plan, decoded, fixture.seenTokenIds, fixture.spec.drawIndex);
   const samplingWallEnded = performance.now();
   const totalEnded = samplingWallEnded;
   const fp16DecodeMilliseconds = decodeEnded - decodeStarted;
@@ -3770,38 +4414,58 @@ function runSameByteReplayExecution(
         fp16HostDecodeMilliseconds: fp16DecodeMilliseconds,
         fullVectorReconstructionMilliseconds: reconstructionMilliseconds,
         primarySamplingStages: Object.freeze({
-          preCfgConstraintMilliseconds: sampling.intervals.preCfgConstraintMilliseconds,
+          preCfgConstraintMilliseconds:
+            sampling.intervals.preCfgConstraintMilliseconds,
           cfgMilliseconds: sampling.intervals.cfgMilliseconds,
-          postCfgConstraintAndRepetitionMilliseconds: sampling.intervals.postCfgConstraintAndRepetitionMilliseconds,
+          postCfgConstraintAndRepetitionMilliseconds:
+            sampling.intervals.postCfgConstraintAndRepetitionMilliseconds,
           topKMilliseconds: sampling.intervals.topKMilliseconds,
           topPMilliseconds: sampling.intervals.topPMilliseconds,
-          temperatureAndSoftmaxMilliseconds: sampling.intervals.temperatureAndSoftmaxMilliseconds,
-          categoricalWordAndGlobalMappingMilliseconds: sampling.intervals.categoricalWordAndGlobalMappingMilliseconds,
+          temperatureAndSoftmaxMilliseconds:
+            sampling.intervals.temperatureAndSoftmaxMilliseconds,
+          categoricalWordAndGlobalMappingMilliseconds:
+            sampling.intervals.categoricalWordAndGlobalMappingMilliseconds,
           callbackMilliseconds: sampling.intervals.callbackMilliseconds,
         }),
         intervalsOccurInListedOrder: true,
         noOverlappingClockSubtractionUsed: true,
       }),
-      writeStatus: Object.freeze([decoded.writeStatus[0]!, decoded.writeStatus[1]!] as const),
+      writeStatus: Object.freeze([
+        decoded.writeStatus[0]!,
+        decoded.writeStatus[1]!,
+      ] as const),
     }),
     decoded,
     reconstructedFullRows: fullRows,
   });
 }
 
-function finalizeSameByteReplayExecution(measured: SameByteReplayMeasuredExecution): SameByteReplayExecution {
+function finalizeSameByteReplayExecution(
+  measured: SameByteReplayMeasuredExecution,
+): SameByteReplayExecution {
   const fullRows = measured.reconstructedFullRows;
   return Object.freeze({
     ...measured.timing,
-    decodedRowSha256: Object.freeze([sha256FloatWords(measured.decoded.conditionalLogits), sha256FloatWords(measured.decoded.unconditionalLogits)] as const),
-    reconstructedFullRowSha256: fullRows === null ? null : Object.freeze([sha256FloatWords(fullRows[0]), sha256FloatWords(fullRows[1])] as const),
+    decodedRowSha256: Object.freeze([
+      sha256FloatWords(measured.decoded.conditionalLogits),
+      sha256FloatWords(measured.decoded.unconditionalLogits),
+    ] as const),
+    reconstructedFullRowSha256: fullRows === null ? null : Object.freeze([
+      sha256FloatWords(fullRows[0]),
+      sha256FloatWords(fullRows[1]),
+    ] as const),
     exactSampleAuthority: true,
   });
 }
 
-function summarizeSameByteReplayArm(pairs: readonly SameByteReplayPair[], arm: Opt0012ReplayArm): Readonly<Record<string, unknown>> {
+function summarizeSameByteReplayArm(
+  pairs: readonly SameByteReplayPair[],
+  arm: Opt0012ReplayArm,
+): Readonly<Record<string, unknown>> {
   const samples = pairs.map((pair) => pair[arm]);
-  const positions = [0, 1].map((position) => pairs.filter((pair) => pair.order[position] === arm).length);
+  const positions = [0, 1].map((position) => pairs.filter(
+    (pair) => pair.order[position] === arm,
+  ).length);
   if (
     samples.length !== OPT_0012_REPLAY_BALANCED_ORDERS.length ||
     positions.some((count) => count !== 3) ||
@@ -3809,32 +4473,52 @@ function summarizeSameByteReplayArm(pairs: readonly SameByteReplayPair[], arm: O
   ) {
     throw new Error(`OPT-0012 same-byte replay ${arm} balance changed`);
   }
-  const samplingInterval = (name: keyof SamplingStageIntervals) => summarizeNumbers(samples.map((sample) => sample.samplingStageIntervals[name]));
+  const samplingInterval = (name: keyof SamplingStageIntervals) =>
+    summarizeNumbers(samples.map((sample) => sample.samplingStageIntervals[name]));
   return Object.freeze({
     sampleCount: samples.length,
     everyOrderPositionCount: Object.freeze(positions),
-    totalWallMilliseconds: summarizeNumbers(samples.map((sample) => sample.totalWallMilliseconds)),
-    fp16DecodeMilliseconds: summarizeNumbers(samples.map((sample) => sample.fp16DecodeMilliseconds)),
-    reconstructionMilliseconds: summarizeNumbers(samples.map((sample) => sample.reconstructionMilliseconds)),
-    samplingWallMilliseconds: summarizeNumbers(samples.map((sample) => sample.samplingWallMilliseconds)),
+    totalWallMilliseconds: summarizeNumbers(
+      samples.map((sample) => sample.totalWallMilliseconds),
+    ),
+    fp16DecodeMilliseconds: summarizeNumbers(
+      samples.map((sample) => sample.fp16DecodeMilliseconds),
+    ),
+    reconstructionMilliseconds: summarizeNumbers(
+      samples.map((sample) => sample.reconstructionMilliseconds),
+    ),
+    samplingWallMilliseconds: summarizeNumbers(
+      samples.map((sample) => sample.samplingWallMilliseconds),
+    ),
     samplingStageIntervals: Object.freeze({
       samplingMilliseconds: samplingInterval("samplingMilliseconds"),
-      preCfgConstraintMilliseconds: samplingInterval("preCfgConstraintMilliseconds"),
+      preCfgConstraintMilliseconds: samplingInterval(
+        "preCfgConstraintMilliseconds",
+      ),
       cfgMilliseconds: samplingInterval("cfgMilliseconds"),
-      postCfgConstraintAndRepetitionMilliseconds: samplingInterval("postCfgConstraintAndRepetitionMilliseconds"),
+      postCfgConstraintAndRepetitionMilliseconds: samplingInterval(
+        "postCfgConstraintAndRepetitionMilliseconds",
+      ),
       topKMilliseconds: samplingInterval("topKMilliseconds"),
       topPMilliseconds: samplingInterval("topPMilliseconds"),
-      temperatureAndSoftmaxMilliseconds: samplingInterval("temperatureAndSoftmaxMilliseconds"),
-      categoricalWordAndGlobalMappingMilliseconds: samplingInterval("categoricalWordAndGlobalMappingMilliseconds"),
+      temperatureAndSoftmaxMilliseconds: samplingInterval(
+        "temperatureAndSoftmaxMilliseconds",
+      ),
+      categoricalWordAndGlobalMappingMilliseconds: samplingInterval(
+        "categoricalWordAndGlobalMappingMilliseconds",
+      ),
       callbackMilliseconds: samplingInterval("callbackMilliseconds"),
     }),
     exactSampleAndCursorIdentity: true,
   });
 }
 
-function summarizeSameByteReplayPairs(pairs: readonly SameByteReplayPair[]): Readonly<Record<string, unknown>> {
+function summarizeSameByteReplayPairs(
+  pairs: readonly SameByteReplayPair[],
+): Readonly<Record<string, unknown>> {
   const rounds = pairs.map((pair) => {
-    const deltaCMinusBMilliseconds = pair.C.totalWallMilliseconds - pair.B.totalWallMilliseconds;
+    const deltaCMinusBMilliseconds =
+      pair.C.totalWallMilliseconds - pair.B.totalWallMilliseconds;
     return Object.freeze({
       pairIndex: pair.pairIndex,
       order: pair.order.join(""),
@@ -3843,7 +4527,9 @@ function summarizeSameByteReplayPairs(pairs: readonly SameByteReplayPair[]): Rea
       bMilliseconds: pair.B.totalWallMilliseconds,
       cMilliseconds: pair.C.totalWallMilliseconds,
       deltaCMinusBMilliseconds,
-      winner: deltaCMinusBMilliseconds === 0 ? "tie" : deltaCMinusBMilliseconds < 0 ? "C" : "B",
+      winner: deltaCMinusBMilliseconds === 0
+        ? "tie"
+        : deltaCMinusBMilliseconds < 0 ? "C" : "B",
     });
   });
   return Object.freeze({
@@ -3859,32 +4545,29 @@ function summarizeSameByteReplayPairs(pairs: readonly SameByteReplayPair[]): Rea
   });
 }
 
-async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record<string, unknown>>> {
+async function runOpt0012Fp16ConversionMicrobenchmark():
+Promise<Readonly<Record<string, unknown>>> {
   const domain = new Uint16Array(OPT_0012_FP16_DOMAIN_WORD_COUNT);
   for (let bits = 0; bits < domain.length; bits += 1) domain[bits] = bits;
   const domainSha256 = sha256U16Le(domain);
-  if (domainSha256 !== "68e419472d25e0b85e9917ccf692fd58245c5e95e9a46f07d1df81d2e9da246b") {
+  if (domainSha256 !==
+      "68e419472d25e0b85e9917ccf692fd58245c5e95e9a46f07d1df81d2e9da246b") {
     throw new Error("OPT-0012 complete FP16 conversion domain hash changed");
   }
-  const outputs = new Map<
-    Opt0012ConversionArm,
-    Readonly<{
-      floats: Float32Array;
-      words: Uint32Array;
-    }>
-  >();
+  const outputs = new Map<Opt0012ConversionArm, Readonly<{
+    floats: Float32Array;
+    words: Uint32Array;
+  }>>();
   for (const arm of ["legacy-allocating", "allocation-free"] as const) {
     const floats = new Float32Array(OPT_0012_FP16_DOMAIN_WORD_COUNT);
-    outputs.set(
-      arm,
-      Object.freeze({
-        floats,
-        words: new Uint32Array(floats.buffer),
-      }),
-    );
+    outputs.set(arm, Object.freeze({
+      floats,
+      words: new Uint32Array(floats.buffer),
+    }));
   }
   const pairs: ConversionMicrobenchmarkPair[] = [];
-  for (let pairIndex = 0; pairIndex < OPT_0012_CONVERSION_BALANCED_ORDERS.length; pairIndex += 1) {
+  for (let pairIndex = 0;
+    pairIndex < OPT_0012_CONVERSION_BALANCED_ORDERS.length; pairIndex += 1) {
     const order = OPT_0012_CONVERSION_BALANCED_ORDERS[pairIndex]!;
     let legacyWallMilliseconds: number | undefined;
     let candidateWallMilliseconds: number | undefined;
@@ -3892,7 +4575,11 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
     for (const arm of order) {
       const output = outputs.get(arm)!;
       const started = performance.now();
-      writeOpt0012Fp16ConversionDomain(arm, output.floats, output.words);
+      writeOpt0012Fp16ConversionDomain(
+        arm,
+        output.floats,
+        output.words,
+      );
       const wallMilliseconds = performance.now() - started;
       if (arm === "legacy-allocating") {
         legacyWallMilliseconds = wallMilliseconds;
@@ -3900,14 +4587,29 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
         candidateWallMilliseconds = wallMilliseconds;
       }
     }
-    if (legacyWallMilliseconds === undefined || candidateWallMilliseconds === undefined) {
+    if (
+      legacyWallMilliseconds === undefined ||
+      candidateWallMilliseconds === undefined
+    ) {
       throw new Error("OPT-0012 conversion timing pair omitted an arm");
     }
     // Hashing and receipt expansion start only after both timed arms finish.
-    const legacyEnvelope = analyzeOpt0012Fp16ConversionEnvelope("legacy-allocating", outputs.get("legacy-allocating")!.words);
-    const candidateEnvelope = analyzeOpt0012Fp16ConversionEnvelope("allocation-free", outputs.get("allocation-free")!.words);
-    if (legacyEnvelope["acceptedStableNanEnvelope"] !== true || candidateEnvelope["acceptedStableNanEnvelope"] !== true) {
-      throw new Error("OPT-0012 timed conversion NaN envelope changed: " + JSON.stringify({ legacyEnvelope, candidateEnvelope }));
+    const legacyEnvelope = analyzeOpt0012Fp16ConversionEnvelope(
+      "legacy-allocating",
+      outputs.get("legacy-allocating")!.words,
+    );
+    const candidateEnvelope = analyzeOpt0012Fp16ConversionEnvelope(
+      "allocation-free",
+      outputs.get("allocation-free")!.words,
+    );
+    if (
+      legacyEnvelope["acceptedStableNanEnvelope"] !== true ||
+      candidateEnvelope["acceptedStableNanEnvelope"] !== true
+    ) {
+      throw new Error(
+        "OPT-0012 timed conversion NaN envelope changed: " +
+          JSON.stringify({ legacyEnvelope, candidateEnvelope }),
+      );
     }
     const legacy: ConversionMicrobenchmarkExecution = Object.freeze({
       arm: "legacy-allocating",
@@ -3921,34 +4623,47 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
       envelope: candidateEnvelope,
       acceptedStableNanEnvelope: true,
     });
-    pairs.push(
-      Object.freeze({
-        pairIndex,
-        order,
-        legacy,
-        candidate,
-        noYieldInsidePair: true,
-      }),
-    );
+    pairs.push(Object.freeze({
+      pairIndex,
+      order,
+      legacy,
+      candidate,
+      noYieldInsidePair: true,
+    }));
     await yieldToBrowser();
   }
   const summarizeArm = (arm: Opt0012ConversionArm) => {
-    const samples = pairs.map((pair) => (arm === "legacy-allocating" ? pair.legacy : pair.candidate));
-    const positions = [0, 1].map((position) => pairs.filter((pair) => pair.order[position] === arm).length);
+    const samples = pairs.map((pair) => arm === "legacy-allocating"
+      ? pair.legacy
+      : pair.candidate);
+    const positions = [0, 1].map((position) => pairs.filter(
+      (pair) => pair.order[position] === arm,
+    ).length);
     if (positions.some((count) => count !== 3)) {
       throw new Error(`OPT-0012 ${arm} conversion timing balance changed`);
     }
     return Object.freeze({
       sampleCount: samples.length,
       everyOrderPositionCount: Object.freeze(positions),
-      wallMilliseconds: summarizeNumbers(samples.map((sample) => sample.wallMilliseconds)),
-      everyRawOutputU32LeSha256: Object.freeze(samples.map((sample) => sample.envelope["rawOutputU32LeSha256"] as string)),
-      everyCanonicalOutputU32LeSha256: Object.freeze(samples.map((sample) => sample.envelope["canonicalOutputU32LeSha256"] as string)),
-      everyAcceptedStableNanEnvelope: samples.every((sample) => sample.acceptedStableNanEnvelope),
+      wallMilliseconds: summarizeNumbers(
+        samples.map((sample) => sample.wallMilliseconds),
+      ),
+      everyRawOutputU32LeSha256: Object.freeze(
+        samples.map((sample) =>
+          sample.envelope["rawOutputU32LeSha256"] as string),
+      ),
+      everyCanonicalOutputU32LeSha256: Object.freeze(
+        samples.map((sample) =>
+          sample.envelope["canonicalOutputU32LeSha256"] as string),
+      ),
+      everyAcceptedStableNanEnvelope: samples.every(
+        (sample) => sample.acceptedStableNanEnvelope,
+      ),
     });
   };
   const rounds = pairs.map((pair) => {
-    const deltaCandidateMinusLegacyMilliseconds = pair.candidate.wallMilliseconds - pair.legacy.wallMilliseconds;
+    const deltaCandidateMinusLegacyMilliseconds =
+      pair.candidate.wallMilliseconds - pair.legacy.wallMilliseconds;
     return Object.freeze({
       pairIndex: pair.pairIndex,
       order: pair.order,
@@ -3957,7 +4672,11 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
       legacyMilliseconds: pair.legacy.wallMilliseconds,
       candidateMilliseconds: pair.candidate.wallMilliseconds,
       deltaCandidateMinusLegacyMilliseconds,
-      winner: deltaCandidateMinusLegacyMilliseconds === 0 ? "tie" : deltaCandidateMinusLegacyMilliseconds < 0 ? "allocation-free" : "legacy-allocating",
+      winner: deltaCandidateMinusLegacyMilliseconds === 0
+        ? "tie"
+        : deltaCandidateMinusLegacyMilliseconds < 0
+          ? "allocation-free"
+          : "legacy-allocating",
     });
   });
   return Object.freeze({
@@ -3969,7 +4688,8 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
       inputU16LeSha256: domainSha256,
       expectedOutputU32LeSha256: OPT_0012_FP16_DOMAIN_OUTPUT_SHA256,
       expectedNonNaNU32LeSha256: OPT_0012_FP16_NON_NAN_OUTPUT_SHA256,
-      expectedCanonicalNaNU32LeSha256: OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256,
+      expectedCanonicalNaNU32LeSha256:
+        OPT_0012_FP16_CANONICAL_NAN_OUTPUT_SHA256,
     }),
     protocol: Object.freeze({
       orders: OPT_0012_CONVERSION_BALANCED_ORDERS,
@@ -3990,8 +4710,12 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
     candidate: summarizeArm("allocation-free"),
     samePairComparison: Object.freeze({
       pairCount: rounds.length,
-      legacyWins: rounds.filter((round) => round.winner === "legacy-allocating").length,
-      candidateWins: rounds.filter((round) => round.winner === "allocation-free").length,
+      legacyWins: rounds.filter(
+        (round) => round.winner === "legacy-allocating",
+      ).length,
+      candidateWins: rounds.filter(
+        (round) => round.winner === "allocation-free",
+      ).length,
       ties: rounds.filter((round) => round.winner === "tie").length,
       rawDeltaConvention: "candidate-minus-legacy-milliseconds",
       thresholdApplied: false,
@@ -4000,9 +4724,13 @@ async function runOpt0012Fp16ConversionMicrobenchmark(): Promise<Readonly<Record
   });
 }
 
-export function validateOpt0012PrimaryTimingFp16NaNCensusCoverage(receipts: readonly Readonly<Record<string, unknown>>[]): Readonly<Record<string, unknown>> {
+export function validateOpt0012PrimaryTimingFp16NaNCensusCoverage(
+  receipts: readonly Readonly<Record<string, unknown>>[],
+): Readonly<Record<string, unknown>> {
   if (receipts.length !== OPT_0012_PRIMARY_TIMING_FP16_NAN_CENSUS_COUNT) {
-    throw new Error("OPT-0012 primary timing FP16 NaN census must contain exactly 54 receipts");
+    throw new Error(
+      "OPT-0012 primary timing FP16 NaN census must contain exactly 54 receipts",
+    );
   }
   const compositeJoinKeys = new Set<string>();
   const traceLabels = new Set<string>();
@@ -4016,34 +4744,41 @@ export function validateOpt0012PrimaryTimingFp16NaNCensusCoverage(receipts: read
     const census = receipt["census"];
     if (
       (arm !== "A" && arm !== "B" && arm !== "C") ||
-      typeof traceLabel !== "string" ||
-      traceLabel.length === 0 ||
+      typeof traceLabel !== "string" || traceLabel.length === 0 ||
       !Number.isInteger(roundIndex) ||
       typeof roundIndex !== "number" ||
-      roundIndex < 0 ||
-      roundIndex >= OPT_0012_BALANCED_ORDERS.length ||
+      roundIndex < 0 || roundIndex >= OPT_0012_BALANCED_ORDERS.length ||
       typeof order !== "string" ||
-      !Number.isInteger(orderPosition) ||
-      typeof orderPosition !== "number" ||
-      census === null ||
-      typeof census !== "object" ||
+      !Number.isInteger(orderPosition) || typeof orderPosition !== "number" ||
+      census === null || typeof census !== "object" ||
       (census as Readonly<Record<string, unknown>>)["zeroBinary16NaNs"] !== true
     ) {
       throw new Error("OPT-0012 primary timing FP16 NaN census receipt changed");
     }
     const expectedOrder = OPT_0012_BALANCED_ORDERS[roundIndex]!;
-    if (order !== expectedOrder.join("") || orderPosition !== expectedOrder.indexOf(arm)) {
+    if (
+      order !== expectedOrder.join("") ||
+      orderPosition !== expectedOrder.indexOf(arm)
+    ) {
       throw new Error("OPT-0012 primary timing FP16 NaN census schedule changed");
     }
-    const compositeJoinKey = JSON.stringify([traceLabel, roundIndex, order, orderPosition]);
+    const compositeJoinKey = JSON.stringify([
+      traceLabel,
+      roundIndex,
+      order,
+      orderPosition,
+    ]);
     if (compositeJoinKeys.has(compositeJoinKey)) {
-      throw new Error("OPT-0012 primary timing FP16 NaN census has a duplicate composite join key");
+      throw new Error(
+        "OPT-0012 primary timing FP16 NaN census has a duplicate composite join key",
+      );
     }
     compositeJoinKeys.add(compositeJoinKey);
     traceLabels.add(traceLabel);
     armCounts[arm] += 1;
   }
-  const expectedPerArm = OPT_0012_PRIMARY_TIMING_FP16_NAN_CENSUS_COUNT / 3;
+  const expectedPerArm =
+    OPT_0012_PRIMARY_TIMING_FP16_NAN_CENSUS_COUNT / 3;
   if (
     compositeJoinKeys.size !== OPT_0012_PRIMARY_TIMING_FP16_NAN_CENSUS_COUNT ||
     armCounts.A !== expectedPerArm ||
@@ -4060,37 +4795,46 @@ export function validateOpt0012PrimaryTimingFp16NaNCensusCoverage(receipts: read
     C: armCounts.C,
     uniqueTraceLabelCount: traceLabels.size,
     uniqueCompositeJoinKeyCount: compositeJoinKeys.size,
-    compositeJoinFields: Object.freeze(["traceLabel", "roundIndex", "order", "orderPosition"]),
+    compositeJoinFields: Object.freeze([
+      "traceLabel",
+      "roundIndex",
+      "order",
+      "orderPosition",
+    ]),
     oneToOneCompositeTraceJoin: true,
     everyActualPackageReadbackHasZeroBinary16NaNs: true,
   });
 }
 
-async function runTimedAndCleanup(prepared: PreparedSession, thermal: Opt0012ThermalGateMetadata): Promise<Readonly<Record<string, unknown>>> {
+async function runTimedAndCleanup(
+  prepared: PreparedSession,
+  thermal: Opt0012ThermalGateMetadata,
+): Promise<Readonly<Record<string, unknown>>> {
   validateWorkerThermalGate(thermal, prepared.warmupCompletedAtEpochMilliseconds);
   const timedStartedAtEpochMilliseconds = Date.now();
   const cases: Array<Readonly<Record<string, unknown>>> = [];
   const timedReadbackExecutions: PackageArmExecution[] = [];
-  const deferredCandidateReplays: Array<
-    Readonly<{
-      fixture: PlannerCaseFixture;
-      b: PackageArmExecution;
-      c: PackageArmExecution;
-      authority: SampleReceipt;
-    }>
-  > = [];
+  const deferredCandidateReplays: Array<Readonly<{
+    fixture: PlannerCaseFixture;
+    b: PackageArmExecution;
+    c: PackageArmExecution;
+    authority: SampleReceipt;
+  }>> = [];
   try {
     for (const fixture of prepared.fixtures) {
       const armSamples = new Map<Opt0012Arm, PackageArmExecution[]>([
-        ["A", []],
-        ["B", []],
-        ["C", []],
+        ["A", []], ["B", []], ["C", []],
       ]);
-      for (let roundIndex = 0; roundIndex < OPT_0012_BALANCED_ORDERS.length; roundIndex += 1) {
+      for (let roundIndex = 0; roundIndex < OPT_0012_BALANCED_ORDERS.length;
+        roundIndex += 1) {
         const order = OPT_0012_BALANCED_ORDERS[roundIndex]!;
-        for (let orderPosition = 0; orderPosition < order.length; orderPosition += 1) {
+        for (let orderPosition = 0; orderPosition < order.length;
+          orderPosition += 1) {
           const arm = order[orderPosition]!;
-          postProgress(`timing ${fixture.spec.id} round ${roundIndex + 1}/6 ` + `${order.join("")} arm ${arm}`);
+          postProgress(
+            `timing ${fixture.spec.id} round ${roundIndex + 1}/6 ` +
+              `${order.join("")} arm ${arm}`,
+          );
           const sample = await executePackageArm(
             prepared.observer,
             prepared.executor,
@@ -4114,45 +4858,59 @@ async function runTimedAndCleanup(prepared: PreparedSession, thermal: Opt0012The
       const authority = armSamples.get("A")![0]!.sample;
       for (const arm of ["A", "B", "C"] as const) {
         for (const sample of armSamples.get(arm)!) {
-          requireSameSample(authority, sample.sample, `${fixture.spec.id} timed A/B/C authority`);
+          requireSameSample(authority, sample.sample,
+            `${fixture.spec.id} timed A/B/C authority`);
         }
       }
-      deferredCandidateReplays.push(
-        Object.freeze({
-          fixture,
-          b: armSamples.get("B")![0]!,
-          c: armSamples.get("C")![0]!,
-          authority,
+      deferredCandidateReplays.push(Object.freeze({
+        fixture,
+        b: armSamples.get("B")![0]!,
+        c: armSamples.get("C")![0]!,
+        authority,
+      }));
+      cases.push(Object.freeze({
+        case: fixture.spec,
+        orders: OPT_0012_BALANCED_ORDERS,
+        A: summarizeTimedArm(armSamples.get("A")!),
+        B: summarizeTimedArm(armSamples.get("B")!),
+        C: summarizeTimedArm(armSamples.get("C")!),
+        sameRoundComparisons: Object.freeze({
+          AversusB: summarizeSameRoundComparison(
+            armSamples.get("A")!,
+            armSamples.get("B")!,
+            "A",
+            "B",
+          ),
+          BversusC: summarizeSameRoundComparison(
+            armSamples.get("B")!,
+            armSamples.get("C")!,
+            "B",
+            "C",
+          ),
         }),
-      );
-      cases.push(
-        Object.freeze({
-          case: fixture.spec,
-          orders: OPT_0012_BALANCED_ORDERS,
-          A: summarizeTimedArm(armSamples.get("A")!),
-          B: summarizeTimedArm(armSamples.get("B")!),
-          C: summarizeTimedArm(armSamples.get("C")!),
-          sameRoundComparisons: Object.freeze({
-            AversusB: summarizeSameRoundComparison(armSamples.get("A")!, armSamples.get("B")!, "A", "B"),
-            BversusC: summarizeSameRoundComparison(armSamples.get("B")!, armSamples.get("C")!, "B", "C"),
-          }),
-          attributableComparisons: Object.freeze({
-            AversusB: "restricted-head/readback plus reconstruction",
-            BversusC: "same-byte common-GPU CPU replay",
-            AversusC: "combined context only",
-            speedThresholdApplied: false,
-          }),
+        attributableComparisons: Object.freeze({
+          AversusB: "restricted-head/readback plus reconstruction",
+          BversusC: "same-byte common-GPU CPU replay",
+          AversusC: "combined context only",
+          speedThresholdApplied: false,
         }),
-      );
+      }));
     }
     const primaryTokenTimedCompletedAtEpochMilliseconds = Date.now();
     postProgress("validating zero FP16 NaNs after the complete primary timing window");
     const primaryTimingFp16NaNCensuses = Object.freeze(
       timedReadbackExecutions.map((execution) => {
-        const census =
-          execution.arm === "A"
-            ? requireZeroOpt0012DecodedFullFp16NaNs(execution.logits, String(execution.trace["traceLabel"]), execution.state)
-            : requireZeroOpt0012RawCompactFp16NaNs(prepared.regularPlan, execution.compactMappedBytes!, String(execution.trace["traceLabel"]));
+        const census = execution.arm === "A"
+          ? requireZeroOpt0012DecodedFullFp16NaNs(
+              execution.logits,
+              String(execution.trace["traceLabel"]),
+              execution.state,
+            )
+          : requireZeroOpt0012RawCompactFp16NaNs(
+              prepared.regularPlan,
+              execution.compactMappedBytes!,
+              String(execution.trace["traceLabel"]),
+            );
         return Object.freeze({
           arm: execution.arm,
           state: execution.state,
@@ -4164,15 +4922,29 @@ async function runTimedAndCleanup(prepared: PreparedSession, thermal: Opt0012The
         });
       }),
     );
-    const primaryTimingFp16NaNCensusCoverage = validateOpt0012PrimaryTimingFp16NaNCensusCoverage(primaryTimingFp16NaNCensuses);
+    const primaryTimingFp16NaNCensusCoverage =
+      validateOpt0012PrimaryTimingFp16NaNCensusCoverage(
+        primaryTimingFp16NaNCensuses,
+      );
     const postTimingCandidateReplays: Array<Readonly<Record<string, unknown>>> = [];
-    for (let replayIndex = 0; replayIndex < deferredCandidateReplays.length; replayIndex += 1) {
+    for (let replayIndex = 0; replayIndex < deferredCandidateReplays.length;
+      replayIndex += 1) {
       const { fixture, b, c, authority } = deferredCandidateReplays[replayIndex]!;
-      postProgress(`timing same-immutable-byte B/C replay ${replayIndex + 1}/` + `${deferredCandidateReplays.length} ${fixture.spec.id}`);
-      postTimingCandidateReplays.push(await runSameImmutableByteReplayCase(prepared.regularPlan, fixture, b, c, authority));
+      postProgress(
+        `timing same-immutable-byte B/C replay ${replayIndex + 1}/` +
+          `${deferredCandidateReplays.length} ${fixture.spec.id}`,
+      );
+      postTimingCandidateReplays.push(await runSameImmutableByteReplayCase(
+        prepared.regularPlan,
+        fixture,
+        b,
+        c,
+        authority,
+      ));
     }
     postProgress("timing balanced exhaustive FP16 host conversions");
-    const fp16ConversionMicrobenchmark = await runOpt0012Fp16ConversionMicrobenchmark();
+    const fp16ConversionMicrobenchmark =
+      await runOpt0012Fp16ConversionMicrobenchmark();
     const correctivePostPrimaryTimingCompletedAtEpochMilliseconds = Date.now();
     postProgress("running post-timing drained candidate cancellation proofs");
     const cancellation = await runCancellationProofs(prepared);
@@ -4195,10 +4967,12 @@ async function runTimedAndCleanup(prepared: PreparedSession, thermal: Opt0012The
         preGateOnly: true,
         status: "pending-external-artifact-join",
         browserReceiptClaimsPlanValidThermalCoverage: false,
-        continuousLoggerRequiredThroughEpochMilliseconds: cleanupCompletedAtEpochMilliseconds,
+        continuousLoggerRequiredThroughEpochMilliseconds:
+          cleanupCompletedAtEpochMilliseconds,
       }),
       timedStartedAtEpochMilliseconds,
-      timedCompletedAtEpochMilliseconds: primaryTokenTimedCompletedAtEpochMilliseconds,
+      timedCompletedAtEpochMilliseconds:
+        primaryTokenTimedCompletedAtEpochMilliseconds,
       primaryTokenTimedCompletedAtEpochMilliseconds,
       correctivePostPrimaryTimingCompletedAtEpochMilliseconds,
       cases: Object.freeze(cases),
@@ -4226,9 +5000,13 @@ async function runTimedAndCleanup(prepared: PreparedSession, thermal: Opt0012The
   }
 }
 
-function summarizeTimedArm(samples: readonly PackageArmExecution[]): Readonly<Record<string, unknown>> {
-  const rounds = samples.map((sample) => sample.trace.roundIndex as number).sort((left, right) => left - right);
-  const positionCounts = [0, 1, 2].map((position) => samples.filter((sample) => sample.trace.orderPosition === position).length);
+function summarizeTimedArm(
+  samples: readonly PackageArmExecution[],
+): Readonly<Record<string, unknown>> {
+  const rounds = samples.map((sample) => sample.trace.roundIndex as number)
+    .sort((left, right) => left - right);
+  const positionCounts = [0, 1, 2].map((position) =>
+    samples.filter((sample) => sample.trace.orderPosition === position).length);
   if (
     samples.length !== 6 ||
     rounds.some((round, index) => round !== index) ||
@@ -4236,14 +5014,18 @@ function summarizeTimedArm(samples: readonly PackageArmExecution[]): Readonly<Re
     samples.some((sample) => {
       const round = sample.trace.roundIndex as number;
       const expectedOrder = OPT_0012_BALANCED_ORDERS[round];
-      return expectedOrder === undefined || sample.trace.order !== expectedOrder.join("") || sample.trace.orderPosition !== expectedOrder.indexOf(sample.arm);
+      return expectedOrder === undefined ||
+        sample.trace.order !== expectedOrder.join("") ||
+        sample.trace.orderPosition !== expectedOrder.indexOf(sample.arm);
     }) ||
     samples.some((sample) => !sameSample(samples[0]!.sample, sample.sample)) ||
     samples.some((sample) => sample.fp16NaNCensus !== null)
   ) {
     throw new Error("OPT-0012 timed arm does not contain six samples");
   }
-  const totals = samples.map((sample) => sample.intervals["totalWallMilliseconds"]!);
+  const totals = samples.map(
+    (sample) => sample.intervals["totalWallMilliseconds"]!,
+  );
   return Object.freeze({
     rawSamples: Object.freeze(samples.map(publicArmExecution)),
     totalWallMilliseconds: summarizeNumbers(totals),
@@ -4261,21 +5043,22 @@ function summarizeSameRoundComparison(
   leftArm: Opt0012Arm,
   rightArm: Opt0012Arm,
 ): Readonly<Record<string, unknown>> {
-  const byRound = (samples: readonly PackageArmExecution[]) => new Map(samples.map((sample) => [sample.trace.roundIndex as number, sample]));
+  const byRound = (samples: readonly PackageArmExecution[]) =>
+    new Map(samples.map((sample) => [sample.trace.roundIndex as number, sample]));
   const leftByRound = byRound(left);
   const rightByRound = byRound(right);
   const rounds = OPT_0012_BALANCED_ORDERS.map((order, roundIndex) => {
     const leftSample = leftByRound.get(roundIndex);
     const rightSample = rightByRound.get(roundIndex);
     if (
-      leftSample === undefined ||
-      rightSample === undefined ||
-      leftSample.arm !== leftArm ||
-      rightSample.arm !== rightArm ||
+      leftSample === undefined || rightSample === undefined ||
+      leftSample.arm !== leftArm || rightSample.arm !== rightArm ||
       leftSample.trace.order !== order.join("") ||
       rightSample.trace.order !== order.join("")
     ) {
-      throw new Error(`OPT-0012 same-round ${leftArm}/${rightArm} pairing changed`);
+      throw new Error(
+        `OPT-0012 same-round ${leftArm}/${rightArm} pairing changed`,
+      );
     }
     const leftMilliseconds = leftSample.intervals["totalWallMilliseconds"]!;
     const rightMilliseconds = rightSample.intervals["totalWallMilliseconds"]!;
@@ -4290,7 +5073,9 @@ function summarizeSameRoundComparison(
       leftMilliseconds,
       rightMilliseconds,
       deltaRightMinusLeftMilliseconds,
-      winner: deltaRightMinusLeftMilliseconds === 0 ? "tie" : deltaRightMinusLeftMilliseconds < 0 ? rightArm : leftArm,
+      winner: deltaRightMinusLeftMilliseconds === 0
+        ? "tie"
+        : deltaRightMinusLeftMilliseconds < 0 ? rightArm : leftArm,
     });
   });
   const leftWins = rounds.filter((round) => round.winner === leftArm).length;
@@ -4312,12 +5097,16 @@ function summarizeSameRoundComparison(
   });
 }
 
-function validateWorkerThermalGate(thermal: Opt0012ThermalGateMetadata, warmupCompletedAtEpochMilliseconds: number): void {
+function validateWorkerThermalGate(
+  thermal: Opt0012ThermalGateMetadata,
+  warmupCompletedAtEpochMilliseconds: number,
+): void {
   if (
     thermal.source !== OPT_0012_THERMAL_SOURCE ||
     thermal.startedAtEpochMilliseconds < warmupCompletedAtEpochMilliseconds ||
     thermal.completedAtEpochMilliseconds < thermal.startedAtEpochMilliseconds ||
-    thermal.durationMilliseconds !== thermal.completedAtEpochMilliseconds - thermal.startedAtEpochMilliseconds ||
+    thermal.durationMilliseconds !==
+      thermal.completedAtEpochMilliseconds - thermal.startedAtEpochMilliseconds ||
     thermal.durationMilliseconds < OPT_0012_MINIMUM_NOMINAL_MILLISECONDS ||
     !Number.isSafeInteger(thermal.observationCount) ||
     thermal.observationCount < Math.floor(thermal.durationMilliseconds / 1_000) + 1 ||
@@ -4358,13 +5147,11 @@ interface MutableCommandRecord {
   readonly passLabels: string[];
   readonly dispatches: RawDispatchRecord[];
   readonly copies: RawCopyRecord[];
-  readonly clears: Array<
-    Readonly<{
-      bufferLabel: string;
-      offset: number;
-      size: number;
-    }>
-  >;
+  readonly clears: Array<Readonly<{
+    bufferLabel: string;
+    offset: number;
+    size: number;
+  }>>;
   readonly encodeStartedAt: number;
   encodeEndedAt?: number;
   submitStartedAt?: number;
@@ -4416,7 +5203,8 @@ interface TraceCompletionMetadata {
   readonly decodeEndedAt: number;
   readonly candidateHostDecodeMilliseconds: number | null;
   readonly readbackIdleInterval: Opt0012IdleIntervalReceipt;
-  readonly expectedEncodedFreshStatusClears: readonly Opt0012ExpectedClearDescriptor[];
+  readonly expectedEncodedFreshStatusClears:
+    readonly Opt0012ExpectedClearDescriptor[];
 }
 
 class Opt0012DeviceObserver {
@@ -4460,13 +5248,17 @@ class Opt0012DeviceObserver {
       get: (device, property) => {
         if (property === "queue") return this.queue;
         if (property === "createBuffer") {
-          return (descriptor: GPUBufferDescriptor): GPUBuffer => this.createTrackedBuffer(descriptor);
+          return (descriptor: GPUBufferDescriptor): GPUBuffer =>
+            this.createTrackedBuffer(descriptor);
         }
         if (property === "createCommandEncoder") {
-          return (descriptor?: GPUCommandEncoderDescriptor): GPUCommandEncoder => this.createObservedCommandEncoder(descriptor);
+          return (descriptor?: GPUCommandEncoderDescriptor): GPUCommandEncoder =>
+            this.createObservedCommandEncoder(descriptor);
         }
         const value = Reflect.get(device, property, device) as unknown;
-        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(device) : value;
+        return typeof value === "function"
+          ? (value as (...args: unknown[]) => unknown).bind(device)
+          : value;
       },
     }) as GPUDevice;
   }
@@ -4497,24 +5289,43 @@ class Opt0012DeviceObserver {
     const endedAt = performance.now();
     const last = this.commands.at(-1);
     if (last !== undefined && last.idleEndedAt === undefined) last.idleEndedAt = endedAt;
-    const expectedTopology = opt0012ExpectedCommandBufferTopology(metadata.arm, metadata.phaseKind);
-    if (metadata.expectedCommandBufferCount !== expectedTopology.totalCommandBufferCount) {
+    const expectedTopology = opt0012ExpectedCommandBufferTopology(
+      metadata.arm,
+      metadata.phaseKind,
+    );
+    if (
+      metadata.expectedCommandBufferCount !==
+        expectedTopology.totalCommandBufferCount
+    ) {
       throw new Error("OPT-0012 trace command-buffer expectation changed");
     }
-    const physicalDispatchCount = this.commands.reduce((sum, command) => sum + command.dispatches.length, 0);
+    const physicalDispatchCount = this.commands.reduce(
+      (sum, command) => sum + command.dispatches.length,
+      0,
+    );
     const copies = this.commands.flatMap((command) => command.copies);
     const clears = this.commands.flatMap((command) => command.clears);
     if (
       clears.length !== metadata.expectedEncodedFreshStatusClears.length ||
       clears.some((clear, index) => {
         const expected = metadata.expectedEncodedFreshStatusClears[index];
-        return expected === undefined || clear.bufferLabel !== expected.bufferLabel || clear.offset !== expected.offset || clear.size !== expected.size;
+        return expected === undefined ||
+          clear.bufferLabel !== expected.bufferLabel ||
+          clear.offset !== expected.offset ||
+          clear.size !== expected.size;
       }) ||
-      (clears.length !== 0 && this.commands[0]!.clears.length !== clears.length)
+      (
+        clears.length !== 0 &&
+        this.commands[0]!.clears.length !== clears.length
+      )
     ) {
       throw new Error("OPT-0012 encoded fresh prefill status clear changed");
     }
-    const authenticatedCopiedBytes = authenticateOpt0012ObservedCopies(metadata.arm, metadata.state, copies);
+    const authenticatedCopiedBytes = authenticateOpt0012ObservedCopies(
+      metadata.arm,
+      metadata.state,
+      copies,
+    );
     if (
       this.commands.length !== metadata.expectedCommandBufferCount ||
       this.submissionCount !== metadata.expectedCommandBufferCount ||
@@ -4523,13 +5334,26 @@ class Opt0012DeviceObserver {
       physicalDispatchCount !== metadata.expectedPhysicalDispatchCount ||
       copies.length !== metadata.expectedCopyCount
     ) {
-      throw new Error(`OPT-0012 ${metadata.arm} topology changed: ` + `${this.commands.length}/${physicalDispatchCount}/${copies.length}`);
+      throw new Error(
+        `OPT-0012 ${metadata.arm} topology changed: ` +
+          `${this.commands.length}/${physicalDispatchCount}/${copies.length}`,
+      );
     }
     const readback = this.commands.at(-1);
-    const heads = metadata.arm === "A" ? this.commands.slice(-3, -1) : this.commands.slice(-2, -1);
-    const preHead = this.commands.slice(0, expectedTopology.preHeadCommandBufferCount);
-    const preHeadPhysicalDispatchCount = preHead.reduce((sum, command) => sum + command.dispatches.length, 0);
-    const expectedHeadPrimitiveCounts = metadata.arm === "A" ? [2, 3] : [metadata.state === "regular-code" ? 2 : 1];
+    const heads = metadata.arm === "A"
+      ? this.commands.slice(-3, -1)
+      : this.commands.slice(-2, -1);
+    const preHead = this.commands.slice(
+      0,
+      expectedTopology.preHeadCommandBufferCount,
+    );
+    const preHeadPhysicalDispatchCount = preHead.reduce(
+      (sum, command) => sum + command.dispatches.length,
+      0,
+    );
+    const expectedHeadPrimitiveCounts = metadata.arm === "A"
+      ? [2, 3]
+      : [metadata.state === "regular-code" ? 2 : 1];
     if (
       readback === undefined ||
       preHead.length !== expectedTopology.preHeadCommandBufferCount ||
@@ -4537,17 +5361,28 @@ class Opt0012DeviceObserver {
       preHead.some((command) => command.label.includes("tied-lm-head")) ||
       heads.length !== (metadata.arm === "A" ? 2 : 1) ||
       heads.some((head) => !head.label.includes("tied-lm-head")) ||
-      heads.some((head, index) => head.dispatches.length !== expectedHeadPrimitiveCounts[index]) ||
-      (metadata.arm === "A" && (!heads[0]!.label.endsWith("tied-lm-head-part-0-command") || !heads[1]!.label.endsWith("tied-lm-head-part-1-command"))) ||
-      (metadata.arm !== "A" && !heads[0]!.label.endsWith("opt-0012-tied-lm-head-command")) ||
+      heads.some((head, index) =>
+        head.dispatches.length !== expectedHeadPrimitiveCounts[index]) ||
+      (metadata.arm === "A" && (
+        !heads[0]!.label.endsWith("tied-lm-head-part-0-command") ||
+        !heads[1]!.label.endsWith("tied-lm-head-part-1-command")
+      )) ||
+      (metadata.arm !== "A" &&
+        !heads[0]!.label.endsWith("opt-0012-tied-lm-head-command")) ||
       !readback.label.includes("readback")
     ) {
       throw new Error("OPT-0012 head/readback command order changed");
     }
     const observedHeadDispatches = heads.flatMap((head) => head.dispatches);
-    authenticateOpt0012ObservedHeadDispatches(metadata.arm, metadata.state, observedHeadDispatches);
+    authenticateOpt0012ObservedHeadDispatches(
+      metadata.arm,
+      metadata.state,
+      observedHeadDispatches,
+    );
     const maximumSingleDrainMilliseconds = Math.max(
-      ...this.commands.map((command) => requiredTimestamp(command.drainEndedAt, "drain end") - requiredTimestamp(command.drainStartedAt, "drain start")),
+      ...this.commands.map((command) =>
+        requiredTimestamp(command.drainEndedAt, "drain end") -
+          requiredTimestamp(command.drainStartedAt, "drain start")),
     );
     if (this.maps.length !== 1) {
       throw new Error(`OPT-0012 trace observed ${this.maps.length} readback maps`);
@@ -4570,14 +5405,21 @@ class Opt0012DeviceObserver {
     if (
       postUnmapDecodeMilliseconds < 0 ||
       exactReadbackIdle.stage !== "readback" ||
-      exactReadbackIdle.requestedMilliseconds !== ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS ||
+      exactReadbackIdle.requestedMilliseconds !==
+        ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS ||
       !exactReadbackIdle.completed ||
-      exactReadbackIdle.startedAt < requiredTimestamp(readback.drainEndedAt, "readback drain end") ||
+      exactReadbackIdle.startedAt <
+        requiredTimestamp(readback.drainEndedAt, "readback drain end") ||
       exactReadbackIdle.startedAt > map.mapStartedAt ||
       exactReadbackIdle.endedAt < map.mapStartedAt ||
       exactReadbackIdle.endedAt > metadata.decodeEndedAt ||
-      exactReadbackIdle.source !== (metadata.arm === "A" ? "production-executor-yieldQueueIdle" : "benchmark-candidate-equivalent-yieldQueueIdle") ||
-      (metadata.arm !== "A" && (candidateHostDecodeMilliseconds === null || candidateHostDecodeMilliseconds < 0))
+      exactReadbackIdle.source !== (metadata.arm === "A"
+        ? "production-executor-yieldQueueIdle"
+        : "benchmark-candidate-equivalent-yieldQueueIdle") ||
+      (metadata.arm !== "A" && (
+        candidateHostDecodeMilliseconds === null ||
+        candidateHostDecodeMilliseconds < 0
+      ))
     ) {
       throw new Error("OPT-0012 host FP16 decode interval is absent");
     }
@@ -4591,10 +5433,12 @@ class Opt0012DeviceObserver {
       metadata.samplingStageIntervals.topKMilliseconds +
       metadata.samplingStageIntervals.topPMilliseconds +
       metadata.samplingStageIntervals.temperatureAndSoftmaxMilliseconds +
-      metadata.samplingStageIntervals.categoricalWordAndGlobalMappingMilliseconds +
+      metadata.samplingStageIntervals
+        .categoricalWordAndGlobalMappingMilliseconds +
       metadata.samplingStageIntervals.callbackMilliseconds;
     if (
-      metadata.samplingStageIntervals.callbackInvocationCount !== (metadata.order === "trajectory" ? 0 : 1) ||
+      metadata.samplingStageIntervals.callbackInvocationCount !==
+        (metadata.order === "trajectory" ? 0 : 1) ||
       samplingStageComponentMilliseconds > metadata.samplingMilliseconds
     ) {
       throw new Error("OPT-0012 primary sampling stage intervals overlap or changed");
@@ -4607,7 +5451,8 @@ class Opt0012DeviceObserver {
       queueDrainCount: this.drainCount,
       realCooperativeIdleCount: this.commands.length,
       requestedIdleMilliseconds: this.commands.length,
-      realCooperativeIdleTimingAuthority: "explicit-progress-idleIntervals-attached-by-caller",
+      realCooperativeIdleTimingAuthority:
+        "explicit-progress-idleIntervals-attached-by-caller",
       maximumOutstandingCommandBuffers: this.maximumOutstandingCommandBuffers,
       physicalDispatchCount,
       preHeadCommandBufferCount: preHead.length,
@@ -4618,7 +5463,8 @@ class Opt0012DeviceObserver {
       copiedBytes: copies.reduce((sum, copy) => sum + copy.copiedBytes, 0),
       authenticatedCopiedBytes,
       encodedFreshStatusClears: Object.freeze(clears),
-      encodedFreshStatusClearAuthenticated: metadata.expectedEncodedFreshStatusClears.length === 2,
+      encodedFreshStatusClearAuthenticated:
+        metadata.expectedEncodedFreshStatusClears.length === 2,
       maximumSingleDrainMilliseconds,
       nonOverlappingIntervals: Object.freeze({
         preHead: preHeadIntervals,
@@ -4626,13 +5472,17 @@ class Opt0012DeviceObserver {
         readbackCopySubmitDrainAndObservedPreMapGap: readbackIntervals,
         mapWaitMilliseconds: mapEndedAt - map.mapStartedAt,
         mappedRangeCopyMilliseconds: unmapAt - mapEndedAt,
-        candidateHostFp16DecodeMilliseconds: candidateHostDecodeMilliseconds,
-        armAPostUnmapDecodePlusIdleResidualMilliseconds: metadata.arm === "A" ? postUnmapDecodeMilliseconds : null,
-        armAPureHostFp16DecodeAuthority: metadata.arm === "A" ? "untimed-correctness-calibration" : null,
+        candidateHostFp16DecodeMilliseconds:
+          candidateHostDecodeMilliseconds,
+        armAPostUnmapDecodePlusIdleResidualMilliseconds:
+          metadata.arm === "A" ? postUnmapDecodeMilliseconds : null,
+        armAPureHostFp16DecodeAuthority:
+          metadata.arm === "A" ? "untimed-correctness-calibration" : null,
         fullVectorReconstructionMilliseconds: metadata.reconstructionMilliseconds,
         primarySampling: Object.freeze({
           ...metadata.samplingStageIntervals,
-          measuredStageComponentMilliseconds: samplingStageComponentMilliseconds,
+          measuredStageComponentMilliseconds:
+            samplingStageComponentMilliseconds,
           wallMilliseconds: metadata.samplingMilliseconds,
           cfgAndConstraintSegmentsExecutedInProductionOrder: true,
           decomposedWithAcceptedBrowserV1ProductionPrimitives: true,
@@ -4656,14 +5506,20 @@ class Opt0012DeviceObserver {
         totalCommandBuffers: metadata.expectedCommandBufferCount,
         queueDrains: this.drainCount,
         monotonicallyCompletedOneCommandBufferPerDrain: true,
-        stages: Object.freeze(this.commands.map((_, index) => (index === this.commands.length - 1 ? "readback" : "model"))),
+        stages: Object.freeze(this.commands.map((_, index) =>
+          index === this.commands.length - 1 ? "readback" : "model")),
       }),
       exactOverlappingReadbackIdle: Object.freeze({
         ...exactReadbackIdle,
-        mapOverlapMilliseconds: Math.max(0, Math.min(exactReadbackIdle.endedAt, unmapAt) - Math.max(exactReadbackIdle.startedAt, map.mapStartedAt)),
+        mapOverlapMilliseconds: Math.max(
+          0,
+          Math.min(exactReadbackIdle.endedAt, unmapAt) -
+            Math.max(exactReadbackIdle.startedAt, map.mapStartedAt),
+        ),
         postUnmapDecodeResidualOverlapMilliseconds: Math.max(
           0,
-          Math.min(exactReadbackIdle.endedAt, metadata.decodeEndedAt) - Math.max(exactReadbackIdle.startedAt, unmapAt),
+          Math.min(exactReadbackIdle.endedAt, metadata.decodeEndedAt) -
+            Math.max(exactReadbackIdle.startedAt, unmapAt),
         ),
         completedBeforeDecodeReturn: true,
         reportedAsOverlappingDiagnosticWithoutSubtraction: true,
@@ -4673,12 +5529,10 @@ class Opt0012DeviceObserver {
     return result;
   }
 
-  endCancellationTrace(
-    expected: Readonly<{
-      commandBufferCount: number;
-      physicalDispatchCount: number;
-    }>,
-  ): Readonly<Record<string, unknown>> {
+  endCancellationTrace(expected: Readonly<{
+    commandBufferCount: number;
+    physicalDispatchCount: number;
+  }>): Readonly<Record<string, unknown>> {
     if (!this.active || this.pending.length !== 0) {
       throw new Error("OPT-0012 cancellation trace is not fully drained");
     }
@@ -4686,8 +5540,14 @@ class Opt0012DeviceObserver {
     if (last !== undefined && last.idleEndedAt === undefined) {
       last.idleEndedAt = performance.now();
     }
-    const physicalDispatchCount = this.commands.reduce((sum, command) => sum + command.dispatches.length, 0);
-    const copyCount = this.commands.reduce((sum, command) => sum + command.copies.length, 0);
+    const physicalDispatchCount = this.commands.reduce(
+      (sum, command) => sum + command.dispatches.length,
+      0,
+    );
+    const copyCount = this.commands.reduce(
+      (sum, command) => sum + command.copies.length,
+      0,
+    );
     if (
       this.commands.length !== expected.commandBufferCount ||
       this.submissionCount !== expected.commandBufferCount ||
@@ -4728,14 +5588,19 @@ class Opt0012DeviceObserver {
     return bytes;
   }
 
-  resourceSnapshot(): Readonly<Record<string, unknown>> &
-    Readonly<{
-      liveTrackedBufferCount: number;
-    }> {
+  resourceSnapshot(): Readonly<Record<string, unknown>> & Readonly<{
+    liveTrackedBufferCount: number;
+  }> {
     const records = [...this.bufferRecords.values()];
     const derivedLiveCount = records.filter((record) => !record.destroyed).length;
-    const derivedLiveBytes = records.reduce((sum, record) => sum + (record.destroyed ? 0 : record.size), 0);
-    if (derivedLiveCount !== this.liveTrackedBufferCount || derivedLiveBytes !== this.liveTrackedBufferBytes) {
+    const derivedLiveBytes = records.reduce(
+      (sum, record) => sum + (record.destroyed ? 0 : record.size),
+      0,
+    );
+    if (
+      derivedLiveCount !== this.liveTrackedBufferCount ||
+      derivedLiveBytes !== this.liveTrackedBufferBytes
+    ) {
       throw new Error("OPT-0012 simultaneous GPUBuffer residency accounting drifted");
     }
     return Object.freeze({
@@ -4743,8 +5608,10 @@ class Opt0012DeviceObserver {
       destroyedBufferCount: records.filter((record) => record.destroyed).length,
       liveTrackedBufferCount: this.liveTrackedBufferCount,
       liveTrackedBufferBytes: this.liveTrackedBufferBytes,
-      maximumSimultaneouslyLiveTrackedBufferCount: this.maximumLiveTrackedBufferCount,
-      maximumSimultaneouslyLiveTrackedBufferBytes: this.maximumLiveTrackedBufferBytes,
+      maximumSimultaneouslyLiveTrackedBufferCount:
+        this.maximumLiveTrackedBufferCount,
+      maximumSimultaneouslyLiveTrackedBufferBytes:
+        this.maximumLiveTrackedBufferBytes,
       simultaneousHighWaterByBytes: Object.freeze({
         resourceEpoch: this.highWaterResourceEpoch,
         triggerLabel: this.highWaterTriggerLabel,
@@ -4757,9 +5624,15 @@ class Opt0012DeviceObserver {
         liveBufferCount: this.maximumLiveTrackedBufferCount,
         liveBufferBytesAtCountHighWater: this.countHighWaterLiveBufferBytes,
       }),
-      totalDestroyCallCount: records.reduce((sum, record) => sum + record.destroyCallCount, 0),
+      totalDestroyCallCount: records.reduce(
+        (sum, record) => sum + record.destroyCallCount,
+        0,
+      ),
       totalMapCallCount: records.reduce((sum, record) => sum + record.mapCallCount, 0),
-      totalUnmapCallCount: records.reduce((sum, record) => sum + record.unmapCallCount, 0),
+      totalUnmapCallCount: records.reduce(
+        (sum, record) => sum + record.unmapCallCount,
+        0,
+      ),
       destructionTrackingSupported: this.destructionTrackingSupported,
       mapTrackingSupported: this.mapTrackingSupported,
       records: Object.freeze(records.map((record) => Object.freeze({ ...record }))),
@@ -4768,10 +5641,13 @@ class Opt0012DeviceObserver {
 
   finalResourceSummary(): Readonly<Record<string, unknown>> {
     const summary = this.resourceSnapshot();
-    const lifecycle = validateOpt0012TrackedBufferCleanup([...this.bufferRecords.values()], {
-      destructionTrackingSupported: this.destructionTrackingSupported,
-      mapTrackingSupported: this.mapTrackingSupported,
-    });
+    const lifecycle = validateOpt0012TrackedBufferCleanup(
+      [...this.bufferRecords.values()],
+      {
+        destructionTrackingSupported: this.destructionTrackingSupported,
+        mapTrackingSupported: this.mapTrackingSupported,
+      },
+    );
     return Object.freeze({
       ...summary,
       ...lifecycle,
@@ -4781,7 +5657,8 @@ class Opt0012DeviceObserver {
   activitySnapshot(): Readonly<Record<string, number>> {
     return Object.freeze({
       lifetimeSubmitCallCount: this.lifetimeSubmitCallCount,
-      lifetimeSubmittedCommandBufferCount: this.lifetimeSubmittedCommandBufferCount,
+      lifetimeSubmittedCommandBufferCount:
+        this.lifetimeSubmittedCommandBufferCount,
       lifetimeDrainCallCount: this.lifetimeDrainCallCount,
       lifetimeMapAsyncCallCount: this.lifetimeMapAsyncCallCount,
       resourceEpoch: this.resourceEpoch,
@@ -4823,7 +5700,10 @@ class Opt0012DeviceObserver {
     this.liveTrackedBufferBytes += record.size;
     if (
       this.liveTrackedBufferBytes > this.maximumLiveTrackedBufferBytes ||
-      (this.liveTrackedBufferBytes === this.maximumLiveTrackedBufferBytes && this.liveTrackedBufferCount > this.maximumLiveTrackedBufferCount)
+      (
+        this.liveTrackedBufferBytes === this.maximumLiveTrackedBufferBytes &&
+        this.liveTrackedBufferCount > this.maximumLiveTrackedBufferCount
+      )
     ) {
       this.maximumLiveTrackedBufferBytes = this.liveTrackedBufferBytes;
       this.highWaterResourceEpoch = createdAtResourceEpoch;
@@ -4855,7 +5735,10 @@ class Opt0012DeviceObserver {
               record.destroyedAtResourceEpoch = ++this.resourceEpoch;
               this.liveTrackedBufferCount -= 1;
               this.liveTrackedBufferBytes -= record.size;
-              if (this.liveTrackedBufferCount < 0 || this.liveTrackedBufferBytes < 0) {
+              if (
+                this.liveTrackedBufferCount < 0 ||
+                this.liveTrackedBufferBytes < 0
+              ) {
                 throw new Error("OPT-0012 GPUBuffer residency underflowed");
               }
             }
@@ -4866,7 +5749,9 @@ class Opt0012DeviceObserver {
           value: async (...arguments_: Parameters<GPUBuffer["mapAsync"]>): Promise<void> => {
             record.mapCallCount += 1;
             this.lifetimeMapAsyncCallCount += 1;
-            const mapRecord: MutableMapRecord | null = this.active ? { bufferLabel: record.label, mapStartedAt: performance.now() } : null;
+            const mapRecord: MutableMapRecord | null = this.active
+              ? { bufferLabel: record.label, mapStartedAt: performance.now() }
+              : null;
             if (mapRecord !== null) {
               const last = this.commands.at(-1);
               if (last !== undefined && last.idleEndedAt === undefined) {
@@ -4883,7 +5768,11 @@ class Opt0012DeviceObserver {
           configurable: true,
           value: (...arguments_: Parameters<GPUBuffer["getMappedRange"]>): ArrayBuffer => {
             const range = getMappedRange(...arguments_);
-            if (this.active && this.captureFullReadback && record.label === "ace-planner-logit-readback") {
+            if (
+              this.active &&
+              this.captureFullReadback &&
+              record.label === "ace-planner-logit-readback"
+            ) {
               this.fullReadbackBytes = range.slice(0);
             }
             return range;
@@ -4895,7 +5784,8 @@ class Opt0012DeviceObserver {
             record.unmapCallCount += 1;
             record.mapped = false;
             if (this.active) {
-              const mapRecord = [...this.maps].reverse().find((candidate) => candidate.bufferLabel === record.label && candidate.unmapAt === undefined);
+              const mapRecord = [...this.maps].reverse().find((candidate) =>
+                candidate.bufferLabel === record.label && candidate.unmapAt === undefined);
               if (mapRecord !== undefined) mapRecord.unmapAt = performance.now();
             }
             unmap();
@@ -4909,7 +5799,9 @@ class Opt0012DeviceObserver {
     return buffer;
   }
 
-  private createObservedCommandEncoder(descriptor?: GPUCommandEncoderDescriptor): GPUCommandEncoder {
+  private createObservedCommandEncoder(
+    descriptor?: GPUCommandEncoderDescriptor,
+  ): GPUCommandEncoder {
     const encoder = this.target.createCommandEncoder(descriptor);
     if (!this.active) return encoder;
     const now = performance.now();
@@ -4930,32 +5822,44 @@ class Opt0012DeviceObserver {
       get: (target, property) => {
         if (property === "beginComputePass") {
           return (passDescriptor?: GPUComputePassDescriptor): GPUComputePassEncoder =>
-            this.createObservedPass(target.beginComputePass(passDescriptor), record, passDescriptor?.label ?? "");
+            this.createObservedPass(target.beginComputePass(passDescriptor), record,
+              passDescriptor?.label ?? "");
         }
         if (property === "copyBufferToBuffer") {
-          return (source: GPUBuffer, sourceOffset: GPUSize64, destination: GPUBuffer, destinationOffset: GPUSize64, size: GPUSize64): void => {
+          return (
+            source: GPUBuffer,
+            sourceOffset: GPUSize64,
+            destination: GPUBuffer,
+            destinationOffset: GPUSize64,
+            size: GPUSize64,
+          ): void => {
             const copy = Object.freeze({
               index: record.copies.length,
               sourceBufferLabel: this.bufferLabels.get(source) ?? source.label,
               sourceOffset: Number(sourceOffset),
-              destinationBufferLabel: this.bufferLabels.get(destination) ?? destination.label,
+              destinationBufferLabel:
+                this.bufferLabels.get(destination) ?? destination.label,
               destinationOffset: Number(destinationOffset),
               copiedBytes: Number(size),
             });
             record.copies.push(copy);
-            target.copyBufferToBuffer(source, sourceOffset, destination, destinationOffset, size);
+            target.copyBufferToBuffer(
+              source,
+              sourceOffset,
+              destination,
+              destinationOffset,
+              size,
+            );
           };
         }
         if (property === "clearBuffer") {
           return (buffer: GPUBuffer, offset = 0, size?: GPUSize64): void => {
             const resolvedSize = size === undefined ? buffer.size - offset : Number(size);
-            record.clears.push(
-              Object.freeze({
-                bufferLabel: this.bufferLabels.get(buffer) ?? buffer.label,
-                offset: Number(offset),
-                size: resolvedSize,
-              }),
-            );
+            record.clears.push(Object.freeze({
+              bufferLabel: this.bufferLabels.get(buffer) ?? buffer.label,
+              offset: Number(offset),
+              size: resolvedSize,
+            }));
             target.clearBuffer(buffer, offset, size);
           };
         }
@@ -4968,12 +5872,18 @@ class Opt0012DeviceObserver {
           };
         }
         const value = Reflect.get(target, property, target) as unknown;
-        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        return typeof value === "function"
+          ? (value as (...args: unknown[]) => unknown).bind(target)
+          : value;
       },
     }) as GPUCommandEncoder;
   }
 
-  private createObservedPass(pass: GPUComputePassEncoder, record: MutableCommandRecord, passLabel: string): GPUComputePassEncoder {
+  private createObservedPass(
+    pass: GPUComputePassEncoder,
+    record: MutableCommandRecord,
+    passLabel: string,
+  ): GPUComputePassEncoder {
     record.passLabels.push(passLabel);
     let pipelineLabel = "";
     let bindGroupLabel = "";
@@ -4986,26 +5896,32 @@ class Opt0012DeviceObserver {
           };
         }
         if (property === "setBindGroup") {
-          return (index: GPUIndex32, bindGroup: GPUBindGroup | null, dynamicOffsets?: Iterable<GPUBufferDynamicOffset>): void => {
+          return (
+            index: GPUIndex32,
+            bindGroup: GPUBindGroup | null,
+            dynamicOffsets?: Iterable<GPUBufferDynamicOffset>,
+          ): void => {
             if (index === 0 && bindGroup !== null) bindGroupLabel = bindGroup.label;
             if (dynamicOffsets === undefined) target.setBindGroup(index, bindGroup);
             else target.setBindGroup(index, bindGroup, dynamicOffsets);
           };
         }
         if (property === "dispatchWorkgroups") {
-          return (x: GPUSize32, y: GPUSize32 = 1, z: GPUSize32 = 1): void => {
+          return (
+            x: GPUSize32,
+            y: GPUSize32 = 1,
+            z: GPUSize32 = 1,
+          ): void => {
             if (pipelineLabel === "" || bindGroupLabel === "") {
               throw new Error("OPT-0012 dispatch omitted pipeline/bind-group identity");
             }
-            record.dispatches.push(
-              Object.freeze({
-                index: record.dispatches.length,
-                passLabel,
-                pipelineLabel,
-                bindGroupLabel,
-                workgroups: Object.freeze([Number(x), Number(y), Number(z)] as const),
-              }),
-            );
+            record.dispatches.push(Object.freeze({
+              index: record.dispatches.length,
+              passLabel,
+              pipelineLabel,
+              bindGroupLabel,
+              workgroups: Object.freeze([Number(x), Number(y), Number(z)] as const),
+            }));
             target.dispatchWorkgroups(x, y, z);
           };
         }
@@ -5015,7 +5931,9 @@ class Opt0012DeviceObserver {
           };
         }
         const value = Reflect.get(target, property, target) as unknown;
-        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        return typeof value === "function"
+          ? (value as (...args: unknown[]) => unknown).bind(target)
+          : value;
       },
     }) as GPUComputePassEncoder;
   }
@@ -5039,7 +5957,10 @@ class Opt0012DeviceObserver {
               record.submitStartedAt = performance.now();
               this.pending.push(record);
               this.submissionCount += 1;
-              this.maximumOutstandingCommandBuffers = Math.max(this.maximumOutstandingCommandBuffers, this.pending.length);
+              this.maximumOutstandingCommandBuffers = Math.max(
+                this.maximumOutstandingCommandBuffers,
+                this.pending.length,
+              );
             }
             queue.submit(list);
             if (this.active) this.pending[0]!.submitReturnedAt = performance.now();
@@ -5069,7 +5990,9 @@ class Opt0012DeviceObserver {
           };
         }
         const value = Reflect.get(queue, property, queue) as unknown;
-        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(queue) : value;
+        return typeof value === "function"
+          ? (value as (...args: unknown[]) => unknown).bind(queue)
+          : value;
       },
     }) as GPUQueue;
   }
@@ -5103,7 +6026,9 @@ function publicCommandRecord(record: MutableCommandRecord): Readonly<Record<stri
   });
 }
 
-function summarizeCommandIntervals(commands: readonly MutableCommandRecord[]): Readonly<Record<string, number>> {
+function summarizeCommandIntervals(
+  commands: readonly MutableCommandRecord[],
+): Readonly<Record<string, number>> {
   let encodeMilliseconds = 0;
   let submitMilliseconds = 0;
   let drainMilliseconds = 0;
@@ -5114,7 +6039,10 @@ function summarizeCommandIntervals(commands: readonly MutableCommandRecord[]): R
     const submitReturnedAt = requiredTimestamp(command.submitReturnedAt, "submit return");
     const drainStartedAt = requiredTimestamp(command.drainStartedAt, "drain start");
     const drainEndedAt = requiredTimestamp(command.drainEndedAt, "drain end");
-    const idleEndedAt = requiredTimestamp(command.idleEndedAt, "post-drain gap end");
+    const idleEndedAt = requiredTimestamp(
+      command.idleEndedAt,
+      "post-drain gap end",
+    );
     encodeMilliseconds += encodeEndedAt - command.encodeStartedAt;
     submitMilliseconds += submitReturnedAt - submitStartedAt;
     drainMilliseconds += drainEndedAt - drainStartedAt;
@@ -5171,7 +6099,11 @@ interface PreparedCandidateInvocationResources {
 }
 
 interface PrivateExecutorRunAndReadback {
-  runAndReadback(phase: AcePlannerPreparedPhaseGpuResources, dispatch: AcePlannerModelDispatch, clearCache: boolean): Promise<readonly Float32Array[]>;
+  runAndReadback(
+    phase: AcePlannerPreparedPhaseGpuResources,
+    dispatch: AcePlannerModelDispatch,
+    clearCache: boolean,
+  ): Promise<readonly Float32Array[]>;
 }
 
 interface Opt0012CandidateProgressQuantum {
@@ -5183,7 +6115,8 @@ interface Opt0012CandidateProgressQuantum {
 }
 
 interface MutableOpt0012IdleInterval {
-  readonly source: "production-executor-yieldQueueIdle" | "benchmark-candidate-equivalent-yieldQueueIdle";
+  readonly source: "production-executor-yieldQueueIdle" |
+    "benchmark-candidate-equivalent-yieldQueueIdle";
   readonly startedAt: number;
   readonly requestedMilliseconds: number;
   stage: "model" | "readback" | null;
@@ -5223,10 +6156,16 @@ class Opt0012ProgressRecorder {
   private lastPeakAccountedGpuBytes = 0;
 
   begin(invocation: CandidateInvocation): void {
-    if (this.active !== null || this.events.length !== 0 || this.idleIntervals.length !== 0 || this.idleCompletions.length !== 0) {
+    if (
+      this.active !== null || this.events.length !== 0 ||
+      this.idleIntervals.length !== 0 || this.idleCompletions.length !== 0
+    ) {
       throw new DOMException("OPT-0012 progress trace overlaps", "InvalidStateError");
     }
-    const topology = opt0012ExpectedCommandBufferTopology(invocation.arm, invocation.phaseKind);
+    const topology = opt0012ExpectedCommandBufferTopology(
+      invocation.arm,
+      invocation.phaseKind,
+    );
     this.active = Object.freeze({
       arm: invocation.arm,
       phaseKind: invocation.phaseKind,
@@ -5259,11 +6198,15 @@ class Opt0012ProgressRecorder {
       quantum: progress.quantum,
       source: "production-executor-onProgress",
       productionCumulativeQueueDrains: progress.cumulativeQueueDrains,
-      productionCumulativeCooperativeIdleMs: progress.cumulativeCooperativeIdleMs,
+      productionCumulativeCooperativeIdleMs:
+        progress.cumulativeCooperativeIdleMs,
     });
   }
 
-  acceptCandidate(stage: "model" | "readback", quantum: Opt0012CandidateProgressQuantum | null): void {
+  acceptCandidate(
+    stage: "model" | "readback",
+    quantum: Opt0012CandidateProgressQuantum | null,
+  ): void {
     const active = this.active;
     if (active === null || active.arm === "A") {
       throw new Error("OPT-0012 candidate progress has no candidate invocation");
@@ -5290,43 +6233,45 @@ class Opt0012ProgressRecorder {
     }
     const events = Object.freeze([...this.events]);
     const expectedCompleted = complete ? active.totalCommandBuffers : events.length;
-    const idleIntervals = this.idleIntervals.map((interval, index): Opt0012IdleIntervalReceipt => {
-      if (interval.endedAt === undefined) {
-        throw new Error(`OPT-0012 cooperative idle ${index} did not complete`);
-      }
-      if (interval.stage === null) {
-        throw new Error(`OPT-0012 cooperative idle ${index} has no accepted progress stage`);
-      }
-      return Object.freeze({
-        source: interval.source,
-        stage: interval.stage,
-        startedAt: interval.startedAt,
-        endedAt: interval.endedAt,
-        requestedMilliseconds: interval.requestedMilliseconds,
-        elapsedMilliseconds: interval.endedAt - interval.startedAt,
-        completed: true as const,
-      });
-    });
-    const expectedIdleSource = active.arm === "A" ? "production-executor-yieldQueueIdle" : "benchmark-candidate-equivalent-yieldQueueIdle";
+    const idleIntervals = this.idleIntervals.map(
+      (interval, index): Opt0012IdleIntervalReceipt => {
+        if (interval.endedAt === undefined) {
+          throw new Error(`OPT-0012 cooperative idle ${index} did not complete`);
+        }
+        if (interval.stage === null) {
+          throw new Error(
+            `OPT-0012 cooperative idle ${index} has no accepted progress stage`,
+          );
+        }
+        return Object.freeze({
+          source: interval.source,
+          stage: interval.stage,
+          startedAt: interval.startedAt,
+          endedAt: interval.endedAt,
+          requestedMilliseconds: interval.requestedMilliseconds,
+          elapsedMilliseconds: interval.endedAt - interval.startedAt,
+          completed: true as const,
+        });
+      },
+    );
+    const expectedIdleSource = active.arm === "A"
+      ? "production-executor-yieldQueueIdle"
+      : "benchmark-candidate-equivalent-yieldQueueIdle";
     if (
       events.length !== expectedCompleted ||
       idleIntervals.length !== events.length ||
       (complete && events.at(-1)?.stage !== "readback") ||
-      idleIntervals.some(
-        (interval, index) =>
-          interval.source !== expectedIdleSource ||
-          interval.requestedMilliseconds !== ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS ||
-          interval.elapsedMilliseconds < 0 ||
-          interval.stage !== events[index]!.stage,
-      ) ||
-      events.some(
-        (event, index) =>
-          event.completedCommandBuffers !== index + 1 ||
-          event.totalCommandBuffers !== active.totalCommandBuffers ||
-          event.queueDrains !== index + 1 ||
-          event.cooperativeIdleMs !== index + 1 ||
-          (index < events.length - 1 && event.stage !== "model"),
-      )
+      idleIntervals.some((interval, index) =>
+        interval.source !== expectedIdleSource ||
+        interval.requestedMilliseconds !== ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS ||
+        interval.elapsedMilliseconds < 0 ||
+        interval.stage !== events[index]!.stage) ||
+      events.some((event, index) =>
+        event.completedCommandBuffers !== index + 1 ||
+        event.totalCommandBuffers !== active.totalCommandBuffers ||
+        event.queueDrains !== index + 1 ||
+        event.cooperativeIdleMs !== index + 1 ||
+        (index < events.length - 1 && event.stage !== "model"))
     ) {
       throw new Error("OPT-0012 explicit progress sequence changed");
     }
@@ -5344,7 +6289,8 @@ class Opt0012ProgressRecorder {
       cooperativeIdleMilliseconds: events.length,
       lifetimeCompletedCommandBuffers: this.lifetimeCompletedCommandBuffers,
       lifetimeQueueDrains: this.lifetimeQueueDrains,
-      lifetimeCooperativeIdleMilliseconds: this.lifetimeCooperativeIdleMilliseconds,
+      lifetimeCooperativeIdleMilliseconds:
+        this.lifetimeCooperativeIdleMilliseconds,
       lastPeakAccountedGpuBytes: this.lastPeakAccountedGpuBytes,
       monotonicExact: true,
       events,
@@ -5357,7 +6303,10 @@ class Opt0012ProgressRecorder {
   async settleIdleAfterFailure(): Promise<void> {
     const completions = [...this.idleCompletions];
     await Promise.all(completions);
-    if (completions.length !== this.idleIntervals.length || this.idleIntervals.some((interval) => interval.endedAt === undefined)) {
+    if (
+      completions.length !== this.idleIntervals.length ||
+      this.idleIntervals.some((interval) => interval.endedAt === undefined)
+    ) {
       throw new Error("OPT-0012 failed to settle real cooperative idles");
     }
   }
@@ -5369,8 +6318,13 @@ class Opt0012ProgressRecorder {
         setTimeout(resolve, ACE_COOPERATIVE_GPU_IDLE_MILLISECONDS);
       });
     }
-    const expectedSource = active.arm === "A" ? "production-executor-yieldQueueIdle" : "benchmark-candidate-equivalent-yieldQueueIdle";
-    if (source !== expectedSource || this.idleIntervals.length !== this.events.length) {
+    const expectedSource = active.arm === "A"
+      ? "production-executor-yieldQueueIdle"
+      : "benchmark-candidate-equivalent-yieldQueueIdle";
+    if (
+      source !== expectedSource ||
+      this.idleIntervals.length !== this.events.length
+    ) {
       throw new Error("OPT-0012 cooperative idle sequence changed");
     }
     const interval: MutableOpt0012IdleInterval = {
@@ -5390,20 +6344,18 @@ class Opt0012ProgressRecorder {
     return completion;
   }
 
-  private accept(
-    input: Readonly<{
-      phaseKind: "prefill" | "decode";
-      completedCommandBuffers: number;
-      totalCommandBuffers: number;
-      queueDrains: number;
-      cooperativeIdleMs: number;
-      stage: "model" | "readback";
-      quantum: Opt0012CandidateProgressQuantum | null;
-      source: string;
-      productionCumulativeQueueDrains: number | null;
-      productionCumulativeCooperativeIdleMs: number | null;
-    }>,
-  ): void {
+  private accept(input: Readonly<{
+    phaseKind: "prefill" | "decode";
+    completedCommandBuffers: number;
+    totalCommandBuffers: number;
+    queueDrains: number;
+    cooperativeIdleMs: number;
+    stage: "model" | "readback";
+    quantum: Opt0012CandidateProgressQuantum | null;
+    source: string;
+    productionCumulativeQueueDrains: number | null;
+    productionCumulativeCooperativeIdleMs: number | null;
+  }>): void {
     const active = this.active;
     const expectedCompleted = this.events.length + 1;
     if (
@@ -5426,39 +6378,51 @@ class Opt0012ProgressRecorder {
     this.lifetimeCompletedCommandBuffers += 1;
     this.lifetimeQueueDrains += 1;
     this.lifetimeCooperativeIdleMilliseconds += 1;
-    this.events.push(
-      Object.freeze({
-        ...input,
-        quantum:
-          input.quantum === null
-            ? null
-            : Object.freeze({
-                id: input.quantum.id,
-                logicalId: input.quantum.logicalId ?? null,
-                kind: input.quantum.kind,
-                layer: input.quantum.layer,
-                primitiveCount: input.quantum.primitiveCount,
-              }),
-        harnessCumulativeCompletedCommandBuffers: this.lifetimeCompletedCommandBuffers,
-        harnessCumulativeQueueDrains: this.lifetimeQueueDrains,
-        harnessCumulativeCooperativeIdleMilliseconds: this.lifetimeCooperativeIdleMilliseconds,
-        peakAccountedGpuBytes: this.lastPeakAccountedGpuBytes,
+    this.events.push(Object.freeze({
+      ...input,
+      quantum: input.quantum === null ? null : Object.freeze({
+        id: input.quantum.id,
+        logicalId: input.quantum.logicalId ?? null,
+        kind: input.quantum.kind,
+        layer: input.quantum.layer,
+        primitiveCount: input.quantum.primitiveCount,
       }),
-    );
+      harnessCumulativeCompletedCommandBuffers:
+        this.lifetimeCompletedCommandBuffers,
+      harnessCumulativeQueueDrains: this.lifetimeQueueDrains,
+      harnessCumulativeCooperativeIdleMilliseconds:
+        this.lifetimeCooperativeIdleMilliseconds,
+      peakAccountedGpuBytes: this.lastPeakAccountedGpuBytes,
+    }));
   }
 }
 
-function requireCompleteReadbackIdle(progress: Opt0012ProgressReceipt): Opt0012IdleIntervalReceipt {
+function requireCompleteReadbackIdle(
+  progress: Opt0012ProgressReceipt,
+): Opt0012IdleIntervalReceipt {
   const idle = progress.readbackIdle;
-  if (idle === null || idle.stage !== "readback" || !idle.completed || idle !== progress.idleIntervals.at(-1)) {
+  if (
+    idle === null || idle.stage !== "readback" || !idle.completed ||
+    idle !== progress.idleIntervals.at(-1)
+  ) {
     throw new Error("OPT-0012 exact readback idle receipt is absent");
   }
   return idle;
 }
 
-function installOpt0012ExecutorIdleHook(executor: AcePlannerGpuExecutor, progress: Opt0012ProgressRecorder): void {
-  const resources = Reflect.get(executor as unknown as object, "resources") as AcePlannerPreparedGpuExecutorResources | undefined;
-  if (resources === undefined || typeof resources !== "object" || resources.yieldQueueIdle !== undefined) {
+function installOpt0012ExecutorIdleHook(
+  executor: AcePlannerGpuExecutor,
+  progress: Opt0012ProgressRecorder,
+): void {
+  const resources = Reflect.get(
+    executor as unknown as object,
+    "resources",
+  ) as AcePlannerPreparedGpuExecutorResources | undefined;
+  if (
+    resources === undefined ||
+    typeof resources !== "object" ||
+    resources.yieldQueueIdle !== undefined
+  ) {
     throw new Error("OPT-0012 authenticated executor idle seam changed");
   }
   const hook = (): Promise<void> => progress.yieldProductionIdle();
@@ -5492,17 +6456,30 @@ class CandidateHeadRunner {
     private readonly regularPlan: AceOpt0012CompactSemanticHeadPlan,
     private readonly eosPlan: AceOpt0012CompactSemanticHeadPlan,
   ) {
-    this.kernel = AceCorrectnessGemmKernel.create(observer.device, "raw-fp16", "source-row-major");
+    this.kernel = AceCorrectnessGemmKernel.create(
+      observer.device,
+      "raw-fp16",
+      "source-row-major",
+    );
     this.privateExecutor = executor as unknown as PrivateExecutorRunAndReadback;
-    const original = Reflect.get(executor as unknown as object, "runAndReadback") as unknown;
+    const original = Reflect.get(
+      executor as unknown as object,
+      "runAndReadback",
+    ) as unknown;
     if (typeof original !== "function") {
       this.kernel.destroy();
       throw new Error("OPT-0012 authenticated executor seam is absent");
     }
-    this.originalRunAndReadback = (original as PrivateExecutorRunAndReadback["runAndReadback"]).bind(executor);
+    this.originalRunAndReadback = (
+      original as PrivateExecutorRunAndReadback["runAndReadback"]
+    ).bind(executor);
     Object.defineProperty(executor, "runAndReadback", {
       configurable: true,
-      value: async (phase: AcePlannerPreparedPhaseGpuResources, dispatch: AcePlannerModelDispatch, clearCache: boolean): Promise<readonly Float32Array[]> => {
+      value: async (
+        phase: AcePlannerPreparedPhaseGpuResources,
+        dispatch: AcePlannerModelDispatch,
+        clearCache: boolean,
+      ): Promise<readonly Float32Array[]> => {
         const invocation = this.activeInvocation;
         if (invocation === null) {
           return await this.originalRunAndReadback(phase, dispatch, clearCache);
@@ -5515,19 +6492,33 @@ class CandidateHeadRunner {
     });
   }
 
-  async invoke(operation: () => Promise<readonly ArrayLike<number>[]>, invocation: CandidateInvocation): Promise<readonly ArrayLike<number>[]> {
-    if (this.destroyed || this.activeInvocation !== null || this.receipt !== null || this.progressReceipt !== null) {
+  async invoke(
+    operation: () => Promise<readonly ArrayLike<number>[]>,
+    invocation: CandidateInvocation,
+  ): Promise<readonly ArrayLike<number>[]> {
+    if (
+      this.destroyed || this.activeInvocation !== null || this.receipt !== null ||
+      this.progressReceipt !== null
+    ) {
       throw new DOMException("OPT-0012 candidate invocation overlaps", "InvalidStateError");
     }
-    if (invocation.plan !== this.regularPlan && invocation.plan !== this.eosPlan) {
+    if (
+      invocation.plan !== this.regularPlan && invocation.plan !== this.eosPlan
+    ) {
       throw new Error("OPT-0012 candidate invocation requires an authenticated plan");
     }
-    if ((invocation.cancellationBoundary === null) !== (invocation.boundaryAbortController === null)) {
+    if (
+      (invocation.cancellationBoundary === null) !==
+        (invocation.boundaryAbortController === null)
+    ) {
       throw new Error("OPT-0012 cancellation boundary/controller pairing changed");
     }
     if (
       (invocation.arm === "A" && this.preparedCandidateResources !== null) ||
-      (invocation.arm !== "A" && this.preparedCandidateResources === null && !invocation.allowCorrectnessOnlyInsideTracePreparation)
+      (
+        invocation.arm !== "A" && this.preparedCandidateResources === null &&
+        !invocation.allowCorrectnessOnlyInsideTracePreparation
+      )
     ) {
       throw new Error("OPT-0012 candidate resources were not prepared before timing");
     }
@@ -5546,9 +6537,17 @@ class CandidateHeadRunner {
         await this.progress.settleIdleAfterFailure();
         this.progressReceipt = this.progress.finish(false);
       } catch (progressError) {
-        const primary = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-        const progressFailure = progressError instanceof Error ? `${progressError.name}: ${progressError.message}` : String(progressError);
-        throw new Error(`OPT-0012 progress failure settlement failed; primary=${primary}; ` + `settlement=${progressFailure}`, { cause: error });
+        const primary = error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error);
+        const progressFailure = progressError instanceof Error
+          ? `${progressError.name}: ${progressError.message}`
+          : String(progressError);
+        throw new Error(
+          `OPT-0012 progress failure settlement failed; primary=${primary}; ` +
+            `settlement=${progressFailure}`,
+          { cause: error },
+        );
       }
       throw error;
     } finally {
@@ -5556,40 +6555,70 @@ class CandidateHeadRunner {
     }
   }
 
-  takeProgressReceipt(expectedCompletedCommandBuffers: number, complete: boolean): Opt0012ProgressReceipt {
+  takeProgressReceipt(
+    expectedCompletedCommandBuffers: number,
+    complete: boolean,
+  ): Opt0012ProgressReceipt {
     const receipt = this.progressReceipt;
     this.progressReceipt = null;
-    if (receipt === null || receipt.complete !== complete || receipt.completedCommandBuffers !== expectedCompletedCommandBuffers) {
+    if (
+      receipt === null ||
+      receipt.complete !== complete ||
+      receipt.completedCommandBuffers !== expectedCompletedCommandBuffers
+    ) {
       throw new Error("OPT-0012 explicit progress receipt changed");
     }
     return receipt;
   }
 
-  async prepareCandidateResourcesOutsidePrimaryWall(plan: AceOpt0012CompactSemanticHeadPlan, sentinel: number): Promise<Readonly<Record<string, unknown>>> {
-    if (this.destroyed || this.activeInvocation !== null || this.preparedCandidateResources !== null || this.receipt !== null) {
-      throw new DOMException("OPT-0012 candidate resource preparation overlaps", "InvalidStateError");
+  async prepareCandidateResourcesOutsidePrimaryWall(
+    plan: AceOpt0012CompactSemanticHeadPlan,
+    sentinel: number,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    if (
+      this.destroyed || this.activeInvocation !== null ||
+      this.preparedCandidateResources !== null || this.receipt !== null
+    ) {
+      throw new DOMException(
+        "OPT-0012 candidate resource preparation overlaps",
+        "InvalidStateError",
+      );
     }
     const phase = this.requireActivePhaseResources();
-    const prepared = await this.createPreparedCandidateResources(phase, plan, sentinel, true);
+    const prepared = await this.createPreparedCandidateResources(
+      phase,
+      plan,
+      sentinel,
+      true,
+    );
     this.preparedCandidateResources = prepared;
     return prepared.receipt;
   }
 
-  async poisonActiveWriteStatusOutsidePrimaryWall(): Promise<
-    Readonly<{
-      poisonedWords: readonly [0, 0];
-      fenced: true;
-      milliseconds: number;
-    }>
-  > {
+  async poisonActiveWriteStatusOutsidePrimaryWall(): Promise<Readonly<{
+    poisonedWords: readonly [0, 0];
+    fenced: true;
+    milliseconds: number;
+  }>> {
     if (this.destroyed || this.activeInvocation !== null) {
       throw new DOMException("OPT-0012 cannot poison active status", "InvalidStateError");
     }
-    const active = Reflect.get(this.privateExecutor as unknown as object, "activePhase") as unknown;
-    const resources = typeof active === "object" && active !== null ? (Reflect.get(active, "resources") as unknown) : undefined;
-    const bindings = typeof resources === "object" && resources !== null ? (Reflect.get(resources, "bindings") as unknown) : undefined;
-    const controls = typeof bindings === "object" && bindings !== null ? (Reflect.get(bindings, "controls") as unknown) : undefined;
-    const writeStatus = typeof controls === "object" && controls !== null ? (Reflect.get(controls, "writeStatus") as GPUBufferBinding | undefined) : undefined;
+    const active = Reflect.get(
+      this.privateExecutor as unknown as object,
+      "activePhase",
+    ) as unknown;
+    const resources = typeof active === "object" && active !== null
+      ? Reflect.get(active, "resources") as unknown
+      : undefined;
+    const bindings = typeof resources === "object" && resources !== null
+      ? Reflect.get(resources, "bindings") as unknown
+      : undefined;
+    const controls = typeof bindings === "object" && bindings !== null
+      ? Reflect.get(bindings, "controls") as unknown
+      : undefined;
+    const writeStatus = typeof controls === "object" && controls !== null
+      ? Reflect.get(controls, "writeStatus") as GPUBufferBinding | undefined
+      : undefined;
     if (writeStatus === undefined) {
       throw new Error("OPT-0012 active phase write-status seam changed");
     }
@@ -5611,24 +6640,37 @@ class CandidateHeadRunner {
         offset: binding.offset ?? 0,
         size: binding.size ?? binding.buffer.size - (binding.offset ?? 0),
       });
-    const result = Object.freeze([describe(controls.cacheValidity), describe(controls.writeStatus)]);
-    if (result[1]!.size !== 8 || result[0]!.size <= result[1]!.size || result[0]!.bufferLabel === result[1]!.bufferLabel) {
+    const result = Object.freeze([
+      describe(controls.cacheValidity),
+      describe(controls.writeStatus),
+    ]);
+    if (
+      result[1]!.size !== 8 || result[0]!.size <= result[1]!.size ||
+      result[0]!.bufferLabel === result[1]!.bufferLabel
+    ) {
       throw new Error("OPT-0012 active control clear layout changed");
     }
     return result;
   }
 
   activeCachePublicationSnapshot(): Readonly<Record<string, unknown>> {
-    const active = Reflect.get(this.privateExecutor as unknown as object, "activePhase") as unknown;
+    const active = Reflect.get(
+      this.privateExecutor as unknown as object,
+      "activePhase",
+    ) as unknown;
     if (active === undefined) {
       return Object.freeze({ published: false });
     }
     if (typeof active !== "object" || active === null) {
       throw new Error("OPT-0012 active cache publication seam changed");
     }
-    const resources = Reflect.get(active, "resources") as AcePlannerPreparedPhaseGpuResources | undefined;
+    const resources = Reflect.get(active, "resources") as
+      AcePlannerPreparedPhaseGpuResources | undefined;
     const cachedTokens = Reflect.get(active, "cachedTokens") as unknown;
-    if (resources === undefined || !Number.isSafeInteger(cachedTokens) || typeof cachedTokens !== "number") {
+    if (
+      resources === undefined || !Number.isSafeInteger(cachedTokens) ||
+      typeof cachedTokens !== "number"
+    ) {
       throw new Error("OPT-0012 active cache publication receipt changed");
     }
     return Object.freeze({
@@ -5657,10 +6699,8 @@ class CandidateHeadRunner {
     if (outputs.length === 0 || compactReadback === null) {
       throw new Error("OPT-0012 guard proof has no candidate outputs");
     }
-    const totalBytes = sumSafe(
-      outputs.map((output) => output.totalBytes),
-      "OPT-0012 guard bytes",
-    );
+    const totalBytes = sumSafe(outputs.map((output) => output.totalBytes),
+      "OPT-0012 guard bytes");
     const readback = this.observer.device.createBuffer({
       label: "opt-0012-candidate-output-guard-readback",
       size: totalBytes,
@@ -5672,7 +6712,13 @@ class CandidateHeadRunner {
       });
       let destinationOffset = 0;
       for (const output of outputs) {
-        encoder.copyBufferToBuffer(output.buffer, 0, readback, destinationOffset, output.totalBytes);
+        encoder.copyBufferToBuffer(
+          output.buffer,
+          0,
+          readback,
+          destinationOffset,
+          output.totalBytes,
+        );
         destinationOffset += output.totalBytes;
       }
       this.observer.device.queue.submit([encoder.finish()]);
@@ -5682,9 +6728,17 @@ class CandidateHeadRunner {
       readback.unmap();
       let cursor = 0;
       for (const output of outputs) {
-        requireSentinel(bytes.subarray(cursor, cursor + output.payloadOffset), output.sentinel, `${output.label} prefix guard`);
+        requireSentinel(
+          bytes.subarray(cursor, cursor + output.payloadOffset),
+          output.sentinel,
+          `${output.label} prefix guard`,
+        );
         const tailStart = cursor + output.payloadOffset + output.payloadBytes;
-        requireSentinel(bytes.subarray(tailStart, cursor + output.totalBytes), output.sentinel, `${output.label} tail guard`);
+        requireSentinel(
+          bytes.subarray(tailStart, cursor + output.totalBytes),
+          output.sentinel,
+          `${output.label} tail guard`,
+        );
         cursor += output.totalBytes;
       }
       return Object.freeze({
@@ -5724,8 +6778,13 @@ class CandidateHeadRunner {
   }
 
   private requireActivePhaseResources(): AcePlannerPreparedPhaseGpuResources {
-    const active = Reflect.get(this.privateExecutor as unknown as object, "activePhase") as unknown;
-    const resources = typeof active === "object" && active !== null ? (Reflect.get(active, "resources") as unknown) : undefined;
+    const active = Reflect.get(
+      this.privateExecutor as unknown as object,
+      "activePhase",
+    ) as unknown;
+    const resources = typeof active === "object" && active !== null
+      ? Reflect.get(active, "resources") as unknown
+      : undefined;
     if (typeof resources !== "object" || resources === null) {
       throw new Error("OPT-0012 authenticated active phase seam changed");
     }
@@ -5743,7 +6802,11 @@ class CandidateHeadRunner {
     }
     this.validateSourceBindings(phase, plan);
     const started = performance.now();
-    const outputs = plan.headSlices.map((slice) => this.createOutput(`opt-0012-${plan.state}-shard-${slice.shardIndex}-output`, slice.rawLogitBytes, sentinel));
+    const outputs = plan.headSlices.map((slice) => this.createOutput(
+      `opt-0012-${plan.state}-shard-${slice.shardIndex}-output`,
+      slice.rawLogitBytes,
+      sentinel,
+    ));
     const readback = createSentinelBuffer(
       this.observer.device,
       "opt-0012-compact-head-readback",
@@ -5752,8 +6815,8 @@ class CandidateHeadRunner {
       0x3c,
     );
     try {
-      const dispatches = await Promise.all(
-        plan.headSlices.map(async (slice, index): Promise<AceGemmDispatch> => {
+      const dispatches = await Promise.all(plan.headSlices.map(
+        async (slice, index): Promise<AceGemmDispatch> => {
           const owner = phase.bindings.weights.embedding[slice.shardIndex]!;
           return await this.kernel.createDispatch(
             `opt-0012-${plan.state}-shard-${slice.shardIndex}`,
@@ -5772,8 +6835,8 @@ class CandidateHeadRunner {
               },
             },
           );
-        }),
-      );
+        },
+      ));
       const preparationMilliseconds = performance.now() - started;
       const receipt = Object.freeze({
         state: plan.state,
@@ -5791,7 +6854,8 @@ class CandidateHeadRunner {
         compactReadbackAllocationBytes: plan.readback.allocationBytes,
         gemmDispatchCount: dispatches.length,
         everyOutputAndReadbackSentinelInitializedByMappedCreation: true,
-        noAllocationMapFillOrDispatchConstructionInPrimaryWall: preparedOutsidePrimaryWall,
+        noAllocationMapFillOrDispatchConstructionInPrimaryWall:
+          preparedOutsidePrimaryWall,
       });
       return Object.freeze({
         phase,
@@ -5809,7 +6873,9 @@ class CandidateHeadRunner {
     }
   }
 
-  private destroyPreparedCandidateResources(prepared: PreparedCandidateInvocationResources): void {
+  private destroyPreparedCandidateResources(
+    prepared: PreparedCandidateInvocationResources,
+  ): void {
     prepared.readback.destroy();
     for (const output of prepared.outputs) output.buffer.destroy();
   }
@@ -5821,7 +6887,10 @@ class CandidateHeadRunner {
     invocation: CandidateInvocation,
   ): Promise<readonly Float32Array[]> {
     const plan = invocation.plan;
-    if (dispatch.plan.batch !== 2 || phase.batch !== 2) {
+    if (
+      dispatch.plan.batch !== 2 ||
+      phase.batch !== 2
+    ) {
       throw new Error("OPT-0012 candidate is not an authenticated M2 dispatch");
     }
     this.validateSourceBindings(phase, plan);
@@ -5831,9 +6900,17 @@ class CandidateHeadRunner {
       if (!invocation.allowCorrectnessOnlyInsideTracePreparation) {
         throw new Error("OPT-0012 candidate entered timing without prepared resources");
       }
-      prepared = await this.createPreparedCandidateResources(phase, plan, invocation.sentinel, false);
+      prepared = await this.createPreparedCandidateResources(
+        phase,
+        plan,
+        invocation.sentinel,
+        false,
+      );
     }
-    if (prepared.phase !== phase || prepared.plan !== plan || prepared.sentinel !== invocation.sentinel) {
+    if (
+      prepared.phase !== phase || prepared.plan !== plan ||
+      prepared.sentinel !== invocation.sentinel
+    ) {
       this.destroyPreparedCandidateResources(prepared);
       throw new Error("OPT-0012 prepared candidate resource identity changed");
     }
@@ -5841,35 +6918,42 @@ class CandidateHeadRunner {
     const readback = prepared.readback;
     const dispatches = prepared.dispatches;
     try {
-      const preHeadCount = authenticateOpt0012ProductionHeadTail(dispatch.label, dispatch.quanta, invocation.phaseKind);
+      const preHeadCount = authenticateOpt0012ProductionHeadTail(
+        dispatch.label,
+        dispatch.quanta,
+        invocation.phaseKind,
+      );
       const removedFullHead = dispatch.quanta.slice(preHeadCount);
       const preHead = dispatch.quanta.slice(0, preHeadCount);
       for (let index = 0; index < preHead.length; index += 1) {
-        this.signal.throwIfAborted();
-        const quantum = preHead[index]!;
-        const encoder = this.observer.device.createCommandEncoder({
-          label: `${quantum.id}-command`,
-        });
-        if (clearCache && index === 0) {
-          clearBinding(encoder, phase.bindings.controls.cacheValidity);
-          clearBinding(encoder, phase.bindings.controls.writeStatus);
-        }
-        const pass = encoder.beginComputePass({ label: quantum.id });
-        quantum.encode(pass);
-        pass.end();
-        await submitAndDrain(this.observer.device, encoder.finish());
-        const idle = this.progress.yieldCandidateIdle();
-        try {
-          this.progress.acceptCandidate("model", quantum);
-        } catch (error) {
-          await idle;
-          throw error;
-        }
+      this.signal.throwIfAborted();
+      const quantum = preHead[index]!;
+      const encoder = this.observer.device.createCommandEncoder({
+        label: `${quantum.id}-command`,
+      });
+      if (clearCache && index === 0) {
+        clearBinding(encoder, phase.bindings.controls.cacheValidity);
+        clearBinding(encoder, phase.bindings.controls.writeStatus);
+      }
+      const pass = encoder.beginComputePass({ label: quantum.id });
+      quantum.encode(pass);
+      pass.end();
+      await submitAndDrain(this.observer.device, encoder.finish());
+      const idle = this.progress.yieldCandidateIdle();
+      try {
+        this.progress.acceptCandidate("model", quantum);
+      } catch (error) {
         await idle;
-        this.signal.throwIfAborted();
+        throw error;
+      }
+      await idle;
+      this.signal.throwIfAborted();
       }
       if (invocation.cancellationBoundary === "after-pre-head") {
-        invocation.boundaryAbortController!.abort(new DOMException("OPT-0012 cancellation after fully drained pre-head boundary", "AbortError"));
+        invocation.boundaryAbortController!.abort(new DOMException(
+          "OPT-0012 cancellation after fully drained pre-head boundary",
+          "AbortError",
+        ));
         invocation.boundaryAbortController!.signal.throwIfAborted();
       }
 
@@ -5900,80 +6984,110 @@ class CandidateHeadRunner {
       await headIdle;
       this.signal.throwIfAborted();
       if (invocation.cancellationBoundary === "after-head") {
-        invocation.boundaryAbortController!.abort(new DOMException("OPT-0012 cancellation after fully drained candidate head boundary", "AbortError"));
+        invocation.boundaryAbortController!.abort(new DOMException(
+          "OPT-0012 cancellation after fully drained candidate head boundary",
+          "AbortError",
+        ));
         invocation.boundaryAbortController!.signal.throwIfAborted();
       }
 
       const readbackEncoder = this.observer.device.createCommandEncoder({
-        label: "opt-0012-compact-head-readback-command",
+          label: "opt-0012-compact-head-readback-command",
       });
-      for (const copy of plan.readback.copies) {
-        if (copy.kind === "logits") {
-          const outputIndex = plan.headSlices.findIndex((slice) => slice.shardIndex === copy.shardIndex);
-          const output = outputs[outputIndex];
-          if (output === undefined) {
-            throw new Error("OPT-0012 compact copy references no head output");
+        for (const copy of plan.readback.copies) {
+          if (copy.kind === "logits") {
+            const outputIndex = plan.headSlices.findIndex(
+              (slice) => slice.shardIndex === copy.shardIndex,
+            );
+            const output = outputs[outputIndex];
+            if (output === undefined) {
+              throw new Error("OPT-0012 compact copy references no head output");
+            }
+            readbackEncoder.copyBufferToBuffer(
+              output.buffer,
+              output.payloadOffset + copy.sourceByteOffset,
+              readback,
+              copy.destinationByteOffset,
+              copy.byteLength,
+            );
+          } else {
+            const status = phase.bindings.controls.writeStatus;
+            readbackEncoder.copyBufferToBuffer(
+              status.buffer,
+              (status.offset ?? 0) + copy.sourceByteOffset,
+              readback,
+              copy.destinationByteOffset,
+              copy.byteLength,
+            );
           }
-          readbackEncoder.copyBufferToBuffer(
-            output.buffer,
-            output.payloadOffset + copy.sourceByteOffset,
-            readback,
-            copy.destinationByteOffset,
-            copy.byteLength,
-          );
-        } else {
-          const status = phase.bindings.controls.writeStatus;
-          readbackEncoder.copyBufferToBuffer(
-            status.buffer,
-            (status.offset ?? 0) + copy.sourceByteOffset,
-            readback,
-            copy.destinationByteOffset,
-            copy.byteLength,
-          );
         }
-      }
-      this.signal.throwIfAborted();
-      await submitAndDrain(this.observer.device, readbackEncoder.finish());
-      const readbackIdle = this.progress.yieldCandidateIdle();
-      try {
-        this.progress.acceptCandidate("readback", null);
-      } catch (error) {
-        await readbackIdle;
-        throw error;
-      }
-      let mappedBytes: ArrayBuffer;
-      let decoded: AceOpt0012DecodedCompactLogits;
-      let hostDecodeMilliseconds: number;
-      try {
-        await readback.mapAsync(GPUMapMode.READ, 0, plan.readback.allocationBytes);
-        mappedBytes = readback.getMappedRange(0, plan.readback.allocationBytes).slice(0);
-        readback.unmap();
-        requireSentinel(new Uint8Array(mappedBytes, plan.readback.usedBytes, plan.readback.alignmentPaddingBytes), 0x3c, "compact readback alignment padding");
-        const hostDecodeStarted = performance.now();
-        decoded = decodeAceOpt0012CompactFp16Readback(mappedBytes, plan);
-        hostDecodeMilliseconds = performance.now() - hostDecodeStarted;
-      } finally {
-        await readbackIdle;
-      }
-      this.signal.throwIfAborted();
-      this.receipt = Object.freeze({
-        decoded,
-        mappedBytes,
-        outputs: Object.freeze(outputs),
-        readback,
-        hostDecodeMilliseconds,
-        preparation: prepared.receipt,
-      });
-      return Object.freeze([decoded.conditionalLogits, decoded.unconditionalLogits]);
+        this.signal.throwIfAborted();
+        await submitAndDrain(this.observer.device, readbackEncoder.finish());
+        const readbackIdle = this.progress.yieldCandidateIdle();
+        try {
+          this.progress.acceptCandidate("readback", null);
+        } catch (error) {
+          await readbackIdle;
+          throw error;
+        }
+        let mappedBytes: ArrayBuffer;
+        let decoded: AceOpt0012DecodedCompactLogits;
+        let hostDecodeMilliseconds: number;
+        try {
+          await readback.mapAsync(GPUMapMode.READ, 0, plan.readback.allocationBytes);
+          mappedBytes = readback.getMappedRange(
+            0,
+            plan.readback.allocationBytes,
+          ).slice(0);
+          readback.unmap();
+          requireSentinel(
+            new Uint8Array(
+              mappedBytes,
+              plan.readback.usedBytes,
+              plan.readback.alignmentPaddingBytes,
+            ),
+            0x3c,
+            "compact readback alignment padding",
+          );
+          const hostDecodeStarted = performance.now();
+          decoded = decodeAceOpt0012CompactFp16Readback(mappedBytes, plan);
+          hostDecodeMilliseconds = performance.now() - hostDecodeStarted;
+        } finally {
+          await readbackIdle;
+        }
+        this.signal.throwIfAborted();
+        this.receipt = Object.freeze({
+          decoded,
+          mappedBytes,
+          outputs: Object.freeze(outputs),
+          readback,
+          hostDecodeMilliseconds,
+          preparation: prepared.receipt,
+        });
+        return Object.freeze([
+          decoded.conditionalLogits,
+          decoded.unconditionalLogits,
+        ]);
     } catch (error) {
       this.destroyPreparedCandidateResources(prepared);
       throw error;
     }
   }
 
-  private createOutput(label: string, payloadBytes: number, sentinel: number): CandidateOutputHandle {
-    const totalBytes = CANDIDATE_OUTPUT_GUARD_BYTES + payloadBytes + CANDIDATE_OUTPUT_GUARD_BYTES;
-    const buffer = createSentinelBuffer(this.observer.device, label, totalBytes, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC, sentinel);
+  private createOutput(
+    label: string,
+    payloadBytes: number,
+    sentinel: number,
+  ): CandidateOutputHandle {
+    const totalBytes = CANDIDATE_OUTPUT_GUARD_BYTES + payloadBytes +
+      CANDIDATE_OUTPUT_GUARD_BYTES;
+    const buffer = createSentinelBuffer(
+      this.observer.device,
+      label,
+      totalBytes,
+      GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+      sentinel,
+    );
     return Object.freeze({
       buffer,
       payloadOffset: CANDIDATE_OUTPUT_GUARD_BYTES,
@@ -5984,14 +7098,19 @@ class CandidateHeadRunner {
     });
   }
 
-  private validateSourceBindings(phase: AcePlannerPreparedPhaseGpuResources, plan: AceOpt0012CompactSemanticHeadPlan): void {
+  private validateSourceBindings(
+    phase: AcePlannerPreparedPhaseGpuResources,
+    plan: AceOpt0012CompactSemanticHeadPlan,
+  ): void {
     if (phase.bindings.weights.embedding.length !== 5) {
       throw new Error("OPT-0012 phase lost a tied embedding binding");
     }
     for (const slice of plan.headSlices) {
       const owner = phase.bindings.weights.embedding[slice.shardIndex];
-      const expected =
-        plan.state === "regular-code" ? this.regularPlan.headSlices.find((entry) => entry.shardIndex === slice.shardIndex) : this.eosPlan.headSlices[0];
+      const expected = plan.state === "regular-code"
+        ? this.regularPlan.headSlices.find((entry) =>
+            entry.shardIndex === slice.shardIndex)
+        : this.eosPlan.headSlices[0];
       if (
         owner === undefined ||
         expected !== slice ||
@@ -6007,10 +7126,20 @@ class CandidateHeadRunner {
   }
 }
 
-async function runCancellationProofs(prepared: PreparedSession): Promise<Readonly<Record<string, unknown>>> {
+async function runCancellationProofs(
+  prepared: PreparedSession,
+): Promise<Readonly<Record<string, unknown>>> {
   const fixture = prepared.fixtures[0]!;
-  const preHead = await runCancellationAtBoundary(prepared, fixture, "after-pre-head");
-  const postHead = await runCancellationAtBoundary(prepared, fixture, "after-head");
+  const preHead = await runCancellationAtBoundary(
+    prepared,
+    fixture,
+    "after-pre-head",
+  );
+  const postHead = await runCancellationAtBoundary(
+    prepared,
+    fixture,
+    "after-head",
+  );
   return Object.freeze({
     afterFullyDrainedPreHead: preHead,
     afterFullyDrainedHeadBeforeReadback: postHead,
@@ -6026,26 +7155,40 @@ async function runCancellationAtBoundary(
   boundary: Exclude<CancellationBoundary, null>,
 ): Promise<Readonly<Record<string, unknown>>> {
   await prepared.executor.prefill(fixture.prefill);
-  const statusPoison = await prepared.candidateRunner.poisonActiveWriteStatusOutsidePrimaryWall();
-  const candidatePreparation = await prepared.candidateRunner.prepareCandidateResourcesOutsidePrimaryWall(prepared.regularPlan, SENTINEL_A);
+  const statusPoison = await prepared.candidateRunner
+    .poisonActiveWriteStatusOutsidePrimaryWall();
+  const candidatePreparation = await prepared.candidateRunner
+    .prepareCandidateResourcesOutsidePrimaryWall(
+      prepared.regularPlan,
+      SENTINEL_A,
+    );
   const boundaryAbortController = new AbortController();
-  prepared.observer.beginTrace(`${fixture.spec.id}-cancellation-${boundary}`, false);
-  const cursor = new AceOpt0012CompactSamplingCursor(ACCEPTED_SEED, fixture.spec.drawIndex);
+  prepared.observer.beginTrace(
+    `${fixture.spec.id}-cancellation-${boundary}`,
+    false,
+  );
+  const cursor = new AceOpt0012CompactSamplingCursor(
+    ACCEPTED_SEED,
+    fixture.spec.drawIndex,
+  );
   const cursorBefore = cursor.consumed;
   let callbackCount = 0;
   let finalizationCount = 0;
   let rejection: unknown;
   try {
-    const returned = await prepared.candidateRunner.invoke(() => prepared.executor.decode(fixture.decode), {
-      arm: "C",
-      phaseKind: "decode",
-      plan: prepared.regularPlan,
-      sentinel: SENTINEL_A,
-      guardProof: false,
-      cancellationBoundary: boundary,
-      boundaryAbortController,
-      allowCorrectnessOnlyInsideTracePreparation: false,
-    });
+    const returned = await prepared.candidateRunner.invoke(
+      () => prepared.executor.decode(fixture.decode),
+      {
+        arm: "C",
+        phaseKind: "decode",
+        plan: prepared.regularPlan,
+        sentinel: SENTINEL_A,
+        guardProof: false,
+        cancellationBoundary: boundary,
+        boundaryAbortController,
+        allowCorrectnessOnlyInsideTracePreparation: false,
+      },
+    );
     callbackCount += 1;
     finalizationCount += 1;
     void returned;
@@ -6064,12 +7207,21 @@ async function runCancellationAtBoundary(
     throw new Error(`OPT-0012 ${boundary} cancellation did not transition signal`);
   }
   const expectedCompletedCommandBuffers = boundary === "after-pre-head" ? 31 : 32;
-  const explicitProgress = prepared.candidateRunner.takeProgressReceipt(expectedCompletedCommandBuffers, false);
-  const trace = prepared.observer.endCancellationTrace(
-    boundary === "after-pre-head" ? { commandBufferCount: 31, physicalDispatchCount: 623 } : { commandBufferCount: 32, physicalDispatchCount: 625 },
+  const explicitProgress = prepared.candidateRunner.takeProgressReceipt(
+    expectedCompletedCommandBuffers,
+    false,
   );
-  const cachePublication = await requireCancelledDecodePhaseReleased(prepared.executor, fixture.decode);
-  if (cursor.consumed !== cursorBefore || callbackCount !== 0 || finalizationCount !== 0) {
+  const trace = prepared.observer.endCancellationTrace(boundary === "after-pre-head"
+    ? { commandBufferCount: 31, physicalDispatchCount: 623 }
+    : { commandBufferCount: 32, physicalDispatchCount: 625 });
+  const cachePublication = await requireCancelledDecodePhaseReleased(
+    prepared.executor,
+    fixture.decode,
+  );
+  if (
+    cursor.consumed !== cursorBefore || callbackCount !== 0 ||
+    finalizationCount !== 0
+  ) {
     throw new Error(`OPT-0012 ${boundary} cancellation published later CPU state`);
   }
   return Object.freeze({
@@ -6096,14 +7248,20 @@ async function runCancellationAtBoundary(
   });
 }
 
-async function requireCancelledDecodePhaseReleased(executor: AcePlannerGpuExecutor, decode: AcePlannerDecodeBatch): Promise<Readonly<Record<string, unknown>>> {
+async function requireCancelledDecodePhaseReleased(
+  executor: AcePlannerGpuExecutor,
+  decode: AcePlannerDecodeBatch,
+): Promise<Readonly<Record<string, unknown>>> {
   let rejection: unknown;
   try {
     await executor.decode(decode);
   } catch (error) {
     rejection = error;
   }
-  if (!(rejection instanceof Error) || !rejection.message.includes("requires a successful fresh prefill")) {
+  if (
+    !(rejection instanceof Error) ||
+    !rejection.message.includes("requires a successful fresh prefill")
+  ) {
     throw new Error("OPT-0012 cancelled decode cache phase remained published");
   }
   return Object.freeze({
@@ -6114,15 +7272,25 @@ async function requireCancelledDecodePhaseReleased(executor: AcePlannerGpuExecut
   });
 }
 
-async function runTrajectoryAndCleanup(prepared: PreparedSession): Promise<Readonly<Record<string, unknown>>> {
+async function runTrajectoryAndCleanup(
+  prepared: PreparedSession,
+): Promise<Readonly<Record<string, unknown>>> {
   const startedAtEpochMilliseconds = Date.now();
   try {
     const trajectories: TrajectoryArmExecution[] = [];
     let rawFp16Authority: TrajectoryArmExecution | null = null;
     for (const arm of ["A", "B", "C"] as const) {
       for (let repeatIndex = 0; repeatIndex < 2; repeatIndex += 1) {
-        postProgress(`raw-FP16 trajectory arm ${arm} repeat ${repeatIndex + 1}/2: ` + "150 regular codes plus forced EOS");
-        const trajectory = await runTrajectoryArm(prepared, arm, repeatIndex, rawFp16Authority);
+        postProgress(
+          `raw-FP16 trajectory arm ${arm} repeat ${repeatIndex + 1}/2: ` +
+            "150 regular codes plus forced EOS",
+        );
+        const trajectory = await runTrajectoryArm(
+          prepared,
+          arm,
+          repeatIndex,
+          rawFp16Authority,
+        );
         trajectories.push(trajectory);
         rawFp16Authority ??= trajectory;
       }
@@ -6132,14 +7300,20 @@ async function runTrajectoryAndCleanup(prepared: PreparedSession): Promise<Reado
       if (
         JSON.stringify(candidate.tokens) !== JSON.stringify(authority.tokens) ||
         candidate.semanticCodeSha256 !== authority.semanticCodeSha256 ||
-        candidate.serializedAudioCodeTextSha256 !== authority.serializedAudioCodeTextSha256 ||
+        candidate.serializedAudioCodeTextSha256 !==
+          authority.serializedAudioCodeTextSha256 ||
         JSON.stringify(candidate.terminal) !== JSON.stringify(authority.terminal)
       ) {
-        throw new Error("OPT-0012 complete raw-FP16 semantic trajectory diverged by arm/repeat");
+        throw new Error(
+          "OPT-0012 complete raw-FP16 semantic trajectory diverged by arm/repeat",
+        );
       }
     }
     postProgress("trajectory: probing cancellation during a resident semantic cache");
-    const trajectoryCancellation = await runTrajectoryCancellation(prepared, authority);
+    const trajectoryCancellation = await runTrajectoryCancellation(
+      prepared,
+      authority,
+    );
     const cleanup = await destroyPreparedSession(prepared);
     const completedAtEpochMilliseconds = Date.now();
     const heartbeat = workerHeartbeat?.stop();
@@ -6158,7 +7332,8 @@ async function runTrajectoryAndCleanup(prepared: PreparedSession): Promise<Reado
         outputAuthority: false,
       }),
       m1Execution: "not-executed-by-this-benchmark-mode",
-      initialCursorAuthority: "frozen-historical-packed-bf16-M1-fixture-not-an-observed-path",
+      initialCursorAuthority:
+        "frozen-historical-packed-bf16-M1-fixture-not-an-observed-path",
       firstSemanticDrawIndex: FIRST_SEMANTIC_DRAW_INDEX.toString(),
       rawFp16ArmAAuthority: Object.freeze({
         semanticCodeSha256: authority.semanticCodeSha256,
@@ -6190,7 +7365,11 @@ async function runTrajectoryArm(
   repeatIndex: number,
   authority: TrajectoryArmExecution | null,
 ): Promise<TrajectoryArmExecution> {
-  const prompts = createAcePlannerCodePrompts(ACCEPTED_RESOLVED_CAPTION, ACCEPTED_LYRICS, ACCEPTED_COT_TEXT);
+  const prompts = createAcePlannerCodePrompts(
+    ACCEPTED_RESOLVED_CAPTION,
+    ACCEPTED_LYRICS,
+    ACCEPTED_COT_TEXT,
+  );
   const promptRows = Object.freeze([
     Object.freeze(prepared.tokenizer.encode(prompts.conditional)),
     Object.freeze(prepared.tokenizer.encode(prompts.unconditional)),
@@ -6198,17 +7377,39 @@ async function runTrajectoryArm(
   const promptWidth = Math.max(...promptRows.map((row) => row.length));
   const capacity = 768;
   const prefill = createPaddedSemanticPrefill(promptRows, [], promptWidth, capacity);
-  const fullCursor = arm === "C" ? null : new AcePlannerSamplingCursor(ACCEPTED_SEED, FIRST_SEMANTIC_DRAW_INDEX);
-  const compactCursor = arm === "C" ? new AceOpt0012CompactSamplingCursor(ACCEPTED_SEED, FIRST_SEMANTIC_DRAW_INDEX) : null;
+  const fullCursor = arm === "C"
+    ? null
+    : new AcePlannerSamplingCursor(ACCEPTED_SEED, FIRST_SEMANTIC_DRAW_INDEX);
+  const compactCursor = arm === "C"
+    ? new AceOpt0012CompactSamplingCursor(ACCEPTED_SEED, FIRST_SEMANTIC_DRAW_INDEX)
+    : null;
   const seenTokenIds: number[] = [...promptRows[0]!];
   const receipts: SampleReceipt[] = [];
   const topology: Array<Readonly<Record<string, unknown>>> = [];
   const wallStarted = performance.now();
 
-  let rows = await executeTrajectoryInvocation(prepared, arm, prepared.regularPlan, () => prepared.executor.prefill(prefill), "prefill-first-code", topology);
+  let rows = await executeTrajectoryInvocation(
+    prepared,
+    arm,
+    prepared.regularPlan,
+    () => prepared.executor.prefill(prefill),
+    "prefill-first-code",
+    topology,
+  );
   for (let codeIndex = 0; codeIndex < 150; codeIndex += 1) {
-    const sample = sampleTrajectoryRows(arm, prepared.regularPlan, rows, seenTokenIds, fullCursor, compactCursor);
-    if (sample.tokenId < ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID || sample.tokenId >= ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID + ACE_PLANNER_SEMANTIC_CODE_COUNT) {
+    const sample = sampleTrajectoryRows(
+      arm,
+      prepared.regularPlan,
+      rows,
+      seenTokenIds,
+      fullCursor,
+      compactCursor,
+    );
+    if (
+      sample.tokenId < ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID ||
+      sample.tokenId >= ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID +
+        ACE_PLANNER_SEMANTIC_CODE_COUNT
+    ) {
       throw new Error(`OPT-0012 trajectory ${arm} emitted a non-code token`);
     }
     const expected = authority?.tokens[codeIndex];
@@ -6223,7 +7424,11 @@ async function runTrajectoryArm(
     seenTokenIds.push(sample.tokenId);
     if (codeIndex < 149) {
       const cachedTokens = promptWidth + codeIndex;
-      const decode = createSemanticDecodeBatch(sample.tokenId, cachedTokens, capacity);
+      const decode = createSemanticDecodeBatch(
+        sample.tokenId,
+        cachedTokens,
+        capacity,
+      );
       rows = await executeTrajectoryInvocation(
         prepared,
         arm,
@@ -6234,7 +7439,11 @@ async function runTrajectoryArm(
       );
     }
   }
-  const terminalDecode = createSemanticDecodeBatch(receipts.at(-1)!.tokenId, promptWidth + 149, capacity);
+  const terminalDecode = createSemanticDecodeBatch(
+    receipts.at(-1)!.tokenId,
+    promptWidth + 149,
+    capacity,
+  );
   const terminalRows = await executeTrajectoryInvocation(
     prepared,
     arm,
@@ -6243,8 +7452,20 @@ async function runTrajectoryArm(
     "forced-eos",
     topology,
   );
-  const terminal = sampleTrajectoryRows(arm, prepared.eosPlan, terminalRows, seenTokenIds, fullCursor, compactCursor);
-  if (terminal.tokenId !== ACE_QWEN_IM_END_TOKEN_ID || terminal.positiveCandidateCount !== 1 || terminal.drawIndex !== "259" || terminal.drawEnd !== "260") {
+  const terminal = sampleTrajectoryRows(
+    arm,
+    prepared.eosPlan,
+    terminalRows,
+    seenTokenIds,
+    fullCursor,
+    compactCursor,
+  );
+  if (
+    terminal.tokenId !== ACE_QWEN_IM_END_TOKEN_ID ||
+    terminal.positiveCandidateCount !== 1 ||
+    terminal.drawIndex !== "259" ||
+    terminal.drawEnd !== "260"
+  ) {
     throw new Error(`OPT-0012 trajectory ${arm} terminal receipt changed`);
   }
   if (authority !== null && !sameSample(terminal, authority.terminal)) {
@@ -6254,9 +7475,13 @@ async function runTrajectoryArm(
         JSON.stringify(authority.terminal),
     );
   }
-  const codeIds = receipts.map((receipt) => receipt.tokenId - ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID);
+  const codeIds = receipts.map(
+    (receipt) => receipt.tokenId - ACE_PLANNER_SEMANTIC_FIRST_TOKEN_ID,
+  );
   const semanticCodeSha256 = sha256U32Le(codeIds);
-  const serializedAudioCodeText = codeIds.map((code) => `<|audio_code_${code}|>`).join("");
+  const serializedAudioCodeText = codeIds.map(
+    (code) => `<|audio_code_${code}|>`,
+  ).join("");
   return Object.freeze({
     arm,
     repeatIndex,
@@ -6266,7 +7491,9 @@ async function runTrajectoryArm(
     terminalTokenId: terminal.tokenId,
     finalDrawEnd: terminal.drawEnd,
     semanticCodeSha256,
-    serializedAudioCodeTextSha256: aceSha256Hex(new TextEncoder().encode(serializedAudioCodeText)),
+    serializedAudioCodeTextSha256: aceSha256Hex(
+      new TextEncoder().encode(serializedAudioCodeText),
+    ),
     topology: summarizeTrajectoryTopology(arm, topology),
     totalWallMilliseconds: performance.now() - wallStarted,
     performanceComparisonAuthority: "none-fixed-order-correctness-only",
@@ -6282,9 +7509,15 @@ async function executeTrajectoryInvocation(
   label: string,
   topology: Array<Readonly<Record<string, unknown>>>,
 ): Promise<readonly Float32Array[]> {
-  const statusPoison = label === "prefill-first-code" ? null : await prepared.candidateRunner.poisonActiveWriteStatusOutsidePrimaryWall();
-  const candidatePreparation =
-    arm === "A" || label === "prefill-first-code" ? null : await prepared.candidateRunner.prepareCandidateResourcesOutsidePrimaryWall(plan, SENTINEL_A);
+  const statusPoison = label === "prefill-first-code"
+    ? null
+    : await prepared.candidateRunner.poisonActiveWriteStatusOutsidePrimaryWall();
+  const candidatePreparation = arm === "A" || label === "prefill-first-code"
+    ? null
+    : await prepared.candidateRunner.prepareCandidateResourcesOutsidePrimaryWall(
+        plan,
+        SENTINEL_A,
+      );
   prepared.observer.beginTrace(`trajectory-${arm}-${label}`, false);
   const startedAtEpochMilliseconds = Date.now();
   const wallStarted = performance.now();
@@ -6298,30 +7531,46 @@ async function executeTrajectoryInvocation(
       guardProof: false,
       cancellationBoundary: null,
       boundaryAbortController: null,
-      allowCorrectnessOnlyInsideTracePreparation: arm !== "A" && label === "prefill-first-code",
+      allowCorrectnessOnlyInsideTracePreparation:
+        arm !== "A" && label === "prefill-first-code",
     });
     const decodeEnded = performance.now();
     const phaseKind = label === "prefill-first-code" ? "prefill" : "decode";
-    const explicitProgress = prepared.candidateRunner.takeProgressReceipt(opt0012ExpectedCommandBufferTopology(arm, phaseKind).totalCommandBufferCount, true);
+    const explicitProgress = prepared.candidateRunner.takeProgressReceipt(
+      opt0012ExpectedCommandBufferTopology(arm, phaseKind)
+        .totalCommandBufferCount,
+      true,
+    );
     const receipt = arm === "A" ? null : prepared.candidateRunner.takeReceipt();
-    if (receipt !== null && label !== "prefill-first-code" && receipt.preparation !== candidatePreparation) {
+    if (
+      receipt !== null && label !== "prefill-first-code" &&
+      receipt.preparation !== candidatePreparation
+    ) {
       throw new Error("OPT-0012 trajectory preparation receipt identity changed");
     }
-    const rows = arm === "A" ? requireFloat32Rows(returned, plan.vocabularySize) : [receipt!.decoded.conditionalLogits, receipt!.decoded.unconditionalLogits];
-    const expectedEncodedFreshStatusClears = label === "prefill-first-code" ? prepared.candidateRunner.describeActiveControlClears() : Object.freeze([]);
+    const rows = arm === "A"
+      ? requireFloat32Rows(returned, plan.vocabularySize)
+      : [receipt!.decoded.conditionalLogits, receipt!.decoded.unconditionalLogits];
+    const expectedEncodedFreshStatusClears = label === "prefill-first-code"
+      ? prepared.candidateRunner.describeActiveControlClears()
+      : Object.freeze([]);
     const ended = performance.now();
     const observedTrace = prepared.observer.endTrace({
       arm,
       phaseKind,
       state: plan.state,
-      expectedPhysicalDispatchCount:
-        arm === "A"
-          ? OPT_0012_FULL_PHYSICAL_DISPATCH_COUNT
-          : plan.state === "regular-code"
-            ? OPT_0012_REGULAR_PHYSICAL_DISPATCH_COUNT
-            : OPT_0012_EOS_PHYSICAL_DISPATCH_COUNT,
-      expectedCopyCount: arm === "A" ? OPT_0012_FULL_COPY_COUNT : plan.readback.copies.length,
-      expectedCommandBufferCount: opt0012ExpectedCommandBufferTopology(arm, phaseKind).totalCommandBufferCount,
+      expectedPhysicalDispatchCount: arm === "A"
+        ? OPT_0012_FULL_PHYSICAL_DISPATCH_COUNT
+        : plan.state === "regular-code"
+          ? OPT_0012_REGULAR_PHYSICAL_DISPATCH_COUNT
+          : OPT_0012_EOS_PHYSICAL_DISPATCH_COUNT,
+      expectedCopyCount: arm === "A"
+        ? OPT_0012_FULL_COPY_COUNT
+        : plan.readback.copies.length,
+      expectedCommandBufferCount: opt0012ExpectedCommandBufferTopology(
+        arm,
+        phaseKind,
+      ).totalCommandBufferCount,
       roundIndex: -1,
       order: "trajectory",
       orderPosition: -1,
@@ -6339,25 +7588,31 @@ async function executeTrajectoryInvocation(
       readbackIdleInterval: requireCompleteReadbackIdle(explicitProgress),
       expectedEncodedFreshStatusClears,
     });
-    const fp16NaNCensus =
-      arm === "A"
-        ? requireZeroOpt0012DecodedFullFp16NaNs(rows, `trajectory ${arm} ${label}`, plan.state)
-        : requireZeroOpt0012RawCompactFp16NaNs(plan, receipt!.mappedBytes, `trajectory ${arm} ${label}`);
-    topology.push(
-      Object.freeze({
-        ...observedTrace,
-        explicitProgress,
-        statusFreshness: Object.freeze({
-          encodedClearOnFreshPrefill: label === "prefill-first-code",
-          preInvocationZeroed: label !== "prefill-first-code",
-          poisonAndFence: statusPoison,
-          requiredSuccessWords: Object.freeze([1, 1]),
-        }),
-        candidatePreparation: receipt?.preparation ?? null,
-        fp16NaNCensus,
-        correctnessOnlyFirstPrefillPreparedInsideTrace: arm !== "A" && label === "prefill-first-code",
+    const fp16NaNCensus = arm === "A"
+      ? requireZeroOpt0012DecodedFullFp16NaNs(
+          rows,
+          `trajectory ${arm} ${label}`,
+          plan.state,
+        )
+      : requireZeroOpt0012RawCompactFp16NaNs(
+          plan,
+          receipt!.mappedBytes,
+          `trajectory ${arm} ${label}`,
+        );
+    topology.push(Object.freeze({
+      ...observedTrace,
+      explicitProgress,
+      statusFreshness: Object.freeze({
+        encodedClearOnFreshPrefill: label === "prefill-first-code",
+        preInvocationZeroed: label !== "prefill-first-code",
+        poisonAndFence: statusPoison,
+        requiredSuccessWords: Object.freeze([1, 1]),
       }),
-    );
+      candidatePreparation: receipt?.preparation ?? null,
+      fp16NaNCensus,
+      correctnessOnlyFirstPrefillPreparedInsideTrace:
+        arm !== "A" && label === "prefill-first-code",
+    }));
     prepared.candidateRunner.releasePendingGuardsWithoutReadback();
     return Object.freeze(rows);
   } catch (error) {
@@ -6394,21 +7649,20 @@ function sampleTrajectoryRows(
   if (fullCursor === null) throw new Error("OPT-0012 full cursor is absent");
   let fullRows = rows;
   if (arm === "B") {
-    fullRows = reconstructAceOpt0012FullPlannerLogits(
-      {
-        conditionalLogits: rows[0]!,
-        unconditionalLogits: rows[1]!,
-        writeStatus: new Uint32Array([1, 1]),
-      },
-      plan,
-    );
+    fullRows = reconstructAceOpt0012FullPlannerLogits({
+      conditionalLogits: rows[0]!,
+      unconditionalLogits: rows[1]!,
+      writeStatus: new Uint32Array([1, 1]),
+    }, plan);
   }
   const sampled = fullCursor.sample({
     conditionalLogits: fullRows[0]!,
     unconditionalLogits: fullRows[1]!,
     seenTokenIds,
     preCfgAllowedTokens: ACE_OPT_0012_PRE_CFG_ALLOWED_TOKENS,
-    allowedTokens: plan.state === "regular-code" ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS,
+    allowedTokens: plan.state === "regular-code"
+      ? ACE_OPT_0012_REGULAR_ALLOWED_TOKENS
+      : ACE_OPT_0012_FORCED_EOS_ALLOWED_TOKENS,
     parameters: ACE_OPT_0012_SAMPLING_PARAMETERS,
   });
   return Object.freeze({
@@ -6420,8 +7674,15 @@ function sampleTrajectoryRows(
   });
 }
 
-function summarizeTrajectoryTopology(arm: Opt0012Arm, traces: readonly Readonly<Record<string, unknown>>[]): Readonly<Record<string, unknown>> {
-  if (traces.length !== 151 || traces.slice(0, 150).some((trace) => trace.state !== "regular-code") || traces[150]?.state !== "forced-eos") {
+function summarizeTrajectoryTopology(
+  arm: Opt0012Arm,
+  traces: readonly Readonly<Record<string, unknown>>[],
+): Readonly<Record<string, unknown>> {
+  if (
+    traces.length !== 151 ||
+    traces.slice(0, 150).some((trace) => trace.state !== "regular-code") ||
+    traces[150]?.state !== "forced-eos"
+  ) {
     throw new Error("OPT-0012 trajectory topology omitted an invocation");
   }
   const commandBufferCount = sumSafe(
@@ -6444,22 +7705,23 @@ function summarizeTrajectoryTopology(arm: Opt0012Arm, traces: readonly Readonly<
     traces.map((trace) => trace.copyCount as number),
     "trajectory copies",
   );
-  const encodedFreshPrefillStatusClearCount = traces.filter(
-    (trace) => (trace.statusFreshness as Readonly<Record<string, unknown>> | undefined)?.encodedClearOnFreshPrefill === true,
-  ).length;
-  const explicitPreInvocationStatusResetCount = traces.filter(
-    (trace) => (trace.statusFreshness as Readonly<Record<string, unknown>> | undefined)?.preInvocationZeroed === true,
-  ).length;
-  const fp16NaNCensuses = traces.map((trace) => trace.fp16NaNCensus as Readonly<Record<string, unknown>>);
+  const encodedFreshPrefillStatusClearCount = traces.filter((trace) =>
+    (trace.statusFreshness as Readonly<Record<string, unknown>> | undefined)
+      ?.encodedClearOnFreshPrefill === true).length;
+  const explicitPreInvocationStatusResetCount = traces.filter((trace) =>
+    (trace.statusFreshness as Readonly<Record<string, unknown>> | undefined)
+      ?.preInvocationZeroed === true).length;
+  const fp16NaNCensuses = traces.map((trace) =>
+    trace.fp16NaNCensus as Readonly<Record<string, unknown>>);
   const prefillTopology = opt0012ExpectedCommandBufferTopology(arm, "prefill");
   const decodeTopology = opt0012ExpectedCommandBufferTopology(arm, "decode");
-  const expected =
-    arm === "A"
-      ? { commandBufferCount: 5_246, physicalDispatchCount: 94_828, copyCount: 906 }
-      : { commandBufferCount: 5_095, physicalDispatchCount: 94_374, copyCount: 452 };
+  const expected = arm === "A"
+    ? { commandBufferCount: 5_246, physicalDispatchCount: 94_828, copyCount: 906 }
+    : { commandBufferCount: 5_095, physicalDispatchCount: 94_374, copyCount: 452 };
   if (
     traces[0]?.commandBufferCount !== prefillTopology.totalCommandBufferCount ||
-    traces.slice(1).some((trace) => trace.commandBufferCount !== decodeTopology.totalCommandBufferCount) ||
+    traces.slice(1).some((trace) =>
+      trace.commandBufferCount !== decodeTopology.totalCommandBufferCount) ||
     commandBufferCount !== expected.commandBufferCount ||
     queueDrainCount !== expected.commandBufferCount ||
     cooperativeIdleCount !== expected.commandBufferCount ||
@@ -6486,14 +7748,22 @@ function summarizeTrajectoryTopology(arm: Opt0012Arm, traces: readonly Readonly<
     everyInvocationRequiredFreshStatusWords: true,
     everyActualPackageReadbackHasZeroBinary16NaNs: true,
     fp16NaNCensuses: Object.freeze(fp16NaNCensuses),
-    maximumSingleDrainMilliseconds: Math.max(...traces.map((trace) => trace.maximumSingleDrainMilliseconds as number)),
+    maximumSingleDrainMilliseconds: Math.max(...traces.map(
+      (trace) => trace.maximumSingleDrainMilliseconds as number)),
     first: traces[0],
     last: traces.at(-1),
   });
 }
 
-async function runTrajectoryCancellation(prepared: PreparedSession, authority: TrajectoryArmExecution): Promise<Readonly<Record<string, unknown>>> {
-  const prompts = createAcePlannerCodePrompts(ACCEPTED_RESOLVED_CAPTION, ACCEPTED_LYRICS, ACCEPTED_COT_TEXT);
+async function runTrajectoryCancellation(
+  prepared: PreparedSession,
+  authority: TrajectoryArmExecution,
+): Promise<Readonly<Record<string, unknown>>> {
+  const prompts = createAcePlannerCodePrompts(
+    ACCEPTED_RESOLVED_CAPTION,
+    ACCEPTED_LYRICS,
+    ACCEPTED_COT_TEXT,
+  );
   const promptRows = Object.freeze([
     Object.freeze(prepared.tokenizer.encode(prompts.conditional)),
     Object.freeze(prepared.tokenizer.encode(prompts.unconditional)),
@@ -6504,48 +7774,83 @@ async function runTrajectoryCancellation(prepared: PreparedSession, authority: T
   const acceptedPrefix = authority.tokens.slice(0, prefixCodeCount + 1);
   if (
     acceptedPrefix.length !== prefixCodeCount + 1 ||
-    acceptedPrefix.some((receipt, index) => receipt.drawIndex !== (FIRST_SEMANTIC_DRAW_INDEX + BigInt(index)).toString())
+    acceptedPrefix.some((receipt, index) =>
+      receipt.drawIndex !== (FIRST_SEMANTIC_DRAW_INDEX + BigInt(index)).toString())
   ) {
     throw new Error("OPT-0012 resident cancellation raw authority prefix changed");
   }
-  const prefillTokens = acceptedPrefix.slice(0, prefixCodeCount).map((receipt) => receipt.tokenId);
-  const prefill = createPaddedSemanticPrefill(promptRows, prefillTokens, promptWidth + prefixCodeCount, capacity);
+  const prefillTokens = acceptedPrefix.slice(0, prefixCodeCount)
+    .map((receipt) => receipt.tokenId);
+  const prefill = createPaddedSemanticPrefill(
+    promptRows,
+    prefillTokens,
+    promptWidth + prefixCodeCount,
+    capacity,
+  );
   const prefillTopology: Array<Readonly<Record<string, unknown>>> = [];
-  await executeTrajectoryInvocation(prepared, "C", prepared.regularPlan, () => prepared.executor.prefill(prefill), "prefill-first-code", prefillTopology);
+  await executeTrajectoryInvocation(
+    prepared,
+    "C",
+    prepared.regularPlan,
+    () => prepared.executor.prefill(prefill),
+    "prefill-first-code",
+    prefillTopology,
+  );
   const cacheBefore = prepared.candidateRunner.activeCachePublicationSnapshot();
-  if (cacheBefore.published !== true || cacheBefore.cachedTokens !== promptWidth + prefixCodeCount) {
+  if (
+    cacheBefore.published !== true ||
+    cacheBefore.cachedTokens !== promptWidth + prefixCodeCount
+  ) {
     throw new Error("OPT-0012 resident cancellation cache prefix was not published");
   }
   const nextAccepted = acceptedPrefix[prefixCodeCount]!;
-  const cursor = new AceOpt0012CompactSamplingCursor(ACCEPTED_SEED, BigInt(nextAccepted.drawEnd));
+  const cursor = new AceOpt0012CompactSamplingCursor(
+    ACCEPTED_SEED,
+    BigInt(nextAccepted.drawEnd),
+  );
   const cursorBefore = cursor.consumed;
   let publishedCallbackCount = acceptedPrefix.length;
   const callbackCountBefore = publishedCallbackCount;
   let finalizationCount = 0;
-  const decode = createSemanticDecodeBatch(nextAccepted.tokenId, promptWidth + prefixCodeCount, capacity);
-  const statusPoison = await prepared.candidateRunner.poisonActiveWriteStatusOutsidePrimaryWall();
-  const candidatePreparation = await prepared.candidateRunner.prepareCandidateResourcesOutsidePrimaryWall(prepared.regularPlan, SENTINEL_A);
+  const decode = createSemanticDecodeBatch(
+    nextAccepted.tokenId,
+    promptWidth + prefixCodeCount,
+    capacity,
+  );
+  const statusPoison = await prepared.candidateRunner
+    .poisonActiveWriteStatusOutsidePrimaryWall();
+  const candidatePreparation = await prepared.candidateRunner
+    .prepareCandidateResourcesOutsidePrimaryWall(
+      prepared.regularPlan,
+      SENTINEL_A,
+    );
   const boundaryAbortController = new AbortController();
   prepared.observer.beginTrace("raw-resident-trajectory-cancellation-after-head", false);
   let rejection: unknown;
   try {
-    const returned = await prepared.candidateRunner.invoke(() => prepared.executor.decode(decode), {
-      arm: "C",
-      phaseKind: "decode",
-      plan: prepared.regularPlan,
-      sentinel: SENTINEL_A,
-      guardProof: false,
-      cancellationBoundary: "after-head",
-      boundaryAbortController,
-      allowCorrectnessOnlyInsideTracePreparation: false,
-    });
+    const returned = await prepared.candidateRunner.invoke(
+      () => prepared.executor.decode(decode),
+      {
+        arm: "C",
+        phaseKind: "decode",
+        plan: prepared.regularPlan,
+        sentinel: SENTINEL_A,
+        guardProof: false,
+        cancellationBoundary: "after-head",
+        boundaryAbortController,
+        allowCorrectnessOnlyInsideTracePreparation: false,
+      },
+    );
     publishedCallbackCount += 1;
     finalizationCount += 1;
     void returned;
   } catch (error) {
     rejection = error;
   }
-  if (!(rejection instanceof DOMException) || rejection.name !== "AbortError" || !boundaryAbortController.signal.aborted) {
+  if (
+    !(rejection instanceof DOMException) || rejection.name !== "AbortError" ||
+    !boundaryAbortController.signal.aborted
+  ) {
     prepared.observer.abandonTrace();
     throw new Error("OPT-0012 resident trajectory cancellation did not abort");
   }
@@ -6555,17 +7860,18 @@ async function runTrajectoryCancellation(prepared: PreparedSession, authority: T
     physicalDispatchCount: 625,
   });
   const cacheAfter = prepared.candidateRunner.activeCachePublicationSnapshot();
-  const cachePublication = await requireCancelledDecodePhaseReleased(prepared.executor, decode);
+  const cachePublication = await requireCancelledDecodePhaseReleased(
+    prepared.executor,
+    decode,
+  );
   const activityBeforeTurns = prepared.observer.activitySnapshot();
   await yieldToBrowser();
   await yieldToBrowser();
   const activityAfterTurns = prepared.observer.activitySnapshot();
   if (
     JSON.stringify(activityBeforeTurns) !== JSON.stringify(activityAfterTurns) ||
-    cacheAfter.published !== false ||
-    cursor.consumed !== cursorBefore ||
-    publishedCallbackCount !== callbackCountBefore ||
-    finalizationCount !== 0
+    cacheAfter.published !== false || cursor.consumed !== cursorBefore ||
+    publishedCallbackCount !== callbackCountBefore || finalizationCount !== 0
   ) {
     throw new Error("OPT-0012 resident cancellation published later work or state");
   }
@@ -6604,7 +7910,9 @@ async function runTrajectoryCancellation(prepared: PreparedSession, authority: T
   });
 }
 
-async function destroyPreparedSession(prepared: PreparedSession): Promise<Readonly<Record<string, unknown>>> {
+async function destroyPreparedSession(
+  prepared: PreparedSession,
+): Promise<Readonly<Record<string, unknown>>> {
   if (prepared.cleanupReceipt !== null) return prepared.cleanupReceipt;
   if (prepared.cleanupPromise !== null) return await prepared.cleanupPromise;
   prepared.destroyed = true;
@@ -6621,8 +7929,14 @@ async function destroyPreparedSession(prepared: PreparedSession): Promise<Readon
       prepared.candidateRunner.destroy();
       await prepared.executor.destroy();
       await prepared.executor.destroy();
-      postDestroyPrefill = await requireExecutorDestroyedRejection(() => prepared.executor.prefill(prepared.fixtures[0]!.prefill), "prefill");
-      postDestroyDecode = await requireExecutorDestroyedRejection(() => prepared.executor.decode(prepared.fixtures[0]!.decode), "decode");
+      postDestroyPrefill = await requireExecutorDestroyedRejection(
+        () => prepared.executor.prefill(prepared.fixtures[0]!.prefill),
+        "prefill",
+      );
+      postDestroyDecode = await requireExecutorDestroyedRejection(
+        () => prepared.executor.decode(prepared.fixtures[0]!.decode),
+        "decode",
+      );
       beforeDeviceDestroy = prepared.observer.resourceSnapshot();
       if (beforeDeviceDestroy.liveTrackedBufferCount !== 0) {
         throw new Error("OPT-0012 cleanup left tracked GPU buffers live");
@@ -6636,7 +7950,9 @@ async function destroyPreparedSession(prepared: PreparedSession): Promise<Readon
       await yieldToBrowser();
       await yieldToBrowser();
       if (prepared.runtimeEvents.length !== 0) {
-        throw new Error("OPT-0012 observed a queued runtime event before context destroy");
+        throw new Error(
+          "OPT-0012 observed a queued runtime event before context destroy",
+        );
       }
     } catch (error) {
       rememberError(error);
@@ -6650,7 +7966,9 @@ async function destroyPreparedSession(prepared: PreparedSession): Promise<Readon
       intentionalLoss = observedLoss;
       deviceLossObservedAtEpochMilliseconds = Date.now();
       if (observedLoss.reason !== "destroyed") {
-        throw new Error(`OPT-0012 cleanup observed device loss ${observedLoss.reason}, not destroyed`);
+        throw new Error(
+          `OPT-0012 cleanup observed device loss ${observedLoss.reason}, not destroyed`,
+        );
       }
     } catch (error) {
       rememberError(error);
@@ -6669,13 +7987,10 @@ async function destroyPreparedSession(prepared: PreparedSession): Promise<Readon
       rememberError(error);
     }
     if (
-      cleanupError !== undefined ||
-      intentionalLoss === null ||
+      cleanupError !== undefined || intentionalLoss === null ||
       deviceLossObservedAtEpochMilliseconds === null ||
-      postDestroyPrefill === null ||
-      postDestroyDecode === null ||
-      beforeDeviceDestroy === null ||
-      resources === null
+      postDestroyPrefill === null || postDestroyDecode === null ||
+      beforeDeviceDestroy === null || resources === null
     ) {
       throw cleanupError ?? new Error("OPT-0012 cleanup receipt is incomplete");
     }
@@ -6699,7 +8014,8 @@ async function destroyPreparedSession(prepared: PreparedSession): Promise<Readon
       preDestroyRuntimeEventCount: 0,
       postLossMacrotaskTurnCount: 2,
       contextRuntimeEventCountAfterPostLossTurns: prepared.runtimeEvents.length,
-      postLossRuntimeEventScope: "context-event-stream-after-pre-destroy-queue-observation-not-independent-raw-device-listener",
+      postLossRuntimeEventScope:
+        "context-event-stream-after-pre-destroy-queue-observation-not-independent-raw-device-listener",
       resources,
     });
   })();
@@ -6719,7 +8035,11 @@ async function requireExecutorDestroyedRejection(
   } catch (error) {
     rejection = error;
   }
-  if (!(rejection instanceof DOMException) || rejection.name !== "InvalidStateError" || !rejection.message.includes("executor is destroyed")) {
+  if (
+    !(rejection instanceof DOMException) ||
+    rejection.name !== "InvalidStateError" ||
+    !rejection.message.includes("executor is destroyed")
+  ) {
     throw new Error(`OPT-0012 executor ${operationName} did not reject after destroy`);
   }
   return Object.freeze({
@@ -6729,29 +8049,29 @@ async function requireExecutorDestroyedRejection(
   });
 }
 
-function publicPreparationSummary(prepared: PreparedSession): Readonly<Record<string, unknown>> {
+function publicPreparationSummary(
+  prepared: PreparedSession,
+): Readonly<Record<string, unknown>> {
   return Object.freeze({
     identity: prepared.identity,
-    packageAcquisitionWallMilliseconds: prepared.packageAcquisitionWallMilliseconds,
+    packageAcquisitionWallMilliseconds:
+      prepared.packageAcquisitionWallMilliseconds,
     phaseUploadWallMilliseconds: prepared.phaseUploadWallMilliseconds,
-    executorCompileAndCorrectnessWallMilliseconds: prepared.executorCompileAndCorrectnessWallMilliseconds,
+    executorCompileAndCorrectnessWallMilliseconds:
+      prepared.executorCompileAndCorrectnessWallMilliseconds,
     package: prepared.preparedPackage.summary,
-    sourceAuthentication: prepared.sourceAuthentication,
-    capabilities: prepared.capabilityAuthentication,
+      sourceAuthentication: prepared.sourceAuthentication,
+      capabilities: prepared.capabilityAuthentication,
     candidateShaderSha256: OPT_0012_CANDIDATE_SHADER_SHA256,
     plans: Object.freeze({
       regular: publicPlan(prepared.regularPlan),
       forcedEos: publicPlan(prepared.eosPlan),
     }),
-    cases: Object.freeze(
-      prepared.fixtures.map((fixture) =>
-        Object.freeze({
-          spec: fixture.spec,
-          decodeTokenId: fixture.decodeTokenId,
-          promptLengths: Object.freeze(fixture.promptRows.map((row) => row.length)),
-        }),
-      ),
-    ),
+    cases: Object.freeze(prepared.fixtures.map((fixture) => Object.freeze({
+      spec: fixture.spec,
+      decodeTokenId: fixture.decodeTokenId,
+      promptLengths: Object.freeze(fixture.promptRows.map((row) => row.length)),
+    }))),
     forcedEosCase: Object.freeze({
       spec: prepared.eosFixture.spec,
       decodeTokenId: prepared.eosFixture.decodeTokenId,
@@ -6769,9 +8089,12 @@ function publicPreparationSummary(prepared: PreparedSession): Readonly<Record<st
       fp16ConversionLegacy: 2,
       fp16ConversionAllocationFree: 2,
       fp16ConversionOrders: OPT_0012_PREPACKAGE_CONVERSION_ORDERS,
-      derivation: "four correctness states times first-run-plus-rerun; exhaustive " + "fixed forward-order and reverse-order conversion gate passes",
+      derivation:
+        "four correctness states times first-run-plus-rerun; exhaustive " +
+        "fixed forward-order and reverse-order conversion gate passes",
     }),
-    warmupCompletedAtEpochMilliseconds: prepared.warmupCompletedAtEpochMilliseconds,
+    warmupCompletedAtEpochMilliseconds:
+      prepared.warmupCompletedAtEpochMilliseconds,
   });
 }
 
@@ -6790,7 +8113,13 @@ function publicPlan(plan: AceOpt0012CompactSemanticHeadPlan): Readonly<Record<st
   });
 }
 
-function createSentinelBuffer(device: GPUDevice, label: string, size: number, usage: GPUBufferUsageFlags, sentinel: number): GPUBuffer {
+function createSentinelBuffer(
+  device: GPUDevice,
+  label: string,
+  size: number,
+  usage: GPUBufferUsageFlags,
+  sentinel: number,
+): GPUBuffer {
   const buffer = device.createBuffer({
     label,
     size,
@@ -6802,8 +8131,15 @@ function createSentinelBuffer(device: GPUDevice, label: string, size: number, us
   return buffer;
 }
 
-function clearBinding(encoder: GPUCommandEncoder, binding: GPUBufferBinding): void {
-  encoder.clearBuffer(binding.buffer, binding.offset ?? 0, binding.size ?? binding.buffer.size - (binding.offset ?? 0));
+function clearBinding(
+  encoder: GPUCommandEncoder,
+  binding: GPUBufferBinding,
+): void {
+  encoder.clearBuffer(
+    binding.buffer,
+    binding.offset ?? 0,
+    binding.size ?? binding.buffer.size - (binding.offset ?? 0),
+  );
 }
 
 function zeroStatusBinding(queue: GPUQueue, binding: GPUBufferBinding): void {
@@ -6813,15 +8149,28 @@ function zeroStatusBinding(queue: GPUQueue, binding: GPUBufferBinding): void {
     throw new Error("OPT-0012 write-status binding extent changed");
   }
   const zero = new Uint32Array(2);
-  queue.writeBuffer(binding.buffer, byteOffset, zero.buffer, zero.byteOffset, zero.byteLength);
+  queue.writeBuffer(
+    binding.buffer,
+    byteOffset,
+    zero.buffer,
+    zero.byteOffset,
+    zero.byteLength,
+  );
 }
 
-async function submitAndDrain(device: GPUDevice, command: GPUCommandBuffer): Promise<void> {
+async function submitAndDrain(
+  device: GPUDevice,
+  command: GPUCommandBuffer,
+): Promise<void> {
   device.queue.submit([command]);
   await device.queue.onSubmittedWorkDone();
 }
 
-function requireSentinel(bytes: Uint8Array, sentinel: number, label: string): void {
+function requireSentinel(
+  bytes: Uint8Array,
+  sentinel: number,
+  label: string,
+): void {
   for (let index = 0; index < bytes.length; index += 1) {
     if (bytes[index] !== sentinel) {
       throw new Error(`OPT-0012 ${label} changed at byte ${index}`);
@@ -6829,16 +8178,17 @@ function requireSentinel(bytes: Uint8Array, sentinel: number, label: string): vo
   }
 }
 
-function requireFloat32Rows(rows: readonly ArrayLike<number>[], expectedLength: number): readonly Float32Array[] {
+function requireFloat32Rows(
+  rows: readonly ArrayLike<number>[],
+  expectedLength: number,
+): readonly Float32Array[] {
   if (rows.length !== 2) throw new Error("OPT-0012 expected two CFG rows");
-  return Object.freeze(
-    rows.map((row, index) => {
-      if (!(row instanceof Float32Array) || row.length !== expectedLength) {
-        throw new Error(`OPT-0012 row ${index} has the wrong logit extent`);
-      }
-      return row;
-    }),
-  );
+  return Object.freeze(rows.map((row, index) => {
+    if (!(row instanceof Float32Array) || row.length !== expectedLength) {
+      throw new Error(`OPT-0012 row ${index} has the wrong logit extent`);
+    }
+    return row;
+  }));
 }
 
 function requiredTimestamp(value: number | undefined, label: string): number {
@@ -6848,7 +8198,10 @@ function requiredTimestamp(value: number | undefined, label: string): number {
   return value;
 }
 
-function requirePackageFile(files: ReadonlyMap<string, File>, name: string): File {
+function requirePackageFile(
+  files: ReadonlyMap<string, File>,
+  name: string,
+): File {
   const file = files.get(name);
   if (!(file instanceof File)) throw new Error(`OPT-0012 package omitted ${name}`);
   return file;
@@ -6903,7 +8256,11 @@ function floatWord(value: number): number {
   return new Uint32Array(new Float32Array([value]).buffer)[0]!;
 }
 
-function requireU32ArraysEqual(left: ArrayLike<number>, right: ArrayLike<number>, label: string): void {
+function requireU32ArraysEqual(
+  left: ArrayLike<number>,
+  right: ArrayLike<number>,
+  label: string,
+): void {
   if (left.length !== right.length) {
     throw new Error(`OPT-0012 ${label} lengths differ`);
   }
@@ -6914,13 +8271,21 @@ function requireU32ArraysEqual(left: ArrayLike<number>, right: ArrayLike<number>
   }
 }
 
-function requireNumberArraysEqual(left: readonly number[], right: readonly number[], label: string): void {
+function requireNumberArraysEqual(
+  left: readonly number[],
+  right: readonly number[],
+  label: string,
+): void {
   if (left.length !== right.length || left.some((value, index) => value !== right[index])) {
     throw new Error(`OPT-0012 ${label} differs`);
   }
 }
 
-function requireByteArraysEqual(left: Uint8Array, right: Uint8Array, label: string): void {
+function requireByteArraysEqual(
+  left: Uint8Array,
+  right: Uint8Array,
+  label: string,
+): void {
   if (left.length !== right.length) {
     throw new Error(`OPT-0012 ${label} byte lengths differ`);
   }
@@ -6932,16 +8297,18 @@ function requireByteArraysEqual(left: Uint8Array, right: Uint8Array, label: stri
 }
 
 function sameSample(left: SampleReceipt, right: SampleReceipt): boolean {
-  return (
-    left.tokenId === right.tokenId &&
+  return left.tokenId === right.tokenId &&
     left.word === right.word &&
     left.positiveCandidateCount === right.positiveCandidateCount &&
     left.drawIndex === right.drawIndex &&
-    left.drawEnd === right.drawEnd
-  );
+    left.drawEnd === right.drawEnd;
 }
 
-function requireSameSample(left: SampleReceipt, right: SampleReceipt, label: string): void {
+function requireSameSample(
+  left: SampleReceipt,
+  right: SampleReceipt,
+  label: string,
+): void {
   if (!sameSample(left, right)) throw new Error(`OPT-0012 ${label} sample differs`);
 }
 
@@ -6962,9 +8329,18 @@ function sha256FullSemanticReadback(mapped: ArrayBuffer): string {
   if (mapped.byteLength !== OPT_0012_FULL_READBACK_ALLOCATION_BYTES) {
     throw new Error("OPT-0012 full readback allocation changed before hashing");
   }
-  const semantic = new Uint8Array(OPT_0012_FULL_HEAD_LOGIT_BYTES + OPT_0012_FULL_READBACK_STATUS_BYTES);
+  const semantic = new Uint8Array(
+    OPT_0012_FULL_HEAD_LOGIT_BYTES + OPT_0012_FULL_READBACK_STATUS_BYTES,
+  );
   semantic.set(new Uint8Array(mapped, 0, OPT_0012_FULL_HEAD_LOGIT_BYTES));
-  semantic.set(new Uint8Array(mapped, OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET, OPT_0012_FULL_READBACK_STATUS_BYTES), OPT_0012_FULL_HEAD_LOGIT_BYTES);
+  semantic.set(
+    new Uint8Array(
+      mapped,
+      OPT_0012_FULL_READBACK_STATUS_BYTE_OFFSET,
+      OPT_0012_FULL_READBACK_STATUS_BYTES,
+    ),
+    OPT_0012_FULL_HEAD_LOGIT_BYTES,
+  );
   return aceSha256Hex(semantic);
 }
 
@@ -6995,7 +8371,9 @@ function summarizeNumbers(values: readonly number[]): Readonly<Record<string, nu
   }
   const sorted = [...values].sort((left, right) => left - right);
   const middle = Math.floor(sorted.length / 2);
-  const median = sorted.length % 2 === 0 ? (sorted[middle - 1]! + sorted[middle]!) / 2 : sorted[middle]!;
+  const median = sorted.length % 2 === 0
+    ? (sorted[middle - 1]! + sorted[middle]!) / 2
+    : sorted[middle]!;
   return Object.freeze({
     minimum: sorted[0]!,
     median,
