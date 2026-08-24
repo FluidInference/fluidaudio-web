@@ -606,11 +606,19 @@ describe("concrete WebGPU pipeline coordinator", () => {
     expect(ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES)
       .toBeLessThanOrEqual(1_073_741_824);
 
-    await expect(harness.backend.generate(testGenerationRequest(), {
+    // 30 s is 750 latent frames: one window under C2176/C2378 but two under
+    // C512, so the scheduling receipt must validate against the effective
+    // adapter-derived plan, not the configured C2378 identity.
+    const result = await harness.backend.generate(testGenerationRequest({
+      durationSeconds: 30,
+    }), {
       signal: new AbortController().signal,
       onProgress: vi.fn(),
       onDiagnostic: vi.fn(),
-    })).resolves.toMatchObject({ frameCount: 480_000 });
+    });
+    expect(result.frameCount).toBe(1_440_000);
+    expect(result.metrics.vaeScheduling?.windows).toHaveLength(2);
+    expect(isAceGenerationResultValue(result)).toBe(true);
 
     expect(harness.lastVaeMaximumWindowFrames).toBe(512);
     expect(harness.lastVaePlanChunkFrames).toBe(512);
@@ -641,11 +649,16 @@ describe("concrete WebGPU pipeline coordinator", () => {
         ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
     });
 
-    await expect(harness.backend.generate(testGenerationRequest(), {
+    const result = await harness.backend.generate(testGenerationRequest({
+      durationSeconds: 30,
+    }), {
       signal: new AbortController().signal,
       onProgress: vi.fn(),
       onDiagnostic: vi.fn(),
-    })).resolves.toMatchObject({ frameCount: 480_000 });
+    });
+    expect(result.frameCount).toBe(1_440_000);
+    expect(result.metrics.vaeScheduling?.windows).toHaveLength(1);
+    expect(isAceGenerationResultValue(result)).toBe(true);
 
     expect(harness.lastVaeMaximumWindowFrames).toBe(
       ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
