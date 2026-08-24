@@ -208,7 +208,7 @@ describe("OPT-0077 closed result contract", () => {
   });
 
   it("keeps the ledger ID and written disposition synchronized", () => {
-    expect(ledger).toContain("Next available ID: `OPT-0089`");
+    expect(ledger).toContain("Next available ID: `OPT-0090`");
     const row = ledger.split("\n").find((line) =>
       line.startsWith("| OPT-0077 |"));
     expect(row).toContain("| negative | abandoned |");

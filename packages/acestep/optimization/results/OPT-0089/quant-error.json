@@ -1,0 +1,5095 @@
+{
+ "aggregate": {
+  "maxNrmse": 0.006341587889320673,
+  "maxRelErrVsAmax": 0.003937007874015748,
+  "medianNrmse": 0.005587496630287396,
+  "minSnrDb": 43.95603968392473,
+  "totalZeroScaleBlocks": 0
+ },
+ "experiment": "OPT-0089",
+ "gemmTensorCount": 264,
+ "manifestByteLength": 254357,
+ "method": "symmetric int8, per-32-block along K, fp16 scale, round-to-nearest-even, clamp +/-127, weights only",
+ "outputManifestSha256": "ef8355b9cffff466b018b51275923982b071234933fe8a32897915eeeb01fa36",
+ "passthroughTensorCount": 193,
+ "quantizedBytes": 3019898880,
+ "sourceManifestSha256": "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f",
+ "tensors": [
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0018787384033203125,
+   "maxRelErrVsAmax": 0.003926179846938775,
+   "nrmse": 0.005394835408697649,
+   "rmse": 0.000260883257266986,
+   "snrDb": 45.36043601381892,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.478515625,
+   "tensorRms": 0.04835796414592841,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.00617218017578125,
+   "maxRelErrVsAmax": 0.0038727405024509805,
+   "nrmse": 0.005479942719540842,
+   "rmse": 0.0001893808496288211,
+   "snrDb": 45.22447962125184,
+   "tensorAmax": 1.59375,
+   "tensorRms": 0.034558910434138466,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00189208984375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.00577888899730441,
+   "rmse": 0.0002642473264843883,
+   "snrDb": 44.76311295033721,
+   "tensorAmax": 0.484375,
+   "tensorRms": 0.04572631981816015,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.00148773193359375,
+   "maxRelErrVsAmax": 0.0038277324120603016,
+   "nrmse": 0.00554411304739901,
+   "rmse": 0.0001204309447811837,
+   "snrDb": 45.12335845623295,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.388671875,
+   "tensorRms": 0.02172231044922203,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.0.mlp.down_proj.weight",
+   "maxAbsErr": 0.00921630859375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.006209338524483629,
+   "rmse": 0.00030547720759316473,
+   "snrDb": 44.13909324757216,
+   "tensorAmax": 2.359375,
+   "tensorRms": 0.049196417040020916,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0041351318359375,
+   "maxRelErrVsAmax": 0.003920717592592593,
+   "nrmse": 0.0058730859514901715,
+   "rmse": 0.000262884866919288,
+   "snrDb": 44.62267286587627,
+   "tensorAmax": 1.0546875,
+   "tensorRms": 0.044760943240169423,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.mlp.up_proj.weight",
+   "maxAbsErr": 0.00506591796875,
+   "maxRelErrVsAmax": 0.003859747023809524,
+   "nrmse": 0.005853505815052008,
+   "rmse": 0.0002797724005986986,
+   "snrDb": 44.65167891735943,
+   "tensorAmax": 1.3125,
+   "tensorRms": 0.04779569875531299,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.self_attn.k_proj.weight",
+   "maxAbsErr": 0.002777099609375,
+   "maxRelErrVsAmax": 0.0038429054054054056,
+   "nrmse": 0.006278802997016874,
+   "rmse": 0.0002420721693719693,
+   "snrDb": 44.04246286200771,
+   "tensorAmax": 0.72265625,
+   "tensorRms": 0.03855387236818553,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00246429443359375,
+   "maxRelErrVsAmax": 0.003604910714285714,
+   "nrmse": 0.005511503809078694,
+   "rmse": 0.00019893894038325503,
+   "snrDb": 45.174597762063144,
+   "tensorAmax": 0.68359375,
+   "tensorRms": 0.03609521961239645,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0034637451171875,
+   "maxRelErrVsAmax": 0.003923534292035398,
+   "nrmse": 0.00607072508686201,
+   "rmse": 0.00022589199080128578,
+   "snrDb": 44.33518867465157,
+   "tensorAmax": 0.8828125,
+   "tensorRms": 0.03721005111731234,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.0.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00121307373046875,
+   "maxRelErrVsAmax": 0.003787157012195122,
+   "nrmse": 0.005832659658854705,
+   "rmse": 0.00018033242852533618,
+   "snrDb": 44.68266728639595,
+   "tensorAmax": 0.3203125,
+   "tensorRms": 0.030917701198555116,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0023193359375,
+   "maxRelErrVsAmax": 0.0038306451612903224,
+   "nrmse": 0.0054541765164569786,
+   "rmse": 0.0002722383640080583,
+   "snrDb": 45.265416217206734,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.60546875,
+   "tensorRms": 0.04991374283297009,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0124969482421875,
+   "maxRelErrVsAmax": 0.00380859375,
+   "nrmse": 0.005385009867073166,
+   "rmse": 0.00021143775206584474,
+   "snrDb": 45.376269931956934,
+   "tensorAmax": 3.28125,
+   "tensorRms": 0.039264134567085635,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0027008056640625,
+   "maxRelErrVsAmax": 0.0037576426630434785,
+   "nrmse": 0.005648706867416939,
+   "rmse": 0.00029411302987417587,
+   "snrDb": 44.96101923696551,
+   "tensorAmax": 0.71875,
+   "tensorRms": 0.052067320322583655,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001049041748046875,
+   "maxRelErrVsAmax": 0.0038640962230215826,
+   "nrmse": 0.005427907371414957,
+   "rmse": 0.0001651161431383717,
+   "snrDb": 45.307351445841434,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.271484375,
+   "tensorRms": 0.030419852779346324,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.1.mlp.down_proj.weight",
+   "maxAbsErr": 0.0065460205078125,
+   "maxRelErrVsAmax": 0.003915376752336448,
+   "nrmse": 0.0057361315605532984,
+   "rmse": 0.0002993736003201561,
+   "snrDb": 44.827617930043935,
+   "tensorAmax": 1.671875,
+   "tensorRms": 0.052190853218728996,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.mlp.gate_proj.weight",
+   "maxAbsErr": 0.003322601318359375,
+   "maxRelErrVsAmax": 0.003588970200421941,
+   "nrmse": 0.005620527248057103,
+   "rmse": 0.0003050874040129843,
+   "snrDb": 45.004458848115625,
+   "tensorAmax": 0.92578125,
+   "tensorRms": 0.0542809225092622,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.mlp.up_proj.weight",
+   "maxAbsErr": 0.002285003662109375,
+   "maxRelErrVsAmax": 0.003798447646103896,
+   "nrmse": 0.005661115368175754,
+   "rmse": 0.00029801263490838135,
+   "snrDb": 44.941959890290526,
+   "tensorAmax": 0.6015625,
+   "tensorRms": 0.052642035275181714,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0040283203125,
+   "maxRelErrVsAmax": 0.00387687969924812,
+   "nrmse": 0.005949534167766644,
+   "rmse": 0.00028083492719483533,
+   "snrDb": 44.51034074017969,
+   "tensorAmax": 1.0390625,
+   "tensorRms": 0.04720284299169864,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00316619873046875,
+   "maxRelErrVsAmax": 0.003787602219626168,
+   "nrmse": 0.00535386734929543,
+   "rmse": 0.000278027339508303,
+   "snrDb": 45.42664786725028,
+   "tensorAmax": 0.8359375,
+   "tensorRms": 0.051930188286209863,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.self_attn.q_proj.weight",
+   "maxAbsErr": 0.002651214599609375,
+   "maxRelErrVsAmax": 0.003834525070621469,
+   "nrmse": 0.0057451876247877785,
+   "rmse": 0.0002750698601186876,
+   "snrDb": 44.81391567344103,
+   "tensorAmax": 0.69140625,
+   "tensorRms": 0.047878307565081206,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.1.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00209808349609375,
+   "maxRelErrVsAmax": 0.003920506386861314,
+   "nrmse": 0.005693930004005141,
+   "rmse": 0.0003078901617735098,
+   "snrDb": 44.891757519549344,
+   "tensorAmax": 0.53515625,
+   "tensorRms": 0.05407340124605294,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.002590179443359375,
+   "maxRelErrVsAmax": 0.003832866690751445,
+   "nrmse": 0.005433713636200488,
+   "rmse": 0.0002725313302021583,
+   "snrDb": 45.2980650640196,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.67578125,
+   "tensorRms": 0.050155629915146806,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0067596435546875,
+   "maxRelErrVsAmax": 0.0038799747757847533,
+   "nrmse": 0.005344362118138845,
+   "rmse": 0.00021443272101885665,
+   "snrDb": 45.44208246056997,
+   "tensorAmax": 1.7421875,
+   "tensorRms": 0.040123164613241454,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00264739990234375,
+   "maxRelErrVsAmax": 0.003807496488764045,
+   "nrmse": 0.0055599076473816095,
+   "rmse": 0.0002840936444043652,
+   "snrDb": 45.0986484437749,
+   "tensorAmax": 0.6953125,
+   "tensorRms": 0.05109682793708932,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0009918212890625,
+   "maxRelErrVsAmax": 0.003847064393939394,
+   "nrmse": 0.0053910638181022316,
+   "rmse": 0.00017745531594851697,
+   "snrDb": 45.366510541369784,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.2578125,
+   "tensorRms": 0.032916567478324714,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.2.mlp.down_proj.weight",
+   "maxAbsErr": 0.004608154296875,
+   "maxRelErrVsAmax": 0.003805443548387097,
+   "nrmse": 0.005781003188614224,
+   "rmse": 0.0003030265564329478,
+   "snrDb": 44.75993582164081,
+   "tensorAmax": 1.2109375,
+   "tensorRms": 0.05241764215417894,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.mlp.gate_proj.weight",
+   "maxAbsErr": 0.002471923828125,
+   "maxRelErrVsAmax": 0.0038586128048780487,
+   "nrmse": 0.005616473387339683,
+   "rmse": 0.0002860162538933603,
+   "snrDb": 45.01072589204838,
+   "tensorAmax": 0.640625,
+   "tensorRms": 0.05092452757598406,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.mlp.up_proj.weight",
+   "maxAbsErr": 0.00189208984375,
+   "maxRelErrVsAmax": 0.0038442460317460315,
+   "nrmse": 0.005624379655190418,
+   "rmse": 0.0003015437014757361,
+   "snrDb": 44.99850742765517,
+   "tensorAmax": 0.4921875,
+   "tensorRms": 0.05361368185688864,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0024566650390625,
+   "maxRelErrVsAmax": 0.003834794207317073,
+   "nrmse": 0.005750610147455097,
+   "rmse": 0.00025205421478653473,
+   "snrDb": 44.805721472764475,
+   "tensorAmax": 0.640625,
+   "tensorRms": 0.04383086460800686,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.self_attn.o_proj.weight",
+   "maxAbsErr": 0.002658843994140625,
+   "maxRelErrVsAmax": 0.003781467013888889,
+   "nrmse": 0.0053504663382632385,
+   "rmse": 0.0002750655335541114,
+   "snrDb": 45.43216727804963,
+   "tensorAmax": 0.703125,
+   "tensorRms": 0.051409637247320325,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0028839111328125,
+   "maxRelErrVsAmax": 0.0037860576923076923,
+   "nrmse": 0.005697232945527107,
+   "rmse": 0.00025488371098408543,
+   "snrDb": 44.88672045942267,
+   "tensorAmax": 0.76171875,
+   "tensorRms": 0.04473815857998126,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.2.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00131988525390625,
+   "maxRelErrVsAmax": 0.0038838002873563216,
+   "nrmse": 0.0055941381394635035,
+   "rmse": 0.0002868081556058299,
+   "snrDb": 45.04533627067345,
+   "tensorAmax": 0.33984375,
+   "tensorRms": 0.05126940888044209,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00229644775390625,
+   "maxRelErrVsAmax": 0.00341796875,
+   "nrmse": 0.005425243306425633,
+   "rmse": 0.0002781763932597011,
+   "snrDb": 45.31161560389794,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.671875,
+   "tensorRms": 0.05127445490421237,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.017425537109375,
+   "maxRelErrVsAmax": 0.003872341579861111,
+   "nrmse": 0.005287321600840528,
+   "rmse": 0.0002361910579068244,
+   "snrDb": 45.535285457406985,
+   "tensorAmax": 4.5,
+   "tensorRms": 0.04467121082047988,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00331878662109375,
+   "maxRelErrVsAmax": 0.003915250576036866,
+   "nrmse": 0.00558322283544766,
+   "rmse": 0.00029235141893963146,
+   "snrDb": 45.06230076817852,
+   "tensorAmax": 0.84765625,
+   "tensorRms": 0.05236248445673776,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0009822845458984375,
+   "maxRelErrVsAmax": 0.003671019616788321,
+   "nrmse": 0.005382407683769649,
+   "rmse": 0.00019015423396813428,
+   "snrDb": 45.380468204630155,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.267578125,
+   "tensorRms": 0.035328842618431486,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.3.mlp.down_proj.weight",
+   "maxAbsErr": 0.00262451171875,
+   "maxRelErrVsAmax": 0.00379590395480226,
+   "nrmse": 0.005701009255126894,
+   "rmse": 0.0002991865078536978,
+   "snrDb": 44.88096507906741,
+   "tensorAmax": 0.69140625,
+   "tensorRms": 0.052479568873641205,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0045318603515625,
+   "maxRelErrVsAmax": 0.0038931417785234897,
+   "nrmse": 0.005679393153313053,
+   "rmse": 0.0002903301795784378,
+   "snrDb": 44.91396132890374,
+   "tensorAmax": 1.1640625,
+   "tensorRms": 0.05111992984832803,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.mlp.up_proj.weight",
+   "maxAbsErr": 0.00249481201171875,
+   "maxRelErrVsAmax": 0.003894340701219512,
+   "nrmse": 0.005671079492914573,
+   "rmse": 0.0003044670741625992,
+   "snrDb": 44.92668530117762,
+   "tensorAmax": 0.640625,
+   "tensorRms": 0.0536876752553018,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.self_attn.k_proj.weight",
+   "maxAbsErr": 0.003704071044921875,
+   "maxRelErrVsAmax": 0.0039022312242798355,
+   "nrmse": 0.005759829195018626,
+   "rmse": 0.0002857580449157048,
+   "snrDb": 44.791807903621745,
+   "tensorAmax": 0.94921875,
+   "tensorRms": 0.049612242870472945,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001953125,
+   "maxRelErrVsAmax": 0.003875968992248062,
+   "nrmse": 0.005352140383398525,
+   "rmse": 0.0002787408233344502,
+   "snrDb": 45.429450076195735,
+   "tensorAmax": 0.50390625,
+   "tensorRms": 0.05208025264043133,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0044708251953125,
+   "maxRelErrVsAmax": 0.0038407088926174495,
+   "nrmse": 0.005703766662833275,
+   "rmse": 0.0002892404617735233,
+   "snrDb": 44.87676498962002,
+   "tensorAmax": 1.1640625,
+   "tensorRms": 0.050710430294819725,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.3.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001766204833984375,
+   "maxRelErrVsAmax": 0.003799566701680672,
+   "nrmse": 0.005665006792983205,
+   "rmse": 0.00031328305662709107,
+   "snrDb": 44.935991300642385,
+   "tensorAmax": 0.46484375,
+   "tensorRms": 0.05530144412450307,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0016117095947265625,
+   "maxRelErrVsAmax": 0.003874156396713615,
+   "nrmse": 0.005394734244108921,
+   "rmse": 0.00025575184449617354,
+   "snrDb": 45.360598894171204,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.416015625,
+   "tensorRms": 0.04740768181036089,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.01513671875,
+   "maxRelErrVsAmax": 0.0038442460317460315,
+   "nrmse": 0.005320590617024128,
+   "rmse": 0.00023666477179334062,
+   "snrDb": 45.48080311546232,
+   "tensorAmax": 3.9375,
+   "tensorRms": 0.044480921166175,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.001537322998046875,
+   "maxRelErrVsAmax": 0.003915967039800995,
+   "nrmse": 0.005568771189463504,
+   "rmse": 0.0002855599308218014,
+   "snrDb": 45.084812522057085,
+   "tensorAmax": 0.392578125,
+   "tensorRms": 0.05127880480384979,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.000835418701171875,
+   "maxRelErrVsAmax": 0.003853462837837838,
+   "nrmse": 0.005374113948135011,
+   "rmse": 0.0001978411540524409,
+   "snrDb": 45.39386258789841,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.216796875,
+   "tensorRms": 0.03681372519484781,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.4.mlp.down_proj.weight",
+   "maxAbsErr": 0.004058837890625,
+   "maxRelErrVsAmax": 0.0037647192028985505,
+   "nrmse": 0.005739107781052669,
+   "rmse": 0.000301128950022293,
+   "snrDb": 44.82311238160069,
+   "tensorAmax": 1.078125,
+   "tensorRms": 0.05246964537178631,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00420379638671875,
+   "maxRelErrVsAmax": 0.003927634580291971,
+   "nrmse": 0.005720860469490707,
+   "rmse": 0.0002843338670905501,
+   "snrDb": 44.85077288901181,
+   "tensorAmax": 1.0703125,
+   "tensorRms": 0.04970124137914214,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.mlp.up_proj.weight",
+   "maxAbsErr": 0.00591278076171875,
+   "maxRelErrVsAmax": 0.0037841796875,
+   "nrmse": 0.005679223099105655,
+   "rmse": 0.0003054381212139825,
+   "snrDb": 44.914221408484785,
+   "tensorAmax": 1.5625,
+   "tensorRms": 0.05378167328240404,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0028533935546875,
+   "maxRelErrVsAmax": 0.003824443717277487,
+   "nrmse": 0.005726458362832666,
+   "rmse": 0.00026802264088157023,
+   "snrDb": 44.84227785391024,
+   "tensorAmax": 0.74609375,
+   "tensorRms": 0.04680425908990446,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00263214111328125,
+   "maxRelErrVsAmax": 0.003894960260115607,
+   "nrmse": 0.005354978387171911,
+   "rmse": 0.00027667931888531464,
+   "snrDb": 45.42484555304184,
+   "tensorAmax": 0.67578125,
+   "tensorRms": 0.05166768171242526,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00241851806640625,
+   "maxRelErrVsAmax": 0.003775247713414634,
+   "nrmse": 0.005632314974416328,
+   "rmse": 0.0002688655458116288,
+   "snrDb": 44.98626132509587,
+   "tensorAmax": 0.640625,
+   "tensorRms": 0.047736241142922076,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.4.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0015239715576171875,
+   "maxRelErrVsAmax": 0.0037333657296650716,
+   "nrmse": 0.005573642663722333,
+   "rmse": 0.0002978731709217068,
+   "snrDb": 45.07721756264517,
+   "tensorAmax": 0.408203125,
+   "tensorRms": 0.053443176912022106,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.001983642578125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005429652609735402,
+   "rmse": 0.000269034296773015,
+   "snrDb": 45.30455911540986,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5078125,
+   "tensorRms": 0.049549080965260055,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.019287109375,
+   "maxRelErrVsAmax": 0.0038334627329192545,
+   "nrmse": 0.005319743120128717,
+   "rmse": 0.00025799464611616323,
+   "snrDb": 45.4821867684002,
+   "tensorAmax": 5.03125,
+   "tensorRms": 0.04849757597128501,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00222015380859375,
+   "maxRelErrVsAmax": 0.0038928724315068493,
+   "nrmse": 0.005580748381512718,
+   "rmse": 0.00029019465366138833,
+   "snrDb": 45.06615116043189,
+   "tensorAmax": 0.5703125,
+   "tensorRms": 0.05199923627137767,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001102447509765625,
+   "maxRelErrVsAmax": 0.003892780172413793,
+   "nrmse": 0.005378775984271789,
+   "rmse": 0.00022799646608735377,
+   "snrDb": 45.38633085751439,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.283203125,
+   "tensorRms": 0.04238816912138447,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.5.mlp.down_proj.weight",
+   "maxAbsErr": 0.0040283203125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005755162205115844,
+   "rmse": 0.0003030614950215092,
+   "snrDb": 44.798848631668946,
+   "tensorAmax": 1.03125,
+   "tensorRms": 0.05265907097320622,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0046539306640625,
+   "maxRelErrVsAmax": 0.003893484477124183,
+   "nrmse": 0.0057943980955467225,
+   "rmse": 0.000288569861914701,
+   "snrDb": 44.73983341095036,
+   "tensorAmax": 1.1953125,
+   "tensorRms": 0.049801525051666885,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.mlp.up_proj.weight",
+   "maxAbsErr": 0.003086090087890625,
+   "maxRelErrVsAmax": 0.0037982647235576925,
+   "nrmse": 0.005736752899689274,
+   "rmse": 0.0003098312514298458,
+   "snrDb": 44.82667712336418,
+   "tensorAmax": 0.8125,
+   "tensorRms": 0.05400812216378145,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00316619873046875,
+   "maxRelErrVsAmax": 0.003570691079295154,
+   "nrmse": 0.005726889021444183,
+   "rmse": 0.00028500323493998927,
+   "snrDb": 44.841624655670884,
+   "tensorAmax": 0.88671875,
+   "tensorRms": 0.04976580371521122,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.self_attn.o_proj.weight",
+   "maxAbsErr": 0.002109527587890625,
+   "maxRelErrVsAmax": 0.0038300642730496456,
+   "nrmse": 0.005353750878921655,
+   "rmse": 0.00028662336026286225,
+   "snrDb": 45.42683682595075,
+   "tensorAmax": 0.55078125,
+   "tensorRms": 0.05353692518479558,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.self_attn.q_proj.weight",
+   "maxAbsErr": 0.003387451171875,
+   "maxRelErrVsAmax": 0.003923925339366516,
+   "nrmse": 0.0057064200832233755,
+   "rmse": 0.00029313127827412306,
+   "snrDb": 44.8727252104998,
+   "tensorAmax": 0.86328125,
+   "tensorRms": 0.051368681940524526,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.5.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00148773193359375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.0055853265700400966,
+   "rmse": 0.00031068759946729956,
+   "snrDb": 45.05902857838012,
+   "tensorAmax": 0.380859375,
+   "tensorRms": 0.05562568196707416,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00215911865234375,
+   "maxRelErrVsAmax": 0.0038924955985915493,
+   "nrmse": 0.005415288034154801,
+   "rmse": 0.000270726139479912,
+   "snrDb": 45.32756877406143,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5546875,
+   "tensorRms": 0.04999293440578105,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.01300048828125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005350037280313756,
+   "rmse": 0.0002519624168235429,
+   "snrDb": 45.432863834049684,
+   "tensorAmax": 3.328125,
+   "tensorRms": 0.04709545067109634,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.001720428466796875,
+   "maxRelErrVsAmax": 0.003897607853982301,
+   "nrmse": 0.005524613360397231,
+   "rmse": 0.00028517656324382224,
+   "snrDb": 45.153962212844746,
+   "tensorAmax": 0.44140625,
+   "tensorRms": 0.05161927987360865,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0010833740234375,
+   "maxRelErrVsAmax": 0.0037478885135135134,
+   "nrmse": 0.005384655118682368,
+   "rmse": 0.00023268280934554054,
+   "snrDb": 45.37684215131138,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.2890625,
+   "tensorRms": 0.04321220286481009,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.6.mlp.down_proj.weight",
+   "maxAbsErr": 0.003582000732421875,
+   "maxRelErrVsAmax": 0.0038855601165254236,
+   "nrmse": 0.005678677056715412,
+   "rmse": 0.00029519945500076623,
+   "snrDb": 44.915056574118914,
+   "tensorAmax": 0.921875,
+   "tensorRms": 0.05198384272471936,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00397491455078125,
+   "maxRelErrVsAmax": 0.0037688078703703703,
+   "nrmse": 0.005777883114593052,
+   "rmse": 0.00027796483517488466,
+   "snrDb": 44.76462496184997,
+   "tensorAmax": 1.0546875,
+   "tensorRms": 0.048108421313133864,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.mlp.up_proj.weight",
+   "maxAbsErr": 0.002475738525390625,
+   "maxRelErrVsAmax": 0.0037063687865497076,
+   "nrmse": 0.005697730056373817,
+   "rmse": 0.0003054618918699106,
+   "snrDb": 44.88596260703571,
+   "tensorAmax": 0.66796875,
+   "tensorRms": 0.053611155468519064,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0044403076171875,
+   "maxRelErrVsAmax": 0.0038928724315068493,
+   "nrmse": 0.005805539737802957,
+   "rmse": 0.0002715240404585278,
+   "snrDb": 44.723147958635955,
+   "tensorAmax": 1.140625,
+   "tensorRms": 0.046769818607990975,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001247406005859375,
+   "maxRelErrVsAmax": 0.0036705280172413795,
+   "nrmse": 0.005353589530796232,
+   "rmse": 0.0002682342337062888,
+   "snrDb": 45.4270986000155,
+   "tensorAmax": 0.33984375,
+   "tensorRms": 0.05010362340319256,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0028228759765625,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005638687708221688,
+   "rmse": 0.0002800188572234158,
+   "snrDb": 44.976439152218575,
+   "tensorAmax": 0.72265625,
+   "tensorRms": 0.04966028829990432,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.6.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0016002655029296875,
+   "maxRelErrVsAmax": 0.0038831087085308058,
+   "nrmse": 0.005748182673785373,
+   "rmse": 0.0003077004349907266,
+   "snrDb": 44.80938877402566,
+   "tensorAmax": 0.412109375,
+   "tensorRms": 0.05353003765764031,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00189208984375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005429492368112623,
+   "rmse": 0.0002552015509564139,
+   "snrDb": 45.30481545991098,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.484375,
+   "tensorRms": 0.047002838139199,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.01953125,
+   "maxRelErrVsAmax": 0.003930817610062893,
+   "nrmse": 0.005235340766015538,
+   "rmse": 0.0002483976121045119,
+   "snrDb": 45.621100900586555,
+   "tensorAmax": 4.96875,
+   "tensorRms": 0.047446312132526175,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00144195556640625,
+   "maxRelErrVsAmax": 0.0038055734536082473,
+   "nrmse": 0.005498172618312246,
+   "rmse": 0.00028493163445096934,
+   "snrDb": 45.1956325870367,
+   "tensorAmax": 0.37890625,
+   "tensorRms": 0.05182296996314273,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0009202957153320312,
+   "maxRelErrVsAmax": 0.003894143853305785,
+   "nrmse": 0.005372467576430688,
+   "rmse": 0.00021996587840561043,
+   "snrDb": 45.396523937092326,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.236328125,
+   "tensorRms": 0.04094317467277288,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.7.mlp.down_proj.weight",
+   "maxAbsErr": 0.00322723388671875,
+   "maxRelErrVsAmax": 0.003897037146226415,
+   "nrmse": 0.005694700072717793,
+   "rmse": 0.0002987974476684981,
+   "snrDb": 44.890582886284946,
+   "tensorAmax": 0.828125,
+   "tensorRms": 0.052469391513695146,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0040283203125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005766795846635624,
+   "rmse": 0.0002779950222497276,
+   "snrDb": 44.78130846007402,
+   "tensorAmax": 1.03125,
+   "tensorRms": 0.04820614941864315,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.mlp.up_proj.weight",
+   "maxAbsErr": 0.002605438232421875,
+   "maxRelErrVsAmax": 0.003923483455882353,
+   "nrmse": 0.005685529956689534,
+   "rmse": 0.0003062340788173003,
+   "snrDb": 44.90458095711885,
+   "tensorAmax": 0.6640625,
+   "tensorRms": 0.05386201130766861,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0032806396484375,
+   "maxRelErrVsAmax": 0.0038349029680365297,
+   "nrmse": 0.005773414186047937,
+   "rmse": 0.00028296141217052376,
+   "snrDb": 44.77134569997481,
+   "tensorAmax": 0.85546875,
+   "tensorRms": 0.04901110556979089,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.self_attn.o_proj.weight",
+   "maxAbsErr": 0.002124786376953125,
+   "maxRelErrVsAmax": 0.003913275629496403,
+   "nrmse": 0.005355579927606593,
+   "rmse": 0.0002825751001834217,
+   "snrDb": 45.42386989637102,
+   "tensorAmax": 0.54296875,
+   "tensorRms": 0.05276274539883572,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.self_attn.q_proj.weight",
+   "maxAbsErr": 0.003177642822265625,
+   "maxRelErrVsAmax": 0.003929838466183575,
+   "nrmse": 0.005685210788519509,
+   "rmse": 0.00028337121405567204,
+   "snrDb": 44.905068569942614,
+   "tensorAmax": 0.80859375,
+   "tensorRms": 0.04984357213771224,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.7.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0015850067138671875,
+   "maxRelErrVsAmax": 0.003920403079710145,
+   "nrmse": 0.005650773384788367,
+   "rmse": 0.0003150986407707568,
+   "snrDb": 44.95784218074295,
+   "tensorAmax": 0.404296875,
+   "tensorRms": 0.05576203809888898,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0016937255859375,
+   "maxRelErrVsAmax": 0.003820209251101322,
+   "nrmse": 0.005407711338355933,
+   "rmse": 0.0002524359537321469,
+   "snrDb": 45.3397299785512,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.443359375,
+   "tensorRms": 0.04668073755003594,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.01416015625,
+   "maxRelErrVsAmax": 0.0036690283400809716,
+   "nrmse": 0.005321429356217734,
+   "rmse": 0.0002509436151277604,
+   "snrDb": 45.47943397762868,
+   "tensorAmax": 3.859375,
+   "tensorRms": 0.04715718246537457,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0015506744384765625,
+   "maxRelErrVsAmax": 0.003891888786764706,
+   "nrmse": 0.00550004238583235,
+   "rmse": 0.00028019047765211316,
+   "snrDb": 45.1926792724345,
+   "tensorAmax": 0.3984375,
+   "tensorRms": 0.05094333061393499,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0009317398071289062,
+   "maxRelErrVsAmax": 0.003926343878600823,
+   "nrmse": 0.00537106673676421,
+   "rmse": 0.00022217737548289708,
+   "snrDb": 45.398789027603115,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.2373046875,
+   "tensorRms": 0.04136559576929544,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.8.mlp.down_proj.weight",
+   "maxAbsErr": 0.004119873046875,
+   "maxRelErrVsAmax": 0.003877527573529412,
+   "nrmse": 0.005674922620565022,
+   "rmse": 0.00029656834332403623,
+   "snrDb": 44.92080111684916,
+   "tensorAmax": 1.0625,
+   "tensorRms": 0.05225945147680419,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00344085693359375,
+   "maxRelErrVsAmax": 0.0038804377753303963,
+   "nrmse": 0.0057647907084352355,
+   "rmse": 0.0002760073555715203,
+   "snrDb": 44.78432910414759,
+   "tensorAmax": 0.88671875,
+   "tensorRms": 0.04787812247332016,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.mlp.up_proj.weight",
+   "maxAbsErr": 0.00605010986328125,
+   "maxRelErrVsAmax": 0.0037776295731707316,
+   "nrmse": 0.005698838780520122,
+   "rmse": 0.00030564069381272616,
+   "snrDb": 44.884272579845586,
+   "tensorAmax": 1.6015625,
+   "tensorRms": 0.053632100430261856,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.self_attn.k_proj.weight",
+   "maxAbsErr": 0.003124237060546875,
+   "maxRelErrVsAmax": 0.00380859375,
+   "nrmse": 0.005814685371004609,
+   "rmse": 0.0002949873155456008,
+   "snrDb": 44.70947559406156,
+   "tensorAmax": 0.8203125,
+   "tensorRms": 0.05073143200775376,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00145721435546875,
+   "maxRelErrVsAmax": 0.0038859049479166665,
+   "nrmse": 0.005344401869968309,
+   "rmse": 0.0002830312908673925,
+   "snrDb": 45.44201785440896,
+   "tensorAmax": 0.375,
+   "tensorRms": 0.052958459665584774,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.self_attn.q_proj.weight",
+   "maxAbsErr": 0.002841949462890625,
+   "maxRelErrVsAmax": 0.0034480524289099528,
+   "nrmse": 0.005623110496347647,
+   "rmse": 0.00028348059125615435,
+   "snrDb": 45.000467646964495,
+   "tensorAmax": 0.82421875,
+   "tensorRms": 0.05041348403882197,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.8.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0017566680908203125,
+   "maxRelErrVsAmax": 0.0038601461909871246,
+   "nrmse": 0.005692255264461879,
+   "rmse": 0.00031436056828791306,
+   "snrDb": 44.894312651510965,
+   "tensorAmax": 0.455078125,
+   "tensorRms": 0.05522601388777166,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.001705169677734375,
+   "maxRelErrVsAmax": 0.0038630392699115046,
+   "nrmse": 0.005402454154883813,
+   "rmse": 0.00025288871092806516,
+   "snrDb": 45.34817819686466,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.44140625,
+   "tensorRms": 0.046809968891536824,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.015625,
+   "maxRelErrVsAmax": 0.003816793893129771,
+   "nrmse": 0.005337523392895507,
+   "rmse": 0.00025613392196498935,
+   "snrDb": 45.45320417139209,
+   "tensorAmax": 4.09375,
+   "tensorRms": 0.047987409723752324,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.002655029296875,
+   "maxRelErrVsAmax": 0.0038839285714285716,
+   "nrmse": 0.0055348062860239465,
+   "rmse": 0.0002878197460097919,
+   "snrDb": 45.137951489862616,
+   "tensorAmax": 0.68359375,
+   "tensorRms": 0.052001774070498455,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0013637542724609375,
+   "maxRelErrVsAmax": 0.003900794343575419,
+   "nrmse": 0.005365279887800579,
+   "rmse": 0.00021993122509386662,
+   "snrDb": 45.408152349797426,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.349609375,
+   "tensorRms": 0.040991566086596896,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.9.mlp.down_proj.weight",
+   "maxAbsErr": 0.00325775146484375,
+   "maxRelErrVsAmax": 0.0038789970930232557,
+   "nrmse": 0.0056806319408158855,
+   "rmse": 0.0002972485517862737,
+   "snrDb": 44.91206697189518,
+   "tensorAmax": 0.83984375,
+   "tensorRms": 0.05232666979363939,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00417327880859375,
+   "maxRelErrVsAmax": 0.003899121806569343,
+   "nrmse": 0.005753207469266085,
+   "rmse": 0.00027089857426236964,
+   "snrDb": 44.801799287670846,
+   "tensorAmax": 1.0703125,
+   "tensorRms": 0.04708652968096893,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.mlp.up_proj.weight",
+   "maxAbsErr": 0.003173828125,
+   "maxRelErrVsAmax": 0.00392512077294686,
+   "nrmse": 0.005686657302375182,
+   "rmse": 0.00030369287425544884,
+   "snrDb": 44.902858860917206,
+   "tensorAmax": 0.80859375,
+   "tensorRms": 0.053404462078030186,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00211334228515625,
+   "maxRelErrVsAmax": 0.00365551097972973,
+   "nrmse": 0.0056548398504788905,
+   "rmse": 0.0002754888351556857,
+   "snrDb": 44.95159380252709,
+   "tensorAmax": 0.578125,
+   "tensorRms": 0.04871735406129237,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001575469970703125,
+   "maxRelErrVsAmax": 0.0038595245215311005,
+   "nrmse": 0.00534842026836816,
+   "rmse": 0.0002766602676768992,
+   "snrDb": 45.435489481222824,
+   "tensorAmax": 0.408203125,
+   "tensorRms": 0.05172747349589082,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00235748291015625,
+   "maxRelErrVsAmax": 0.003844048566878981,
+   "nrmse": 0.005583789011548691,
+   "rmse": 0.00027731661548913085,
+   "snrDb": 45.06142000558941,
+   "tensorAmax": 0.61328125,
+   "tensorRms": 0.04966459422366601,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.9.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0017108917236328125,
+   "maxRelErrVsAmax": 0.003792106331168831,
+   "nrmse": 0.0056746338837538835,
+   "rmse": 0.0003101776668618316,
+   "snrDb": 44.921243061179865,
+   "tensorAmax": 0.451171875,
+   "tensorRms": 0.05466038395002902,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.001739501953125,
+   "maxRelErrVsAmax": 0.0037898936170212764,
+   "nrmse": 0.005417031750300511,
+   "rmse": 0.0002465418817624722,
+   "snrDb": 45.324772378380004,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.458984375,
+   "tensorRms": 0.045512356790006855,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0111083984375,
+   "maxRelErrVsAmax": 0.0038849043715846994,
+   "nrmse": 0.005348588491256514,
+   "rmse": 0.00025079557239332046,
+   "snrDb": 45.43521628981469,
+   "tensorAmax": 2.859375,
+   "tensorRms": 0.04689004824418684,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0015239715576171875,
+   "maxRelErrVsAmax": 0.0038062118902439024,
+   "nrmse": 0.0054617117604340674,
+   "rmse": 0.00027658941530868977,
+   "snrDb": 45.253424466042425,
+   "tensorAmax": 0.400390625,
+   "tensorRms": 0.05064152548517279,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.000946044921875,
+   "maxRelErrVsAmax": 0.003813976377952756,
+   "nrmse": 0.005379965326622846,
+   "rmse": 0.00021909953725296043,
+   "snrDb": 45.384410466244304,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.248046875,
+   "tensorRms": 0.04072508351842767,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.10.mlp.down_proj.weight",
+   "maxAbsErr": 0.003021240234375,
+   "maxRelErrVsAmax": 0.003926078680203045,
+   "nrmse": 0.005711248557955792,
+   "rmse": 0.000299232623039938,
+   "snrDb": 44.86537877184159,
+   "tensorAmax": 0.76953125,
+   "tensorRms": 0.05239355633070912,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0034637451171875,
+   "maxRelErrVsAmax": 0.0038721342794759825,
+   "nrmse": 0.0057010090620526685,
+   "rmse": 0.0002603223031439417,
+   "snrDb": 44.880965373229614,
+   "tensorAmax": 0.89453125,
+   "tensorRms": 0.04566249593895782,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.mlp.up_proj.weight",
+   "maxAbsErr": 0.00274658203125,
+   "maxRelErrVsAmax": 0.003700657894736842,
+   "nrmse": 0.005662329734468645,
+   "rmse": 0.0003021447229819931,
+   "snrDb": 44.94009687924661,
+   "tensorAmax": 0.7421875,
+   "tensorRms": 0.053360495970895,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00312042236328125,
+   "maxRelErrVsAmax": 0.003915824142156863,
+   "nrmse": 0.00571650362584514,
+   "rmse": 0.00028907186264577476,
+   "snrDb": 44.857390334183734,
+   "tensorAmax": 0.796875,
+   "tensorRms": 0.05056794879633051,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001323699951171875,
+   "maxRelErrVsAmax": 0.003850763494318182,
+   "nrmse": 0.005344492253975006,
+   "rmse": 0.00027944492255498434,
+   "snrDb": 45.441870960726945,
+   "tensorAmax": 0.34375,
+   "tensorRms": 0.05228652400930043,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00360107421875,
+   "maxRelErrVsAmax": 0.0037023092369477912,
+   "nrmse": 0.005596838242316072,
+   "rmse": 0.00027964541474134085,
+   "snrDb": 45.04114489450682,
+   "tensorAmax": 0.97265625,
+   "tensorRms": 0.04996489136080848,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.10.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0013885498046875,
+   "maxRelErrVsAmax": 0.0037815824468085107,
+   "nrmse": 0.005605628779345562,
+   "rmse": 0.00030169226531861983,
+   "snrDb": 45.02751331674428,
+   "tensorAmax": 0.3671875,
+   "tensorRms": 0.053819522696585236,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0015411376953125,
+   "maxRelErrVsAmax": 0.00392568407960199,
+   "nrmse": 0.005407896155049608,
+   "rmse": 0.0002487606576252318,
+   "snrDb": 45.33943313024089,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.392578125,
+   "tensorRms": 0.04599952559979396,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0142822265625,
+   "maxRelErrVsAmax": 0.003840598739495798,
+   "nrmse": 0.005301310570826128,
+   "rmse": 0.00025776857158730257,
+   "snrDb": 45.51233504829515,
+   "tensorAmax": 3.71875,
+   "tensorRms": 0.04862355603269878,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.001575469970703125,
+   "maxRelErrVsAmax": 0.00389681461352657,
+   "nrmse": 0.0054939456260194265,
+   "rmse": 0.0002836133072385106,
+   "snrDb": 45.20231286276701,
+   "tensorAmax": 0.404296875,
+   "tensorRms": 0.0516228820859298,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001056671142578125,
+   "maxRelErrVsAmax": 0.003757052951388889,
+   "nrmse": 0.005373089782711533,
+   "rmse": 0.00023663010855659464,
+   "snrDb": 45.39551804881442,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.28125,
+   "tensorRms": 0.04403985753559828,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.11.mlp.down_proj.weight",
+   "maxAbsErr": 0.003185272216796875,
+   "maxRelErrVsAmax": 0.0038283083920187793,
+   "nrmse": 0.005724957852294842,
+   "rmse": 0.0003019495812570316,
+   "snrDb": 44.844554125903514,
+   "tensorAmax": 0.83203125,
+   "tensorRms": 0.052742673229637056,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00487518310546875,
+   "maxRelErrVsAmax": 0.0035255561440677968,
+   "nrmse": 0.005696171282749966,
+   "rmse": 0.00025897426578271184,
+   "snrDb": 44.88833920050426,
+   "tensorAmax": 1.3828125,
+   "tensorRms": 0.04546462051922106,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.mlp.up_proj.weight",
+   "maxAbsErr": 0.003082275390625,
+   "maxRelErrVsAmax": 0.0035543355855855857,
+   "nrmse": 0.005657429933932807,
+   "rmse": 0.00030213643818815617,
+   "snrDb": 44.94761631969545,
+   "tensorAmax": 0.8671875,
+   "tensorRms": 0.053405246148249444,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.self_attn.k_proj.weight",
+   "maxAbsErr": 0.002071380615234375,
+   "maxRelErrVsAmax": 0.003899069393382353,
+   "nrmse": 0.005655065898364036,
+   "rmse": 0.00027679983161483336,
+   "snrDb": 44.95124659769141,
+   "tensorAmax": 0.53125,
+   "tensorRms": 0.04894723361135531,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.self_attn.o_proj.weight",
+   "maxAbsErr": 0.002017974853515625,
+   "maxRelErrVsAmax": 0.0037708143248175183,
+   "nrmse": 0.005351542631410133,
+   "rmse": 0.00029145346204985416,
+   "snrDb": 45.43042021101761,
+   "tensorAmax": 0.53515625,
+   "tensorRms": 0.054461579048106376,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.self_attn.q_proj.weight",
+   "maxAbsErr": 0.002410888671875,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.0055664339640019815,
+   "rmse": 0.00027951839828231433,
+   "snrDb": 45.08845877418022,
+   "tensorAmax": 0.6171875,
+   "tensorRms": 0.05021498504966632,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.11.self_attn.v_proj.weight",
+   "maxAbsErr": 0.002178192138671875,
+   "maxRelErrVsAmax": 0.0038994208916083915,
+   "nrmse": 0.0057926957443502425,
+   "rmse": 0.00032790071613630315,
+   "snrDb": 44.7423856358531,
+   "tensorAmax": 0.55859375,
+   "tensorRms": 0.056605893112220286,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00159454345703125,
+   "maxRelErrVsAmax": 0.0038876488095238096,
+   "nrmse": 0.005416128509216713,
+   "rmse": 0.00024396197056849637,
+   "snrDb": 45.32622079273014,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.41015625,
+   "tensorRms": 0.0450436082071063,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.011962890625,
+   "maxRelErrVsAmax": 0.0038090796019900498,
+   "nrmse": 0.005324030873845364,
+   "rmse": 0.0002514489359284934,
+   "snrDb": 45.475188694669264,
+   "tensorAmax": 3.140625,
+   "tensorRms": 0.04722905292750124,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0015850067138671875,
+   "maxRelErrVsAmax": 0.0038828872607655504,
+   "nrmse": 0.0054936015554449555,
+   "rmse": 0.00027746845223183857,
+   "snrDb": 45.20285685297505,
+   "tensorAmax": 0.408203125,
+   "tensorRms": 0.05050756765510726,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0010318756103515625,
+   "maxRelErrVsAmax": 0.00369454763986014,
+   "nrmse": 0.005378918831942043,
+   "rmse": 0.00023286907437573698,
+   "snrDb": 45.38610018372783,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.279296875,
+   "tensorRms": 0.043292914738343485,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.12.mlp.down_proj.weight",
+   "maxAbsErr": 0.00339508056640625,
+   "maxRelErrVsAmax": 0.003795373908296943,
+   "nrmse": 0.005723273233023479,
+   "rmse": 0.0002990925024648772,
+   "snrDb": 44.8471104015534,
+   "tensorAmax": 0.89453125,
+   "tensorRms": 0.05225899416073715,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0053253173828125,
+   "maxRelErrVsAmax": 0.003829441713483146,
+   "nrmse": 0.005680436925704827,
+   "rmse": 0.00025592737125846937,
+   "snrDb": 44.91236516210114,
+   "tensorAmax": 1.390625,
+   "tensorRms": 0.04505417005870794,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.mlp.up_proj.weight",
+   "maxAbsErr": 0.00390625,
+   "maxRelErrVsAmax": 0.0038461538461538464,
+   "nrmse": 0.005637452332631441,
+   "rmse": 0.00029801900481700997,
+   "snrDb": 44.978342345340074,
+   "tensorAmax": 1.015625,
+   "tensorRms": 0.05286412855182425,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0029449462890625,
+   "maxRelErrVsAmax": 0.003926595052083333,
+   "nrmse": 0.0057810265341665746,
+   "rmse": 0.00028575736342935023,
+   "snrDb": 44.759900745292434,
+   "tensorAmax": 0.75,
+   "tensorRms": 0.049430211354417636,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.self_attn.o_proj.weight",
+   "maxAbsErr": 0.0012798309326171875,
+   "maxRelErrVsAmax": 0.0038320084064327486,
+   "nrmse": 0.005350530403989055,
+   "rmse": 0.0002799282073197358,
+   "snrDb": 45.432063275060486,
+   "tensorAmax": 0.333984375,
+   "tensorRms": 0.05231784256585797,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00335693359375,
+   "maxRelErrVsAmax": 0.0037527292576419215,
+   "nrmse": 0.005597755470317984,
+   "rmse": 0.0002699871969477179,
+   "snrDb": 45.03972153937311,
+   "tensorAmax": 0.89453125,
+   "tensorRms": 0.04823133100031273,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.12.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0017681121826171875,
+   "maxRelErrVsAmax": 0.003852227393617021,
+   "nrmse": 0.005494230488137803,
+   "rmse": 0.00030046252687607975,
+   "snrDb": 45.20186250942409,
+   "tensorAmax": 0.458984375,
+   "tensorRms": 0.05468691703502187,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00251007080078125,
+   "maxRelErrVsAmax": 0.0038944128787878787,
+   "nrmse": 0.005410760150420735,
+   "rmse": 0.00024451467824838566,
+   "snrDb": 45.334834343183374,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.64453125,
+   "tensorRms": 0.04519044856005537,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.013031005859375,
+   "maxRelErrVsAmax": 0.0038789970930232557,
+   "nrmse": 0.005300462427774187,
+   "rmse": 0.0002625473673384959,
+   "snrDb": 45.51372479262624,
+   "tensorAmax": 3.359375,
+   "tensorRms": 0.04953291734750526,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00185394287109375,
+   "maxRelErrVsAmax": 0.003890240778688525,
+   "nrmse": 0.005486963948676096,
+   "rmse": 0.00027618236268342315,
+   "snrDb": 45.213357865305575,
+   "tensorAmax": 0.4765625,
+   "tensorRms": 0.050334276890968255,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0011444091796875,
+   "maxRelErrVsAmax": 0.0038803807947019866,
+   "nrmse": 0.005373705325010482,
+   "rmse": 0.0002477233383478533,
+   "snrDb": 45.39452304845785,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.294921875,
+   "tensorRms": 0.04609916684394488,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.13.mlp.down_proj.weight",
+   "maxAbsErr": 0.00283050537109375,
+   "maxRelErrVsAmax": 0.0035346798780487806,
+   "nrmse": 0.0056485825074297225,
+   "rmse": 0.0002970509785556809,
+   "snrDb": 44.96121046462881,
+   "tensorAmax": 0.80078125,
+   "tensorRms": 0.052588588051066316,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.mlp.gate_proj.weight",
+   "maxAbsErr": 0.005096435546875,
+   "maxRelErrVsAmax": 0.003929781626506024,
+   "nrmse": 0.005715085791102373,
+   "rmse": 0.00025906320719692164,
+   "snrDb": 44.859544917543,
+   "tensorAmax": 1.296875,
+   "tensorRms": 0.045329714490069166,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.mlp.up_proj.weight",
+   "maxAbsErr": 0.003032684326171875,
+   "maxRelErrVsAmax": 0.0037687727548543688,
+   "nrmse": 0.005678425464707654,
+   "rmse": 0.0003019492899334972,
+   "snrDb": 44.915441408262915,
+   "tensorAmax": 0.8046875,
+   "tensorRms": 0.053174826685700394,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0022735595703125,
+   "maxRelErrVsAmax": 0.003932643581081081,
+   "nrmse": 0.005659898090058358,
+   "rmse": 0.000276120530638423,
+   "snrDb": 44.943827769604745,
+   "tensorAmax": 0.578125,
+   "tensorRms": 0.048785424444908326,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.self_attn.o_proj.weight",
+   "maxAbsErr": 0.0018177032470703125,
+   "maxRelErrVsAmax": 0.0038777669270833332,
+   "nrmse": 0.00535624837279938,
+   "rmse": 0.00030407186386978,
+   "snrDb": 45.42278585338259,
+   "tensorAmax": 0.46875,
+   "tensorRms": 0.05676956009246084,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00232696533203125,
+   "maxRelErrVsAmax": 0.0037942874203821656,
+   "nrmse": 0.00556743520919676,
+   "rmse": 0.00027877944052249267,
+   "snrDb": 45.08689656698151,
+   "tensorAmax": 0.61328125,
+   "tensorRms": 0.050073225829728785,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.13.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001495361328125,
+   "maxRelErrVsAmax": 0.0038864213197969543,
+   "nrmse": 0.005553128978986673,
+   "rmse": 0.00032171670386567006,
+   "snrDb": 45.1092447865844,
+   "tensorAmax": 0.384765625,
+   "tensorRms": 0.05793431146351232,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.002185821533203125,
+   "maxRelErrVsAmax": 0.0038859049479166665,
+   "nrmse": 0.005391917133908656,
+   "rmse": 0.0002434337898456088,
+   "snrDb": 45.365135818188975,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5625,
+   "tensorRms": 0.04514791006610688,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0106658935546875,
+   "maxRelErrVsAmax": 0.003900669642857143,
+   "nrmse": 0.0053449007412559955,
+   "rmse": 0.00025588376523953996,
+   "snrDb": 45.44120711097523,
+   "tensorAmax": 2.734375,
+   "tensorRms": 0.04787437178476208,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.002254486083984375,
+   "maxRelErrVsAmax": 0.003926179846938775,
+   "nrmse": 0.005490537459831346,
+   "rmse": 0.0002704505380559416,
+   "snrDb": 45.20770282169296,
+   "tensorAmax": 0.57421875,
+   "tensorRms": 0.04925757087253332,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0009613037109375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005378507665310842,
+   "rmse": 0.00024258459929891622,
+   "snrDb": 45.38676416186128,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.24609375,
+   "tensorRms": 0.045102585028090024,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.14.mlp.down_proj.weight",
+   "maxAbsErr": 0.00516510009765625,
+   "maxRelErrVsAmax": 0.003912028476331361,
+   "nrmse": 0.0057492244225543915,
+   "rmse": 0.00030459476913542364,
+   "snrDb": 44.8078147643751,
+   "tensorAmax": 1.3203125,
+   "tensorRms": 0.05298014945120051,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.mlp.gate_proj.weight",
+   "maxAbsErr": 0.004791259765625,
+   "maxRelErrVsAmax": 0.0037624616564417178,
+   "nrmse": 0.005723321566759545,
+   "rmse": 0.00025641678358608657,
+   "snrDb": 44.84703704847249,
+   "tensorAmax": 1.2734375,
+   "tensorRms": 0.04480209273498252,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.mlp.up_proj.weight",
+   "maxAbsErr": 0.004241943359375,
+   "maxRelErrVsAmax": 0.00385084219858156,
+   "nrmse": 0.005683959650549233,
+   "rmse": 0.00030551962701541103,
+   "snrDb": 44.906980274307315,
+   "tensorAmax": 1.1015625,
+   "tensorRms": 0.05375119560989303,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00384521484375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.0058583649985109384,
+   "rmse": 0.0002729898573264362,
+   "snrDb": 44.64447147213586,
+   "tensorAmax": 0.984375,
+   "tensorRms": 0.046598301300076715,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001316070556640625,
+   "maxRelErrVsAmax": 0.003917605377906977,
+   "nrmse": 0.005351409477946271,
+   "rmse": 0.0002894144059134992,
+   "snrDb": 45.43063633013695,
+   "tensorAmax": 0.3359375,
+   "tensorRms": 0.05408190255412277,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0030364990234375,
+   "maxRelErrVsAmax": 0.003925978535353535,
+   "nrmse": 0.005599292416783269,
+   "rmse": 0.00026283382320061273,
+   "snrDb": 45.03733702738468,
+   "tensorAmax": 0.7734375,
+   "tensorRms": 0.04694054241796642,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.14.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00138092041015625,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005517355342981481,
+   "rmse": 0.00030341611780058025,
+   "snrDb": 45.16538089171212,
+   "tensorAmax": 0.353515625,
+   "tensorRms": 0.054993035419868316,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.002231597900390625,
+   "maxRelErrVsAmax": 0.00380859375,
+   "nrmse": 0.005407391486226121,
+   "rmse": 0.00023934906021767818,
+   "snrDb": 45.340243741637124,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5859375,
+   "tensorRms": 0.04426331269473566,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0172119140625,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005283949606375434,
+   "rmse": 0.00026729315549277755,
+   "snrDb": 45.54082665906631,
+   "tensorAmax": 4.40625,
+   "tensorRms": 0.05058586387165213,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00167083740234375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005550011627606963,
+   "rmse": 0.00027498261968190746,
+   "snrDb": 45.11412214006809,
+   "tensorAmax": 0.427734375,
+   "tensorRms": 0.049546314157989185,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001148223876953125,
+   "maxRelErrVsAmax": 0.003919270833333334,
+   "nrmse": 0.005387720328600901,
+   "rmse": 0.0002596683810058819,
+   "snrDb": 45.37189912348643,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.29296875,
+   "tensorRms": 0.0481963363293791,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.15.mlp.down_proj.weight",
+   "maxAbsErr": 0.00443267822265625,
+   "maxRelErrVsAmax": 0.003859747023809524,
+   "nrmse": 0.005728957335012309,
+   "rmse": 0.00030381936537915617,
+   "snrDb": 44.83848824077392,
+   "tensorAmax": 1.1484375,
+   "tensorRms": 0.05303222691542411,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00408935546875,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005755619302358777,
+   "rmse": 0.00025612302901286045,
+   "snrDb": 44.79815879211192,
+   "tensorAmax": 1.046875,
+   "tensorRms": 0.044499647311262526,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.mlp.up_proj.weight",
+   "maxAbsErr": 0.0031280517578125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005678944530344855,
+   "rmse": 0.0003044596304325109,
+   "snrDb": 44.91464746620683,
+   "tensorAmax": 0.80078125,
+   "tensorRms": 0.05361200990882412,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.self_attn.k_proj.weight",
+   "maxAbsErr": 0.002063751220703125,
+   "maxRelErrVsAmax": 0.003884708180147059,
+   "nrmse": 0.005624069683594565,
+   "rmse": 0.0002769357500085692,
+   "snrDb": 44.99898613880763,
+   "tensorAmax": 0.53125,
+   "tensorRms": 0.049241166199699114,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00450897216796875,
+   "maxRelErrVsAmax": 0.003676104697452229,
+   "nrmse": 0.005351553968212543,
+   "rmse": 0.000289894250288192,
+   "snrDb": 45.430401810695116,
+   "tensorAmax": 1.2265625,
+   "tensorRms": 0.05417010685309761,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.self_attn.q_proj.weight",
+   "maxAbsErr": 0.002490997314453125,
+   "maxRelErrVsAmax": 0.003707530886627907,
+   "nrmse": 0.005530037924825727,
+   "rmse": 0.00028706936287081633,
+   "snrDb": 45.1454378061445,
+   "tensorAmax": 0.671875,
+   "tensorRms": 0.05191092118592713,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.15.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001766204833984375,
+   "maxRelErrVsAmax": 0.0037679036458333334,
+   "nrmse": 0.005645949367431341,
+   "rmse": 0.00032416179874187885,
+   "snrDb": 44.96526041802135,
+   "tensorAmax": 0.46875,
+   "tensorRms": 0.05741493195312841,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.002719879150390625,
+   "maxRelErrVsAmax": 0.0038048582650273225,
+   "nrmse": 0.005416859265010258,
+   "rmse": 0.0002449616877394474,
+   "snrDb": 45.32504895273234,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.71484375,
+   "tensorRms": 0.045222088253567265,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0140228271484375,
+   "maxRelErrVsAmax": 0.003648215193089431,
+   "nrmse": 0.005325291647689075,
+   "rmse": 0.0002604323124878962,
+   "snrDb": 45.47313204881333,
+   "tensorAmax": 3.84375,
+   "tensorRms": 0.048904798031279936,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00173187255859375,
+   "maxRelErrVsAmax": 0.003923534292035398,
+   "nrmse": 0.005573506560723421,
+   "rmse": 0.0002780037715084004,
+   "snrDb": 45.077429666314764,
+   "tensorAmax": 0.44140625,
+   "tensorRms": 0.04987950915272925,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0010814666748046875,
+   "maxRelErrVsAmax": 0.0038993727992957744,
+   "nrmse": 0.00537894304282981,
+   "rmse": 0.00025536580504551275,
+   "snrDb": 45.386061088022444,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.27734375,
+   "tensorRms": 0.047475089996708214,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.16.mlp.down_proj.weight",
+   "maxAbsErr": 0.0048370361328125,
+   "maxRelErrVsAmax": 0.003845593944099379,
+   "nrmse": 0.005777117845652858,
+   "rmse": 0.00030960821111232137,
+   "snrDb": 44.76577546656919,
+   "tensorAmax": 1.2578125,
+   "tensorRms": 0.05359215778249947,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.mlp.gate_proj.weight",
+   "maxAbsErr": 0.003875732421875,
+   "maxRelErrVsAmax": 0.003921689723320158,
+   "nrmse": 0.005710516840864612,
+   "rmse": 0.0002508076928303193,
+   "snrDb": 44.86649166703547,
+   "tensorAmax": 0.98828125,
+   "tensorRms": 0.043920314013528985,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.mlp.up_proj.weight",
+   "maxAbsErr": 0.0028228759765625,
+   "maxRelErrVsAmax": 0.003803453947368421,
+   "nrmse": 0.005651589616311267,
+   "rmse": 0.00030607295568949884,
+   "snrDb": 44.95658762947103,
+   "tensorAmax": 0.7421875,
+   "tensorRms": 0.054156967591229566,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00286865234375,
+   "maxRelErrVsAmax": 0.003785438144329897,
+   "nrmse": 0.0059056700934777846,
+   "rmse": 0.0002890009187494809,
+   "snrDb": 44.57461635088638,
+   "tensorAmax": 0.7578125,
+   "tensorRms": 0.04893617729657015,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001434326171875,
+   "maxRelErrVsAmax": 0.0038248697916666665,
+   "nrmse": 0.005350798235249366,
+   "rmse": 0.0002714316357805153,
+   "snrDb": 45.43162849675443,
+   "tensorAmax": 0.375,
+   "tensorRms": 0.0507273165324025,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.self_attn.q_proj.weight",
+   "maxAbsErr": 0.003520965576171875,
+   "maxRelErrVsAmax": 0.0037872570903361344,
+   "nrmse": 0.00568132281234571,
+   "rmse": 0.00027541354167973683,
+   "snrDb": 44.911010668820595,
+   "tensorAmax": 0.9296875,
+   "tensorRms": 0.04847700980504993,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.16.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001163482666015625,
+   "maxRelErrVsAmax": 0.0038682021103896105,
+   "nrmse": 0.00550454428641738,
+   "rmse": 0.0002880376922777346,
+   "snrDb": 45.1855725968293,
+   "tensorAmax": 0.30078125,
+   "tensorRms": 0.052327254953416544,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00312042236328125,
+   "maxRelErrVsAmax": 0.0036643491972477064,
+   "nrmse": 0.005435152214793017,
+   "rmse": 0.0002450573265261786,
+   "snrDb": 45.295765774446124,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.8515625,
+   "tensorRms": 0.045087481792910736,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.01727294921875,
+   "maxRelErrVsAmax": 0.0038119612068965515,
+   "nrmse": 0.005308857314560903,
+   "rmse": 0.00027690415532910387,
+   "snrDb": 45.499978939519245,
+   "tensorAmax": 4.53125,
+   "tensorRms": 0.05215889953749994,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.001621246337890625,
+   "maxRelErrVsAmax": 0.003825244815668203,
+   "nrmse": 0.005547694149688415,
+   "rmse": 0.0002754970393884359,
+   "snrDb": 45.11774980116052,
+   "tensorAmax": 0.423828125,
+   "tensorRms": 0.049659738254299604,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001983642578125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005398858507017629,
+   "rmse": 0.0002842707401810297,
+   "snrDb": 45.353961086902984,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5078125,
+   "tensorRms": 0.0526538600356954,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.17.mlp.down_proj.weight",
+   "maxAbsErr": 0.0029449462890625,
+   "maxRelErrVsAmax": 0.003926595052083333,
+   "nrmse": 0.005739592063207683,
+   "rmse": 0.0003117673003528871,
+   "snrDb": 44.82237947257585,
+   "tensorAmax": 0.75,
+   "tensorRms": 0.054318721072774266,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.mlp.gate_proj.weight",
+   "maxAbsErr": 0.003742218017578125,
+   "maxRelErrVsAmax": 0.003878574139676113,
+   "nrmse": 0.005754914880317233,
+   "rmse": 0.0002477633218247602,
+   "snrDb": 44.79922191082075,
+   "tensorAmax": 0.96484375,
+   "tensorRms": 0.04305247375111525,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.mlp.up_proj.weight",
+   "maxAbsErr": 0.003032684326171875,
+   "maxRelErrVsAmax": 0.003714675538277512,
+   "nrmse": 0.005637169909898429,
+   "rmse": 0.0003086758407270915,
+   "snrDb": 44.97877749831247,
+   "tensorAmax": 0.81640625,
+   "tensorRms": 0.05475723557402109,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.self_attn.k_proj.weight",
+   "maxAbsErr": 0.003162384033203125,
+   "maxRelErrVsAmax": 0.0038550967261904764,
+   "nrmse": 0.005891867066125676,
+   "rmse": 0.0002824646299291873,
+   "snrDb": 44.59494120773328,
+   "tensorAmax": 0.8203125,
+   "tensorRms": 0.04794144653282681,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.self_attn.o_proj.weight",
+   "maxAbsErr": 0.002628326416015625,
+   "maxRelErrVsAmax": 0.0038893153901734105,
+   "nrmse": 0.005351362629229603,
+   "rmse": 0.0003043946833940569,
+   "snrDb": 45.4307123707699,
+   "tensorAmax": 0.67578125,
+   "tensorRms": 0.05688171489844978,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0028228759765625,
+   "maxRelErrVsAmax": 0.0038439162234042553,
+   "nrmse": 0.005660365115805749,
+   "rmse": 0.0002930080169621158,
+   "snrDb": 44.94311108413047,
+   "tensorAmax": 0.734375,
+   "tensorRms": 0.051764861624196884,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.17.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001750946044921875,
+   "maxRelErrVsAmax": 0.003914778930131004,
+   "nrmse": 0.005664809418283917,
+   "rmse": 0.0003256451357866227,
+   "snrDb": 44.936293931298266,
+   "tensorAmax": 0.447265625,
+   "tensorRms": 0.05748562956691186,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00201416015625,
+   "maxRelErrVsAmax": 0.0038479477611940297,
+   "nrmse": 0.005419275236155116,
+   "rmse": 0.00023992960173717536,
+   "snrDb": 45.321175826373775,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.5234375,
+   "tensorRms": 0.04427337444248382,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.010498046875,
+   "maxRelErrVsAmax": 0.003671448087431694,
+   "nrmse": 0.005325159450474721,
+   "rmse": 0.000264806145673972,
+   "snrDb": 45.47334767356083,
+   "tensorAmax": 2.859375,
+   "tensorRms": 0.049727364623864054,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0015659332275390625,
+   "maxRelErrVsAmax": 0.003781876474056604,
+   "nrmse": 0.005522761779277297,
+   "rmse": 0.00027444649131127136,
+   "snrDb": 45.15687378762354,
+   "tensorAmax": 0.4140625,
+   "tensorRms": 0.049693704396423406,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0012054443359375,
+   "maxRelErrVsAmax": 0.003931130573248408,
+   "nrmse": 0.00538302609958046,
+   "rmse": 0.00026695879355820615,
+   "snrDb": 45.37947029008307,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.306640625,
+   "tensorRms": 0.04959269909150399,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.18.mlp.down_proj.weight",
+   "maxAbsErr": 0.0040283203125,
+   "maxRelErrVsAmax": 0.003791360294117647,
+   "nrmse": 0.005762460607346968,
+   "rmse": 0.00031152729261647914,
+   "snrDb": 44.78784060929647,
+   "tensorAmax": 1.0625,
+   "tensorRms": 0.05406150494448343,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.mlp.gate_proj.weight",
+   "maxAbsErr": 0.0032196044921875,
+   "maxRelErrVsAmax": 0.00388782429245283,
+   "nrmse": 0.005664103403641822,
+   "rmse": 0.00024268752879460723,
+   "snrDb": 44.93737653566966,
+   "tensorAmax": 0.828125,
+   "tensorRms": 0.0428465922141477,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.mlp.up_proj.weight",
+   "maxAbsErr": 0.004913330078125,
+   "maxRelErrVsAmax": 0.0038821373456790122,
+   "nrmse": 0.005622562584859946,
+   "rmse": 0.00030814303478587186,
+   "snrDb": 45.00131403449203,
+   "tensorAmax": 1.265625,
+   "tensorRms": 0.05480473185227292,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00324249267578125,
+   "maxRelErrVsAmax": 0.003860828488372093,
+   "nrmse": 0.00577041995299827,
+   "rmse": 0.0002798539040203487,
+   "snrDb": 44.77585158217824,
+   "tensorAmax": 0.83984375,
+   "tensorRms": 0.048498013368149843,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.self_attn.o_proj.weight",
+   "maxAbsErr": 0.0014495849609375,
+   "maxRelErrVsAmax": 0.0038655598958333335,
+   "nrmse": 0.005347335940327201,
+   "rmse": 0.0002790719727313651,
+   "snrDb": 45.437250619667594,
+   "tensorAmax": 0.375,
+   "tensorRms": 0.052188973321599254,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00334930419921875,
+   "maxRelErrVsAmax": 0.003915168378995434,
+   "nrmse": 0.005633668208058284,
+   "rmse": 0.0002717929703636706,
+   "snrDb": 44.98417468286773,
+   "tensorAmax": 0.85546875,
+   "tensorRms": 0.04824440494647936,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.18.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0014820098876953125,
+   "maxRelErrVsAmax": 0.003775069962686567,
+   "nrmse": 0.005514310219113478,
+   "rmse": 0.0002971732050373139,
+   "snrDb": 45.17017610787863,
+   "tensorAmax": 0.392578125,
+   "tensorRms": 0.05389127438047722,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0023651123046875,
+   "maxRelErrVsAmax": 0.0037841796875,
+   "nrmse": 0.005436714558185606,
+   "rmse": 0.00024007757346003654,
+   "snrDb": 45.29326936004709,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.625,
+   "tensorRms": 0.04415857608315519,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.013824462890625,
+   "maxRelErrVsAmax": 0.0038805509868421054,
+   "nrmse": 0.005317502976041313,
+   "rmse": 0.00030456457165571686,
+   "snrDb": 45.485845167280566,
+   "tensorAmax": 3.5625,
+   "tensorRms": 0.0572758629431843,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0015411376953125,
+   "maxRelErrVsAmax": 0.0038118961352657005,
+   "nrmse": 0.005487492009756565,
+   "rmse": 0.0002753863160961081,
+   "snrDb": 45.21252198236286,
+   "tensorAmax": 0.404296875,
+   "tensorRms": 0.05018436757748002,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001556396484375,
+   "maxRelErrVsAmax": 0.0038683252427184466,
+   "nrmse": 0.005393781965586877,
+   "rmse": 0.0003329290831456643,
+   "snrDb": 45.36213226280279,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.40234375,
+   "tensorRms": 0.06172460905349916,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.19.mlp.down_proj.weight",
+   "maxAbsErr": 0.002597808837890625,
+   "maxRelErrVsAmax": 0.003911994485294118,
+   "nrmse": 0.005736779135218365,
+   "rmse": 0.0003188737530025685,
+   "snrDb": 44.82663740082545,
+   "tensorAmax": 0.6640625,
+   "tensorRms": 0.05558410834487022,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.mlp.gate_proj.weight",
+   "maxAbsErr": 0.00437164306640625,
+   "maxRelErrVsAmax": 0.003859105603448276,
+   "nrmse": 0.005714732321249529,
+   "rmse": 0.00023671944730699608,
+   "snrDb": 44.860082143963055,
+   "tensorAmax": 1.1328125,
+   "tensorRms": 0.04142266583979515,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.mlp.up_proj.weight",
+   "maxAbsErr": 0.00336456298828125,
+   "maxRelErrVsAmax": 0.0038798564189189188,
+   "nrmse": 0.005613757705622923,
+   "rmse": 0.0003169596779758729,
+   "snrDb": 45.014926716047164,
+   "tensorAmax": 0.8671875,
+   "tensorRms": 0.05646123231474627,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.self_attn.k_proj.weight",
+   "maxAbsErr": 0.0023956298828125,
+   "maxRelErrVsAmax": 0.0038330078125,
+   "nrmse": 0.005844258977230538,
+   "rmse": 0.00027904065975988354,
+   "snrDb": 44.66541094753331,
+   "tensorAmax": 0.625,
+   "tensorRms": 0.04774611475073861,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.self_attn.o_proj.weight",
+   "maxAbsErr": 0.0024871826171875,
+   "maxRelErrVsAmax": 0.0037899925595238095,
+   "nrmse": 0.00536241052135063,
+   "rmse": 0.0003148867916381788,
+   "snrDb": 45.412798830066556,
+   "tensorAmax": 0.65625,
+   "tensorRms": 0.0587211274452871,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00252532958984375,
+   "maxRelErrVsAmax": 0.003894484186746988,
+   "nrmse": 0.005643126211051475,
+   "rmse": 0.00028461824985586467,
+   "snrDb": 44.96960472860502,
+   "tensorAmax": 0.6484375,
+   "tensorRms": 0.050436272238332976,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.19.self_attn.v_proj.weight",
+   "maxAbsErr": 0.002269744873046875,
+   "maxRelErrVsAmax": 0.003899695889261745,
+   "nrmse": 0.005629099015919916,
+   "rmse": 0.00033778614257901345,
+   "snrDb": 44.99122224054819,
+   "tensorAmax": 0.58203125,
+   "tensorRms": 0.06000714175105195,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.001922607421875,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005406809089402703,
+   "rmse": 0.0002462100244239428,
+   "snrDb": 45.34117929568077,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.4921875,
+   "tensorRms": 0.045537029392532506,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.00433349609375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005333068295785941,
+   "rmse": 0.00026180307985794113,
+   "snrDb": 45.46045709329145,
+   "tensorAmax": 1.109375,
+   "tensorRms": 0.04909051700403152,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0018520355224609375,
+   "maxRelErrVsAmax": 0.003934614885892116,
+   "nrmse": 0.005406482160166116,
+   "rmse": 0.00026089451718713243,
+   "snrDb": 45.34170451435911,
+   "tensorAmax": 0.470703125,
+   "tensorRms": 0.048255873127511874,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.00116729736328125,
+   "maxRelErrVsAmax": 0.003931949013157895,
+   "nrmse": 0.005381613357252464,
+   "rmse": 0.000260132283651335,
+   "snrDb": 45.38175014795804,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.296875,
+   "tensorRms": 0.04833723019153187,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.20.mlp.down_proj.weight",
+   "maxAbsErr": 0.0045166015625,
+   "maxRelErrVsAmax": 0.00388003355704698,
+   "nrmse": 0.005742010624587671,
+   "rmse": 0.00031913187640795224,
+   "snrDb": 44.81872016505383,
+   "tensorAmax": 1.1640625,
+   "tensorRms": 0.05557841969873903,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.mlp.gate_proj.weight",
+   "maxAbsErr": 0.002620697021484375,
+   "maxRelErrVsAmax": 0.003833705357142857,
+   "nrmse": 0.005652508850240512,
+   "rmse": 0.00022821625306894793,
+   "snrDb": 44.955174979978956,
+   "tensorAmax": 0.68359375,
+   "tensorRms": 0.04037432918999099,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.mlp.up_proj.weight",
+   "maxAbsErr": 0.003559112548828125,
+   "maxRelErrVsAmax": 0.0037806340767634855,
+   "nrmse": 0.005608483541267365,
+   "rmse": 0.00031844608614240436,
+   "snrDb": 45.02309100549531,
+   "tensorAmax": 0.94140625,
+   "tensorRms": 0.056779356451573754,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00395965576171875,
+   "maxRelErrVsAmax": 0.003699532390510949,
+   "nrmse": 0.005893937066739796,
+   "rmse": 0.00026464320160413205,
+   "snrDb": 44.59189011391445,
+   "tensorAmax": 1.0703125,
+   "tensorRms": 0.04490092082888802,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.self_attn.o_proj.weight",
+   "maxAbsErr": 0.001434326171875,
+   "maxRelErrVsAmax": 0.0038651315789473683,
+   "nrmse": 0.005351474100142021,
+   "rmse": 0.0002787634547435822,
+   "snrDb": 45.43053144228007,
+   "tensorAmax": 0.37109375,
+   "tensorRms": 0.052090965877268136,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.self_attn.q_proj.weight",
+   "maxAbsErr": 0.0030059814453125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.0055896666905346955,
+   "rmse": 0.0002549929988475523,
+   "snrDb": 45.05228176276272,
+   "tensorAmax": 0.76953125,
+   "tensorRms": 0.045618641139971126,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.20.self_attn.v_proj.weight",
+   "maxAbsErr": 0.001953125,
+   "maxRelErrVsAmax": 0.003816793893129771,
+   "nrmse": 0.005583162802826308,
+   "rmse": 0.000305898036551421,
+   "snrDb": 45.06239416218095,
+   "tensorAmax": 0.51171875,
+   "tensorRms": 0.054789381458941036,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.00217437744140625,
+   "maxRelErrVsAmax": 0.003892591783216783,
+   "nrmse": 0.005411458345744198,
+   "rmse": 0.00022383973241809734,
+   "snrDb": 45.333713603006856,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.55859375,
+   "tensorRms": 0.0413640313048209,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.0141754150390625,
+   "maxRelErrVsAmax": 0.00381187631302521,
+   "nrmse": 0.005267078998607306,
+   "rmse": 0.0002847427409132249,
+   "snrDb": 45.56860335602509,
+   "tensorAmax": 3.71875,
+   "tensorRms": 0.0540608449177457,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.00127410888671875,
+   "maxRelErrVsAmax": 0.003837316176470588,
+   "nrmse": 0.005493746863545303,
+   "rmse": 0.00026264395392357084,
+   "snrDb": 45.202627110533996,
+   "tensorAmax": 0.33203125,
+   "tensorRms": 0.04780780047700955,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.00124359130859375,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.0053906925355055296,
+   "rmse": 0.00029490077940009396,
+   "snrDb": 45.36710875923986,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.318359375,
+   "tensorRms": 0.05470554617198895,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.21.mlp.down_proj.weight",
+   "maxAbsErr": 0.00424957275390625,
+   "maxRelErrVsAmax": 0.003885323660714286,
+   "nrmse": 0.0057198882212448005,
+   "rmse": 0.0003247506286417245,
+   "snrDb": 44.85224916319864,
+   "tensorAmax": 1.09375,
+   "tensorRms": 0.05677569492276723,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.mlp.gate_proj.weight",
+   "maxAbsErr": 0.001953125,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005670889765916346,
+   "rmse": 0.00021934367586920264,
+   "snrDb": 44.92697589405977,
+   "tensorAmax": 0.5,
+   "tensorRms": 0.038678881960908545,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.mlp.up_proj.weight",
+   "maxAbsErr": 0.002979278564453125,
+   "maxRelErrVsAmax": 0.003775719368811881,
+   "nrmse": 0.005574340293002907,
+   "rmse": 0.00032340980562003084,
+   "snrDb": 45.076130454605845,
+   "tensorAmax": 0.7890625,
+   "tensorRms": 0.05801759286672637,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00257110595703125,
+   "maxRelErrVsAmax": 0.003656684027777778,
+   "nrmse": 0.005798586402422049,
+   "rmse": 0.0002781919204412932,
+   "snrDb": 44.73355734409655,
+   "tensorAmax": 0.703125,
+   "tensorRms": 0.047975817058635774,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.self_attn.o_proj.weight",
+   "maxAbsErr": 0.003875732421875,
+   "maxRelErrVsAmax": 0.0038909313725490197,
+   "nrmse": 0.0053582430440474475,
+   "rmse": 0.0003285100221279895,
+   "snrDb": 45.41955182316108,
+   "tensorAmax": 0.99609375,
+   "tensorRms": 0.061309279819424425,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00262451171875,
+   "maxRelErrVsAmax": 0.0037745786516853934,
+   "nrmse": 0.0056393482819202265,
+   "rmse": 0.0002908261341032449,
+   "snrDb": 44.97542165763798,
+   "tensorAmax": 0.6953125,
+   "tensorRms": 0.05157087655600819,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.21.self_attn.v_proj.weight",
+   "maxAbsErr": 0.00344085693359375,
+   "maxRelErrVsAmax": 0.003932407924107143,
+   "nrmse": 0.006038925113833861,
+   "rmse": 0.0003731920494202869,
+   "snrDb": 44.38080711722387,
+   "tensorAmax": 0.875,
+   "tensorRms": 0.061797760758017226,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.0023345947265625,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005437929580372961,
+   "rmse": 0.0001719525163515393,
+   "snrDb": 45.2913284140195,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.59765625,
+   "tensorRms": 0.03162095312380745,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.00390625,
+   "maxRelErrVsAmax": 0.003937007874015748,
+   "nrmse": 0.005237569762685351,
+   "rmse": 0.00025353680891728304,
+   "snrDb": 45.617403586584516,
+   "tensorAmax": 0.9921875,
+   "tensorRms": 0.048407337831294556,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.0018672943115234375,
+   "maxRelErrVsAmax": 0.003886401168699187,
+   "nrmse": 0.005506986685808807,
+   "rmse": 0.0002536018605739246,
+   "snrDb": 45.181719470144664,
+   "tensorAmax": 0.48046875,
+   "tensorRms": 0.046050930398550315,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.0020294189453125,
+   "maxRelErrVsAmax": 0.003737634892086331,
+   "nrmse": 0.005419154617606078,
+   "rmse": 0.0002728458228231521,
+   "snrDb": 45.321369153159935,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.54296875,
+   "tensorRms": 0.050348410790257585,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.22.mlp.down_proj.weight",
+   "maxAbsErr": 0.002109527587890625,
+   "maxRelErrVsAmax": 0.0036244232382550336,
+   "nrmse": 0.005818820042826156,
+   "rmse": 0.000330749194923068,
+   "snrDb": 44.70330147828712,
+   "tensorAmax": 0.58203125,
+   "tensorRms": 0.05684128268081404,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.mlp.gate_proj.weight",
+   "maxAbsErr": 0.002094268798828125,
+   "maxRelErrVsAmax": 0.0038023603723404257,
+   "nrmse": 0.0057033544313443455,
+   "rmse": 0.00020816468000930618,
+   "snrDb": 44.87739277242169,
+   "tensorAmax": 0.55078125,
+   "tensorRms": 0.036498639969713295,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.mlp.up_proj.weight",
+   "maxAbsErr": 0.002960205078125,
+   "maxRelErrVsAmax": 0.003886217948717949,
+   "nrmse": 0.005629056569534759,
+   "rmse": 0.0003185514519812989,
+   "snrDb": 44.99128773699904,
+   "tensorAmax": 0.76171875,
+   "tensorRms": 0.05659055794630736,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00299072265625,
+   "maxRelErrVsAmax": 0.003926282051282051,
+   "nrmse": 0.006279035016164694,
+   "rmse": 0.0002638661368663515,
+   "snrDb": 44.04214190027688,
+   "tensorAmax": 0.76171875,
+   "tensorRms": 0.04202335807764358,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00138092041015625,
+   "maxRelErrVsAmax": 0.003842561141304348,
+   "nrmse": 0.005354463841314864,
+   "rmse": 0.0002981871256431132,
+   "snrDb": 45.42568019754267,
+   "tensorAmax": 0.359375,
+   "tensorRms": 0.05568944612947263,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.self_attn.q_proj.weight",
+   "maxAbsErr": 0.002532958984375,
+   "maxRelErrVsAmax": 0.0038369082840236687,
+   "nrmse": 0.0057340939210928895,
+   "rmse": 0.0002386003180880331,
+   "snrDb": 44.83070395685131,
+   "tensorAmax": 0.66015625,
+   "tensorRms": 0.04161081443231001,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.22.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0020904541015625,
+   "maxRelErrVsAmax": 0.00390625,
+   "nrmse": 0.005643927271330829,
+   "rmse": 0.0003201443318200612,
+   "snrDb": 44.968371825579894,
+   "tensorAmax": 0.53515625,
+   "tensorRms": 0.05672368130012626,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.cross_attn.k_proj.weight",
+   "maxAbsErr": 0.001922607421875,
+   "maxRelErrVsAmax": 0.003921812749003984,
+   "nrmse": 0.005440990976792375,
+   "rmse": 0.00016069343230471427,
+   "snrDb": 45.28643988633892,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.490234375,
+   "tensorRms": 0.02953385384944119,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.cross_attn.o_proj.weight",
+   "maxAbsErr": 0.005615234375,
+   "maxRelErrVsAmax": 0.003927595628415301,
+   "nrmse": 0.0051472634854789374,
+   "rmse": 0.00018049092004850798,
+   "snrDb": 45.76847199788488,
+   "tensorAmax": 1.4296875,
+   "tensorRms": 0.03506541302144237,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.cross_attn.q_proj.weight",
+   "maxAbsErr": 0.001194000244140625,
+   "maxRelErrVsAmax": 0.0038691653481012656,
+   "nrmse": 0.005412083387478502,
+   "rmse": 0.00022764107660130318,
+   "snrDb": 45.33271041132281,
+   "tensorAmax": 0.30859375,
+   "tensorRms": 0.04206163510487992,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "uint32-bf16-pairs",
+   "layout": "dit-gemm-n128-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.cross_attn.v_proj.weight",
+   "maxAbsErr": 0.001064300537109375,
+   "maxRelErrVsAmax": 0.0037841796875,
+   "nrmse": 0.005446821183476299,
+   "rmse": 0.00020673511934345056,
+   "snrDb": 45.27713764344228,
+   "storageNote": "dequantized values re-rounded to bf16 (RNE)",
+   "tensorAmax": 0.28125,
+   "tensorRms": 0.03795518750837841,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    6144
+   ],
+   "logicalTensor": "ace.decoder.layers.23.mlp.down_proj.weight",
+   "maxAbsErr": 0.002628326416015625,
+   "maxRelErrVsAmax": 0.003866963002873563,
+   "nrmse": 0.005826849272019786,
+   "rmse": 0.00027394402482008303,
+   "snrDb": 44.69132432045795,
+   "tensorAmax": 0.6796875,
+   "tensorRms": 0.04701409149804979,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.mlp.gate_proj.weight",
+   "maxAbsErr": 0.002605438232421875,
+   "maxRelErrVsAmax": 0.003877861555232558,
+   "nrmse": 0.005653880823860133,
+   "rmse": 0.00020836225491958866,
+   "snrDb": 44.95306700177401,
+   "tensorAmax": 0.671875,
+   "tensorRms": 0.0368529619584962,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 393216,
+   "byteLength": 25165824,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    6144,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.mlp.up_proj.weight",
+   "maxAbsErr": 0.00252532958984375,
+   "maxRelErrVsAmax": 0.0038253513313609468,
+   "nrmse": 0.0055754531027526815,
+   "rmse": 0.0002817972439288497,
+   "snrDb": 45.074396656971444,
+   "tensorAmax": 0.66015625,
+   "tensorRms": 0.05054248304765084,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.self_attn.k_proj.weight",
+   "maxAbsErr": 0.00390625,
+   "maxRelErrVsAmax": 0.0038461538461538464,
+   "nrmse": 0.006123725496045812,
+   "rmse": 0.0002654805989476636,
+   "snrDb": 44.259685707040916,
+   "tensorAmax": 1.015625,
+   "tensorRms": 0.043352792204531164,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.self_attn.o_proj.weight",
+   "maxAbsErr": 0.00189208984375,
+   "maxRelErrVsAmax": 0.003875,
+   "nrmse": 0.0054538290704425115,
+   "rmse": 0.0003609760162124695,
+   "snrDb": 45.26596954984189,
+   "tensorAmax": 0.48828125,
+   "tensorRms": 0.06618762919593678,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 131072,
+   "byteLength": 8388608,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    2048,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.self_attn.q_proj.weight",
+   "maxAbsErr": 0.00372314453125,
+   "maxRelErrVsAmax": 0.0038432459677419355,
+   "nrmse": 0.005897122972375568,
+   "rmse": 0.00028789073814113904,
+   "snrDb": 44.58719631618443,
+   "tensorAmax": 0.96875,
+   "tensorRms": 0.04881884598468302,
+   "zeroScaleBlocks": 0
+  },
+  {
+   "blocks": 65536,
+   "byteLength": 4194304,
+   "dtype": "float16",
+   "layout": "dit-gemm-n256-k32-tile-major-v1",
+   "logicalShape": [
+    1024,
+    2048
+   ],
+   "logicalTensor": "ace.decoder.layers.23.self_attn.v_proj.weight",
+   "maxAbsErr": 0.0028839111328125,
+   "maxRelErrVsAmax": 0.003885690789473684,
+   "nrmse": 0.006341587889320673,
+   "rmse": 0.0003625224274042477,
+   "snrDb": 43.95603968392473,
+   "tensorAmax": 0.7421875,
+   "tensorRms": 0.057165876075728726,
+   "zeroScaleBlocks": 0
+  }
+ ],
+ "worstTensorsByNrmse": [
+  "ace.decoder.layers.23.self_attn.v_proj.weight",
+  "ace.decoder.layers.22.self_attn.k_proj.weight",
+  "ace.decoder.layers.0.self_attn.k_proj.weight",
+  "ace.decoder.layers.0.mlp.down_proj.weight",
+  "ace.decoder.layers.23.self_attn.k_proj.weight",
+  "ace.decoder.layers.0.self_attn.q_proj.weight",
+  "ace.decoder.layers.21.self_attn.v_proj.weight",
+  "ace.decoder.layers.1.self_attn.k_proj.weight",
+  "ace.decoder.layers.16.self_attn.k_proj.weight",
+  "ace.decoder.layers.23.self_attn.q_proj.weight"
+ ]
+}
