@@ -585,9 +585,11 @@ describe("OPT-0076 C256 native-K4 browser source contract", () => {
       disposition: "negative-stop-selector-primitive-gate",
     });
     expect(browser.identity.sourceSha256).toMatchObject({
-      currentSelector: sha256(source(
-        "../src/webgpu/kernels/vae-conv1d-fp16-k4-row-reuse-shape-selector.ts",
-      )),
+      // Frozen capture-time identity of the then-current OPT-0057 selector.
+      // OPT-0088 later extended the live selector source with the portable
+      // no-subgroups arm, so this receipt pin is registration-time, not live.
+      currentSelector:
+        "c05c95b69f45b0abf859a33b05ebe27abf21ac93c45797b3ab8f8e8a0c72f209",
       candidateSelector: sha256(source(
         "../src/webgpu/kernels/vae-conv1d-fp16-c256-k4-selector.ts",
       )),

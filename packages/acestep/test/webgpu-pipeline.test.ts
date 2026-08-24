@@ -24,6 +24,8 @@ import {
   createAceMainAcquisitionManifest,
   createAceOpt0037DitK4AcquisitionManifest,
   createAceWebGpuPipelineBackendForTest,
+  resolveAceDitDensePackageRuntimeIdentity,
+  resolveAceVaePackageRuntimeIdentity,
   type AceOpt0018DitCheckpoint,
   type AceOpt0034DitCheckpoint,
   type AceOpt0056DitCheckpoint,
@@ -66,14 +68,21 @@ import {
 } from "../src/webgpu/vae-fp16-backend.js";
 import type { AceVaeDecodeWindow } from "../src/webgpu/vae-chunks.js";
 import type { AceGpuRuntimeEvent } from "../src/webgpu/device.js";
-import { ACE_REFERENCE_SUBGROUP_PROFILE } from "../src/webgpu/capabilities.js";
+import {
+  ACE_REFERENCE_PORTABLE_PROFILE,
+  ACE_REFERENCE_SUBGROUP_PROFILE,
+} from "../src/webgpu/capabilities.js";
 import {
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID,
 } from "../src/webgpu/dit-attention-profile.js";
 import {
+  ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
   ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES,
   ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256,
+  ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
   ACE_OPT_0037_DIT_K4_LAYER_BYTES,
   ACE_OPT_0037_DIT_K4_MANIFEST_BYTES,
   ACE_OPT_0037_DIT_K4_MANIFEST_SHA256,
@@ -114,6 +123,7 @@ import {
   ACE_OPT_0028_VAE_FP16_FIXED32_EXACT_PACKED_PROFILE,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
 } from "../src/webgpu/vae-fp16-profile.js";
 import {
   testDiagnostics,
@@ -243,9 +253,12 @@ describe("concrete WebGPU pipeline coordinator", () => {
     expect(harness.loadedPhases).not.toContain("planner");
     expect(harness.loadedPhases).not.toContain("semantic");
     const deviceRequest = harness.requestDevice.mock.calls[0]![0];
+    // The pipeline hard-requires only shader-f16; the execution profile
+    // selected inside the device request re-adds "subgroups" on fixed-32
+    // subgroup adapters and omits it on portable adapters.
     expect(deviceRequest).toMatchObject({
       modelProfile: "reference-bf16",
-      requiredFeatures: ["shader-f16", "subgroups"],
+      requiredFeatures: ["shader-f16"],
     });
     expect(deviceRequest.requiredLimits).toBeUndefined();
     expect(deviceRequest.deriveRequiredLimits!(testDiagnostics()
@@ -428,6 +441,148 @@ describe("concrete WebGPU pipeline coordinator", () => {
       }),
     }));
     expect(harness.packageEvents).toContain("vae-backend");
+  });
+
+  it("runs the OPT-0070 production tuple end to end on a portable no-subgroups device", async () => {
+    const harness = createHarness({
+      portable: true,
+      largeVaeLimits: true,
+      mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
+    });
+    await initialize(harness, opt0080InitializeMessage());
+
+    const deviceRequest = harness.requestDevice.mock.calls[0]![0];
+    expect(deviceRequest).toMatchObject({
+      modelProfile: "reference-bf16",
+      requiredFeatures: ["shader-f16"],
+    });
+
+    const result = await harness.backend.generate(testGenerationRequest(), {
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      onDiagnostic: vi.fn(),
+    });
+
+    expect(result.diagnostics.executionProfile).toEqual(
+      ACE_REFERENCE_PORTABLE_PROFILE,
+    );
+    expect(result.diagnostics.ditDenseKernelSetId).toBe(
+      ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+    );
+    expect(result.diagnostics.ditAttentionRuntimeProfile).toBe(
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+    );
+    expect(result.diagnostics.ditAttentionKernelSetId).toBe(
+      ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID,
+    );
+    expect(result.diagnostics.vaeKernelSetId).toBe(
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId,
+    );
+    expect(result.diagnostics.vaePrecisionMapSha256).toBe(
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256,
+    );
+    // The portable diagnostics tuple round-trips the protocol validator.
+    expect(isAceGenerationResultValue(result)).toBe(true);
+    expect(harness.lastVaeRuntimeProfile).toBe(
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
+    );
+    // The depth-two DiT and OPT-0080 VAE policies stay fixed32-pinned.
+    expect(harness.lastDitSubmissionPolicy).toBeUndefined();
+    expect(harness.lastVaeProductionSchedulingPolicy).toBeUndefined();
+    expect(harness.packageEvents).toContain("vae-backend");
+  });
+
+  it("fails closed when a portable device still enabled or lacks required features", async () => {
+    // A portable execution profile with subgroups still enabled on the
+    // device is not a coherent tuple.
+    const leaked = createHarness({
+      portable: true,
+      portableDeviceSubgroupsLeak: true,
+      largeVaeLimits: true,
+      mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
+    });
+    await expect(initialize(leaked, opt0080InitializeMessage())).rejects
+      .toThrow(/production device did not enable/);
+    expect(leaked.deviceDestroy).toHaveBeenCalledTimes(1);
+
+    // shader-f16 stays hard-required by both accepted tuples.
+    const withoutShaderF16 = createHarness({
+      portable: true,
+      missingShaderF16: true,
+      largeVaeLimits: true,
+      mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
+    });
+    await expect(initialize(withoutShaderF16, opt0080InitializeMessage()))
+      .rejects.toThrow(/production device did not enable/);
+    expect(withoutShaderF16.deviceDestroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects portable initialization outside the OPT-0072 production VAE tuple", async () => {
+    const harness = createHarness({
+      portable: true,
+      largeVaeLimits: true,
+    });
+    await expect(initialize(harness)).rejects.toThrow(
+      /portable mixed VAE accepts only the OPT-0072 production profile/,
+    );
+  });
+
+  it("resolves backend-keyed package identities and rejects portable non-oracle pairs", () => {
+    const opt0009 = {
+      manifestUrl: "https://example.test/rev7/manifest.json",
+      manifestSha256: ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256,
+      runtimeProfile: ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+    } as const;
+    expect(resolveAceDitDensePackageRuntimeIdentity(opt0009))
+      .toMatchObject({ kernelSetId: ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID });
+    expect(resolveAceDitDensePackageRuntimeIdentity(opt0009, "subgroups"))
+      .toMatchObject({ kernelSetId: ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID });
+    expect(resolveAceDitDensePackageRuntimeIdentity(opt0009, "portable"))
+      .toMatchObject({
+        role: "opt-0009-rev7-oracle",
+        kernelSetId: ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+      });
+    expect(() =>
+      resolveAceDitDensePackageRuntimeIdentity({
+        manifestUrl: "https://example.test/rev8/manifest.json",
+        manifestSha256: ACE_OPT_0037_DIT_K4_MANIFEST_SHA256,
+        runtimeProfile: "opt-0037-k4-fp16-partials-v1",
+      }, "portable")
+    ).toThrow(/portable mixed DiT accepts only the OPT-0009 rev7 oracle/);
+
+    const opt0072 = {
+      manifestUrl: "https://example.test/rev7-vae/manifest.json",
+      manifestSha256: ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+      runtimeProfile:
+        ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+      windowRuntimeProfile: ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
+      maxWindowFrames: 2_378,
+    } as const;
+    expect(resolveAceVaePackageRuntimeIdentity(opt0072)).toMatchObject({
+      role: "opt-0072-rev7-production",
+      physicalRuntimeProfile:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
+      kernelSetId:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId,
+    });
+    expect(resolveAceVaePackageRuntimeIdentity(opt0072, "portable"))
+      .toMatchObject({
+        role: "opt-0072-rev7-production",
+        physicalRuntimeProfile:
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
+        kernelSetId:
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId,
+        precisionMapSha256:
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256,
+      });
+    expect(() =>
+      resolveAceVaePackageRuntimeIdentity({
+        manifestUrl: "https://example.test/vae/manifest.json",
+        manifestSha256: ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256,
+        runtimeProfile: ACE_OPT_0028_VAE_FP16_FIXED32_EXACT_PACKED_PROFILE.id,
+        maxWindowFrames: 512,
+      }, "portable")
+    ).toThrow(/portable mixed VAE accepts only the OPT-0072 production/);
   });
 
   it("downshifts the production C2378 windows to capped C2176 on one-GiB adapters", async () => {
@@ -1964,6 +2119,12 @@ interface HarnessOptions {
   readonly mainManifestSha256?: string;
   readonly opt0081UnexpectedSetupOwner?: boolean;
   readonly opt0081WorkingOwner?: boolean;
+  /** OPT-0088: no-subgroups device landing the portable execution profile. */
+  readonly portable?: boolean;
+  /** Incoherent portable device that still enabled the subgroups feature. */
+  readonly portableDeviceSubgroupsLeak?: boolean;
+  /** Device without shader-f16; both production tuples must fail closed. */
+  readonly missingShaderF16?: boolean;
 }
 
 interface Harness {
@@ -2174,17 +2335,30 @@ function createHarness(options: HarnessOptions = {}): Harness {
     },
   } as unknown as AceAcquiredModelFiles;
   const baseCapabilities = testDiagnostics().capabilities;
+  const portable = options.portable === true;
+  const shaderFeatures: readonly ("shader-f16" | "subgroups")[] =
+    options.missingShaderF16 === true ? [] : ["shader-f16"];
+  const harnessRequiredFeatures: readonly ("shader-f16" | "subgroups")[] =
+    portable ? [...shaderFeatures] : [...shaderFeatures, "subgroups"];
   const capabilities = Object.freeze({
     ...baseCapabilities,
-    executionProfile: ACE_REFERENCE_SUBGROUP_PROFILE,
+    executionProfile: portable
+      ? ACE_REFERENCE_PORTABLE_PROFILE
+      : ACE_REFERENCE_SUBGROUP_PROFILE,
     adapterInfo: Object.freeze({
       ...baseCapabilities.adapterInfo,
-      subgroupMinSize: 32,
-      subgroupMaxSize: 32,
+      // Portable devices may advertise non-fixed-32 subgroups (Chrome-class
+      // adapters); the fixed32 tuple reports the exact 32/32 pair.
+      subgroupMinSize: portable ? 4 : 32,
+      subgroupMaxSize: portable ? 64 : 32,
     }),
     adapterFeatures: Object.freeze(["shader-f16", "subgroups"]),
-    deviceFeatures: Object.freeze(["shader-f16", "subgroups"]),
-    requiredFeatures: Object.freeze(["shader-f16", "subgroups"] as const),
+    deviceFeatures: Object.freeze(
+      portable && options.portableDeviceSubgroupsLeak !== true
+        ? [...shaderFeatures]
+        : [...shaderFeatures, "subgroups"],
+    ),
+    requiredFeatures: Object.freeze(harnessRequiredFeatures),
     ...(options.largeVaeLimits === true || options.vaeLimitBytes !== undefined
       ? {
           adapterLimits: Object.freeze({
@@ -2203,11 +2377,22 @@ function createHarness(options: HarnessOptions = {}): Harness {
       : {}),
     stockFeatures: Object.freeze({
       ...baseCapabilities.stockFeatures,
+      ...(options.missingShaderF16 === true
+        ? {
+            "shader-f16": Object.freeze({
+              adapterSupported: false,
+              deviceEnabled: false,
+              required: false,
+              requested: false,
+            }),
+          }
+        : {}),
       subgroups: Object.freeze({
         adapterSupported: true,
-        deviceEnabled: true,
-        required: true,
-        requested: true,
+        deviceEnabled: !portable ||
+          options.portableDeviceSubgroupsLeak === true,
+        required: !portable,
+        requested: !portable,
       }),
     }),
   });
@@ -2797,11 +2982,21 @@ function createHarness(options: HarnessOptions = {}): Harness {
       expect([
         "opt-0028-mixed-fp16-fixed32-exact-packed-v1",
         ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
       ]).toContain(vaeOptions.runtimeProfileId);
-      expect(vaeOptions).toMatchObject({
-        subgroupMinSize: 32,
-        subgroupMaxSize: 32,
-      });
+      if (
+        vaeOptions.runtimeProfileId ===
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id
+      ) {
+        // The portable backend options variant has no subgroup members.
+        expect("subgroupMinSize" in vaeOptions).toBe(false);
+        expect("subgroupMaxSize" in vaeOptions).toBe(false);
+      } else {
+        expect(vaeOptions).toMatchObject({
+          subgroupMinSize: 32,
+          subgroupMaxSize: 32,
+        });
+      }
       expect(vaeOptions.quantaPerCommandBuffer).toBe(64);
       packageEvents.push("vae-backend");
       let destroyed = false;

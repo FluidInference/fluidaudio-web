@@ -662,15 +662,15 @@ describe("OPT-0023 current-production C4500 VAE browser profile", () => {
     expect(RECORD_SOURCE).toContain("## Result — positive measurement, benchmark-only");
     const registered = {
       "src/webgpu/vae-fp16-backend.ts":
-        "407c685d544ff85762658481727e642326eeeb4bde102e4cb7c92a5bfa6d4d95",
+        "47b2c24355f1e3d6e110a8d07d18e5b2686849685bad39b75c2a5689b5ea0447",
       "src/webgpu/vae-fp16-decoder.ts":
-        "def5da74a7280bce4515bbc21b93a0a228487b76f22eb3dde3113280ff8d39fa",
+        "15e3a98ceec3b6d169d7ca78b921d2abde34c43ee0d3abf81b4314be0b483964",
       "src/webgpu/vae-fp16-profile.ts":
-        "946dfc164759037fade6270c1bc67ed928dc6cbdf2fa63ffa785a3622be36f23",
+        "7ba8c89844b2f60217eb1b61a30a143628efe95d546b8f4c584288e381b5a362",
       "src/webgpu/vae-chunks.ts":
         "0059b79fcce3ad5679d3c05f5f3da1954db80194775540521d68002253f5baaf",
       "src/runtime/webgpu-pipeline.ts":
-        "e878b69740c243c68b03b2aa5bfc1a2c972fd1d1b9451d5f33b767f7e920e139",
+        "41acd296fee4a7e5c6613b1e34b798c8743aa717a5164761f60bd91ce1eaf2e0",
     };
     for (const [path, expected] of Object.entries(registered)) {
       expect(sha256(readFileSync(new URL(`../${path}`, import.meta.url)))).toBe(expected);

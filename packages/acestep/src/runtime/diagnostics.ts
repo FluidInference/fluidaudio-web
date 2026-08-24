@@ -48,14 +48,16 @@ export interface AceRuntimeDiagnostics {
   readonly ditDenseKernelSetId:
     | "opt-0009-n256-k32-fp16-fp32-v1"
     | "opt-0037-opt-0032-k4-partials-fixed32-v1"
-    | "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1";
+    | "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1"
+    | "opt-0088-dense-fp16-fp32-portable-v1";
   /** Present for the explicit diagnostic or exact production quad profile. */
   readonly ditAttentionRuntimeProfile?:
     | "opt-0062-fixed32-quad-query32-full-self-v1"
     | "opt-0070-fixed32-quad-query32-full-self-production-v1";
   readonly ditAttentionKernelSetId?:
     | "opt-0062-query8-plus-quad-query32-full-self-v1"
-    | "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1";
+    | "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1"
+    | "opt-0088-portable-attention-oracle-v1";
   readonly ditDenseLayerBytes: 3_020_808_192;
   readonly ditResidentWeightBytes: 3_150_917_888;
   readonly vaeManifestId: string;
@@ -71,7 +73,8 @@ export interface AceRuntimeDiagnostics {
     | "opt-0028-vae-fp16-fixed32-exact-packed-kernel-set-v1"
     | "opt-0040-vae-fp16-fixed32-exact-packed-shape-selected-kernel-set-v1"
     | "opt-0054-vae-fp16-fixed32-revision7-k4-shape-selected-kernel-set-v1"
-    | "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1";
+    | "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1"
+    | "opt-0088-vae-fp16-portable-dual-k4-kernel-set-v1";
   readonly vaePrecisionMapSha256: string;
   readonly vaeWindowRuntimeProfile:
     | "ace-vae-c512-overlap64-v1"
