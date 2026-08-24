@@ -39,7 +39,10 @@
     "acestep:build": "npm run build --workspace ace-step-1.5.wgsl",
     "acestep:check": "npm run check --workspace ace-step-1.5.wgsl",
     "acestep:test": "npm run test --workspace ace-step-1.5.wgsl",
-    "build": "npm run acestep:build && tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
+    "dicose:build": "npm run build --workspace dicose-wgsl",
+    "dicose:check": "npm run check --workspace dicose-wgsl",
+    "dicose:test": "npm run test --workspace dicose-wgsl",
+    "build": "npm run acestep:build && npm run dicose:build && tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "gpu:verify": "node scripts/gpu-verify.mjs",
@@ -63,6 +66,7 @@
   },
   "dependencies": {
     "ace-step-1.5.wgsl": "*",
+    "dicose-wgsl": "*",
     "pinyin-pro": "^3.28.2"
   },
   "devDependencies": {
