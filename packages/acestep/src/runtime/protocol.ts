@@ -54,6 +54,8 @@ import {
   ACE_OPT_0070_VAE_C2378_MAXIMUM_WINDOW_FRAMES,
   ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
   ACE_VAE_C512_WINDOW_RUNTIME_PROFILE,
+  requireAceVaeWindowRuntimeProfile,
+  selectAceVaeWindowRuntimeProfileForLimits,
 } from "../webgpu/vae-window-profile.js";
 import { planAceOpt0011Fp16VaeChunkDispatches } from
   "../webgpu/vae-fp16-decoder.js";
@@ -1073,16 +1075,21 @@ function isVaeSchedulingReceipt(
   try {
     const shape = deriveAceDurationGraphShape(durationSeconds);
     if (shape.audioFramesPerChannel !== frameCount) return false;
-    const maximumWindowFrames = diagnostics.vaeMaxWindowFrames === 512
-      ? 512 as const
-      : diagnostics.vaeMaxWindowFrames ===
-          ACE_OPT_0070_VAE_C2378_MAXIMUM_WINDOW_FRAMES
-        ? ACE_OPT_0070_VAE_C2378_MAXIMUM_WINDOW_FRAMES
-        : undefined;
-    if (maximumWindowFrames === undefined) return false;
+    // Diagnostics report the configured window identity; the runtime plans
+    // windows from the adapter-derived effective geometry (a configured
+    // C2378 contract downshifts on capped adapters). Reconstruct the same
+    // authenticated selection from the reported adapter limits so the
+    // receipt is validated against the plan the runtime actually executed.
+    const effective = selectAceVaeWindowRuntimeProfileForLimits(
+      requireAceVaeWindowRuntimeProfile(
+        diagnostics.vaeWindowRuntimeProfile,
+        diagnostics.vaeMaxWindowFrames,
+      ),
+      diagnostics.capabilities.adapterLimits,
+    );
     expectedDispatchPlan = planAceOpt0011Fp16VaeChunkDispatches(
       shape.latentFrames,
-      maximumWindowFrames,
+      effective.maximumWindowFrames,
       256,
     );
   } catch {

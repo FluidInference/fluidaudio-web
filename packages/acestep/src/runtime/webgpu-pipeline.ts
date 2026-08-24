@@ -918,9 +918,10 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
           modelProfile: configuration.modelProfile,
           schedulingProfile: configuration.schedulingProfile,
           requiredFeatures: ["shader-f16"],
-          // The workspace capacity is adapter-aware: a one-GiB adapter that
-          // cannot bind the configured C2378 workspace requests the capped
-          // C2176 geometry instead; true deficits still fail closed.
+          // The workspace capacity is adapter-aware: a one-GiB (iOS-class)
+          // adapter downshifts the configured C2378 windows to the C512
+          // baseline geometry so total workspace residency stays inside the
+          // tab memory budget; true deficits still fail closed.
           deriveRequiredLimits: (adapterLimits) => {
             const effective = selectAceVaeWindowRuntimeProfileForLimits(
               vaeWindowProfile,

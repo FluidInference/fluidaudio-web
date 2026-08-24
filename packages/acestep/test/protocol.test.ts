@@ -68,6 +68,18 @@ function opt0080ProductionDiagnostics() {
     capabilities: {
       ...base.capabilities,
       executionProfile: ACE_REFERENCE_SUBGROUP_PROFILE,
+      // A C2378 production receipt requires an adapter that binds the C2378
+      // workspace; the base one-GiB fixture limits would downshift to C512.
+      adapterLimits: {
+        ...base.capabilities.adapterLimits,
+        maxBufferSize: 2_000_000_000,
+        maxStorageBufferBindingSize: 2_000_000_000,
+      },
+      deviceLimits: {
+        ...base.capabilities.deviceLimits,
+        maxBufferSize: 2_000_000_000,
+        maxStorageBufferBindingSize: 2_000_000_000,
+      },
       adapterInfo: {
         ...base.capabilities.adapterInfo,
         subgroupMinSize: 32,
