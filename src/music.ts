@@ -134,6 +134,10 @@ let disposal:
 const CRASH_BREADCRUMB_KEY = "ace-step-progress-breadcrumb";
 
 function recordBreadcrumb(title: string, detail: string): void {
+  // Mirror to the console so a tethered Web Inspector (iPhone debugging)
+  // streams the stages — the last line before "Webpage Crashed" is the
+  // memory-kill diagnosis.
+  console.info(`[ace] ${title}${detail ? ` — ${detail}` : ""}`);
   try {
     localStorage.setItem(CRASH_BREADCRUMB_KEY, JSON.stringify({ title, detail, at: Date.now(), open: true }));
   } catch {
@@ -160,6 +164,7 @@ function reportCrashBreadcrumb(): void {
     if (record.open !== true || typeof record.title !== "string") return;
     localStorage.removeItem(CRASH_BREADCRUMB_KEY);
     const when = typeof record.at === "number" ? new Date(record.at).toLocaleTimeString() : "?";
+    console.warn(`[ace] previous attempt ended unexpectedly during: ${record.title} — ${record.detail ?? ""}`);
     supportWarning.textContent =
       `The previous attempt ended unexpectedly during: ${record.title}` +
       `${record.detail ? ` — ${record.detail}` : ""} (${when}). ` +
