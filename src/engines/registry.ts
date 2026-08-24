@@ -91,6 +91,30 @@ export const ENGINES: EngineEntry[] = [
     make: async () => new (await import("./tts-kokoro/index.js")).KokoroTtsEngine({ lang: "zh" }),
   },
   {
+    id: "stem-dicose",
+    label: "DiCoSe Stem Splitter",
+    kind: "audio",
+    category: "analysis",
+    heavy: true,
+    // 623 MB weight package on HF; probe keeps the picker honest if the files
+    // are ever unreachable (or on forks without them).
+    available: async () => {
+      try {
+        const res = await fetch("https://huggingface.co/FluidInference/fluidaudio-web/resolve/main/dicose/manifest.json", {
+          method: "HEAD",
+          referrerPolicy: "no-referrer",
+        });
+        return res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      } catch {
+        return false;
+      }
+    },
+    make: async () => {
+      const baseUrl = await localWeightDir("dicose", "manifest.json");
+      return new (await import("./stem-dicose/index.js")).DicoseStemEngine(baseUrl ? { baseUrl } : {});
+    },
+  },
+  {
     id: "asr-nemotron",
     label: "Nemotron 3.5 (40 langs)",
     kind: "audio",

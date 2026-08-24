@@ -684,3 +684,22 @@ a#download {
     gap: 12px;
   }
 }
+
+/* Stem-separation results (playground multi-audio output rows). */
+.stem-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+}
+
+.stem-row audio {
+  flex: 1;
+  min-width: 0;
+  height: 2.25rem;
+}
+
+.stem-name {
+  min-width: 6.5rem;
+  text-transform: capitalize;
+}

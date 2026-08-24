@@ -88,6 +88,36 @@ export interface StreamingAsrEngine extends Engine {
   reset(): void;
 }
 
+// ---- Source separation ----
+
+/** One separated stem; `samples` is the left/mono channel, `right` when stereo. */
+export interface StemAudio {
+  name: string;
+  samples: Float32Array;
+  right?: Float32Array;
+  sampleRate: number;
+}
+
+/** Full-band separation input: `samples` is the left/mono channel at the clip's
+ * native rate (NOT the 16 kHz ASR contract), `right` when stereo. */
+export interface SeparationInput extends AudioData {
+  right?: Float32Array;
+}
+
+export interface SeparateOpts {
+  /** Model chunk-boundary progress, same semantics as TranscribeOpts.onProgress. */
+  onProgress?: (p: TranscribeProgress) => void;
+}
+
+/** Audio → multi-audio engines (stem splitters). */
+export interface SeparationEngine extends Engine {
+  /** Decode an encoded audio file to full-band PCM (stereo and native rate
+   * preserved where the engine can) — separation must not run through the
+   * shared 16 kHz mono decode path. */
+  decodeFile(input: ArrayBuffer): Promise<SeparationInput>;
+  separate(audio: SeparationInput, opts?: SeparateOpts): Promise<StemAudio[]>;
+}
+
 // ---- Diarization ----
 
 export interface DiarSegment {

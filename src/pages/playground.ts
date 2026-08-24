@@ -11,7 +11,7 @@ import { segmentsToSrt, segmentsToVtt } from "../core/captions.js";
 import { webgpuAvailable } from "../core/webgpu.js";
 import { ENGINES, type EngineCategory, type EngineEntry } from "../engines/registry.js";
 import { MicCapture } from "../core/mic.js";
-import type { Engine, LoadProgress, TranscribeProgress } from "../core/types.js";
+import type { Engine, LoadProgress, SeparationEngine, TranscribeProgress } from "../core/types.js";
 
 // Tile-major direct-B GEMM is DEFAULT ON (browser-verified 282× on the 1hr
 // bench). ?tm=0 restores the LDS-staged baseline for A/Bs.
@@ -193,6 +193,13 @@ export function initPlayground(opts: PlaygroundOptions) {
           output.textContent = "Choose an audio file first.";
           return;
         }
+        // Stem splitters take full-band stereo at the clip's native rate and
+        // return one audio per stem — they bypass the 16 kHz mono decode and
+        // the text-result path entirely.
+        if (isSeparation(engine)) {
+          await runSeparationEngine(engine, await file.arrayBuffer(), file.name);
+          return;
+        }
         const audio = await decodeToMono16k(await file.arrayBuffer());
         const dur = audio.samples.length / audio.sampleRate;
         lastFileName = file.name;
@@ -319,6 +326,62 @@ export function initPlayground(opts: PlaygroundOptions) {
     if (mic.running) void stopLive();
     else void startLive();
   });
+
+  function isSeparation(e: unknown): e is SeparationEngine {
+    return typeof (e as any)?.separate === "function";
+  }
+
+  // Object URLs backing the last separation run's players/downloads.
+  let stemUrls: string[] = [];
+
+  async function runSeparationEngine(eng: SeparationEngine, encoded: ArrayBuffer, fileName: string): Promise<void> {
+    for (const url of stemUrls) URL.revokeObjectURL(url);
+    stemUrls = [];
+    output.textContent = "Decoding…";
+    const input = await eng.decodeFile(encoded);
+    const dur = input.samples.length / input.sampleRate;
+    const prevStatus = status.textContent;
+    progress.value = 0;
+    progress.hidden = false;
+    const t0 = performance.now();
+    let stems;
+    try {
+      stems = await eng.separate(input, {
+        onProgress: (p) => {
+          progress.value = p.fraction;
+          const wall = (performance.now() - t0) / 1000;
+          const rt = wall > 0 ? ` (${(p.processedSeconds / wall).toFixed(1)}× RT)` : "";
+          status.textContent = `Separating… ${fmtClock(p.processedSeconds)} / ${fmtClock(p.totalSeconds)}${rt}`;
+        },
+      });
+    } finally {
+      progress.hidden = true;
+      progress.value = 0;
+      status.textContent = prevStatus;
+    }
+    const ms = performance.now() - t0;
+    output.textContent = `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n`;
+    const base = fileName.replace(/\.[^.]+$/, "") || "audio";
+    for (const stem of stems) {
+      const url = URL.createObjectURL(pcmToWav(stem.samples, stem.sampleRate, stem.right));
+      stemUrls.push(url);
+      const row = document.createElement("div");
+      row.className = "stem-row";
+      const label = document.createElement("strong");
+      label.className = "stem-name";
+      label.textContent = stem.name;
+      const player = document.createElement("audio");
+      player.controls = true;
+      player.preload = "metadata";
+      player.src = url;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${base}-${stem.name}.wav`;
+      link.textContent = "⬇ WAV";
+      row.append(label, player, link);
+      output.appendChild(row);
+    }
+  }
 
   async function runAudioEngine(eng: Engine, audio: { samples: Float32Array; sampleRate: number }): Promise<string> {
     const any = eng as any;
