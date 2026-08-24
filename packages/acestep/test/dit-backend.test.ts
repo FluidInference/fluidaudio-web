@@ -46,11 +46,21 @@ import {
   isAceDitRepeatedDenseWeightTensorName,
 } from "../src/webgpu/ace-dit-package.js";
 import {
+  ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
   ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
   ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   ACE_REFERENCE_DIT_SHARED_WEIGHT_BYTES,
 } from "../src/webgpu/dit-fp16-package.js";
+import {
+  ACE_DIT_QUERY8_ATTENTION_RUNTIME_PROFILE,
+  ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+  ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+} from "../src/webgpu/dit-attention-profile.js";
+import { planAceOpt0009DenseGemm } from
+  "../src/webgpu/kernels/dit-dense-fp16.js";
+import { ACE_OPT_0081_DIT_F16_DENSE_INPUT_STORAGE_PROFILE } from
+  "../src/webgpu/kernels/dit-f16-dense-input-producers.js";
 import { ACE_FP16_PORTABLE_PROFILE } from "../src/webgpu/capabilities.js";
 import {
   ACE_REFERENCE_PORTABLE_PROFILE,
@@ -149,6 +159,164 @@ describe("ACE DiT concrete backend memory", () => {
         backend: "opt-0056-selective-k4-exact-down",
       },
     });
+  });
+
+  it("resolves the OPT-0088 portable mixed selection only for the hosted product tuple", () => {
+    const selection = resolveAceDitMixedGemmSelection(
+      ACE_REFERENCE_PORTABLE_PROFILE,
+      undefined,
+      undefined,
+      ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+      2_250,
+      98,
+    );
+    expect(selection).toEqual({
+      modelProfile: "reference-bf16",
+      backend: "mixed-opt-0088-portable",
+      denseRuntimeProfile: ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      attentionRuntimeProfile:
+        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+      gemmConfiguration: {
+        backend: "portable",
+        weightLayout: ACE_DIT_GEMM_TILE_LAYOUT,
+      },
+      denseGemmConfiguration: { backend: "opt-0088-dense-portable" },
+      attentionConfiguration: { backend: "portable" },
+    });
+    expect(Object.isFrozen(selection)).toBe(true);
+    expect(Object.isFrozen(selection.denseGemmConfiguration)).toBe(true);
+    expect(Object.isFrozen(selection.attentionConfiguration)).toBe(true);
+    // Reported subgroup sizes are capability hints; the portable tuple never
+    // consumes them and resolves identically when they are present.
+    expect(resolveAceDitMixedGemmSelection(
+      ACE_REFERENCE_PORTABLE_PROFILE,
+      32,
+      32,
+      ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+      2_250,
+      98,
+    )).toEqual(selection);
+    // Portable plus any rev8/selective dense profile stays closed.
+    for (const denseProfile of [
+      ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
+      ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
+    ] as const) {
+      expect(() => resolveAceDitMixedGemmSelection(
+        ACE_REFERENCE_PORTABLE_PROFILE,
+        undefined,
+        undefined,
+        denseProfile,
+        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+        2_250,
+        98,
+      )).toThrow(/cannot combine|Portable mixed DiT/);
+    }
+    // Portable plus any non-production attention profile stays closed.
+    for (const attentionProfile of [
+      ACE_DIT_QUERY8_ATTENTION_RUNTIME_PROFILE,
+      ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+    ] as const) {
+      expect(() => resolveAceDitMixedGemmSelection(
+        ACE_REFERENCE_PORTABLE_PROFILE,
+        undefined,
+        undefined,
+        ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+        attentionProfile,
+        2_250,
+        98,
+      )).toThrow(/Portable mixed DiT/);
+    }
+    // OPT-0070 token-count authentication still applies to the portable arm.
+    expect(() => resolveAceDitMixedGemmSelection(
+      ACE_REFERENCE_PORTABLE_PROFILE,
+      undefined,
+      undefined,
+      ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+    )).toThrow(/token counts/);
+    // The raw-FP16 portable profile is not the reference portable profile.
+    expect(() => resolveAceDitMixedGemmSelection(
+      ACE_FP16_PORTABLE_PROFILE,
+      undefined,
+      undefined,
+      ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+      2_250,
+      98,
+    )).toThrow(/fixed32 reference profile/);
+    // The fixed32 subgroup arm is unchanged: 32-lane subgroups stay required.
+    expect(() => resolveAceDitMixedGemmSelection(
+      ACE_REFERENCE_SUBGROUP_PROFILE,
+      16,
+      64,
+      ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+      2_250,
+      98,
+    )).toThrow(/fixed 32-lane/);
+  });
+
+  it("plans OPT-0088 portable mixed physical commands with the portable geometry", () => {
+    const shape = { batch: 1, latentFrames: 4_500, conditionTokens: 98 };
+    const portable = planAceDitPhysicalCommandBufferCount(shape, "portable");
+    const mixedPortable = planAceDitPhysicalCommandBufferCount(
+      shape,
+      "mixed-opt-0088-portable",
+    );
+    expect(mixedPortable).toBe(1_785);
+    const layerShapes = [
+      [2_048, 2_048], [2_048, 1_024], [2_048, 1_024],
+      [2_048, 2_048], [2_048, 2_048], [2_048, 2_048],
+      [2_048, 6_144], [2_048, 6_144], [6_144, 2_048],
+    ].map(([inner, columns]) =>
+      ({ rows: 2_250, inner: inner!, columns: columns! })
+    );
+    // The dense package geometry replaces the tiled reference geometry in
+    // every one of the 24 layers across all 8 evaluations; attention stays a
+    // rangeless portable dispatch and contributes no extra physical command.
+    const denseLayer = planAceCompositeCooperativeQuantumCount(
+      layerShapes.map(planAceOpt0009DenseGemm),
+    );
+    const tiledLayer = planAceCompositeCooperativeQuantumCount(
+      layerShapes.map(planAceTiledGemm),
+    );
+    expect(denseLayer).toBe(9);
+    expect(tiledLayer).toBe(68);
+    expect(portable - mixedPortable).toBe(24 * 8 * (tiledLayer - denseLayer));
+    // The M150 generalized shape keeps the pinned portable accounting.
+    expect(planAceDitPhysicalCommandBufferCount(
+      { batch: 1, latentFrames: 300, conditionTokens: 97 },
+      "mixed-opt-0088-portable",
+    )).toBe(1_017);
+    // Memory planning admits the backend and keeps plan-vs-plan parity.
+    const memory = planAceDitGpuBackendMemory(
+      "reference-bf16",
+      shape,
+      3_150_917_888,
+      "mixed-opt-0088-portable",
+    );
+    expect(memory.gemmBackend).toBe("mixed-opt-0088-portable");
+    expect(memory.commandBufferCount).toBe(mixedPortable + 1);
+    // The OPT-0081 diagnostic dense-input seam stays closed to the portable
+    // backend.
+    expect(() => planAceDitGpuBackendMemory(
+      "reference-bf16",
+      shape,
+      3_150_917_888,
+      "mixed-opt-0088-portable",
+      undefined,
+      false,
+      false,
+      undefined,
+      false,
+      ACE_OPT_0081_DIT_F16_DENSE_INPUT_STORAGE_PROFILE,
+    )).toThrow(/mixed-opt-0009/);
+    expect(() => planAceDitPhysicalCommandBufferCount(
+      shape,
+      "future-backend" as never,
+    )).toThrow(/Unknown ACE DiT GEMM backend/);
   });
 
   it("plans physical command buffers with the selected GEMM geometry", () => {

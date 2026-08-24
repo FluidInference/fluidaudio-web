@@ -105,7 +105,58 @@ async function readGenerationMarker(metadata: FileSystemDirectoryHandle): Promis
   }
 }
 
+/**
+ * Safari's main thread has neither createWritable nor sync access handles, so
+ * the marker write is delegated to a throwaway worker (sync handles are
+ * worker-only there). Chromium/Firefox keep the direct createWritable path.
+ */
+function writeMarkerViaWorker(generation: string): Promise<void> {
+  const source = `self.onmessage = async (event) => {
+    const { dir, file, content } = event.data;
+    try {
+      const root = await navigator.storage.getDirectory();
+      const directory = await root.getDirectoryHandle(dir, { create: true });
+      const handle = await directory.getFileHandle(file, { create: true });
+      const access = await handle.createSyncAccessHandle();
+      try {
+        access.truncate(0);
+        access.write(new TextEncoder().encode(content), { at: 0 });
+        access.flush();
+      } finally {
+        access.close();
+      }
+      self.postMessage({ ok: true });
+    } catch (error) {
+      self.postMessage({ ok: false, error: String(error) });
+    }
+  };`;
+  const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+  const worker = new Worker(url);
+  return new Promise<void>((resolve, reject) => {
+    const finish = (outcome: () => void) => {
+      clearTimeout(timer);
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      outcome();
+    };
+    const timer = setTimeout(() => finish(() => reject(new Error("ACE cache marker write timed out"))), 10_000);
+    worker.onmessage = (event) => {
+      const data = event.data as { ok: boolean; error?: string };
+      finish(() => (data.ok ? resolve() : reject(new Error(data.error ?? "marker write failed"))));
+    };
+    worker.onerror = (event) => finish(() => reject(new Error(event.message || "marker worker failed")));
+    worker.postMessage({ dir: METADATA_DIRECTORY, file: GENERATION_MARKER_FILE, content: generation });
+  });
+}
+
 async function writeGenerationMarker(metadata: FileSystemDirectoryHandle, generation: string): Promise<void> {
+  if (typeof metadata.getFileHandle === "function" && typeof Worker !== "undefined") {
+    const probe = await metadata.getFileHandle(GENERATION_MARKER_FILE, { create: true });
+    if (typeof probe.createWritable !== "function") {
+      await writeMarkerViaWorker(generation);
+      return;
+    }
+  }
   const handle = await metadata.getFileHandle(GENERATION_MARKER_FILE, {
     create: true,
   });

@@ -43,6 +43,8 @@ import {
   type AceFixed32SubgroupCapability,
 } from "./kernels/subgroup-gemm.js";
 import { AceOpt0009DenseGemmKernel } from "./kernels/dit-dense-fp16.js";
+import { AceOpt0088DensePortableKernel } from
+  "./kernels/dit-dense-fp16-portable.js";
 import { AceOpt0081DenseF16InputKernel } from
   "./kernels/dit-dense-f16-input.js";
 import { AceOpt0037DenseK4ProductionKernel } from
@@ -155,6 +157,8 @@ export type AceDitDenseGemmRuntimeConfiguration =
       backend: "opt-0009-fp16-fp32";
       capability: AceFixed32SubgroupCapability;
     }>
+  /** Portable OPT-0009 port; no subgroup capability exists to declare. */
+  | Readonly<{ backend: "opt-0088-dense-portable" }>
   | Readonly<{
       backend: "opt-0037-k4-fp16-partials";
       capability: AceFixed32SubgroupCapability;
@@ -501,6 +505,9 @@ export function createAceDitDenseGemmKernel(
   }
   if (configuration.backend === "opt-0009-fp16-fp32") {
     return AceOpt0009DenseGemmKernel.create(device, configuration.capability);
+  }
+  if (configuration.backend === "opt-0088-dense-portable") {
+    return AceOpt0088DensePortableKernel.create(device);
   }
   if (configuration.backend === "opt-0037-k4-fp16-partials") {
     return AceOpt0037DenseK4ProductionKernel.create(

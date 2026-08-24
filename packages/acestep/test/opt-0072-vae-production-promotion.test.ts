@@ -35,8 +35,11 @@ import {
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_PROFILE_CONTRACT,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
+  ACE_OPT_0088_VAE_PORTABLE_PRODUCTION_PROFILE_CONTRACT,
   ACE_VAE_RUNTIME_PROFILE_IDS,
   requireAceOpt0072VaeProductionRuntimeProfile,
+  requireAceOpt0072VaeProductionRuntimeProfileForBackend,
 } from "../src/webgpu/vae-fp16-profile.js";
 import {
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY,
@@ -78,6 +81,43 @@ describe("OPT-0072 revision-7 dual-K4 production promotion", () => {
     expect(ACE_VAE_RUNTIME_PROFILE_IDS).not.toContain(contract.id);
     expect(() => requireAceOpt0072VaeProductionRuntimeProfile(
       ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
+    )).toThrow(/not authenticated/);
+  });
+
+  it("keys the public identity by backend without changing the fixed32 arm", () => {
+    const publicId =
+      ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE;
+    // The subgroups arm delegates to the unchanged fixed32 authenticator.
+    expect(requireAceOpt0072VaeProductionRuntimeProfileForBackend(
+      publicId,
+      "subgroups",
+    )).toBe(ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_PROFILE_CONTRACT);
+    expect(requireAceOpt0072VaeProductionRuntimeProfileForBackend(
+      publicId,
+      "subgroups",
+    )).toBe(requireAceOpt0072VaeProductionRuntimeProfile(publicId));
+    // The portable arm maps the same public identity onto physical OPT-0088.
+    const portable = requireAceOpt0072VaeProductionRuntimeProfileForBackend(
+      publicId,
+      "portable",
+    );
+    expect(portable).toBe(ACE_OPT_0088_VAE_PORTABLE_PRODUCTION_PROFILE_CONTRACT);
+    expect(portable).toMatchObject({
+      id: publicId,
+      physicalRuntimeProfileId:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
+      manifestSha256: ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+      manifestByteLength: ACE_OPT_0054_VAE_REVISION7_MANIFEST_BYTES,
+      kernelSetId: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId,
+      precisionMapSha256:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256,
+    });
+    expect(portable.precisionMapSha256).not.toBe(
+      ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.precisionMapSha256,
+    );
+    expect(() => requireAceOpt0072VaeProductionRuntimeProfileForBackend(
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
+      "portable",
     )).toThrow(/not authenticated/);
   });
 

@@ -29,6 +29,7 @@ export const ACE_VAE_RUNTIME_PROFILE_IDS = Object.freeze([
   "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1",
   "opt-0054-mixed-fp16-fixed32-revision7-v1",
   "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1",
+  "opt-0088-mixed-fp16-portable-dual-k4-v1",
 ] as const);
 
 export type AceVaeRuntimeProfileId =
@@ -50,6 +51,8 @@ export const ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_SET_ID =
   "opt-0054-vae-fp16-fixed32-revision7-k4-shape-selected-kernel-set-v1" as const;
 export const ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID =
   "opt-0066-vae-fp16-fixed32-dual-k4-quality-kernel-set-v1" as const;
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID =
+  "opt-0088-vae-fp16-portable-dual-k4-kernel-set-v1" as const;
 export const ACE_OPT_0011_VAE_FP16_FIXED_SUBGROUP_SIZE = 32 as const;
 
 export const ACE_OPT_0011_VAE_FP16_MANIFEST_SHA256 =
@@ -101,7 +104,8 @@ export interface AceVaeRuntimeProfile {
     | "fixed32-subgroup-exact-packed"
     | "fixed32-subgroup-exact-packed-shape-selected"
     | "fixed32-subgroup-revision7-k4-shape-selected"
-    | "fixed32-subgroup-dual-k4-quality";
+    | "fixed32-subgroup-dual-k4-quality"
+    | "portable-workgroup-dual-k4";
   readonly kernelSetId:
     | "ace-vae-fp32-correctness-kernel-set-v1"
     | typeof ACE_OPT_0011_VAE_FP16_PORTABLE_KERNEL_SET_ID
@@ -111,7 +115,8 @@ export interface AceVaeRuntimeProfile {
     | typeof ACE_OPT_0028_VAE_FP16_FIXED32_EXACT_PACKED_KERNEL_SET_ID
     | typeof ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_SET_ID
     | typeof ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_SET_ID
-    | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID;
+    | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID
+    | typeof ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID;
   readonly requiredFeatures: readonly ("shader-f16" | "subgroups")[];
   readonly requiredSubgroupSize:
     | null
@@ -196,7 +201,8 @@ export interface AceVaePrecisionMap {
     | "opt-0028-mixed-fp16-fixed32-exact-packed-v1"
     | "opt-0040-mixed-fp16-fixed32-exact-packed-shape-selected-v1"
     | "opt-0054-mixed-fp16-fixed32-revision7-v1"
-    | "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1";
+    | "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1"
+    | "opt-0088-mixed-fp16-portable-dual-k4-v1";
   readonly kernelSetId:
     | typeof ACE_OPT_0011_VAE_FP16_PORTABLE_KERNEL_SET_ID
     | typeof ACE_OPT_0028_VAE_FP16_PORTABLE_EXACT_PACKED_KERNEL_SET_ID
@@ -205,7 +211,8 @@ export interface AceVaePrecisionMap {
     | typeof ACE_OPT_0028_VAE_FP16_FIXED32_EXACT_PACKED_KERNEL_SET_ID
     | typeof ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_SET_ID
     | typeof ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_SET_ID
-    | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID;
+    | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_SET_ID
+    | typeof ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID;
   readonly decoderConfigId: typeof ACE_OOBLECK_DECODER_CONFIG.id;
   readonly batch: 1;
   readonly inputFrames: typeof ACE_OPT_0011_VAE_WINDOW_FRAMES;
@@ -336,6 +343,22 @@ export const ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP_CANONIC
 // Frozen by the focused OPT-0066 dual-K4 diagnostic-profile contract test.
 export const ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP_SHA256 =
   "4815ec86311e401a9bf8cec3f4474d479ef3ac28c925f4824fed4c9ae3b8bc60" as const;
+
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP =
+  createAceOpt0011VaeFp16PrecisionMap(
+    ACE_OPT_0011_CANONICAL_DECODER_PLAN,
+    "opt-0088-mixed-fp16-portable-dual-k4-v1",
+    ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+    true,
+  );
+
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_CANONICAL_JSON =
+  JSON.stringify(ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP);
+
+// Frozen by the focused OPT-0088 portable-profile contract test. The entries
+// are byte-identical to OPT-0066's; only profileId/kernelSetId differ.
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256 =
+  "ca41cbf328c35fd217f7546375340350a0cf1af6c5262071d806b30a3ae49092" as const;
 
 export function hashAceVaePrecisionMap(map: AceVaePrecisionMap): string {
   return aceSha256Hex(new TextEncoder().encode(JSON.stringify(map)));
@@ -640,6 +663,45 @@ export const ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE =
       ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP_SHA256,
   } as const satisfies AceVaeRuntimeProfile);
 
+/**
+ * Portable no-subgroups twin of the OPT-0066 dual-K4 physical decoder for
+ * Safari/Firefox-class devices exposing `shader-f16` only. Identical rev7
+ * package identity, limits, storage contract, and per-operation arithmetic;
+ * only the kernel transport (workgroup-memory staging) differs.
+ */
+export const ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE =
+  Object.freeze({
+    id: "opt-0088-mixed-fp16-portable-dual-k4-v1",
+    packageProfile: "fp16-vae-experimental",
+    packageConverterRevision:
+      ACE_OPT_0054_EXPERIMENTAL_VAE_PACKAGE_CONVERTER_REVISION,
+    manifestSha256: ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+    manifestByteLength: ACE_OPT_0054_VAE_REVISION7_MANIFEST_BYTES,
+    windowFrames: ACE_OPT_0011_VAE_WINDOW_FRAMES,
+    batch: 1,
+    kernelBackend: "portable-workgroup-dual-k4",
+    kernelSetId: ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_SET_ID,
+    requiredFeatures: Object.freeze(["shader-f16"] as const),
+    requiredSubgroupSize: null,
+    requiredLimits: Object.freeze({
+      maxBufferSize: 251_658_240,
+      maxStorageBufferBindingSize: 251_658_240,
+      maxComputeWorkgroupStorageSize: 16 * 1024,
+      maxComputeInvocationsPerWorkgroup: 256,
+    }),
+    storage: Object.freeze({
+      parameters: "float16",
+      decoderInput: "float16",
+      internalWorkspaces: "float16",
+      accumulation: "float32",
+      nonlinear: "float32",
+      finalOutput: "float32",
+      internalStoreRounding: "ieee-binary16-round-to-nearest-ties-to-even",
+    }),
+    precisionMapSha256:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256,
+  } as const satisfies AceVaeRuntimeProfile);
+
 export const ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE =
   "opt-0072-mixed-fp16-fixed32-dual-k4-production-v1" as const;
 
@@ -684,6 +746,66 @@ export function requireAceOpt0072VaeProductionRuntimeProfile(
   ) {
     throw new AceVaeRuntimeProfileError(
       "OPT-0072 VAE production runtime profile is not authenticated",
+    );
+  }
+  return contract;
+}
+
+/**
+ * Public product identity mapping for the portable no-subgroups backend.
+ * The same public OPT-0072 identity resolves to the portable OPT-0088
+ * physical decoder; only the physical profile crosses the backend boundary.
+ */
+export const ACE_OPT_0088_VAE_PORTABLE_PRODUCTION_PROFILE_CONTRACT =
+  Object.freeze({
+    id: ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+    physicalRuntimeProfileId:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id,
+    manifestSha256:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.manifestSha256,
+    manifestByteLength:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.manifestByteLength,
+    kernelSetId:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId,
+    precisionMapSha256:
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256,
+  } as const);
+
+/**
+ * Authenticate the backend-keyed public OPT-0072 mapping: "subgroups"
+ * resolves to the frozen physical OPT-0066 contract and "portable" to the
+ * physical OPT-0088 contract. Every clause of the fixed32 authenticator is
+ * mirrored, including the live precision-map re-hash.
+ */
+export function requireAceOpt0072VaeProductionRuntimeProfileForBackend(
+  runtimeProfile: unknown,
+  kernelBackend: "portable" | "subgroups",
+):
+  | typeof ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_PROFILE_CONTRACT
+  | typeof ACE_OPT_0088_VAE_PORTABLE_PRODUCTION_PROFILE_CONTRACT {
+  if (kernelBackend === "subgroups") {
+    return requireAceOpt0072VaeProductionRuntimeProfile(runtimeProfile);
+  }
+  if (kernelBackend !== "portable") {
+    throw new AceVaeRuntimeProfileError(
+      "OPT-0072 VAE production mapping received an unknown kernel backend",
+    );
+  }
+  const contract = ACE_OPT_0088_VAE_PORTABLE_PRODUCTION_PROFILE_CONTRACT;
+  const physical = ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE;
+  if (
+    runtimeProfile !== contract.id ||
+    contract.physicalRuntimeProfileId !== physical.id ||
+    contract.manifestSha256 !== physical.manifestSha256 ||
+    contract.manifestByteLength !== physical.manifestByteLength ||
+    contract.kernelSetId !== physical.kernelSetId ||
+    contract.precisionMapSha256 !== physical.precisionMapSha256 ||
+    hashAceVaePrecisionMap(
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+    ) !== physical.precisionMapSha256
+  ) {
+    throw new AceVaeRuntimeProfileError(
+      "OPT-0072 VAE portable production runtime profile is not authenticated",
     );
   }
   return contract;
@@ -737,6 +859,9 @@ export function selectAceVaeRuntimeProfile(
           : request.requestedProfile ===
               "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1"
             ? ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE
+          : request.requestedProfile ===
+              "opt-0088-mixed-fp16-portable-dual-k4-v1"
+            ? ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE
           : undefined;
   if (profile === undefined) {
     throw new AceVaeRuntimeProfileError(
@@ -809,6 +934,12 @@ export function selectAceVaeRuntimeProfile(
         ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP,
       ) !==
         ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP_SHA256)
+    ||
+    (profile.id === "opt-0088-mixed-fp16-portable-dual-k4-v1" &&
+      hashAceVaePrecisionMap(
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+      ) !==
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP_SHA256)
   ) {
     throw new AceVaeRuntimeProfileError(
       "OPT-0011 FP16 VAE precision-map identity changed",

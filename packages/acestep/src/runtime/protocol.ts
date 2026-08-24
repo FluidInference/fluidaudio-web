@@ -19,6 +19,7 @@ import {
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_PROFILE,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
 } from "../webgpu/vae-fp16-profile.js";
 import {
   ACE_REFERENCE_MANIFEST_SHA256,
@@ -40,12 +41,14 @@ import {
   ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
   ACE_OPT_0056_DIT_SELECTIVE_K4_KERNEL_SET_ID,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
 } from "../webgpu/dit-fp16-package.js";
 import {
   ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID,
 } from "../webgpu/dit-attention-profile.js";
 import {
   ACE_OPT_0070_VAE_C2378_MAXIMUM_WINDOW_FRAMES,
@@ -657,8 +660,10 @@ export function isAceRuntimeDiagnosticsValue(
         ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID) ||
     (value.ditAttentionRuntimeProfile ===
         ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE &&
-      value.ditAttentionKernelSetId ===
-        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID)
+      (value.ditAttentionKernelSetId ===
+          ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID ||
+        value.ditAttentionKernelSetId ===
+          ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID))
   );
   const vaeWindowIdentityValid = isRecord(value) && (
     (value.vaeWindowRuntimeProfile === ACE_VAE_C512_WINDOW_RUNTIME_PROFILE &&
@@ -675,7 +680,9 @@ export function isAceRuntimeDiagnosticsValue(
         ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES &&
       value.ditDenseRuntimeProfile ===
         ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
-      value.ditDenseKernelSetId === ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID &&
+      (value.ditDenseKernelSetId === ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID ||
+        value.ditDenseKernelSetId ===
+          ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID) &&
       value.ditDenseLayerBytes === ACE_OPT_0009_DIT_MIXED_LAYER_BYTES &&
       value.ditResidentWeightBytes ===
         ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES) ||
@@ -718,10 +725,36 @@ export function isAceRuntimeDiagnosticsValue(
           ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_PROFILE.precisionMapSha256) ||
         (value.vaeRuntimeProfile ===
             ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE &&
-          value.vaeKernelSetId ===
-            ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId &&
-          value.vaePrecisionMapSha256 ===
-            ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.precisionMapSha256)))
+          ((value.vaeKernelSetId ===
+              ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId &&
+            value.vaePrecisionMapSha256 ===
+              ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.precisionMapSha256) ||
+            (value.vaeKernelSetId ===
+                ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId &&
+              value.vaePrecisionMapSha256 ===
+                ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256)))))
+  );
+  // OPT-0088 coherence: the portable kernel-set identities appear exactly
+  // when the portable execution profile ran, and then all of them together.
+  // A fixed32/portable mixture is rejected in both directions.
+  const portableExecutionProfile = isRecord(value) &&
+    isRecord(value.executionProfile) &&
+    value.executionProfile.id === ACE_REFERENCE_PORTABLE_PROFILE.id;
+  const portableKernelIdentityCoherent = isRecord(value) && (
+    portableExecutionProfile
+      ? value.ditDenseKernelSetId ===
+          ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID &&
+        (value.ditAttentionKernelSetId === undefined ||
+          value.ditAttentionKernelSetId ===
+            ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID) &&
+        value.vaeKernelSetId ===
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId
+      : value.ditDenseKernelSetId !==
+          ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID &&
+        value.ditAttentionKernelSetId !==
+          ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID &&
+        value.vaeKernelSetId !==
+          ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId
   );
   if (
     !isRecord(value) ||
@@ -771,6 +804,7 @@ export function isAceRuntimeDiagnosticsValue(
     !isNonEmptyString(value.vaeManifestUrl) ||
     !vaeIdentityValid ||
     !vaeWindowIdentityValid ||
+    !portableKernelIdentityCoherent ||
     ((value.ditAttentionRuntimeProfile ===
         ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE) !==
       (value.vaeWindowRuntimeProfile ===

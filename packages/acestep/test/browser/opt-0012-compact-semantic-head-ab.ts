@@ -995,7 +995,7 @@ export const OPT_0012_SOURCE_IDENTITIES = Object.freeze({
   "src/model/acquire.ts":
     "4dae4fee7497ce77640819936388e44c2eca14757e1646f5ad85493542169c78",
   "src/model/cache.ts":
-    "6fbd1b7ad55ba12373640503706994c603aa46bff6fa8d97bccca252e3089463",
+    "4b7599bfacc99fe2451fa7cb902d1ad7046100aeb3e82ef3995034b8e3b41a25",
   "src/model/gpu-tensors.ts":
     "7bf1b358e1b3fd15873457974cd26c2c04f96d988a1c0cc099346a8b50c77797",
   "src/model/gpu-upload.ts":

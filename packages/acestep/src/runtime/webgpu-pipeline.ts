@@ -102,7 +102,9 @@ import {
   type AceCommittedAudioOutput,
 } from "./audio-output.js";
 import {
+  ACE_REFERENCE_PORTABLE_PROFILE,
   ACE_REFERENCE_SUBGROUP_PROFILE,
+  type AceKernelBackend,
   type AceModelProfileId,
 } from "../webgpu/capabilities.js";
 import {
@@ -131,11 +133,13 @@ import {
   type AceOpt0081RepresentativeSetupCleanupEvidence,
 } from "../webgpu/dit-backend.js";
 import {
+  ACE_DIT_QUERY8_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
   ACE_DIT_QUERY8_ATTENTION_RUNTIME_PROFILE,
+  resolveAceDitAttentionKernelSetId,
 } from "../webgpu/dit-attention-profile.js";
 import type {
   AceDitSubmissionPolicy,
@@ -161,6 +165,7 @@ import {
   ACE_OPT_0037_DIT_K4_WEIGHT_FILES,
   ACE_OPT_0056_DIT_SELECTIVE_K4_KERNEL_SET_ID,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
   createAceReferenceDitSharedManifestView,
   isAceReferenceDitLayerWeightFile,
   requireAceOpt0009DitDensePackageIdentity,
@@ -217,7 +222,8 @@ import {
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_PROFILE,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
-  requireAceOpt0072VaeProductionRuntimeProfile,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
+  requireAceOpt0072VaeProductionRuntimeProfileForBackend,
   requireAceOpt0028Fp16VaePackageIdentity,
   requireAceOpt0054Fp16VaePackageIdentity,
   requireAceOpt0066Fp16VaePackageIdentity,
@@ -901,11 +907,17 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
         "initialization",
         "construction",
         "webgpu-device-request",
-        Object.freeze({ requiredFeatures: Object.freeze(["shader-f16", "subgroups"]) }),
+        Object.freeze({
+          requiredFeatures: Object.freeze(["shader-f16"]),
+          // The execution profile selected inside the device request adds its
+          // own required features: fixed-32 subgroup adapters re-add
+          // "subgroups"; portable adapters request only shader-f16.
+          profileConditionalRequiredFeatures: Object.freeze(["subgroups"]),
+        }),
         async () => await this.dependencies.requestDevice({
           modelProfile: configuration.modelProfile,
           schedulingProfile: configuration.schedulingProfile,
-          requiredFeatures: ["shader-f16", "subgroups"],
+          requiredFeatures: ["shader-f16"],
           // The workspace capacity is adapter-aware: a one-GiB adapter that
           // cannot bind the configured C2378 workspace requests the capped
           // C2176 geometry instead; true deficits still fail closed.
@@ -2269,9 +2281,16 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
         ),
         ready.deviceContext.capabilities.adapterLimits,
       );
+      const vaeKernelBackend =
+        ready.deviceContext.capabilities.executionProfile.kernelBackend;
       const vaeRuntimeIdentity = resolveAceVaePackageRuntimeIdentity(
         ready.configuration.vaePackage,
+        vaeKernelBackend,
       );
+      const vaeBackendRuntimeProfileId =
+        vaeRuntimeIdentity.role === "opt-0072-rev7-production"
+          ? vaeRuntimeIdentity.physicalRuntimeProfile
+          : vaeRuntimeIdentity.runtimeProfile;
       const selectedProductionVaeSchedulingPolicy =
         selectProductionVaeSchedulingPolicy(
           ready,
@@ -2399,12 +2418,17 @@ export class AceWebGpuPipelineBackend implements AcePipelineBackend {
         authenticatedPackage: ready.vaeLoaded,
         ownedVaeWeights: vaePhase,
         maximumWindowFrames: vaeWindowProfile.maximumWindowFrames,
-        runtimeProfileId: vaeRuntimeIdentity.role ===
-            "opt-0072-rev7-production"
-          ? vaeRuntimeIdentity.physicalRuntimeProfile
-          : vaeRuntimeIdentity.runtimeProfile,
-        subgroupMinSize: 32,
-        subgroupMaxSize: 32,
+        // The portable OPT-0088 physical profile is resolved only for the
+        // portable kernel backend and takes no subgroup-size members; every
+        // fixed32 profile keeps the exact 32/32 requirement.
+        ...(vaeBackendRuntimeProfileId ===
+            ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id
+          ? { runtimeProfileId: vaeBackendRuntimeProfileId }
+          : {
+              runtimeProfileId: vaeBackendRuntimeProfileId,
+              subgroupMinSize: 32 as const,
+              subgroupMaxSize: 32 as const,
+            }),
         quantaPerCommandBuffer:
           ACE_OPT_0027_VAE_FP16_WINDOW_QUANTA_PER_COMMAND_BUFFER,
         ...(selectedProductionVaeSchedulingPolicy === undefined
@@ -3366,7 +3390,9 @@ export type AceDitDensePackageRuntimeIdentity =
       readonly manifestSha256: typeof ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256;
       readonly manifestByteLength: typeof ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES;
       readonly runtimeProfile: typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE;
-      readonly kernelSetId: typeof ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID;
+      readonly kernelSetId:
+        | typeof ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID
+        | typeof ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID;
       readonly layerBytes: typeof ACE_OPT_0009_DIT_MIXED_LAYER_BYTES;
       readonly residentWeightBytes:
         typeof ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES;
@@ -3397,6 +3423,7 @@ export type AceDitDensePackageRuntimeIdentity =
 /** @internal Resolve only authenticated package/profile pairs. */
 export function resolveAceDitDensePackageRuntimeIdentity(
   configuration: AceWorkerDitDensePackageConfiguration,
+  kernelBackend: AceKernelBackend = "subgroups",
 ): AceDitDensePackageRuntimeIdentity {
   if (
     configuration.manifestSha256 ===
@@ -3408,10 +3435,20 @@ export function resolveAceDitDensePackageRuntimeIdentity(
       manifestSha256: ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256,
       manifestByteLength: ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES,
       runtimeProfile: ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
-      kernelSetId: ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
+      // OPT-0088: same package and layout; only the kernel transport
+      // differs on portable devices.
+      kernelSetId: kernelBackend === "portable"
+        ? ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID
+        : ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
       layerBytes: ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
       residentWeightBytes: ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES,
     });
+  }
+  if (kernelBackend === "portable") {
+    // Only the OPT-0009 oracle package has a portable kernel counterpart.
+    throw new Error(
+      "ACE portable mixed DiT accepts only the OPT-0009 rev7 oracle package",
+    );
   }
   if (
     configuration.manifestSha256 === ACE_OPT_0037_DIT_K4_MANIFEST_SHA256 &&
@@ -3490,16 +3527,32 @@ export type AceVaePackageRuntimeIdentity =
         typeof ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE;
       /** Exact physical owner; the backend never receives the public ID. */
       readonly physicalRuntimeProfile:
-        typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id;
+        | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id
+        | typeof ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.id;
       readonly kernelSetId:
-        typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId;
+        | typeof ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId
+        | typeof ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId;
       readonly precisionMapSha256: string;
     }>;
 
 /** @internal Resolve only exact VAE manifest/profile pairs; no fallback. */
 export function resolveAceVaePackageRuntimeIdentity(
   configuration: AceWorkerVaePackageConfiguration,
+  kernelBackend: AceKernelBackend = "subgroups",
 ): AceVaePackageRuntimeIdentity {
+  if (
+    kernelBackend === "portable" &&
+    !(configuration.manifestSha256 ===
+        ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256 &&
+      configuration.runtimeProfile ===
+        ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE)
+  ) {
+    // Only the public OPT-0072 production identity has a portable OPT-0088
+    // physical counterpart; every fixed32-only profile fails closed.
+    throw new Error(
+      "ACE portable mixed VAE accepts only the OPT-0072 production profile",
+    );
+  }
   if (
     configuration.manifestSha256 === ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256 &&
     configuration.runtimeProfile ===
@@ -3557,8 +3610,9 @@ export function resolveAceVaePackageRuntimeIdentity(
     configuration.runtimeProfile ===
       ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE
   ) {
-    const production = requireAceOpt0072VaeProductionRuntimeProfile(
+    const production = requireAceOpt0072VaeProductionRuntimeProfileForBackend(
       configuration.runtimeProfile,
+      kernelBackend,
     );
     return Object.freeze({
       role: "opt-0072-rev7-production",
@@ -3575,6 +3629,29 @@ export function resolveAceVaePackageRuntimeIdentity(
   );
 }
 
+/**
+ * @internal Kernel-set identity of the configured quad-query attention
+ * profile under the active kernel backend. The query8 kernel set is a
+ * per-shape internal owner and never a configured diagnostics identity.
+ */
+function requireDiagnosticsAttentionKernelSetId(
+  profile:
+    | typeof ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE
+    | typeof ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+  kernelBackend: AceKernelBackend,
+): NonNullable<AceRuntimeDiagnostics["ditAttentionKernelSetId"]> {
+  const kernelSetId = resolveAceDitAttentionKernelSetId(
+    profile,
+    kernelBackend,
+  );
+  if (kernelSetId === ACE_DIT_QUERY8_ATTENTION_KERNEL_SET_ID) {
+    throw new Error(
+      "ACE diagnostics require a quad-query attention kernel-set identity",
+    );
+  }
+  return kernelSetId;
+}
+
 function createRuntimeDiagnostics(
   configuration: AceWorkerConfiguration,
   loaded: AceLoadedPackageManifest,
@@ -3582,11 +3659,15 @@ function createRuntimeDiagnostics(
   vaeLoaded: AceLoadedPackageManifest,
   device: PipelineDeviceContext,
 ): AceRuntimeDiagnostics {
+  const kernelBackend =
+    device.capabilities.executionProfile.kernelBackend;
   const ditDenseIdentity = resolveAceDitDensePackageRuntimeIdentity(
     configuration.ditDensePackage,
+    kernelBackend,
   );
   const vaeIdentity = resolveAceVaePackageRuntimeIdentity(
     configuration.vaePackage,
+    kernelBackend,
   );
   const {
     id: vaeWindowRuntimeProfile,
@@ -3621,11 +3702,10 @@ function createRuntimeDiagnostics(
       : {
           ditAttentionRuntimeProfile:
             configuration.ditAttentionRuntimeProfile,
-          ditAttentionKernelSetId:
-            configuration.ditAttentionRuntimeProfile ===
-                ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE
-              ? ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID
-              : ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
+          ditAttentionKernelSetId: requireDiagnosticsAttentionKernelSetId(
+            configuration.ditAttentionRuntimeProfile,
+            kernelBackend,
+          ),
         }),
     ditDenseLayerBytes: ditDenseIdentity.layerBytes,
     ditResidentWeightBytes: ditDenseIdentity.residentWeightBytes,
@@ -3803,30 +3883,46 @@ function requireProductionDeviceCapabilities(
   const capabilities = context.capabilities;
   const shader = capabilities.stockFeatures["shader-f16"];
   const subgroups = capabilities.stockFeatures.subgroups;
-  if (
-    capabilities.executionProfile.id !== ACE_REFERENCE_SUBGROUP_PROFILE.id ||
-    capabilities.adapterInfo.subgroupMinSize !== 32 ||
-    capabilities.adapterInfo.subgroupMaxSize !== 32 ||
-    !capabilities.requiredFeatures.includes("shader-f16") ||
-    !capabilities.requiredFeatures.includes("subgroups") ||
-    !capabilities.adapterFeatures.includes("shader-f16") ||
-    !capabilities.adapterFeatures.includes("subgroups") ||
-    !capabilities.deviceFeatures.includes("shader-f16") ||
-    !capabilities.deviceFeatures.includes("subgroups") ||
-    !shader.adapterSupported ||
-    !shader.deviceEnabled ||
-    !shader.required ||
-    !shader.requested ||
-    !subgroups.adapterSupported ||
-    !subgroups.deviceEnabled ||
-    !subgroups.required ||
-    !subgroups.requested ||
-    capabilities.deviceLimits.maxBufferSize < requiredWorkspaceBytes ||
-    capabilities.deviceLimits.maxStorageBufferBindingSize <
-      requiredWorkspaceBytes
-  ) {
+  // shader-f16 and the VAE workspace limits are hard-required by both
+  // accepted production tuples.
+  const sharedClausesValid =
+    capabilities.requiredFeatures.includes("shader-f16") &&
+    capabilities.adapterFeatures.includes("shader-f16") &&
+    capabilities.deviceFeatures.includes("shader-f16") &&
+    shader.adapterSupported &&
+    shader.deviceEnabled &&
+    shader.required &&
+    shader.requested &&
+    capabilities.deviceLimits.maxBufferSize >= requiredWorkspaceBytes &&
+    capabilities.deviceLimits.maxStorageBufferBindingSize >=
+      requiredWorkspaceBytes;
+  // Accepted tuple 1: the audited fixed-32 subgroup device, unchanged.
+  const fixed32TupleValid =
+    capabilities.executionProfile.id === ACE_REFERENCE_SUBGROUP_PROFILE.id &&
+    capabilities.adapterInfo.subgroupMinSize === 32 &&
+    capabilities.adapterInfo.subgroupMaxSize === 32 &&
+    capabilities.requiredFeatures.includes("subgroups") &&
+    capabilities.adapterFeatures.includes("subgroups") &&
+    capabilities.deviceFeatures.includes("subgroups") &&
+    subgroups.adapterSupported &&
+    subgroups.deviceEnabled &&
+    subgroups.required &&
+    subgroups.requested;
+  // Accepted tuple 2: the portable no-subgroup profile. The adapter may
+  // legitimately advertise non-fixed-32 subgroups; the device must not have
+  // requested, required, or enabled them.
+  const portableTupleValid =
+    capabilities.executionProfile.id === ACE_REFERENCE_PORTABLE_PROFILE.id &&
+    !capabilities.requiredFeatures.includes("subgroups") &&
+    !capabilities.deviceFeatures.includes("subgroups") &&
+    !subgroups.deviceEnabled &&
+    !subgroups.required &&
+    !subgroups.requested;
+  if (!sharedClausesValid || (!fixed32TupleValid && !portableTupleValid)) {
     throw new Error(
-      "ACE production device did not enable fixed32 OPT-0037 and packed VAE capabilities",
+      "ACE production device did not enable a coherent tuple: fixed32 " +
+        "subgroup OPT-0037 or portable OPT-0088 with shader-f16 and packed " +
+        "VAE capabilities",
     );
   }
 }

@@ -49,7 +49,7 @@ describe("OPT-0081 registration contract", () => {
     expect(RECORD).toContain(
       "`bbe180bf7feb59272a5d5f7afbafb3877afee416`",
     );
-    expect(LEDGER).toContain("Next available ID: `OPT-0088`");
+    expect(LEDGER).toContain("Next available ID: `OPT-0089`");
     const rows = LEDGER.split("\n").filter((line) =>
       line.startsWith("| OPT-0081 |")
     );

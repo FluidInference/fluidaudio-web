@@ -26,12 +26,15 @@ import { ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE } from
   "../src/webgpu/vae-window-profile.js";
 import { ACE_REFERENCE_SUBGROUP_PROFILE } from
   "../src/webgpu/capabilities.js";
+import { ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID } from
+  "../src/webgpu/dit-fp16-package.js";
 import {
   testDiagnostics,
   testGenerateMessage,
   testGenerationRequest,
   testGenerationResult,
   testInitializeMessage,
+  testPortableProductionDiagnostics,
 } from "./runtime-fixtures.js";
 
 function messageCode(message: AceWorkerMessage | undefined): string | undefined {
@@ -137,6 +140,78 @@ describe("dedicated worker runtime shell", () => {
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({ type: "ready", diagnostics });
     expect(runtime.state).toBe("ready");
+  });
+
+  it("publishes coherent OPT-0088 portable diagnostics and rejects mixed pairings", async () => {
+    const base = testInitializeMessage();
+    const initialization = {
+      ...base,
+      configuration: {
+        ...base.configuration,
+        ditAttentionRuntimeProfile:
+          ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+        vaePackage: {
+          manifestUrl:
+            "https://example.test/model/files-fp16-vae-revision7-experimental/manifest.json",
+          manifestSha256: ACE_OPT_0054_VAE_REVISION7_MANIFEST_SHA256,
+          runtimeProfile:
+            ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+          windowRuntimeProfile:
+            ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
+          maxWindowFrames: 2_378,
+        },
+      },
+    } as const;
+    const runWith = async (
+      diagnostics: ReturnType<typeof testDiagnostics>,
+    ) => {
+      const messages: AceWorkerMessage[] = [];
+      const backend: AcePipelineBackend = {
+        initialize: vi.fn(async () => diagnostics),
+        generate: vi.fn(async () => testGenerationResult()),
+        releaseResult: vi.fn(),
+        dispose: vi.fn(),
+      };
+      const runtime = new AceWorkerRuntime({
+        backend,
+        postMessage: (message) => messages.push(message),
+      });
+      await runtime.handleMessage(initialization);
+      return { messages, runtime };
+    };
+
+    const portable = await runWith(testPortableProductionDiagnostics());
+    expect(portable.messages).toHaveLength(1);
+    expect(portable.messages[0]).toMatchObject({ type: "ready" });
+    expect(portable.runtime.state).toBe("ready");
+
+    // A portable execution profile paired with a fixed32 kernel set fails
+    // closed, as does a fixed32 profile paired with a portable kernel set.
+    const mixedDense = await runWith(testPortableProductionDiagnostics({
+      ditDenseKernelSetId: "opt-0009-n256-k32-fp16-fp32-v1",
+    }));
+    expect(messageCode(mixedDense.messages.at(-1)))
+      .toBe("INVALID_RUNTIME_DIAGNOSTICS");
+    const subgroupsProduction = testPortableProductionDiagnostics({
+      ditDenseKernelSetId: "opt-0009-n256-k32-fp16-fp32-v1",
+      ditAttentionKernelSetId:
+        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
+      vaeKernelSetId:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId,
+      vaePrecisionMapSha256:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE
+          .precisionMapSha256!,
+      executionProfile: testDiagnostics().executionProfile,
+      capabilities: testDiagnostics().capabilities,
+    });
+    expect((await runWith(subgroupsProduction)).messages[0])
+      .toMatchObject({ type: "ready" });
+    const mixedPortableDense = await runWith({
+      ...subgroupsProduction,
+      ditDenseKernelSetId: ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+    });
+    expect(messageCode(mixedPortableDense.messages.at(-1)))
+      .toBe("INVALID_RUNTIME_DIAGNOSTICS");
   });
 
   it("rejects a production VAE scheduling receipt for a planner request", async () => {

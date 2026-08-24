@@ -10,8 +10,10 @@ import {
 } from "../src/runtime/protocol.js";
 import { canonicalizeSeed } from "../src/runtime/seed.js";
 import {
+  ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
   ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256,
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
 } from "../src/webgpu/dit-fp16-package.js";
 import {
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
@@ -20,6 +22,7 @@ import {
   ACE_OPT_0028_VAE_FP16_MANIFEST_SHA256,
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_PROFILE,
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
 } from "../src/webgpu/vae-fp16-profile.js";
 import {
   ACE_REFERENCE_MANIFEST_SHA256,
@@ -29,6 +32,7 @@ import {
 import {
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
   ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID,
 } from "../src/webgpu/dit-attention-profile.js";
 import {
   ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
@@ -38,6 +42,7 @@ import { ACE_REFERENCE_SUBGROUP_PROFILE } from
 import {
   testDiagnostics,
   testGenerationResult,
+  testPortableProductionDiagnostics,
 } from "./runtime-fixtures.js";
 
 function opt0080ProductionDiagnostics() {
@@ -340,6 +345,61 @@ describe("worker protocol validation", () => {
           ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_PROFILE.id,
       },
     })).toBe(false);
+  });
+
+  it("validates OPT-0088 portable diagnostics only as one coherent tuple", () => {
+    const portable = testPortableProductionDiagnostics();
+    const subgroups = opt0080ProductionDiagnostics();
+    const ready = (diagnostics: unknown) => ({
+      type: "ready" as const,
+      requestId: 1,
+      diagnostics,
+    });
+    expect(isAceWorkerMessage(ready(portable))).toBe(true);
+    expect(isAceWorkerMessage(ready(subgroups))).toBe(true);
+    // A portable execution profile with any fixed32 kernel-set identity is
+    // rejected in every position.
+    expect(isAceWorkerMessage(ready({
+      ...portable,
+      ditDenseKernelSetId: ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
+    }))).toBe(false);
+    expect(isAceWorkerMessage(ready({
+      ...portable,
+      ditAttentionKernelSetId:
+        ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
+    }))).toBe(false);
+    expect(isAceWorkerMessage(ready({
+      ...portable,
+      vaeKernelSetId:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.kernelSetId,
+      vaePrecisionMapSha256:
+        ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE
+          .precisionMapSha256!,
+    }))).toBe(false);
+    // A fixed32 execution profile with any portable kernel-set identity is
+    // rejected in every position.
+    expect(isAceWorkerMessage(ready({
+      ...subgroups,
+      ditDenseKernelSetId: ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+    }))).toBe(false);
+    expect(isAceWorkerMessage(ready({
+      ...subgroups,
+      ditAttentionKernelSetId:
+        ACE_OPT_0088_DIT_PORTABLE_ATTENTION_KERNEL_SET_ID,
+    }))).toBe(false);
+    expect(isAceWorkerMessage(ready({
+      ...subgroups,
+      vaeKernelSetId:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.kernelSetId,
+      vaePrecisionMapSha256:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE.precisionMapSha256,
+    }))).toBe(false);
+    // The top-level execution profile cannot disagree with the portable
+    // capability report either.
+    expect(isAceWorkerMessage(ready({
+      ...portable,
+      executionProfile: ACE_REFERENCE_SUBGROUP_PROFILE,
+    }))).toBe(false);
   });
 
   it("rejects hidden or malformed nested diagnostics and result metrics", () => {

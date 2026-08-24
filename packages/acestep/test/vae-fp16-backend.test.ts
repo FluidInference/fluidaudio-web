@@ -20,6 +20,7 @@ import {
   ACE_OPT_0040_VAE_FP16_FIXED32_SHAPE_SELECTED_KERNEL_TOPOLOGY,
   ACE_OPT_0054_VAE_FP16_FIXED32_REVISION7_KERNEL_TOPOLOGY,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY,
   planAceOpt0011Fp16VaeChunkDispatches,
   type AceOpt0011Fp16VaeChunkDispatchSet,
   type AceOpt0011Fp16VaeWindowDispatch,
@@ -43,6 +44,8 @@ import {
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP,
   ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE,
   ACE_OPT_0072_VAE_FP16_FIXED32_DUAL_K4_PRODUCTION_RUNTIME_PROFILE,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP,
+  ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
   type AceVaeRuntimeProfile,
 } from "../src/webgpu/vae-fp16-profile.js";
 import { planAceVaeChunkedDecode } from "../src/webgpu/vae-chunks.js";
@@ -220,6 +223,27 @@ describe("OPT-0011 production FP16 VAE backend planning", () => {
         ACE_OPT_0028_VAE_FP16_PORTABLE_EXACT_PACKED_KERNEL_TOPOLOGY,
     });
     await backend.destroy();
+  });
+
+  it("retains the portable OPT-0088 dual-K4 topology without subgroups", async () => {
+    const fixture = preparedFixture(
+      1,
+      undefined,
+      ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PROFILE,
+    );
+    const backend = AceOpt0011Fp16VaeChunkGpuBackend.fromPreparedResources(
+      fixture.resources,
+    );
+    expect(backend).toMatchObject({
+      runtimeProfileId: "opt-0088-mixed-fp16-portable-dual-k4-v1",
+      kernelSetId:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY.id,
+      kernelTopology:
+        ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY,
+    });
+    await backend.destroy();
+    expect(fixture.runtimeDestroy).toHaveBeenCalledOnce();
+    expect(fixture.weightDestroy).toHaveBeenCalledOnce();
   });
 
   it("rejects an unknown runtime profile before GPU allocation", async () => {
@@ -838,6 +862,9 @@ function kernelTopologyFor(runtimeProfile: AceVaeRuntimeProfile) {
   ) {
     return ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_KERNEL_TOPOLOGY;
   }
+  if (runtimeProfile.id === "opt-0088-mixed-fp16-portable-dual-k4-v1") {
+    return ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_KERNEL_TOPOLOGY;
+  }
   if (
     runtimeProfile.id ===
       "opt-0015-mixed-fp16-fixed32-k7-congruent-transpose-v1"
@@ -873,6 +900,9 @@ function precisionMapFor(runtimeProfile: AceVaeRuntimeProfile) {
       "opt-0066-mixed-fp16-fixed32-dual-k4-quality-v1"
   ) {
     return ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PRECISION_MAP;
+  }
+  if (runtimeProfile.id === "opt-0088-mixed-fp16-portable-dual-k4-v1") {
+    return ACE_OPT_0088_VAE_FP16_PORTABLE_DUAL_K4_PRECISION_MAP;
   }
   if (
     runtimeProfile.id ===
