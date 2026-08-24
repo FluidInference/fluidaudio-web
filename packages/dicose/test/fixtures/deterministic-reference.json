@@ -1,0 +1,73 @@
+{
+  "schema": "dicose-deterministic-reference-v1",
+  "fixture": {
+    "path": "Mixture_audio_1.wav",
+    "sha256": "9e487f3a84b974b11b47442d0fd99512ab4826130d04351e8c9625d84e107bb7",
+    "input": {
+      "encoding": "pcm_s16le",
+      "channels": 1,
+      "sampleRate": 22050,
+      "frames": 262144
+    },
+    "preprocessing": {
+      "duplicateMonoToStereo": true,
+      "resampler": "linear",
+      "targetSampleRate": 44100,
+      "frames": 524288,
+      "stft": {
+        "center": true,
+        "padMode": "reflect",
+        "window": "hann_periodic",
+        "nFft": 2048,
+        "hopLength": 441,
+        "frames": 1189,
+        "zeroDcBeforeIstft": true
+      }
+    }
+  },
+  "model": {
+    "checkpointSha256": "8087fbdcbc63f11f3ee305ef042cf42a42a5802e8a76678997f6448cb45256f5",
+    "component": "DiCoSe deterministic BS-RoFormer",
+    "mode": "eval"
+  },
+  "reference": {
+    "engine": "upstream DiCoSe, PyTorch 2.13.0, MPS, float32",
+    "mixtureRms": 0.09781622886657715,
+    "sumOfStemsRms": 0.09761751443147659,
+    "stems": {
+      "drums": {
+        "rms": 0.049531370401382446,
+        "peak": 0.5382869243621826
+      },
+      "bass": {
+        "rms": 0.05555562674999237,
+        "peak": 0.3580854833126068
+      },
+      "other": {
+        "rms": 0.06253073364496231,
+        "peak": 0.3535989820957184
+      },
+      "vocals": {
+        "rms": 0.000009764436072146054,
+        "peak": 0.0002000946260523051
+      }
+    }
+  },
+  "webgpuF16Acceptance": {
+    "purpose": "diagnostic envelope, not a bitwise oracle; all browser activations and weights are binary16 while reductions accumulate in binary32",
+    "audibleStems": {
+      "rmsRelativeTolerance": 0.45,
+      "rmsAbsoluteTolerance": 0.01,
+      "peakRelativeTolerance": 0.55,
+      "peakAbsoluteTolerance": 0.05
+    },
+    "vocals": {
+      "maxRms": 0.005,
+      "maxPeak": 0.05
+    },
+    "sumOfStems": {
+      "rmsRelativeTolerance": 0.35,
+      "rmsAbsoluteTolerance": 0.015
+    }
+  }
+}

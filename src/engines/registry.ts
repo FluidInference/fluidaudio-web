@@ -34,7 +34,7 @@ export interface EngineEntry {
  * testing shouldn't re-download multi-GB weights that are already on disk.
  * Production hosts 404/HTML here and fall through to the HF default.
  */
-async function localWeightDir(dir: string, probeFile: string): Promise<string | undefined> {
+export async function localWeightDir(dir: string, probeFile: string): Promise<string | undefined> {
   try {
     const base = (import.meta as any).env?.BASE_URL ?? "/";
     const url = `${base}models/${dir}`;
@@ -89,6 +89,30 @@ export const ENGINES: EngineEntry[] = [
     category: "tts",
     heavy: true,
     make: async () => new (await import("./tts-kokoro/index.js")).KokoroTtsEngine({ lang: "zh" }),
+  },
+  {
+    id: "stem-dicose",
+    label: "DiCoSe Stem Splitter",
+    kind: "audio",
+    category: "analysis",
+    heavy: true,
+    // 623 MB weight package on HF; probe keeps the picker honest if the files
+    // are ever unreachable (or on forks without them).
+    available: async () => {
+      try {
+        const res = await fetch("https://huggingface.co/FluidInference/fluidaudio-web/resolve/main/dicose/manifest.json", {
+          method: "HEAD",
+          referrerPolicy: "no-referrer",
+        });
+        return res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      } catch {
+        return false;
+      }
+    },
+    make: async () => {
+      const baseUrl = await localWeightDir("dicose", "manifest.json");
+      return new (await import("./stem-dicose/index.js")).DicoseStemEngine(baseUrl ? { baseUrl } : {});
+    },
   },
   {
     id: "asr-nemotron",

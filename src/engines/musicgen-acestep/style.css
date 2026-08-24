@@ -883,3 +883,97 @@ progress::-moz-progress-bar {
   color: var(--text);
   font-weight: 650;
 }
+
+/* Split-stems (DiCoSe) result additions. */
+
+.result-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.split-stems-button {
+  padding: 8px 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  color: var(--accent-strong);
+  background: var(--control-bg);
+  box-shadow: var(--shadow-button);
+}
+
+.stems-panel {
+  margin-top: 14px;
+  padding: 12px 18px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--raised-bg);
+  box-shadow: var(--shadow-panel);
+}
+
+.stems-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stems-heading h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.stems-heading span {
+  color: var(--muted-text);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stems-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stem-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stem-item audio {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  accent-color: var(--accent-strong);
+}
+
+.stem-item-name {
+  flex: 0 0 6.2rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.stem-item .download-button {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stem-item {
+    flex-wrap: wrap;
+  }
+
+  .stem-item audio {
+    flex-basis: 100%;
+    order: 1;
+  }
+}

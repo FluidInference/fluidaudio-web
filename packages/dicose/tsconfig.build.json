@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "stripInternal": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["@webgpu/types"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/demo.ts"]
+}

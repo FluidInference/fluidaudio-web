@@ -1,0 +1,53 @@
+{
+  "name": "dicose-wgsl",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DiCoSe BS-RoFormer + consistency-distilled refinement in raw WebGPU WGSL",
+  "type": "module",
+  "sideEffects": ["./dist/worker.js", "./src/worker.ts"],
+  "license": "MIT",
+  "author": {
+    "name": "Hamza Qayyum",
+    "email": "hamza@narcotic.sh"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "import": "./dist/worker.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "npm run check && vite build && tsc --project tsconfig.build.json",
+    "dev": "vite --host 127.0.0.1",
+    "test:webgpu": "node scripts/browser-webgpu-probe.mjs",
+    "profile:webgpu": "node scripts/browser-kernel-profile.mjs",
+    "test:attention-quality": "node scripts/browser-attention-quality.mjs",
+    "test:reference-quality": "node scripts/browser-reference-quality.mjs",
+    "test:refined-reference-quality": "node scripts/browser-refined-reference-quality.mjs",
+    "test:output-mode-quality": "node scripts/browser-output-mode-quality.mjs",
+    "model:prepare": "uv run --frozen --python 3.13 --project model python3 model/convert.py --overwrite",
+    "model:test": "uv run --frozen --python 3.13 --project model python3 -m unittest discover -s model/tests -v",
+    "test:browser": "node scripts/browser-e2e.mjs",
+    "benchmark:browser": "node scripts/browser-benchmark.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@webgpu/types": "^0.1.64",
+    "typescript": "^5.9.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}

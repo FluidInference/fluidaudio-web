@@ -37,6 +37,10 @@ import {
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
 import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import { pcmToWav } from "./core/audio.js";
+import { localWeightDir } from "./engines/registry.js";
+import type { DicoseStemEngine } from "./engines/stem-dicose/index.js";
+import type { StemAudio } from "./core/types.js";
 import "./engines/musicgen-acestep/style.css";
 
 type DemoTheme = "light" | "dark";
@@ -71,6 +75,10 @@ const summaryTime = requiredElement<HTMLElement>("summary-time");
 const resultPanel = requiredElement<HTMLElement>("result-panel");
 const audioPlayer = requiredElement<HTMLAudioElement>("audio-player");
 const download = requiredElement<HTMLAnchorElement>("download");
+const splitStemsButton = requiredElement<HTMLButtonElement>("split-stems");
+const stemsPanel = requiredElement<HTMLDivElement>("stems-panel");
+const stemsTime = requiredElement<HTMLSpanElement>("stems-time");
+const stemsList = requiredElement<HTMLUListElement>("stems-list");
 const settingsToggle = requiredElement<HTMLButtonElement>("settings-toggle");
 const settingsDialog = requiredElement<HTMLDialogElement>("settings-dialog");
 const settingsTitle = requiredElement<HTMLHeadingElement>("settings-dialog-title");
@@ -100,6 +108,14 @@ let modelProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
 let coldDownload = true;
 let fatalGpuDiagnostic = false;
 let output: { readonly url: string; readonly storageId: string } | undefined;
+/** The generated song's WAV blob, kept for stem separation (DiCoSe decodes it directly). */
+let resultBlob: Blob | undefined;
+let resultSeed: string | number | bigint = "song";
+/** Lazy DiCoSe engine — 623 MB of weights + a ~625 MB GPU buffer, so it only
+ * exists between a "Split stems" click and the next panel reset / pagehide. */
+let stemEngine: DicoseStemEngine | undefined;
+let stemUrls: string[] = [];
+let splittingStems = false;
 let tooltipRenderFrame: number | undefined;
 let pendingTooltipPoint: { readonly clientX: number } | undefined;
 /** Releases the shared model-cache lifecycle lock held while a worker is alive. */
@@ -179,8 +195,13 @@ function wireEvents(): void {
   deleteModelButton.addEventListener("click", () => {
     void deleteDownloadedModel();
   });
+  splitStemsButton.addEventListener("click", () => {
+    void splitStems();
+  });
 
   window.addEventListener("pagehide", () => {
+    void stemEngine?.dispose();
+    stemEngine = undefined;
     if (output !== undefined) {
       URL.revokeObjectURL(output.url);
       // Best-effort only — the reliable path is the pending-output record
@@ -578,6 +599,8 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
     await releaseCurrentOutput();
     const url = URL.createObjectURL(result.audio);
     output = { url, storageId: result.audioStorageId };
+    resultBlob = result.audio;
+    resultSeed = result.seed;
     recordPendingOutput(result.audioStorageId);
     audioPlayer.src = url;
     audioPlayer.load();
@@ -612,9 +635,11 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
 }
 
 async function releaseCurrentOutput(): Promise<void> {
+  resetStemSplitter();
   const current = output;
   if (current === undefined) return;
   output = undefined;
+  resultBlob = undefined;
   audioPlayer.pause();
   audioPlayer.removeAttribute("src");
   audioPlayer.load();
@@ -622,6 +647,106 @@ async function releaseCurrentOutput(): Promise<void> {
   URL.revokeObjectURL(current.url);
   await releaseAceAudioOutput(current.storageId);
   forgetPendingOutput(current.storageId);
+}
+
+// ── Split stems (DiCoSe, engines/stem-dicose) ────────────────────────────────
+// Suno-style follow-up on a finished song: lazy-load the DiCoSe engine, run
+// fast-mode separation on the generated WAV, and render one player + WAV
+// download per stem. Progress reuses the generation progress panel.
+
+async function splitStems(): Promise<void> {
+  const blob = resultBlob;
+  if (splittingStems || busy || blob === undefined) return;
+  splittingStems = true;
+  updateActionAvailability();
+  resetStemsUi();
+  try {
+    setIndeterminateProgress("Splitting stems", "Loading the DiCoSe separator");
+    const { DicoseStemEngine } = await import("./engines/stem-dicose/index.js");
+    if (stemEngine === undefined) {
+      // Same local-weights-first behavior as the registry entry: a dev-served
+      // models-local/dicose export beats the 623 MB HF download.
+      const baseUrl = await localWeightDir("dicose", "manifest.json");
+      stemEngine = new DicoseStemEngine(baseUrl ? { baseUrl } : {});
+    }
+    await stemEngine.load((p) => {
+      if (p.total > 0) {
+        setDeterminateProgress(
+          p.fraction,
+          "Downloading stem model",
+          `${formatDecimalBytes(p.loaded)} of ${formatDecimalBytes(p.total)}`,
+          `${(p.fraction * 100).toFixed(1)}%`,
+        );
+      } else {
+        setIndeterminateProgress("Preparing stem model", p.file);
+      }
+    });
+    setIndeterminateProgress("Splitting stems", "Decoding the generated song");
+    const input = await stemEngine.decodeFile(await blob.arrayBuffer());
+    setIndeterminateProgress("Splitting stems", "Separating drums, bass, other, vocals");
+    const t0 = performance.now();
+    const stems = await stemEngine.separate(input, {
+      onProgress: (p) => {
+        setDeterminateProgress(p.fraction, "Splitting stems", "Separating drums, bass, other, vocals", `${Math.min(99, Math.round(p.fraction * 100))}%`);
+      },
+    });
+    renderStems(stems, performance.now() - t0);
+    progressPanel.hidden = true;
+  } catch (error) {
+    setDeterminateProgress(progressElement.value, "Stem split failed", errorMessage(error), "");
+  } finally {
+    splittingStems = false;
+    updateActionAvailability();
+  }
+}
+
+function renderStems(stems: readonly StemAudio[], elapsedMs: number): void {
+  releaseStemUrls();
+  stemsList.replaceChildren();
+  for (const stem of stems) {
+    const url = URL.createObjectURL(pcmToWav(stem.samples, stem.sampleRate, stem.right));
+    stemUrls.push(url);
+    const item = document.createElement("li");
+    item.className = "stem-item";
+    const name = document.createElement("span");
+    name.className = "stem-item-name";
+    name.textContent = stem.name;
+    const player = document.createElement("audio");
+    player.controls = true;
+    player.preload = "metadata";
+    player.src = url;
+    player.setAttribute("aria-label", `${stem.name} stem playback`);
+    const link = document.createElement("a");
+    link.className = "download-button";
+    link.href = url;
+    link.download = `ace-step-${resultSeed}-${stem.name}.wav`;
+    link.textContent = "Download";
+    item.append(name, player, link);
+    stemsList.appendChild(item);
+  }
+  stemsTime.textContent = formatElapsed(elapsedMs);
+  stemsPanel.hidden = false;
+}
+
+/** Clears rendered stems; keeps the engine (worker + GPU weights) alive. */
+function resetStemsUi(): void {
+  releaseStemUrls();
+  stemsList.replaceChildren();
+  stemsTime.textContent = "";
+  stemsPanel.hidden = true;
+}
+
+/** Full reset for a new generation / page teardown: the separator holds a
+ * ~625 MB GPU weight buffer, so it never survives the result panel. */
+function resetStemSplitter(): void {
+  resetStemsUi();
+  void stemEngine?.dispose();
+  stemEngine = undefined;
+}
+
+function releaseStemUrls(): void {
+  for (const url of stemUrls) URL.revokeObjectURL(url);
+  stemUrls = [];
 }
 
 function failOperation(message: string, reset: boolean): void {
@@ -723,9 +848,10 @@ function setBusy(value: boolean): void {
 }
 
 function updateActionAvailability(): void {
-  generateButton.disabled = busy || supportDetails?.supported !== true;
+  generateButton.disabled = busy || splittingStems || supportDetails?.supported !== true;
   cancelButton.disabled = !busy;
   deleteModelButton.disabled = busy || !cacheCanBeDeleted();
+  splitStemsButton.disabled = busy || splittingStems || resultBlob === undefined;
 }
 
 function cacheCanBeDeleted(): boolean {

@@ -275,9 +275,26 @@
               <dd id="summary-time">—</dd>
             </div>
           </dl>
-          <a id="download" class="download-button" download="ace-step-song.wav">
-            Download WAV
-          </a>
+          <div class="result-actions">
+            <button id="split-stems" class="split-stems-button" type="button">
+              Split stems
+            </button>
+            <a id="download" class="download-button" download="ace-step-song.wav">
+              Download WAV
+            </a>
+          </div>
+        </div>
+        <div
+          id="stems-panel"
+          class="stems-panel"
+          aria-label="Separated stems"
+          hidden
+        >
+          <div class="stems-heading">
+            <h2>Stems</h2>
+            <span id="stems-time" aria-hidden="true"></span>
+          </div>
+          <ul id="stems-list" class="stems-list"></ul>
         </div>
       </section>
 

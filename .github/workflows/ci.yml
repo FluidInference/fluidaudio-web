@@ -39,6 +39,21 @@ jobs:
       - run: npm run acestep:check
       - run: npm run acestep:test
 
+  # Vendored DiCoSe stem-separation runtime (packages/dicose): typecheck +
+  # weight-free vitest suite (the model-contract test self-excludes without
+  # the gitignored public/model package).
+  dicose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run dicose:check
+      - run: npm run dicose:test
+
   # Prettier — style is enforced, not suggested.
   format:
     runs-on: ubuntu-latest

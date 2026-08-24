@@ -72,30 +72,42 @@ function downmix(buf: AudioBuffer): Float32Array {
   return out;
 }
 
-/** Encode Float32 PCM as a 16-bit WAV blob (for TTS playback / download). */
-export function pcmToWav(samples: Float32Array, sampleRate: number): Blob {
-  const buffer = new ArrayBuffer(44 + samples.length * 2);
+/** Encode Float32 PCM as a 16-bit WAV blob (for TTS playback / download).
+ * Stereo when `right` is given (`samples` = left channel, equal lengths). */
+export function pcmToWav(samples: Float32Array, sampleRate: number, right?: Float32Array): Blob {
+  const channels = right ? 2 : 1;
+  const frames = samples.length;
+  const dataBytes = frames * channels * 2;
+  const buffer = new ArrayBuffer(44 + dataBytes);
   const view = new DataView(buffer);
   const write = (off: number, s: string) => {
     for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
   };
   write(0, "RIFF");
-  view.setUint32(4, 36 + samples.length * 2, true);
+  view.setUint32(4, 36 + dataBytes, true);
   write(8, "WAVE");
   write(12, "fmt ");
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
+  view.setUint16(22, channels, true);
   view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
+  view.setUint32(28, sampleRate * channels * 2, true);
+  view.setUint16(32, channels * 2, true);
   view.setUint16(34, 16, true);
   write(36, "data");
-  view.setUint32(40, samples.length * 2, true);
-  let off = 44;
-  for (let i = 0; i < samples.length; i++, off += 2) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
+  view.setUint32(40, dataBytes, true);
+  const put = (off: number, v: number) => {
+    const s = Math.max(-1, Math.min(1, v));
     view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  };
+  let off = 44;
+  for (let i = 0; i < frames; i++) {
+    put(off, samples[i]);
+    off += 2;
+    if (right) {
+      put(off, right[i]);
+      off += 2;
+    }
   }
   return new Blob([buffer], { type: "audio/wav" });
 }

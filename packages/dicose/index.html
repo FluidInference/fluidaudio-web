@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090a0d" />
+    <meta
+      name="description"
+      content="Separate a WAV file into vocals, drums, bass, other, and a derived instrumental locally with DiCoSe and WebGPU."
+    />
+    <title>DiCoSe · Local stem separation</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to separator</a>
+
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="DiCoSe home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>DiCoSe</span>
+      </a>
+      <span class="runtime-badge">
+        <span class="runtime-badge__dot" aria-hidden="true"></span>
+        Local WebGPU
+      </span>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Four-stem separation + instrumental</p>
+        <h1 id="page-title">Pull a song apart.<br /><span>Right in your browser.</span></h1>
+        <p class="hero__summary">
+          Turn any WAV file into vocals, drums, bass, other, and a complementary instrumental.
+          Your audio stays on this device—the model runs locally on your GPU.
+        </p>
+        <ul class="hero__facts" aria-label="Runtime details">
+          <li><span aria-hidden="true">◆</span> No upload</li>
+          <li><span aria-hidden="true">◆</span> No account</li>
+          <li><span aria-hidden="true">◆</span> Five stereo WAV outputs</li>
+        </ul>
+      </section>
+
+      <section id="workspace" class="workspace" aria-labelledby="workspace-title">
+        <div class="workspace__heading">
+          <div>
+            <p class="section-kicker">New separation</p>
+            <h2 id="workspace-title">Choose your audio</h2>
+          </div>
+          <p>WAV files only</p>
+        </div>
+
+        <div class="upload-picker">
+          <input
+            id="file-input"
+            class="file-input"
+            type="file"
+            accept=".wav,audio/wav,audio/x-wav,audio/wave"
+            aria-describedby="file-name file-meta file-requirements"
+          />
+          <label id="drop-zone" class="drop-zone" for="file-input">
+            <span class="upload-glyph" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </span>
+            <span class="drop-zone__copy">
+              <strong>Drop a WAV file here</strong>
+              <span>or <span class="drop-zone__action">browse your files</span></span>
+            </span>
+            <span class="selected-file">
+              <strong id="file-name">No file selected</strong>
+              <span id="file-meta">Choose a stereo or mono WAV file</span>
+            </span>
+          </label>
+          <p id="file-requirements" class="help-text">
+            Files longer than 12 seconds run as overlapping 11-second chunks. Full keeps
+            50% overlap; Fast uses 10% overlap to reduce the number of model passes.
+          </p>
+        </div>
+
+        <fieldset class="configuration-picker">
+          <legend>
+            <span class="section-kicker">Separation mode</span>
+            <span class="legend-title">Choose the speed and quality balance</span>
+          </legend>
+
+          <div class="configuration-grid">
+            <label class="configuration-option">
+              <input type="radio" name="configuration" value="full" checked />
+              <span class="configuration-card">
+                <span class="configuration-card__header">
+                  <span class="configuration-card__name">Full</span>
+                  <span class="configuration-card__tag">Highest quality</span>
+                </span>
+                <span class="configuration-card__description">
+                  The complete deterministic model and full-resolution refinement graph.
+                </span>
+                <span class="configuration-card__detail">Released full graph · 50% long-file overlap</span>
+                <span class="configuration-card__check" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="configuration-option">
+              <input type="radio" name="configuration" value="fast" />
+              <span class="configuration-card">
+                <span class="configuration-card__header">
+                  <span class="configuration-card__name">Fast</span>
+                  <span class="configuration-card__tag">Fastest</span>
+                </span>
+                <span class="configuration-card__description">
+                  Returns the deterministic separator output, skips refinement, and reduces long-file overlap.
+                </span>
+                <span class="configuration-card__detail">Released checkpoint · 10% long-file overlap</span>
+                <span class="configuration-card__check" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="run-panel">
+          <div class="run-panel__status">
+            <span class="status-indicator" aria-hidden="true"></span>
+            <p id="status" role="status" aria-live="polite" aria-atomic="true">
+              Choose a WAV file to begin.
+            </p>
+          </div>
+          <button id="run-button" class="run-button" type="button" disabled>
+            <span id="run-button-label">Separate stems</span>
+            <span class="run-button__arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <div
+          id="progress"
+          class="progress"
+          role="progressbar"
+          aria-label="Separation progress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          hidden
+        >
+          <span id="progress-fill" class="progress__fill"></span>
+        </div>
+
+        <p id="error" class="error-message" role="alert" hidden></p>
+      </section>
+
+      <section id="results" class="results" aria-labelledby="results-title" hidden>
+        <div class="results__header">
+          <div>
+            <p class="section-kicker">Separation complete</p>
+            <h2 id="results-title">Your outputs</h2>
+          </div>
+          <p>Preview each output or save the WAV file.</p>
+        </div>
+
+        <div id="timing-grid" class="timing-grid" aria-label="Run timing"></div>
+        <div id="stems-grid" class="stems-grid" aria-live="polite"></div>
+      </section>
+
+      <p class="browser-note">
+        DiCoSe requires a browser with WebGPU support and a compatible GPU.
+      </p>
+
+      <pre id="result" class="automation-output" aria-hidden="true"></pre>
+    </main>
+
+    <script type="module" src="/src/demo.ts"></script>
+  </body>
+</html>
