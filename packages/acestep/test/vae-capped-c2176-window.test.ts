@@ -74,7 +74,7 @@ describe("capped C2176 VAE window geometry for one-GiB adapters", () => {
       .toBeGreaterThan(IOS_ADAPTER_LIMIT_BYTES);
   });
 
-  it("selects the capped geometry only when C2378 cannot bind", () => {
+  it("selects the capped geometry only above the one-GiB adapter class", () => {
     const c2378 = requireAceVaeWindowRuntimeProfile(
       ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE,
       2_378,
@@ -84,19 +84,26 @@ describe("capped C2176 VAE window geometry for one-GiB adapters", () => {
       c2378,
       bufferLimits(2_000_000_000),
     )).toBe(c2378);
+    // At the one-GiB iOS cap the C2176 workspace would bind, but its three
+    // whole-window workspaces total ~3.2 GB; the C512 baseline wins.
     expect(selectAceVaeWindowRuntimeProfileForLimits(
       c2378,
       bufferLimits(IOS_ADAPTER_LIMIT_BYTES),
+    ).id).toBe(ACE_VAE_C512_WINDOW_RUNTIME_PROFILE);
+    // Above one GiB but below the C2378 workspace, C2176 remains selected.
+    expect(selectAceVaeWindowRuntimeProfileForLimits(
+      c2378,
+      bufferLimits(1_100_000_000),
     ).id).toBe(ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE);
-    // Either limit alone below the C2378 workspace forces the downshift.
+    // Either limit alone at or below the cap forces the C512 downshift.
     expect(selectAceVaeWindowRuntimeProfileForLimits(
       c2378,
       bufferLimits(2_000_000_000, IOS_ADAPTER_LIMIT_BYTES),
-    ).id).toBe(ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE);
-    // Below even the capped workspace the configured contract fails closed.
+    ).id).toBe(ACE_VAE_C512_WINDOW_RUNTIME_PROFILE);
+    // Below even the C512 workspace the configured contract fails closed.
     expect(selectAceVaeWindowRuntimeProfileForLimits(
       c2378,
-      bufferLimits(800_000_000),
+      bufferLimits(200_000_000),
     )).toBe(c2378);
     // A C512 configuration never changes geometry.
     expect(selectAceVaeWindowRuntimeProfileForLimits(

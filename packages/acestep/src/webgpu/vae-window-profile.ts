@@ -22,6 +22,16 @@ export const ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES = 1_069_547_520;
 /** One latent frame of the widest FP16 activation: 128ch x 1920 x 2 bytes. */
 export const ACE_VAE_FP16_WORKSPACE_BYTES_PER_LATENT_FRAME = 491_520;
 
+/**
+ * Every iOS WebGPU adapter reports exactly 2^30 bytes for both maxBufferSize
+ * and maxStorageBufferBindingSize. An adapter at or below this line is an
+ * iPhone-class device whose process-level memory budget is far smaller than
+ * desktop; the binding constraint there is not single-buffer bindability but
+ * total resident workspace bytes (three whole-window workspaces, so the
+ * C2176 geometry holds ~3.2 GB where C512 holds ~755 MB).
+ */
+export const ACE_VAE_ONE_GIB_CAPPED_ADAPTER_LIMIT_BYTES = 1_073_741_824;
+
 const ACE_VAE_C512_REQUIRED_WORKSPACE_BYTES = 251_658_240;
 
 export type AceVaeWindowRuntimeProfile =
@@ -89,9 +99,22 @@ export function requireAceVaeWindowRuntimeProfile(
  * Resolve the window geometry an adapter can actually hold.
  *
  * The configured contract wins whenever the adapter can bind its workspace.
- * A C2378 configuration downgrades to the authenticated capped C2176 contract
- * on one-GiB adapters; any other shortfall returns the configured contract
- * unchanged so the device request fails closed with its true deficits.
+ * A C2378 configuration downgrades on shortfall to an authenticated smaller
+ * geometry, chosen by what the adapter's limits betray about the device:
+ *
+ * - At or below the one-GiB cap (the iOS adapter signature, limits-derived,
+ *   never UA-sniffed) the upstream C512 baseline geometry is selected. The
+ *   capped C2176 contract would bind (1,069,547,520 <= 2^30) but its three
+ *   whole-window workspaces total ~3.2 GB, which iOS jetsam kills; C512's
+ *   total ~755 MB. OPT-0035's correctness authority proved the overlap-64
+ *   discard decode byte-identical across window geometries, so the smaller
+ *   authenticated window is exact by construction.
+ * - Above the one-GiB cap but below the C2378 workspace, the capped C2176
+ *   contract is kept (desktop-class memory, only bindability is short).
+ *
+ * Any other shortfall returns the configured contract unchanged so the
+ * device request fails closed with its true deficits, and a configured C512
+ * contract never changes geometry.
  */
 export function selectAceVaeWindowRuntimeProfileForLimits(
   configured: Readonly<AceVaeWindowRuntimeProfileContract>,
@@ -108,11 +131,16 @@ export function selectAceVaeWindowRuntimeProfileForLimits(
     ),
   );
   if (available >= configured.requiredWorkspaceBytes) return configured;
-  if (
-    configured.id === ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE &&
-    available >= ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES
-  ) {
-    return ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE_CONTRACT;
+  if (configured.id === ACE_OPT_0070_VAE_C2378_WINDOW_RUNTIME_PROFILE) {
+    if (
+      available <= ACE_VAE_ONE_GIB_CAPPED_ADAPTER_LIMIT_BYTES &&
+      available >= ACE_VAE_C512_REQUIRED_WORKSPACE_BYTES
+    ) {
+      return ACE_VAE_C512_WINDOW_RUNTIME_PROFILE_CONTRACT;
+    }
+    if (available >= ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES) {
+      return ACE_VAE_CAPPED_C2176_WINDOW_RUNTIME_PROFILE_CONTRACT;
+    }
   }
   return configured;
 }

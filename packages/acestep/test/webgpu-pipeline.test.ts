@@ -388,8 +388,8 @@ describe("concrete WebGPU pipeline coordinator", () => {
         },
       },
     } as const;
-    // Below even the capped C2176 workspace there is no downshift: fail closed.
-    const insufficient = createHarness({ vaeLimitBytes: 800_000_000 });
+    // Below even the C512 workspace there is no downshift: fail closed.
+    const insufficient = createHarness({ vaeLimitBytes: 200_000_000 });
     await expect(initialize(insufficient, candidate)).rejects.toThrow(
       /production device did not enable/,
     );
@@ -585,8 +585,11 @@ describe("concrete WebGPU pipeline coordinator", () => {
     ).toThrow(/portable mixed VAE accepts only the OPT-0072 production/);
   });
 
-  it("downshifts the production C2378 windows to capped C2176 on one-GiB adapters", async () => {
+  it("downshifts the production C2378 windows to C512 on one-GiB adapters", async () => {
     // The default fixture limits are exactly 2^30 bytes: the iOS adapter cap.
+    // The capped C2176 workspace would bind, but its three whole-window
+    // workspaces total ~3.2 GB; the C512 baseline geometry (~755 MB total)
+    // is selected so an iPhone-class tab survives the VAE phase.
     const harness = createHarness({
       mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
     });
@@ -597,12 +600,46 @@ describe("concrete WebGPU pipeline coordinator", () => {
     expect(cappedRequest.deriveRequiredLimits!(
       testDiagnostics().capabilities.adapterLimits,
     )).toEqual({
+      maxBufferSize: 251_658_240,
+      maxStorageBufferBindingSize: 251_658_240,
+    });
+    expect(ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES)
+      .toBeLessThanOrEqual(1_073_741_824);
+
+    await expect(harness.backend.generate(testGenerationRequest(), {
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      onDiagnostic: vi.fn(),
+    })).resolves.toMatchObject({ frameCount: 480_000 });
+
+    expect(harness.lastVaeMaximumWindowFrames).toBe(512);
+    expect(harness.lastVaePlanChunkFrames).toBe(512);
+    expect(harness.lastVaeRuntimeProfile).toBe(
+      ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
+    );
+    // OPT-0080 depth-two evidence covers only C2378 window families.
+    expect(harness.lastVaeProductionSchedulingPolicy).toBeUndefined();
+  });
+
+  it("keeps the capped C2176 windows for sub-C2378 adapters above one GiB", async () => {
+    // Desktop-class memory with only bindability short of C2378: the PR #55
+    // capped contract remains the selection, unchanged.
+    const harness = createHarness({
+      vaeLimitBytes: 1_100_000_000,
+      mainManifestSha256: ACE_REFERENCE_MANIFEST_SHA256,
+    });
+    await initialize(harness, opt0080InitializeMessage());
+
+    const cappedRequest = harness.requestDevice.mock.calls[0]![0];
+    expect(cappedRequest.deriveRequiredLimits!(Object.freeze({
+      ...testDiagnostics().capabilities.adapterLimits,
+      maxBufferSize: 1_100_000_000,
+      maxStorageBufferBindingSize: 1_100_000_000,
+    }))).toEqual({
       maxBufferSize: ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
       maxStorageBufferBindingSize:
         ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES,
     });
-    expect(ACE_VAE_CAPPED_C2176_REQUIRED_WORKSPACE_BYTES)
-      .toBeLessThanOrEqual(1_073_741_824);
 
     await expect(harness.backend.generate(testGenerationRequest(), {
       signal: new AbortController().signal,
@@ -616,10 +653,6 @@ describe("concrete WebGPU pipeline coordinator", () => {
     expect(harness.lastVaePlanChunkFrames).toBe(
       ACE_VAE_CAPPED_C2176_MAXIMUM_WINDOW_FRAMES,
     );
-    expect(harness.lastVaeRuntimeProfile).toBe(
-      ACE_OPT_0066_VAE_FP16_FIXED32_DUAL_K4_QUALITY_PROFILE.id,
-    );
-    // OPT-0080 depth-two evidence covers only C2378 window families.
     expect(harness.lastVaeProductionSchedulingPolicy).toBeUndefined();
   });
 
