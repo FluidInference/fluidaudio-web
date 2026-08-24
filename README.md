@@ -105,6 +105,7 @@ demo page.
 | `eou-parakeet`           | Parakeet EOU 120M                 | **297×** browser-verified (1hr in 12.1s; worker-overlapped wasm decode + linear-cost stream-batch encode) | transcript + end-of-utterance events; TRUE streaming push()/finish() (bit-exact cache-carrying encode) + wasm-SIMD RNNT decode; whole-clip batch runs through the same linear-cost encoder |
 | `asr-voicechat`          | VoiceChat-11B STT (609M encoder)  | 34.6× (1hr file)                                                                                          | the speech-recognition slice of NVIDIA's full-duplex VoiceChat-11B; fully-causal per-frame streaming, parity byte-identical to the torch reference; weights hosted at [`FluidInference/fluidaudio-web`](https://huggingface.co/FluidInference/fluidaudio-web) like the other engines |
 | `musicgen-acestep`       | ACE-Step 1.5 Turbo (3.5B + VAE)   | ~1.9× (180s song in ~95s, M3, warm)                                                                       | full text-to-music on [`/music`](music.html): 8-step DiT + Oobleck VAE in pure WGSL (`packages/acestep`); ~5.7 GB one-time download; requires `shader-f16`; direct mode (optional planner LLM path exists upstream, still being optimized) |
+| `stem-dicose`            | DiCoSe stem separation (BS-RoFormer + 1-step CD) | ~3× fast mode (30s / 48 kHz song in ~9.8s, M5 Pro); refined ~0.45× | 5 stems — drums/bass/other/vocals + derived instrumental — on [`/analyze.html`](analyze.html) and as **Split stems** on [`/music`](music.html); vendored `packages/dicose` (DiCoSe.wgsl by Hamza Qayyum); 623 MB f16 weight package; requires `shader-f16` + fixed 32-wide subgroups; mix-reconstruction NRMSE 1.5% (4-stem sum) / 9e-5 (vocals + instrumental) |
 | `tts-voicechat`          | VoiceChat-11B TTS “Aria” (595M backbone + 159M MoG + 763M codec) | 23.7 GPU-ms per 80 ms frame + ~16 ms host (timestamp-query, M5 Pro dawn; est. ~1.6× in-browser) — node wall is poll-bound at 0.12× (dawn ~100 ms/sync × 5 syncs/frame); WASM 0.19× | the speech-decoder slice of NVIDIA's full-duplex VoiceChat-11B as a standalone TTS voice; GPU-resident decode loop (backbone/MoG-MLP batched submits, GPU KV caches, 5 readbacks/frame for the host-side f64 PRVQ decisions); audio codes bit-exact vs the torch reference ON BOTH BACKENDS (1550/1550), waveform NRMSE 1.1e-6; codec GPU decode ~24 GPU-ms/s of audio; local-only weights (`scripts/extract-voicechat-tts.py`, ~3.5 GB) — hidden from the picker unless exported |
 
 First (cold) run is several× slower — WebGPU compiles pipelines and weights
@@ -134,6 +135,13 @@ exact tuple). The optional 0.6B planner ("thinking") path is excluded from
 the served manifest until its pending optimization experiments
 (OPT-0084/0085/0087) are integrated.
 
+A finished song offers **Split stems**: DiCoSe (also by Hamza Qayyum,
+vendored at [`packages/dicose`](packages/dicose/)) separates the generated
+WAV into drums, bass, other, vocals, and a derived instrumental, right in
+the result panel — playable and downloadable per stem. Fast deterministic
+mode by default (~3× realtime); the 623 MB weight package downloads on
+first use and is released with the result panel.
+
 ## Text processing (WASM)
 
 [`text-processing-rs`](https://github.com/FluidInference/text-processing-rs)
@@ -155,6 +163,7 @@ npm run build      # static site → dist/
 npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
 
 npm run acestep:check && npm run acestep:test   # ACE-Step runtime (packages/acestep) gates
+npm run dicose:check && npm run dicose:test     # DiCoSe runtime (packages/dicose) gates
 ```
 
 ## Deploy
@@ -182,6 +191,8 @@ src/
 packages/
   acestep/      vendored ace-step-1.5.wgsl music-gen runtime (own kernels,
                 scheduler, tests, and optimization ledger — see its AGENTS.md)
+  dicose/       vendored DiCoSe.wgsl stem-separation runtime (own kernels,
+                tests, and optimization ledger)
 scripts/        node gates: token-identity, kernel parity, per-engine smokes
 rust/           parakeet RNNT decoder + kernel lib sources (wasm32+simd128)
 docs/           architecture, benchmarks, PORTING.md (add-a-model checklist), the ORT removal story
@@ -234,6 +245,13 @@ scheduling, and the Stage-2 optimization program — and handed the project
 over for integration here; we took it over, integrated, and are continuing
 the optimization work. The `packages/acestep` runtime and the `/music` page's
 backend seam are his code.
+
+Stem separation is likewise his: DiCoSe.wgsl (vendored at
+`packages/dicose`, MIT) ports DiCoSe — BS-RoFormer plus one-step
+consistency-distilled refinement, [karchkha/DiCoSe](https://huggingface.co/karchkha/DiCoSe)
+checkpoints — to raw WebGPU WGSL with its own correctness-audited kernel
+ledger, and powers both the `stem-dicose` engine and the `/music` page's
+Split stems feature.
 
 See [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md) for the full
 list of adapted code and licenses.

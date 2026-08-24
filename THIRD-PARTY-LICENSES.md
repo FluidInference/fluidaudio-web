@@ -65,6 +65,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## DiCoSe.wgsl (MIT)
+
+Upstream repo currently ships no LICENSE file (its package.json declares
+MIT; the license text is pending from the author and will be added at
+`packages/dicose/LICENSE` when supplied). The complete vendored source is
+in this repository at `packages/dicose`.
+Copyright (c) 2026 Hamza Qayyum (Narcotic Software) — MIT License.
+
+The entire stem-separation runtime (`packages/dicose`) is a vendored
+import of DiCoSe.wgsl by **Hamza Qayyum**: a raw WebGPU WGSL port of
+DiCoSe (BS-RoFormer + one-step consistency-distilled refinement,
+arXiv 2412.06965) with its own correctness-audited optimization ledger
+(`packages/dicose/optimization/`). The `stem-dicose` engine and the
+`/music` page's Split stems feature are thin wrappers over his worker
+client. Model weights are converted from the
+[karchkha/DiCoSe](https://huggingface.co/karchkha/DiCoSe) checkpoints
+(MIT) via `packages/dicose/model/convert.py` and retain their upstream
+license.
+
 ## parakeet.js / ysdede (MIT)
 
 https://github.com/ysdede/parakeet.js — the NeMo log-mel preprocessor in
