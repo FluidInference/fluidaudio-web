@@ -58,9 +58,7 @@ export class AceOpfsModelCache {
 
   constructor(private readonly cacheRoot: FileSystemDirectoryHandle) {}
 
-  static async open(
-    storage: Pick<StorageManager, "getDirectory"> = navigator.storage,
-  ): Promise<AceOpfsModelCache> {
+  static async open(storage: Pick<StorageManager, "getDirectory"> = navigator.storage): Promise<AceOpfsModelCache> {
     const opfsRoot = await storage.getDirectory();
     const cacheRoot = await opfsRoot.getDirectoryHandle(CACHE_DIRECTORY, {
       create: true,
@@ -79,11 +77,7 @@ export class AceOpfsModelCache {
       throw error;
     }
     const marker = await readMarker(directory);
-    if (
-      marker === undefined ||
-      marker.sha256 !== record.sha256 ||
-      marker.byteLength !== record.byteLength
-    ) {
+    if (marker === undefined || marker.sha256 !== record.sha256 || marker.byteLength !== record.byteLength) {
       return undefined;
     }
     try {
@@ -107,13 +101,10 @@ export class AceOpfsModelCache {
     // Reserve synchronously before the first await. Two same-worker callers
     // must never both pass an asynchronous candidate check and open writers.
     this.activeDigests.add(record.sha256);
-    let writable: FileSystemWritableFileStream | undefined;
+    let writable: AceCacheWritable | undefined;
     try {
       if (await this.openCandidate(record)) {
-        throw new DOMException(
-          "ACE cache identity is already verified",
-          "InvalidModificationError",
-        );
+        throw new DOMException("ACE cache identity is already verified", "InvalidModificationError");
       }
       const directory = await this.cacheRoot.getDirectoryHandle(record.sha256, {
         create: true,
@@ -121,7 +112,7 @@ export class AceOpfsModelCache {
       await removeEntryIfPresent(directory, MARKER_FILE);
       const handle = await directory.getFileHandle(PAYLOAD_FILE, { create: true });
       let snapshot = await handle.getFile();
-      writable = await handle.createWritable({ keepExistingData: true });
+      writable = await openCacheWritable(handle, { keepExistingData: true });
       let cursor = snapshot.size;
       if (cursor > record.byteLength) {
         await writable.truncate(0);
@@ -177,6 +168,70 @@ export class AceOpfsModelCache {
   }
 }
 
+/**
+ * Minimal writable surface the cache uses. Chromium/Firefox provide it via
+ * FileSystemFileHandle.createWritable; Safari has no createWritable anywhere
+ * (workers included), so a FileSystemSyncAccessHandle adapter supplies the
+ * same sequential contract there. Semantic difference, deliberate: the native
+ * stream buffers into a swap file that abort() discards, while sync-handle
+ * writes persist immediately — persisted partial payloads are safe here
+ * because the cache is resumable-by-design (prefixes are re-hashed before
+ * reuse and the verification marker is only written after a full commit).
+ */
+interface AceCacheWritable {
+  truncate(size: number): Promise<void>;
+  seek(offset: number): Promise<void>;
+  write(bytes: Uint8Array): Promise<void>;
+  close(): Promise<void>;
+  abort(reason?: unknown): Promise<void>;
+}
+
+interface SyncAccessHandleLike {
+  truncate(size: number): void;
+  write(bytes: Uint8Array, options?: { at?: number }): number;
+  flush(): void;
+  close(): void;
+}
+
+async function openCacheWritable(handle: FileSystemFileHandle, options: { keepExistingData: boolean }): Promise<AceCacheWritable> {
+  if (typeof handle.createWritable === "function") {
+    return await handle.createWritable({ keepExistingData: options.keepExistingData });
+  }
+  const sync = await (handle as unknown as { createSyncAccessHandle(): Promise<SyncAccessHandleLike> }).createSyncAccessHandle();
+  if (!options.keepExistingData) sync.truncate(0);
+  let cursor = 0;
+  let open = true;
+  const closeOnce = () => {
+    if (!open) return;
+    open = false;
+    sync.close();
+  };
+  return {
+    async truncate(size: number) {
+      sync.truncate(size);
+      if (cursor > size) cursor = size;
+    },
+    async seek(offset: number) {
+      cursor = offset;
+    },
+    async write(bytes: Uint8Array) {
+      sync.write(bytes, { at: cursor });
+      cursor += bytes.byteLength;
+    },
+    async close() {
+      if (open) sync.flush();
+      closeOnce();
+    },
+    async abort() {
+      try {
+        if (open) sync.flush();
+      } finally {
+        closeOnce();
+      }
+    },
+  };
+}
+
 class OpfsPartialAsset implements AceOpfsPartialAsset {
   private cursor: number;
   private closed = false;
@@ -187,7 +242,7 @@ class OpfsPartialAsset implements AceOpfsPartialAsset {
     private readonly record: AcePackageFileRecord,
     private readonly directory: FileSystemDirectoryHandle,
     private readonly handle: FileSystemFileHandle,
-    private readonly writable: FileSystemWritableFileStream,
+    private readonly writable: AceCacheWritable,
     private snapshot: File,
     cursor: number,
     private readonly release: () => void,
@@ -217,10 +272,7 @@ class OpfsPartialAsset implements AceOpfsPartialAsset {
         const item = await reader.read();
         if (item.done) break;
         for (let offset = 0; offset < item.value.byteLength; offset += CACHE_READ_CHUNK_BYTES) {
-          const chunk = item.value.subarray(
-            offset,
-            Math.min(offset + CACHE_READ_CHUNK_BYTES, item.value.byteLength),
-          );
+          const chunk = item.value.subarray(offset, Math.min(offset + CACHE_READ_CHUNK_BYTES, item.value.byteLength));
           readBytes += chunk.byteLength;
           if (readBytes > this.cursor) {
             throw new Error("ACE OPFS partial grew while its prefix was hashed");
@@ -323,11 +375,9 @@ class OpfsPartialAsset implements AceOpfsPartialAsset {
       const markerHandle = await this.directory.getFileHandle(MARKER_FILE, {
         create: true,
       });
-      const markerWriter = await markerHandle.createWritable();
+      const markerWriter = await openCacheWritable(markerHandle, { keepExistingData: false });
       try {
-        await markerWriter.write(
-          new TextEncoder().encode(`${JSON.stringify(marker)}\n`),
-        );
+        await markerWriter.write(new TextEncoder().encode(`${JSON.stringify(marker)}\n`));
         await markerWriter.close();
       } catch (error) {
         try {
@@ -386,9 +436,7 @@ class OpfsPartialAsset implements AceOpfsPartialAsset {
   }
 }
 
-export async function inspectAceModelStorage(
-  storage: StorageManager | undefined = globalThis.navigator?.storage,
-): Promise<AceStoredModelInfo> {
+export async function inspectAceModelStorage(storage: StorageManager | undefined = globalThis.navigator?.storage): Promise<AceStoredModelInfo> {
   if (storage === undefined || typeof storage.getDirectory !== "function") {
     return { supported: false, persisted: false };
   }
@@ -406,8 +454,7 @@ export async function inspectAceModelStorage(
 
 /** Inspect only the model cache owned by this package, excluding audio output. */
 export async function inspectAceModelCache(
-  storage: Pick<StorageManager, "getDirectory" | "persisted"> | undefined =
-    globalThis.navigator?.storage,
+  storage: Pick<StorageManager, "getDirectory" | "persisted"> | undefined = globalThis.navigator?.storage,
 ): Promise<AceModelCacheInfo> {
   if (storage === undefined || typeof storage.getDirectory !== "function") {
     return {
@@ -418,10 +465,7 @@ export async function inspectAceModelCache(
       partialAssetCount: 0,
     };
   }
-  const [opfsRoot, persisted] = await Promise.all([
-    storage.getDirectory(),
-    storage.persisted().catch(() => false),
-  ]);
+  const [opfsRoot, persisted] = await Promise.all([storage.getDirectory(), storage.persisted().catch(() => false)]);
   let cacheRoot: FileSystemDirectoryHandle;
   try {
     cacheRoot = await opfsRoot.getDirectoryHandle(CACHE_DIRECTORY);
@@ -441,11 +485,11 @@ export async function inspectAceModelCache(
   let assetCount = 0;
   let sizeBytes = 0;
   let partialAssetCount = 0;
-  const entries = (cacheRoot as unknown as {
-    entries(): AsyncIterable<
-      [string, FileSystemDirectoryHandle | FileSystemFileHandle]
-    >;
-  }).entries();
+  const entries = (
+    cacheRoot as unknown as {
+      entries(): AsyncIterable<[string, FileSystemDirectoryHandle | FileSystemFileHandle]>;
+    }
+  ).entries();
   for await (const [name, handle] of entries) {
     if (handle.kind !== "directory" || !/^[0-9a-f]{64}$/.test(name)) {
       partialAssetCount += 1;
@@ -482,10 +526,7 @@ export async function inspectAceModelCache(
  * Delete the complete package-owned model cache after active runtimes have
  * been disposed. Audio outputs and unrelated origin storage are untouched.
  */
-export async function deleteAceModelCache(
-  storage: Pick<StorageManager, "getDirectory"> | undefined =
-    globalThis.navigator?.storage,
-): Promise<boolean> {
+export async function deleteAceModelCache(storage: Pick<StorageManager, "getDirectory"> | undefined = globalThis.navigator?.storage): Promise<boolean> {
   if (storage === undefined || typeof storage.getDirectory !== "function") {
     return false;
   }
@@ -499,9 +540,7 @@ export async function deleteAceModelCache(
   }
 }
 
-async function readMarker(
-  directory: FileSystemDirectoryHandle,
-): Promise<CacheMarker | undefined> {
+async function readMarker(directory: FileSystemDirectoryHandle): Promise<CacheMarker | undefined> {
   try {
     const file = await (await directory.getFileHandle(MARKER_FILE)).getFile();
     if (file.size > 256) return undefined;
@@ -524,10 +563,7 @@ async function readMarker(
   }
 }
 
-async function removeEntryIfPresent(
-  directory: FileSystemDirectoryHandle,
-  name: string,
-): Promise<void> {
+async function removeEntryIfPresent(directory: FileSystemDirectoryHandle, name: string): Promise<void> {
   try {
     await directory.removeEntry(name);
   } catch (error) {
@@ -542,10 +578,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
   const actual = Object.keys(value).sort();
   const sortedExpected = [...expected].sort();
-  return (
-    actual.length === sortedExpected.length &&
-    actual.every((key, index) => key === sortedExpected[index])
-  );
+  return actual.length === sortedExpected.length && actual.every((key, index) => key === sortedExpected[index]);
 }
 
 function isNotFound(error: unknown): boolean {
