@@ -128,8 +128,52 @@ let disposal:
     }
   | undefined;
 
+// Crash breadcrumb: iOS jetsam kills the tab with no error event, so persist
+// the last progress stage; after an unclean end the next visit reports where
+// the previous attempt died (the only telemetry a killed tab can leave).
+const CRASH_BREADCRUMB_KEY = "ace-step-progress-breadcrumb";
+
+function recordBreadcrumb(title: string, detail: string): void {
+  try {
+    localStorage.setItem(CRASH_BREADCRUMB_KEY, JSON.stringify({ title, detail, at: Date.now(), open: true }));
+  } catch {
+    // Storage unavailable — breadcrumbs are best-effort.
+  }
+}
+
+function closeBreadcrumb(): void {
+  try {
+    const raw = localStorage.getItem(CRASH_BREADCRUMB_KEY);
+    if (raw === null) return;
+    const record = JSON.parse(raw) as { open?: boolean };
+    localStorage.setItem(CRASH_BREADCRUMB_KEY, JSON.stringify({ ...record, open: false }));
+  } catch {
+    // Best-effort.
+  }
+}
+
+function reportCrashBreadcrumb(): void {
+  try {
+    const raw = localStorage.getItem(CRASH_BREADCRUMB_KEY);
+    if (raw === null) return;
+    const record = JSON.parse(raw) as { title?: string; detail?: string; at?: number; open?: boolean };
+    if (record.open !== true || typeof record.title !== "string") return;
+    localStorage.removeItem(CRASH_BREADCRUMB_KEY);
+    const when = typeof record.at === "number" ? new Date(record.at).toLocaleTimeString() : "?";
+    supportWarning.textContent =
+      `The previous attempt ended unexpectedly during: ${record.title}` +
+      `${record.detail ? ` — ${record.detail}` : ""} (${when}). ` +
+      "If this repeats on a phone, note this stage — it identifies the memory bottleneck.";
+    supportWarning.className = "support-warning";
+    supportWarning.hidden = false;
+  } catch {
+    // Best-effort.
+  }
+}
+
 configureTheme();
 wireEvents();
+reportCrashBreadcrumb();
 void initializePage();
 
 function configureTheme(): void {
@@ -622,6 +666,7 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
       stage: "vae-load",
       message: "network: complete 168791552/168791552 bytes",
     });
+    closeBreadcrumb();
     setBusy(false);
     progressPanel.hidden = true;
     updateRuntimeDetails();
@@ -750,6 +795,7 @@ function releaseStemUrls(): void {
 }
 
 function failOperation(message: string, reset: boolean): void {
+  closeBreadcrumb();
   initializationRequestId = undefined;
   activeJobId = undefined;
   pendingRequest = undefined;
@@ -859,6 +905,7 @@ function cacheCanBeDeleted(): boolean {
 }
 
 function setDeterminateProgress(value: number, title: string, detail: string, percentage: string): void {
+  recordBreadcrumb(title, detail);
   progressPanel.hidden = false;
   progressElement.max = 1;
   progressElement.value = clampFraction(value);
@@ -868,6 +915,7 @@ function setDeterminateProgress(value: number, title: string, detail: string, pe
 }
 
 function setIndeterminateProgress(title: string, detail: string): void {
+  recordBreadcrumb(title, detail);
   progressPanel.hidden = false;
   progressElement.removeAttribute("value");
   progressTitle.textContent = title;
