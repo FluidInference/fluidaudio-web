@@ -181,7 +181,7 @@ export class AceOpfsModelCache {
 interface AceCacheWritable {
   truncate(size: number): Promise<void>;
   seek(offset: number): Promise<void>;
-  write(bytes: Uint8Array): Promise<void>;
+  write(bytes: Uint8Array<ArrayBuffer>): Promise<void>;
   close(): Promise<void>;
   abort(reason?: unknown): Promise<void>;
 }
@@ -214,7 +214,7 @@ async function openCacheWritable(handle: FileSystemFileHandle, options: { keepEx
     async seek(offset: number) {
       cursor = offset;
     },
-    async write(bytes: Uint8Array) {
+    async write(bytes: Uint8Array<ArrayBuffer>) {
       sync.write(bytes, { at: cursor });
       cursor += bytes.byteLength;
     },

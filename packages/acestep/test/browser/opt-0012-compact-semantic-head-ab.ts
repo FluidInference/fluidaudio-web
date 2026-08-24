@@ -873,7 +873,7 @@ export const OPT_0012_SOURCE_IDENTITIES = Object.freeze({
   "src/model/graph-contract.ts": "ad6de30e8c089f1b0d1dd86951518150904bf1761a7285b2f5f1a2e4304aa116",
   "src/model/strict-json.ts": "1f431ca4db4cc919308769a85acdf1ce8d1febde4af9fb72dd87540b64c51fba",
   "src/model/acquire.ts": "4dae4fee7497ce77640819936388e44c2eca14757e1646f5ad85493542169c78",
-  "src/model/cache.ts": "000329cd4a37d7013e18f90b2dab97a62a41092fd126b1deff3c2d59168635ce",
+  "src/model/cache.ts": "4b7599bfacc99fe2451fa7cb902d1ad7046100aeb3e82ef3995034b8e3b41a25",
   "src/model/gpu-tensors.ts": "7bf1b358e1b3fd15873457974cd26c2c04f96d988a1c0cc099346a8b50c77797",
   "src/model/gpu-upload.ts": "061ebb1e6f078b6b56a21f67afadcaf60d2d051790f667d481299c4e10abb319",
   "src/model/package.ts": "78a616a9ca6561ae8f6248ac222608bacf5c5412ca30e063fc4562857f04c6ef",
