@@ -463,10 +463,27 @@ export class AceWorkerRuntime {
         result.diagnostics.schedulingProfile !==
           this.readyDiagnostics.schedulingProfile
       ) {
+        const ready = this.readyDiagnostics;
+        const mismatches = ready === undefined
+          ? ["ready-diagnostics-missing"]
+          : [
+              !isAceGenerationResultValue(result) ? "result-shape-or-receipt" : undefined,
+              result.seed !== message.request.seed ? "seed" : undefined,
+              result.durationSeconds !== message.request.durationSeconds ? "durationSeconds" : undefined,
+              result.frameCount !== message.request.durationSeconds * ACE_SAMPLE_RATE_HZ ? "frameCount" : undefined,
+              result.modelManifestId !== ready.modelManifestId ? "modelManifestId" : undefined,
+              result.modelManifestSha256 !== ready.modelManifestSha256 ? "modelManifestSha256" : undefined,
+              result.diagnostics.vaeWindowRuntimeProfile !== ready.vaeWindowRuntimeProfile ? "vaeWindowRuntimeProfile" : undefined,
+              result.diagnostics.vaeMaxWindowFrames !== ready.vaeMaxWindowFrames ? "vaeMaxWindowFrames" : undefined,
+              result.diagnostics.executionProfile.id !== ready.executionProfile.id ? "executionProfile" : undefined,
+              result.diagnostics.schedulingProfile !== ready.schedulingProfile ? "schedulingProfile" : undefined,
+            ].filter((name): name is string => name !== undefined);
         this.rejectBackendCallback(
           active,
           "INVALID_GENERATION_RESULT",
-          "ACE backend returned a result that does not match the ready runtime",
+          `ACE backend returned a result that does not match the ready runtime (${
+            mismatches.length === 0 ? "manifest/kernel identity" : mismatches.join(", ")
+          })`,
         );
       }
       if (active.callbackError !== undefined) {
