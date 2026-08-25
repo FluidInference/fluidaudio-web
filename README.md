@@ -11,13 +11,14 @@ the browser sibling of the Swift/CoreML
 tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
 1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
 
-**Live:** https://fluidaudio-web.hanweng9.workers.dev — one page per function:
-[speech to text](https://fluidaudio-web.hanweng9.workers.dev) at the root
-(one engine at a time), [`/tts`](https://fluidaudio-web.hanweng9.workers.dev/tts.html)
-synthesis, [`/analyze`](https://fluidaudio-web.hanweng9.workers.dev/analyze.html)
-VAD + diarization, [`/live`](https://fluidaudio-web.hanweng9.workers.dev/live.html)
-captions, and [`/music`](https://fluidaudio-web.hanweng9.workers.dev/music.html)
-generation.
+**Live:** https://fluidinference.github.io/fluidaudio-web/ — one page per
+function: [speech to text](https://fluidinference.github.io/fluidaudio-web/)
+at the root, [text to speech](https://fluidinference.github.io/fluidaudio-web/tts.html),
+[music generation + stem splitting](https://fluidinference.github.io/fluidaudio-web/music.html),
+[other audio models](https://fluidinference.github.io/fluidaudio-web/analyze.html)
+(VAD, diarization, stems), and [live captions](https://fluidinference.github.io/fluidaudio-web/live.html).
+Mirror: https://fluidaudio-web.hanweng9.workers.dev. Both deploy automatically
+from every commit to `main`.
 
 > **Why hand-written kernels?** The first iteration of this repo ran the same
 > models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
