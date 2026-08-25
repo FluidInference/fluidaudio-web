@@ -10,6 +10,8 @@ export interface AudioData {
 export interface LoadProgress {
   /** File or component currently loading. */
   file: string;
+  /** Work currently represented by this update. Defaults to local loading. */
+  phase?: "download" | "load";
   /** Bytes fetched so far / total (total may be 0 if unknown). */
   loaded: number;
   total: number;

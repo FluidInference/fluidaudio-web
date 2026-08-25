@@ -8,6 +8,7 @@ import { initSiteTheme } from "../theme/theme.js";
 
 import { decodeToMono16k, pcmToWav } from "../core/audio.js";
 import { segmentsToSrt, segmentsToVtt } from "../core/captions.js";
+import { formatLoadProgress } from "../core/loadProgress.js";
 import { webgpuAvailable } from "../core/webgpu.js";
 import { ENGINES, type EngineCategory, type EngineEntry } from "../engines/registry.js";
 import { MicCapture } from "../core/mic.js";
@@ -147,7 +148,7 @@ export function initPlayground(opts: PlaygroundOptions) {
       status.textContent = `Loading ${entry.label}…`;
       await eng.load((p: LoadProgress) => {
         progress.value = p.fraction || 0;
-        status.textContent = `Loading ${p.file} — ${Math.round((p.fraction || 0) * 100)}%`;
+        status.textContent = formatLoadProgress(p);
       });
       status.textContent = `Ready: ${entry.label}`;
       runBtn.disabled = false;

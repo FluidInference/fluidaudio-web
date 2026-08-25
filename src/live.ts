@@ -9,6 +9,7 @@ initSiteTheme();
 // last finalize boundary.
 
 import { ENGINES } from "./engines/registry.js";
+import { formatLoadProgress } from "./core/loadProgress.js";
 import { MicCapture } from "./core/mic.js";
 import type { Engine } from "./core/types.js";
 
@@ -114,7 +115,7 @@ async function start() {
       $("status").textContent = `loading ${c.label}…`;
       const e = await c.make();
       await e.load((p) => {
-        $("status").textContent = `loading ${p.file ?? ""} ${Math.round((p.fraction || 0) * 100)}%`;
+        $("status").textContent = formatLoadProgress(p);
       });
       engine = e as StreamingEngine;
       engineId = id;
