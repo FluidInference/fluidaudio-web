@@ -53,7 +53,7 @@ export async function fetchCached(url: string, onProgress?: ProgressCb, label = 
     if (done) break;
     chunks.push(value);
     loaded += value.byteLength;
-    onProgress?.({ file: label, loaded, total, fraction: total ? loaded / total : 0 });
+    onProgress?.({ file: label, phase: "download", loaded, total, fraction: total ? loaded / total : 0 });
   }
 
   const bytes = concat(chunks, loaded);
@@ -83,6 +83,7 @@ export async function fetchAll(files: { repo: string; path: string; revision?: s
       (p) => {
         onProgress?.({
           file: f.path,
+          phase: p.phase,
           loaded: doneBytes + p.loaded,
           total: 0,
           fraction: (i + p.fraction) / files.length,

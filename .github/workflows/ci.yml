@@ -22,6 +22,7 @@ jobs:
           cache: npm
       # --ignore-scripts: skip transitive `sharp` native build (unused; browser only)
       - run: npm ci --ignore-scripts
+      - run: npm run test:unit
       - run: npm run build
 
   # Vendored ACE-Step runtime (packages/acestep): typecheck + weight-free
