@@ -320,6 +320,7 @@ a:hover {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -354,6 +355,7 @@ button:disabled {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible,
 a:focus-visible,
@@ -380,7 +382,8 @@ audio:focus-visible {
 
 textarea,
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   border: 1px solid var(--control-border);
   border-radius: 8px;
@@ -402,7 +405,8 @@ textarea {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   min-height: 42px;
   padding: 8px 10px;
 }
@@ -411,6 +415,10 @@ textarea::placeholder,
 input::placeholder {
   color: var(--muted-text);
   opacity: 0.78;
+}
+
+select {
+  appearance: auto;
 }
 
 .unit-input {
@@ -473,6 +481,17 @@ input::placeholder {
   color: var(--muted-text);
   font-size: 0.78rem;
   font-weight: 450;
+}
+
+.advanced-grid .model-variant-field {
+  grid-column: 1 / -1;
+}
+
+.model-variant-field small {
+  color: var(--muted-text);
+  font-size: 0.78rem;
+  font-weight: 450;
+  line-height: 1.45;
 }
 
 .actions {

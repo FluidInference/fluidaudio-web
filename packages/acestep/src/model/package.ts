@@ -36,7 +36,7 @@ export interface AceLoadPackageManifestOptions {
   readonly expectedProfile: AcePackageProfile;
   /** Exact revision-7 VAE trust root; rejected unless paired with its SHA. */
   readonly authenticatedVaeConverterRevision?: 7;
-  /** Exact OPT-0009 oracle only; rejected unless paired with its pinned SHA. */
+  /** Exact authenticated rev7 DiT trust roots; rejected for every other SHA. */
   readonly authenticatedDitDenseConverterRevision?: 7;
   readonly signal?: AbortSignal;
   readonly fetch?: typeof fetch;
@@ -80,12 +80,14 @@ export async function loadAcePackageManifest(
     options.authenticatedDitDenseConverterRevision !== undefined &&
     (options.authenticatedDitDenseConverterRevision !== 7 ||
       options.expectedProfile !== "fp16-dit-dense-experimental" ||
-      expectedDigest !==
-        "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f")
+      (expectedDigest !==
+          "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f" &&
+        expectedDigest !==
+          "ef8355b9cffff466b018b51275923982b071234933fe8a32897915eeeb01fa36"))
   ) {
     throw new AceModelTransportError(
       "MANIFEST_IDENTITY_ERROR",
-      "Legacy mixed-DiT parsing requires the exact authenticated OPT-0009 manifest",
+      "Legacy mixed-DiT parsing requires an exact authenticated rev7 manifest",
     );
   }
   const url = absoluteUrl(options.manifestUrl);

@@ -42,6 +42,7 @@ import {
   ACE_OPT_0056_DIT_SELECTIVE_K4_KERNEL_SET_ID,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+  ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
 } from "../webgpu/dit-fp16-package.js";
 import {
   ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_KERNEL_SET_ID,
@@ -137,6 +138,12 @@ export type AceWorkerDitDensePackageConfiguration =
   | Readonly<{
       readonly manifestUrl: string;
       readonly manifestSha256: typeof ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256;
+      readonly runtimeProfile: typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE;
+    }>
+  | Readonly<{
+      readonly manifestUrl: string;
+      readonly manifestSha256:
+        typeof ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256;
       readonly runtimeProfile: typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE;
     }>
   | Readonly<{
@@ -501,7 +508,9 @@ function isWorkerDitDensePackageConfiguration(
       (value.runtimeProfile === ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE ||
         value.runtimeProfile ===
           ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE)) ||
-      (value.manifestSha256 === ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256 &&
+      ((value.manifestSha256 === ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256 ||
+        value.manifestSha256 ===
+          ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256) &&
         value.runtimeProfile === ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE))
   );
 }

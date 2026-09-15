@@ -24,6 +24,17 @@ export const ACE_OPT_0009_DIT_DENSE_WEIGHT_FILES = Object.freeze(
   ]).flat(),
 );
 
+/**
+ * OPT-0089 fake-quant listening artifact. The 264 dense/projection tensors
+ * were quantized to int8 per K32 block and dequantized back into the original
+ * rev7 storage layout. This identity is full-size and uses the unchanged
+ * OPT-0009 runtime; it is not an int8-resident package.
+ */
+export const ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256 =
+  "ef8355b9cffff466b018b51275923982b071234933fe8a32897915eeeb01fa36" as const;
+export const ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES =
+  ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES;
+
 export const ACE_OPT_0037_DIT_K4_MANIFEST_SHA256 =
   "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1" as const;
 export const ACE_OPT_0037_DIT_K4_MANIFEST_BYTES = 257_789 as const;
@@ -95,10 +106,32 @@ export function createAceReferenceDitSharedManifestView(
 export function requireAceOpt0009DitDensePackageIdentity(
   loaded: AceLoadedPackageManifest,
 ): void {
+  requireAceRev7DitDensePackageIdentity(
+    loaded,
+    ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256,
+    "OPT-0009 mixed DiT layer package identity changed",
+  );
+}
+
+export function requireAceOpt0089DitFakeQuantPackageIdentity(
+  loaded: AceLoadedPackageManifest,
+): void {
+  requireAceRev7DitDensePackageIdentity(
+    loaded,
+    ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
+    "OPT-0089 fake-quant DiT package identity changed",
+  );
+}
+
+function requireAceRev7DitDensePackageIdentity(
+  loaded: AceLoadedPackageManifest,
+  expectedManifestSha256: string,
+  errorMessage: string,
+): void {
   const manifest = loaded.manifest;
   const weightFiles = manifest.files.filter((file) => file.kind === "weights");
   if (
-    loaded.manifestSha256 !== ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256 ||
+    loaded.manifestSha256 !== expectedManifestSha256 ||
     loaded.manifestByteLength !== ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES ||
     manifest.profile !== "fp16-dit-dense-experimental" ||
     manifest.provenance.converterRevision !==
@@ -114,7 +147,7 @@ export function requireAceOpt0009DitDensePackageIdentity(
     ACE_OPT_0009_DIT_MIXED_LAYER_BYTES !==
       ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_BYTES
   ) {
-    throw new Error("OPT-0009 mixed DiT layer package identity changed");
+    throw new Error(errorMessage);
   }
 }
 

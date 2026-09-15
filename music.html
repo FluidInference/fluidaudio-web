@@ -100,11 +100,9 @@
               >Ace-Step 1.5</a
             > music generation model.
           </p>
-          <p>
-            The model is downloaded on first generation and cached for later visits.
-          </p>
-          <p id="download-note" class="download-note" hidden>
-            Total download size is <strong>5.75 GB</strong>
+          <p id="download-note" class="download-note">
+            The first generation downloads <strong>5.75 GB</strong>, then caches
+            the model for later visits.
           </p>
           <p
             id="support-warning"
@@ -217,6 +215,18 @@
                   placeholder="e.g. English"
                 />
               </label>
+              <label class="model-variant-field">
+                Model
+                <select id="model-variant" name="model-variant">
+                  <option value="production" selected>Production (recommended)</option>
+                  <option value="int8-quality-preview">INT8 quality preview (experimental)</option>
+                </select>
+                <small>
+                  The preview tests audible quantization effects but is not compressed.
+                  It is also 5.75 GB; switching from a cached production model adds a
+                  separate 3.02 GB DiT download. Use the same seed to compare.
+                </small>
+              </label>
             </div>
           </div>
         </details>
@@ -273,6 +283,10 @@
             <div>
               <dt>Generation time</dt>
               <dd id="summary-time">—</dd>
+            </div>
+            <div>
+              <dt>Model</dt>
+              <dd id="summary-model">—</dd>
             </div>
           </dl>
           <div class="result-actions">

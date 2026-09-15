@@ -548,7 +548,7 @@ describe("concrete WebGPU pipeline coordinator", () => {
         manifestSha256: ACE_OPT_0037_DIT_K4_MANIFEST_SHA256,
         runtimeProfile: "opt-0037-k4-fp16-partials-v1",
       }, "portable")
-    ).toThrow(/portable mixed DiT accepts only the OPT-0009 rev7 oracle/);
+    ).toThrow(/portable mixed DiT accepts only an authenticated rev7 package/);
 
     const opt0072 = {
       manifestUrl: "https://example.test/rev7-vae/manifest.json",

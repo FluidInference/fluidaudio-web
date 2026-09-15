@@ -43,8 +43,11 @@ function page() {
     updateRuntimeDetails: () => {},
     workerDetails: undefined,
     workerReady: true,
+    workerModelVariant: "production",
     worker: { postMessage: vi.fn() },
     startPendingGeneration: vi.fn(),
+    selectedModelVariant: () => "production",
+    initializeSelectedModel: vi.fn(),
     setDeterminateProgress: vi.fn(),
     setIndeterminateProgress: vi.fn(),
   };
@@ -94,6 +97,46 @@ it("does not start generation when the page closes during cleanup", async () => 
   await running;
   expect(state.startPendingGeneration).not.toHaveBeenCalled();
   expect(state.generationPreparation).toBeUndefined();
+});
+
+it("reinitializes instead of reusing a worker for another model variant", async () => {
+  const { state, finish } = page();
+  state.selectedModelVariant = () => "int8-quality-preview";
+  const running = state.beginGeneration();
+  finish();
+  await running;
+
+  expect(state.startPendingGeneration).not.toHaveBeenCalled();
+  expect(state.initializeSelectedModel).toHaveBeenCalledExactlyOnceWith("int8-quality-preview");
+});
+
+it("disposes the current worker before initializing the selected model", async () => {
+  const source = readFileSync(new URL("../src/music.ts", import.meta.url), "utf8");
+  const ast = ts.createSourceFile("music.ts", source, ts.ScriptTarget.Latest, true);
+  const handler = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSelectedModel");
+  expect(handler).toBeDefined();
+  let finishDisposal!: () => void;
+  const disposal = new Promise<void>((resolve) => {
+    finishDisposal = resolve;
+  });
+  const state: Record<string, any> = {
+    worker: {},
+    busy: true,
+    pendingRequest: { prompt: "Piano instrumental" },
+    pageLifecycle: new AbortController(),
+    disposeWorker: vi.fn(() => disposal),
+    startWorkerInitialization: vi.fn(),
+    failOperation: vi.fn(),
+    errorMessage: String,
+  };
+  vm.createContext(state);
+  vm.runInContext(ts.transpile(handler!.getText(ast), { target: ts.ScriptTarget.ES2022 }), state);
+
+  const switching = state.initializeSelectedModel("int8-quality-preview");
+  expect(state.startWorkerInitialization).not.toHaveBeenCalled();
+  finishDisposal();
+  await switching;
+  expect(state.startWorkerInitialization).toHaveBeenCalledExactlyOnceWith("int8-quality-preview");
 });
 
 it("does not generate when ready was already queued before page cancellation", async () => {

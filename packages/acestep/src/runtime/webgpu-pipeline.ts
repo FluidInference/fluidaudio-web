@@ -166,10 +166,13 @@ import {
   ACE_OPT_0056_DIT_SELECTIVE_K4_KERNEL_SET_ID,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
+  ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES,
+  ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
   createAceReferenceDitSharedManifestView,
   isAceReferenceDitLayerWeightFile,
   requireAceOpt0009DitDensePackageIdentity,
   requireAceOpt0037DitK4PackageIdentity,
+  requireAceOpt0089DitFakeQuantPackageIdentity,
 } from "../webgpu/dit-fp16-package.js";
 import {
   ACE_TURBO_EIGHT_SAMPLER_SCHEDULE_PROFILE,
@@ -3064,7 +3067,8 @@ export function createAceWebGpuPipelineBackend(
         manifestUrl: configuration.manifestUrl,
         expectedManifestSha256: configuration.manifestSha256,
         expectedProfile: "fp16-dit-dense-experimental",
-        ...(identity.role === "opt-0009-rev7-oracle"
+        ...(identity.role === "opt-0009-rev7-oracle" ||
+            identity.role === "opt-0089-rev7-fake-quant-preview"
           ? { authenticatedDitDenseConverterRevision: 7 as const }
           : {}),
         signal,
@@ -3399,6 +3403,20 @@ export type AceDitDensePackageRuntimeIdentity =
         typeof ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES;
     }>
   | Readonly<{
+      readonly role: "opt-0089-rev7-fake-quant-preview";
+      readonly manifestSha256:
+        typeof ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256;
+      readonly manifestByteLength:
+        typeof ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES;
+      readonly runtimeProfile: typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE;
+      readonly kernelSetId:
+        | typeof ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID
+        | typeof ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID;
+      readonly layerBytes: typeof ACE_OPT_0009_DIT_MIXED_LAYER_BYTES;
+      readonly residentWeightBytes:
+        typeof ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES;
+    }>
+  | Readonly<{
       readonly role: "opt-0037-rev8-production";
       readonly manifestSha256: typeof ACE_OPT_0037_DIT_K4_MANIFEST_SHA256;
       readonly manifestByteLength: typeof ACE_OPT_0037_DIT_K4_MANIFEST_BYTES;
@@ -3428,6 +3446,23 @@ export function resolveAceDitDensePackageRuntimeIdentity(
 ): AceDitDensePackageRuntimeIdentity {
   if (
     configuration.manifestSha256 ===
+      ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256 &&
+    configuration.runtimeProfile === ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
+  ) {
+    return Object.freeze({
+      role: "opt-0089-rev7-fake-quant-preview",
+      manifestSha256: ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
+      manifestByteLength: ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES,
+      runtimeProfile: ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+      kernelSetId: kernelBackend === "portable"
+        ? ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID
+        : ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
+      layerBytes: ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
+      residentWeightBytes: ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES,
+    });
+  }
+  if (
+    configuration.manifestSha256 ===
       ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256 &&
     configuration.runtimeProfile === ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
   ) {
@@ -3446,9 +3481,9 @@ export function resolveAceDitDensePackageRuntimeIdentity(
     });
   }
   if (kernelBackend === "portable") {
-    // Only the OPT-0009 oracle package has a portable kernel counterpart.
+    // Only rev7-layout packages have a portable kernel counterpart.
     throw new Error(
-      "ACE portable mixed DiT accepts only the OPT-0009 rev7 oracle package",
+      "ACE portable mixed DiT accepts only an authenticated rev7 package",
     );
   }
   if (
@@ -3747,6 +3782,8 @@ function requireLoadedDitDenseManifestIdentity(
   const identity = resolveAceDitDensePackageRuntimeIdentity(configuration);
   if (identity.role === "opt-0009-rev7-oracle") {
     requireAceOpt0009DitDensePackageIdentity(loaded);
+  } else if (identity.role === "opt-0089-rev7-fake-quant-preview") {
+    requireAceOpt0089DitFakeQuantPackageIdentity(loaded);
   } else {
     requireAceOpt0037DitK4PackageIdentity(loaded);
   }

@@ -23,7 +23,7 @@ import {
 import lightModeIcon from "./engines/musicgen-acestep/assets/light-mode.png";
 import moonIcon from "./engines/musicgen-acestep/assets/moon.png";
 
-import { aceProductionWorkerConfiguration } from "./engines/musicgen-acestep/config.js";
+import { ACE_DEMO_MODEL_VARIANTS, aceDemoWorkerConfiguration, type AceDemoModelVariant } from "./engines/musicgen-acestep/config.js";
 import { aceInferenceWorkerName } from "./engines/musicgen-acestep/worker-name.js";
 import { CRASH_BREADCRUMB_KEY, writeProgressBreadcrumb } from "./engines/musicgen-acestep/progress-breadcrumb.js";
 import { claimPendingOutput, forgetPendingOutput, reclaimOrphanedOutputs } from "./engines/musicgen-acestep/pending-output-registry.js";
@@ -31,9 +31,7 @@ import {
   formatDecimalBytes,
   formatModelDownloadAmount,
   INITIAL_MODEL_DOWNLOAD_PROGRESS,
-  isModelDownloadComplete,
   MODEL_DOWNLOAD_TOTAL_BYTES,
-  shouldShowModelDownloadNote,
   updateModelDownloadProgress,
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
@@ -62,11 +60,11 @@ const bpmInput = requiredElement<HTMLInputElement>("bpm");
 const keyScaleInput = requiredElement<HTMLInputElement>("key-scale");
 const timeSignatureInput = requiredElement<HTMLInputElement>("time-signature");
 const vocalLanguageInput = requiredElement<HTMLInputElement>("vocal-language");
+const modelVariantSelect = requiredElement<HTMLSelectElement>("model-variant");
 const formError = requiredElement<HTMLParagraphElement>("form-error");
 const generateButton = requiredElement<HTMLButtonElement>("generate");
 const cancelButton = requiredElement<HTMLButtonElement>("cancel");
 const supportWarning = requiredElement<HTMLParagraphElement>("support-warning");
-const downloadNote = requiredElement<HTMLParagraphElement>("download-note");
 const progressPanel = requiredElement<HTMLElement>("progress-panel");
 const progressTitle = requiredElement<HTMLHeadingElement>("progress-title");
 const progressDetail = requiredElement<HTMLParagraphElement>("progress-detail");
@@ -74,6 +72,7 @@ const progressPercent = requiredElement<HTMLSpanElement>("progress-percent");
 const progressElement = requiredElement<HTMLProgressElement>("progress");
 const summaryDuration = requiredElement<HTMLElement>("summary-duration");
 const summaryTime = requiredElement<HTMLElement>("summary-time");
+const summaryModel = requiredElement<HTMLElement>("summary-model");
 const resultPanel = requiredElement<HTMLElement>("result-panel");
 const audioPlayer = requiredElement<HTMLAudioElement>("audio-player");
 const download = requiredElement<HTMLAnchorElement>("download");
@@ -91,10 +90,11 @@ const runtimeMetrics = requiredElement<HTMLPreElement>("runtime-metrics");
 const themeToggle = requiredElement<HTMLButtonElement>("theme-toggle");
 const themeIcon = requiredElement<HTMLImageElement>("theme-icon");
 
-const formControls = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea"));
+const formControls = Array.from(form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea"));
 
 let worker: Worker | undefined;
 let workerReady = false;
+let workerModelVariant: AceDemoModelVariant | undefined;
 let initializationRequestId: number | undefined;
 let activeJobId: number | undefined;
 let pendingRequest: AceGenerationRequest | undefined;
@@ -397,7 +397,7 @@ async function beginGeneration(): Promise<void> {
   diagnosticDetails = [];
   fatalGpuDiagnostic = false;
   modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
-  coldDownload = !isModelDownloadComplete(cacheDetails);
+  coldDownload = false;
   setBusy(true);
   resultPanel.hidden = true;
 
@@ -411,11 +411,35 @@ async function beginGeneration(): Promise<void> {
     },
   );
 
-  if (workerReady && worker !== undefined) {
+  const modelVariant = selectedModelVariant();
+  if (workerReady && worker !== undefined && workerModelVariant === modelVariant) {
     startPendingGeneration();
     return;
   }
-  void startWorkerInitialization();
+  void initializeSelectedModel(modelVariant);
+}
+
+function selectedModelVariant(): AceDemoModelVariant {
+  const value = modelVariantSelect.value;
+  if ((ACE_DEMO_MODEL_VARIANTS as readonly string[]).includes(value)) {
+    return value as AceDemoModelVariant;
+  }
+  throw new Error(`Unknown ACE model variant ${value}`);
+}
+
+async function initializeSelectedModel(modelVariant: AceDemoModelVariant): Promise<void> {
+  if (worker !== undefined) {
+    try {
+      await disposeWorker();
+    } catch (error) {
+      failOperation(`Could not switch models: ${errorMessage(error)}`, true);
+      return;
+    }
+  }
+  if (!busy || pendingRequest === undefined || pageLifecycle.signal.aborted) {
+    return;
+  }
+  await startWorkerInitialization(modelVariant);
 }
 
 function readGenerationRequest(): AceGenerationRequest {
@@ -457,7 +481,7 @@ function readGenerationRequest(): AceGenerationRequest {
   };
 }
 
-async function startWorkerInitialization(): Promise<void> {
+async function startWorkerInitialization(modelVariant: AceDemoModelVariant): Promise<void> {
   resetWorker();
   const acquisition = new AbortController();
   cacheAcquisition = acquisition;
@@ -476,12 +500,13 @@ async function startWorkerInitialization(): Promise<void> {
     });
     worker.addEventListener("message", onWorkerMessage);
     worker.addEventListener("error", onWorkerError);
+    workerModelVariant = modelVariant;
     initializationRequestId = nextRequestId++;
     setIndeterminateProgress("Preparing model", "Checking WebGPU and browser storage");
     worker.postMessage({
       type: "initialize",
       requestId: initializationRequestId,
-      configuration: aceProductionWorkerConfiguration(),
+      configuration: aceDemoWorkerConfiguration(modelVariant),
       modelSource: "cache-or-network",
       reportProgress: true,
       reportDiagnostics: true,
@@ -546,6 +571,9 @@ function onWorkerMessage(event: MessageEvent<unknown>): void {
   switch (message.type) {
     case "initialization-progress": {
       if (message.requestId !== initializationRequestId) return;
+      if (message.progress.message?.startsWith("network:") === true) {
+        coldDownload = true;
+      }
       const updated = updateModelDownloadProgress(modelProgress, message);
       if (updated !== modelProgress) {
         modelProgress = updated;
@@ -671,6 +699,7 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
       modelManifestSha256: result.modelManifestSha256,
       metrics: result.metrics,
     };
+    summaryModel.textContent = workerModelVariant === "int8-quality-preview" ? "INT8 quality preview" : "Production";
     modelProgress = updateModelDownloadProgress(modelProgress, {
       stage: "vae-load",
       message: "network: complete 168791552/168791552 bytes",
@@ -857,6 +886,7 @@ function resetWorker(): void {
   worker?.terminate();
   worker = undefined;
   workerReady = false;
+  workerModelVariant = undefined;
   initializationCancelRequested = false;
   workerDetails = undefined;
   void releaseRuntimeLock?.();
@@ -879,7 +909,6 @@ async function refreshCacheInfo(): Promise<void> {
     cacheDetails = undefined;
     cacheStatus.textContent = `Could not inspect model storage: ${errorMessage(error)}`;
   }
-  downloadNote.hidden = !shouldShowModelDownloadNote(cacheDetails);
   updateActionAvailability();
   updateRuntimeDetails();
 }
@@ -923,6 +952,7 @@ async function disposeWorker(): Promise<void> {
       current.terminate();
       worker = undefined;
       workerReady = false;
+      workerModelVariant = undefined;
       const release = releaseRuntimeLock;
       releaseRuntimeLock = undefined;
       await release?.();
