@@ -2,6 +2,7 @@ import type { AceModelProfileId } from "../capabilities.js";
 import {
   ACE_DIT_DENSE_K4_FP16_LAYOUT,
   ACE_DIT_DENSE_FP16_TILE_LAYOUT,
+  ACE_DIT_DENSE_INT8_TILE_LAYOUT,
   ACE_DIT_GEMM_TILE_LAYOUT,
 } from "../../model/manifest.js";
 import { createAceScopedBuffers } from "../scoped-buffer-allocation.js";
@@ -26,6 +27,7 @@ export type AceGemmWeightLayout =
   | "source-row-major"
   | typeof ACE_DIT_GEMM_WEIGHT_LAYOUT
   | typeof ACE_DIT_DENSE_FP16_TILE_LAYOUT
+  | typeof ACE_DIT_DENSE_INT8_TILE_LAYOUT
   | typeof ACE_DIT_DENSE_K4_FP16_LAYOUT;
 export const ACE_TILED_GEMM_WORKGROUP_BYTES =
   (TILED_A_VALUES + TILED_B_VALUES) * Float32Array.BYTES_PER_ELEMENT;

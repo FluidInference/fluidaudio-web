@@ -52,6 +52,7 @@ import {
 import {
   ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
   ACE_OPT_0037_DIT_K4_LAYER_BYTES,
   ACE_OPT_0037_DIT_K4_KERNEL_SET_ID,
   ACE_OPT_0037_DIT_K4_RESIDENT_WEIGHT_BYTES,
@@ -623,9 +624,12 @@ export class AceDitResidentModel implements AceDitGraphModel {
       ownedReferencePhase.packageManifest.profile !== "reference" ||
       ownedDensePhase.phases.length !== 1 ||
       ownedDensePhase.phases[0] !== "dit" ||
-      ownedDensePhase.packageManifest.profile !==
-        "fp16-dit-dense-experimental" ||
+      (ownedDensePhase.packageManifest.profile !==
+          "fp16-dit-dense-experimental" &&
+        ownedDensePhase.packageManifest.profile !==
+          "int8-dit-dense-experimental") ||
       (denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
+        denseRuntimeProfile !== ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE &&
         denseRuntimeProfile !== ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE &&
         denseRuntimeProfile !== ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE)
     ) {

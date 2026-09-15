@@ -89,6 +89,7 @@ import { planAceOpt0032DenseK4Partials } from
 import {
   ACE_OPT_0009_DIT_MIXED_RESIDENT_WEIGHT_BYTES,
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
   ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   type AceDitDenseRuntimeProfile,
@@ -1047,7 +1048,9 @@ export type AceDitGemmBackend =
   | "mixed-opt-0009"
   | "mixed-opt-0037-k4"
   | "mixed-opt-0056-selective"
-  | "mixed-opt-0088-portable";
+  | "mixed-opt-0088-portable"
+  | "mixed-opt-0091"
+  | "mixed-opt-0091-portable";
 
 export interface AceDitGemmSelection {
   readonly modelProfile: AceModelProfileId;
@@ -1072,7 +1075,9 @@ export interface AceDitMixedGemmSelection {
     | "mixed-opt-0009"
     | "mixed-opt-0037-k4"
     | "mixed-opt-0056-selective"
-    | "mixed-opt-0088-portable";
+    | "mixed-opt-0088-portable"
+    | "mixed-opt-0091"
+    | "mixed-opt-0091-portable";
   readonly denseRuntimeProfile: AceDitDenseRuntimeProfile;
   readonly attentionRuntimeProfile: AceDitAttentionRuntimeProfile;
   readonly gemmConfiguration: AceDitGemmSelection["gemmConfiguration"];
@@ -1083,7 +1088,9 @@ export interface AceDitMixedGemmSelection {
         | "opt-0009-fp16-fp32"
         | "opt-0037-k4-fp16-partials"
         | "opt-0056-selective-k4-exact-down"
-        | "opt-0088-dense-portable";
+        | "opt-0088-dense-portable"
+        | "opt-0091-int8-weight-only"
+        | "opt-0091-int8-weight-only-portable";
     }
   >;
   readonly attentionConfiguration: Extract<
@@ -1168,6 +1175,7 @@ export function resolveAceDitMixedGemmSelection(
   );
   if (
     denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
+    denseRuntimeProfile !== ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE &&
     denseRuntimeProfile !== ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE &&
     denseRuntimeProfile !== ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE
   ) {
@@ -1181,7 +1189,8 @@ export function resolveAceDitMixedGemmSelection(
         ACE_OPT_0062_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE ||
       attentionProfile.id ===
         ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE) &&
-    denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
+    denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
+    denseRuntimeProfile !== ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE
   ) {
     throw new Error(
       "OPT-0062 cannot combine with the revision-8 or selective dense profile",
@@ -1209,23 +1218,28 @@ export function resolveAceDitMixedGemmSelection(
       reference.modelProfile !== "reference-bf16" ||
       reference.backend !== "portable" ||
       reference.gemmConfiguration.backend !== "portable" ||
-      denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE ||
+      (denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
+        denseRuntimeProfile !== ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE) ||
       attentionProfile.id !==
         ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE
     ) {
       throw new Error(
         "Portable mixed DiT requires the reference-bf16 portable profile " +
-          "with the OPT-0009 dense and OPT-0070 attention runtime profiles",
+          "with an authenticated dense and OPT-0070 attention runtime profile",
       );
     }
     return Object.freeze({
       modelProfile: "reference-bf16",
-      backend: "mixed-opt-0088-portable",
+      backend: denseRuntimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE
+        ? "mixed-opt-0091-portable"
+        : "mixed-opt-0088-portable",
       denseRuntimeProfile,
       attentionRuntimeProfile: attentionProfile.id,
       gemmConfiguration: reference.gemmConfiguration,
       denseGemmConfiguration: Object.freeze({
-        backend: "opt-0088-dense-portable" as const,
+        backend: denseRuntimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE
+          ? "opt-0091-int8-weight-only-portable" as const
+          : "opt-0088-dense-portable" as const,
       }),
       attentionConfiguration: Object.freeze({ backend: "portable" as const }),
     });
@@ -1244,9 +1258,12 @@ export function resolveAceDitMixedGemmSelection(
     throw new Error("Optimized mixed DiT requires fixed 32-lane subgroups");
   }
   const capability = Object.freeze({ subgroupMinSize, subgroupMaxSize });
+  const int8 = denseRuntimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE;
   return Object.freeze({
     modelProfile: "reference-bf16",
-    backend: selective
+    backend: int8
+      ? "mixed-opt-0091"
+      : selective
       ? "mixed-opt-0056-selective"
       : k4
         ? "mixed-opt-0037-k4"
@@ -1258,7 +1275,9 @@ export function resolveAceDitMixedGemmSelection(
       capability,
     }),
     denseGemmConfiguration: Object.freeze({
-      backend: selective
+      backend: int8
+        ? "opt-0091-int8-weight-only"
+        : selective
         ? "opt-0056-selective-k4-exact-down"
         : k4
           ? "opt-0037-k4-fp16-partials"
@@ -5622,7 +5641,9 @@ export function planAceDitPhysicalCommandBufferCount(
     gemmBackend !== "mixed-opt-0009" &&
     gemmBackend !== "mixed-opt-0037-k4" &&
     gemmBackend !== "mixed-opt-0056-selective" &&
-    gemmBackend !== "mixed-opt-0088-portable"
+    gemmBackend !== "mixed-opt-0088-portable" &&
+    gemmBackend !== "mixed-opt-0091" &&
+    gemmBackend !== "mixed-opt-0091-portable"
   ) {
     throw new TypeError(
       `Unknown ACE DiT GEMM backend ${String(gemmBackend)}`,
@@ -5631,7 +5652,9 @@ export function planAceDitPhysicalCommandBufferCount(
   const gemm = (rows: number, inner: number, columns: number): AceGemmShape =>
     Object.freeze({ rows, inner, columns });
   const planGemm = (shape: AceGemmShape): AceCooperativeGemmPlan =>
-    gemmBackend === "portable" || gemmBackend === "mixed-opt-0088-portable"
+    gemmBackend === "portable" ||
+      gemmBackend === "mixed-opt-0088-portable" ||
+      gemmBackend === "mixed-opt-0091-portable"
       ? planAceTiledGemm(shape)
       : planAceSubgroupGemm(shape);
   const planDenseGemm = (shape: AceGemmShape): AceCooperativeGemmPlan =>
@@ -5639,7 +5662,9 @@ export function planAceDitPhysicalCommandBufferCount(
       gemmBackend === "mixed-opt-0056-selective"
       ? planAceOpt0032DenseK4Partials(shape)
       : gemmBackend === "mixed-opt-0009" ||
-          gemmBackend === "mixed-opt-0088-portable"
+          gemmBackend === "mixed-opt-0088-portable" ||
+          gemmBackend === "mixed-opt-0091" ||
+          gemmBackend === "mixed-opt-0091-portable"
         ? planAceOpt0009DenseGemm(shape)
         : planGemm(shape);
   const ranges = (shape: AceGemmShape): number =>
@@ -5690,6 +5715,7 @@ export function planAceDitPhysicalCommandBufferCount(
   ) => {
     if (
       (gemmBackend !== "mixed-opt-0009" &&
+        gemmBackend !== "mixed-opt-0091" &&
         gemmBackend !== "mixed-opt-0037-k4" &&
         gemmBackend !== "mixed-opt-0056-selective") ||
       !isAceFixed32TiledFullAttentionShape(shape)
@@ -5711,6 +5737,7 @@ export function planAceDitPhysicalCommandBufferCount(
     Array.from({ length: LAYER_COUNT }, (_, layerIndex) => {
       if (
         gemmBackend !== "mixed-opt-0009" &&
+        gemmBackend !== "mixed-opt-0091" &&
         gemmBackend !== "mixed-opt-0037-k4" &&
         gemmBackend !== "mixed-opt-0056-selective"
       ) {

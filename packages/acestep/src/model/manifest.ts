@@ -12,6 +12,7 @@ export const ACE_PACKAGE_CONVERTER_REVISION = 4;
 export const ACE_EXPERIMENTAL_VAE_PACKAGE_CONVERTER_REVISION = 6;
 export const ACE_OPT_0054_EXPERIMENTAL_VAE_PACKAGE_CONVERTER_REVISION = 7;
 export const ACE_EXPERIMENTAL_DIT_DENSE_PACKAGE_CONVERTER_REVISION = 8;
+export const ACE_PACKED_INT8_DIT_PACKAGE_CONVERTER_REVISION = 9;
 export const ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_ELEMENTS = 1_510_404_096;
 export const ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_BYTES = 3_020_808_192;
 export const ACE_EXPERIMENTAL_DIT_DENSE_LOGICAL_TENSOR_COUNT = 456;
@@ -31,6 +32,10 @@ export const ACE_DIT_DENSE_FP16_TILE_LAYOUT =
   "dit-gemm-n256-k32-tile-major-v1" as const;
 export const ACE_DIT_DENSE_FP16_TRANSFORMATION =
   "bf16-to-ieee-fp16-dit-gemm-n256-k32-tile-major-v1" as const;
+export const ACE_DIT_DENSE_INT8_TILE_LAYOUT =
+  "dit-gemm-n256-k32-int8-fp16-scale-tile-major-v1" as const;
+export const ACE_DIT_DENSE_INT8_TRANSFORMATION =
+  "bf16-to-symmetric-int8-fp16-scale-n256-k32-tile-major-v1" as const;
 export const ACE_DIT_DENSE_K4_FP16_LAYOUT =
   "dit-gemm-n128-k4-output4-lane32-k4-v1" as const;
 export const ACE_DIT_DENSE_K4_FP16_TRANSFORMATION =
@@ -105,7 +110,8 @@ export type AcePackageProfile =
   | "reference"
   | "fp16"
   | "fp16-vae-experimental"
-  | "fp16-dit-dense-experimental";
+  | "fp16-dit-dense-experimental"
+  | "int8-dit-dense-experimental";
 export type AcePackageFileKind =
   | "conversion-plan"
   | "upstream-asset"
@@ -116,7 +122,8 @@ export type AceTensorDtype =
   | "float16"
   | "float32"
   | "uint32"
-  | "uint32-bf16-pairs";
+  | "uint32-bf16-pairs"
+  | "uint32-int8-fp16-blocks";
 export type AceTensorPhase =
   | "planner"
   | "text"
@@ -134,6 +141,7 @@ export type AceTensorLayout =
   | "contiguous-nct-f32"
   | typeof ACE_DIT_GEMM_TILE_LAYOUT
   | typeof ACE_DIT_DENSE_FP16_TILE_LAYOUT
+  | typeof ACE_DIT_DENSE_INT8_TILE_LAYOUT
   | typeof ACE_DIT_DENSE_K4_FP16_LAYOUT
   | typeof ACE_VAE_CONV1D_LAYOUT
   | typeof ACE_VAE_CONV_TRANSPOSE1D_LAYOUT
@@ -152,6 +160,7 @@ export type AceTensorTransformation =
   | typeof ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION
   | typeof ACE_DIT_GEMM_FP16_TRANSFORMATION
   | typeof ACE_DIT_DENSE_FP16_TRANSFORMATION
+  | typeof ACE_DIT_DENSE_INT8_TRANSFORMATION
   | typeof ACE_DIT_DENSE_K4_FP16_TRANSFORMATION
   | typeof ACE_VAE_CONV1D_TRANSFORMATION
   | typeof ACE_VAE_CONV_TRANSPOSE1D_TRANSFORMATION
@@ -335,6 +344,7 @@ const DTYPE_BYTES: Readonly<Record<AceTensorDtype, number>> = {
   float32: 4,
   uint32: 4,
   "uint32-bf16-pairs": 4,
+  "uint32-int8-fp16-blocks": 4,
 };
 const TENSOR_PHASES = new Set<AceTensorPhase>([
   "planner",
@@ -355,6 +365,7 @@ const TENSOR_TRANSFORMATIONS = new Set([
   "bf16-to-fp32",
   ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION,
   ACE_DIT_GEMM_FP16_TRANSFORMATION,
+  ACE_DIT_DENSE_INT8_TRANSFORMATION,
   ACE_DIT_DENSE_K4_FP16_TRANSFORMATION,
   ACE_VAE_CONV1D_TRANSFORMATION,
   ACE_VAE_CONV_TRANSPOSE1D_TRANSFORMATION,
@@ -375,6 +386,7 @@ const NATIVE_LAYOUT_BY_TRANSFORMATION: Readonly<
   [ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION]: ACE_DIT_GEMM_TILE_LAYOUT,
   [ACE_DIT_GEMM_FP16_TRANSFORMATION]: ACE_DIT_GEMM_TILE_LAYOUT,
   [ACE_DIT_DENSE_FP16_TRANSFORMATION]: ACE_DIT_DENSE_FP16_TILE_LAYOUT,
+  [ACE_DIT_DENSE_INT8_TRANSFORMATION]: ACE_DIT_DENSE_INT8_TILE_LAYOUT,
   [ACE_DIT_DENSE_K4_FP16_TRANSFORMATION]: ACE_DIT_DENSE_K4_FP16_LAYOUT,
   [ACE_VAE_CONV1D_TRANSFORMATION]: ACE_VAE_CONV1D_LAYOUT,
   [ACE_VAE_CONV_TRANSPOSE1D_TRANSFORMATION]: ACE_VAE_CONV_TRANSPOSE1D_LAYOUT,
@@ -519,7 +531,8 @@ export function parseAcePackageManifest(
     root.profile !== "reference" &&
     root.profile !== "fp16" &&
     root.profile !== "fp16-vae-experimental" &&
-    root.profile !== "fp16-dit-dense-experimental"
+    root.profile !== "fp16-dit-dense-experimental" &&
+    root.profile !== "int8-dit-dense-experimental"
   ) {
     fail("unknown package profile");
   }
@@ -570,7 +583,10 @@ export function parseAcePackageManifest(
   if (root.profile === "fp16-vae-experimental") {
     validateExperimentalVaePayload(tensors, provenance.converterRevision);
   }
-  if (root.profile === "fp16-dit-dense-experimental") {
+  if (
+    root.profile === "fp16-dit-dense-experimental" ||
+    root.profile === "int8-dit-dense-experimental"
+  ) {
     validateExperimentalDitDensePayload(tensors, provenance.converterRevision);
   }
 
@@ -865,6 +881,8 @@ function parseProvenance(
     : profile === "fp16-dit-dense-experimental"
       ? authenticatedDitDenseConverterRevision ??
         ACE_EXPERIMENTAL_DIT_DENSE_PACKAGE_CONVERTER_REVISION
+      : profile === "int8-dit-dense-experimental"
+        ? ACE_PACKED_INT8_DIT_PACKAGE_CONVERTER_REVISION
       : ACE_PACKAGE_CONVERTER_REVISION;
   if (raw.converterRevision !== converterRevision) {
     fail("unsupported converter revision");
@@ -1030,6 +1048,7 @@ function parseTensors(
       (transformation === ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION ||
         transformation === ACE_DIT_GEMM_FP16_TRANSFORMATION ||
         transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION ||
+        transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION ||
         transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION ||
         transformation === ACE_VAE_K1_FP16_TILE_TRANSFORMATION ||
         transformation ===
@@ -1042,7 +1061,13 @@ function parseTensors(
     }
     const layoutBase = rowSharded ? "row-shard-axis0" : "source-row-major";
     let expectedStorageShape: number[];
-    if (transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION) {
+    if (transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION) {
+      const [columns, inner] = logicalShape;
+      if (columns! % 256 !== 0 || inner! % 32 !== 0) {
+        fail(`${path} has an invalid packed INT8 DiT shape`);
+      }
+      expectedStorageShape = [columns! / 256, inner! / 32, 2_176];
+    } else if (transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION) {
       const [columns, inner] = logicalShape;
       if (columns! % 128 !== 0 || inner! % 4 !== 0) {
         fail(`${path} has an invalid packed DiT K4 shape`);
@@ -1461,33 +1486,47 @@ function validateExperimentalDitDensePayload(
   let parameterElements = 0;
   let parameterBytes = 0;
   const authenticatedRev7 = converterRevision === 7;
+  const packedInt8 =
+    converterRevision === ACE_PACKED_INT8_DIT_PACKAGE_CONVERTER_REVISION;
   for (const [name, tensor] of ditTensors) {
     const commonValid = tensor.logicalTensor === name &&
       tensor.partStart === 0 &&
       tensor.partEnd === tensor.logicalShape[0];
     const valid = denseNames.has(name)
       ? commonValid &&
-        tensor.dtype === "float16" &&
         tensor.logicalShape.length === 2 &&
-        (authenticatedRev7
-          ? tensor.layout === ACE_DIT_DENSE_FP16_TILE_LAYOUT &&
-            tensor.transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION &&
+        (packedInt8
+          ? tensor.dtype === "uint32-int8-fp16-blocks" &&
+            tensor.layout === ACE_DIT_DENSE_INT8_TILE_LAYOUT &&
+            tensor.transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION &&
             tensor.logicalShape[0]! % 256 === 0 &&
             tensor.logicalShape[1]! % 32 === 0 &&
-            arraysEqual(tensor.storageShape, tensor.logicalShape)
-          : converterRevision ===
-              ACE_EXPERIMENTAL_DIT_DENSE_PACKAGE_CONVERTER_REVISION &&
-            tensor.layout === ACE_DIT_DENSE_K4_FP16_LAYOUT &&
-            tensor.transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION &&
-            tensor.logicalShape[0]! % 128 === 0 &&
-            tensor.logicalShape[1]! % 4 === 0 &&
             arraysEqual(tensor.storageShape, [
-              tensor.logicalShape[0]! / 128,
-              tensor.logicalShape[1]! / 4,
-              4,
-              32,
-              4,
-            ]))
+              tensor.logicalShape[0]! / 256,
+              tensor.logicalShape[1]! / 32,
+              2_176,
+            ])
+          : tensor.dtype === "float16" &&
+            (authenticatedRev7
+              ? tensor.layout === ACE_DIT_DENSE_FP16_TILE_LAYOUT &&
+                tensor.transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION &&
+                tensor.logicalShape[0]! % 256 === 0 &&
+                tensor.logicalShape[1]! % 32 === 0 &&
+                arraysEqual(tensor.storageShape, tensor.logicalShape)
+              : converterRevision ===
+                  ACE_EXPERIMENTAL_DIT_DENSE_PACKAGE_CONVERTER_REVISION &&
+                tensor.layout === ACE_DIT_DENSE_K4_FP16_LAYOUT &&
+                tensor.transformation ===
+                  ACE_DIT_DENSE_K4_FP16_TRANSFORMATION &&
+                tensor.logicalShape[0]! % 128 === 0 &&
+                tensor.logicalShape[1]! % 4 === 0 &&
+                arraysEqual(tensor.storageShape, [
+                  tensor.logicalShape[0]! / 128,
+                  tensor.logicalShape[1]! / 4,
+                  4,
+                  32,
+                  4,
+                ])))
       : crossCacheNames.has(name)
         ? commonValid &&
           tensor.dtype === "uint32-bf16-pairs" &&
@@ -1511,7 +1550,9 @@ function validateExperimentalDitDensePayload(
   }
   if (
     parameterElements !== ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_ELEMENTS ||
-    parameterBytes !== ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_BYTES
+    parameterBytes !== (packedInt8
+      ? 1_699_602_432
+      : ACE_EXPERIMENTAL_DIT_DENSE_PARAMETER_BYTES)
   ) {
     fail(
       "experimental mixed DiT layer payload does not match its exact " +
@@ -1530,11 +1571,13 @@ function validateStoragePolicy(
   const valid =
     (transformation === "preserve-bf16-bits-pack-u32-pairs" &&
       (profile === "reference" ||
-        profile === "fp16-dit-dense-experimental") &&
+        profile === "fp16-dit-dense-experimental" ||
+        profile === "int8-dit-dense-experimental") &&
       dtype === "uint32-bf16-pairs") ||
     (transformation === ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION &&
       (profile === "reference" ||
-        profile === "fp16-dit-dense-experimental") &&
+        profile === "fp16-dit-dense-experimental" ||
+        profile === "int8-dit-dense-experimental") &&
       dtype === "uint32-bf16-pairs") ||
     (transformation === "bf16-to-ieee-fp16" &&
       (profile === "fp16" || profile === "fp16-vae-experimental") &&
@@ -1551,6 +1594,10 @@ function validateStoragePolicy(
       profile === "fp16-dit-dense-experimental" &&
       converterRevision === 7 &&
       dtype === "float16") ||
+    (transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION &&
+      profile === "int8-dit-dense-experimental" &&
+      converterRevision === ACE_PACKED_INT8_DIT_PACKAGE_CONVERTER_REVISION &&
+      dtype === "uint32-int8-fp16-blocks") ||
     ((transformation === "bf16-to-fp32" ||
       transformation === ACE_VAE_CONV1D_TRANSFORMATION ||
       transformation === ACE_VAE_CONV_TRANSPOSE1D_TRANSFORMATION ||
@@ -1589,7 +1636,8 @@ function validateNativeTensorContract(
     transformation === ACE_DIT_GEMM_FP16_TRANSFORMATION;
   const ditDenseFp16Transformation =
     transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION ||
-    transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION;
+    transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION ||
+    transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION;
   const ditGemmSource = DIT_GEMM_SOURCE.test(source);
   const ditDenseFp16Source = DIT_REPEATED_DENSE_SOURCE.test(source);
   const conv1dTransformation =
@@ -1621,7 +1669,10 @@ function validateNativeTensorContract(
       phase !== "dit" ||
       logicalShape.length !== 2 ||
       logicalShape[0]! %
-        (transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION ? 256 : 128) !==
+        (transformation === ACE_DIT_DENSE_FP16_TRANSFORMATION ||
+            transformation === ACE_DIT_DENSE_INT8_TRANSFORMATION
+          ? 256
+          : 128) !==
         0 ||
       logicalShape[1]! %
         (transformation === ACE_DIT_DENSE_K4_FP16_TRANSFORMATION ? 4 : 32) !==

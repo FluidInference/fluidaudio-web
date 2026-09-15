@@ -18,8 +18,9 @@ have a portable fallback. Source-audio editing, cover generation, and the VAE
 encoder are outside the current scope. Support for phones and other browsers
 must be validated on the target device.
 
-The FluidAudio music page uses direct generation and a **5.75 GB** model cache.
-Its planner is disabled. The package's development demo also exposes the
+The FluidAudio music page uses direct generation and a **5.75 GB** production
+model cache. Its optional packed INT8 preview uses **4.43 GB**. The planner is
+disabled. The package's development demo also exposes the
 planner and uses a different reference manifest. The site's selected model
 packages are defined in [config.ts](../../src/engines/musicgen-acestep/config.ts).
 

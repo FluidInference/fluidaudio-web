@@ -20,7 +20,7 @@ export const REFERENCE_PAYLOAD_PREFIX_SHA256 = "18f36c6420976475af65ecd833ca56c6
 export const DIRECT_REFERENCE_MANIFEST_SHA256 = "b44a3d157009d035a8f20aa752db4ceef2fac5bd140eff13be8f7488bc978089";
 export const DIRECT_REFERENCE_MANIFEST_REMOTE_NAME = `direct-manifest-${DIRECT_REFERENCE_MANIFEST_SHA256}.json`;
 export const DIT_MANIFEST_SHA256 = "d3fc0020efcf60702db411da2fd4b93e9bb84f1437ed310aef01c892727e452f";
-export const INT8_QUALITY_PREVIEW_DIT_MANIFEST_SHA256 = "ef8355b9cffff466b018b51275923982b071234933fe8a32897915eeeb01fa36";
+export const INT8_QUALITY_PREVIEW_DIT_MANIFEST_SHA256 = "a3233c9f97bc151b5ffa2a6cd8c9ecaee4e555497ee6fda20b70becaf7d55da1";
 export const VAE_MANIFEST_SHA256 = "36a54d79777d6826088095ba6ebc028fb4bea546368c0f0a29cd0eee8d656da7";
 
 export const ACE_DEMO_MODEL_VARIANTS = ["production", "int8-quality-preview"] as const;
@@ -38,11 +38,12 @@ export function aceProductionWorkerConfiguration() {
   return aceDemoWorkerConfiguration("production");
 }
 
-/** Select the approved production model or the full-size OPT-0089 listening preview. */
+/** Select the approved production model or the packed OPT-0091 INT8 preview. */
 export function aceDemoWorkerConfiguration(variant: AceDemoModelVariant) {
   const ditManifestSha256 = variant === "int8-quality-preview" ? INT8_QUALITY_PREVIEW_DIT_MANIFEST_SHA256 : DIT_MANIFEST_SHA256;
-  const ditPackage = variant === "int8-quality-preview" ? "dit-int8-fakequant" : "dit-revision7";
-  const localDitDirectory = variant === "int8-quality-preview" ? "files-fp16-dit-rev7-int8-fakequant" : "files-fp16-dit-rev7-oracle";
+  const ditPackage = variant === "int8-quality-preview" ? "dit-int8-packed" : "dit-revision7";
+  const localDitDirectory =
+    variant === "int8-quality-preview" ? `files-int8-dit-rev9/${INT8_QUALITY_PREVIEW_DIT_MANIFEST_SHA256}` : "files-fp16-dit-rev7-oracle";
   return {
     manifestUrl: productionManifestUrl("files-reference", "reference", REFERENCE_PAYLOAD_PREFIX_SHA256, DIRECT_REFERENCE_MANIFEST_REMOTE_NAME),
     manifestSha256: DIRECT_REFERENCE_MANIFEST_SHA256,
@@ -51,7 +52,7 @@ export function aceDemoWorkerConfiguration(variant: AceDemoModelVariant) {
     ditDensePackage: {
       manifestUrl: productionManifestUrl(localDitDirectory, ditPackage, ditManifestSha256),
       manifestSha256: ditManifestSha256,
-      runtimeProfile: "opt-0009-fp16-fp32-dense-v1",
+      runtimeProfile: variant === "int8-quality-preview" ? "opt-0091-int8-weight-only-v1" : "opt-0009-fp16-fp32-dense-v1",
     },
     ditAttentionRuntimeProfile: "opt-0070-fixed32-quad-query32-full-self-production-v1",
     vaePackage: {

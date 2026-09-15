@@ -35,6 +35,23 @@ export const ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256 =
 export const ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES =
   ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES;
 
+export const ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256 =
+  "a3233c9f97bc151b5ffa2a6cd8c9ecaee4e555497ee6fda20b70becaf7d55da1" as const;
+export const ACE_OPT_0091_DIT_INT8_MANIFEST_BYTES = 262_613 as const;
+export const ACE_OPT_0091_DIT_INT8_CONVERTER_REVISION = 9 as const;
+export const ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE =
+  "opt-0091-int8-weight-only-v1" as const;
+export const ACE_OPT_0091_DIT_INT8_KERNEL_SET_ID =
+  "opt-0091-int8-weight-only-fixed32-v1" as const;
+export const ACE_OPT_0091_DIT_INT8_PORTABLE_KERNEL_SET_ID =
+  "opt-0091-int8-weight-only-portable-v1" as const;
+export const ACE_OPT_0091_DIT_INT8_LAYER_BYTES = 1_699_602_432 as const;
+export const ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES =
+  1_829_712_128 as const;
+export const ACE_OPT_0091_DIT_INT8_WEIGHT_FILES = Object.freeze([
+  ...ACE_OPT_0009_DIT_DENSE_WEIGHT_FILES,
+]);
+
 export const ACE_OPT_0037_DIT_K4_MANIFEST_SHA256 =
   "a2f70c123fb7c4dbc3b51be68b4b494107c13b575ad2bed68c639791c93574d1" as const;
 export const ACE_OPT_0037_DIT_K4_MANIFEST_BYTES = 257_789 as const;
@@ -65,6 +82,7 @@ export const ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID =
 
 export type AceDitDenseRuntimeProfile =
   | typeof ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
+  | typeof ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE
   | typeof ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE
   | typeof ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE;
 
@@ -121,6 +139,30 @@ export function requireAceOpt0089DitFakeQuantPackageIdentity(
     ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
     "OPT-0089 fake-quant DiT package identity changed",
   );
+}
+
+export function requireAceOpt0091DitInt8PackageIdentity(
+  loaded: AceLoadedPackageManifest,
+): void {
+  const manifest = loaded.manifest;
+  const weightFiles = manifest.files.filter((file) => file.kind === "weights");
+  if (
+    loaded.manifestSha256 !== ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256 ||
+    loaded.manifestByteLength !== ACE_OPT_0091_DIT_INT8_MANIFEST_BYTES ||
+    manifest.profile !== "int8-dit-dense-experimental" ||
+    manifest.provenance.converterRevision !==
+      ACE_OPT_0091_DIT_INT8_CONVERTER_REVISION ||
+    weightFiles.length !== ACE_OPT_0091_DIT_INT8_WEIGHT_FILES.length ||
+    ACE_OPT_0091_DIT_INT8_WEIGHT_FILES.some((name, index) =>
+      weightFiles[index]?.name !== name ||
+      weightFiles[index]?.byteLength !==
+        (index % 2 === 0 ? 68_584_448 : 2_232_320)
+    ) ||
+    weightFiles.reduce((sum, file) => sum + file.byteLength, 0) !==
+      ACE_OPT_0091_DIT_INT8_LAYER_BYTES
+  ) {
+    throw new Error("OPT-0091 packed INT8 DiT package identity changed");
+  }
 }
 
 function requireAceRev7DitDensePackageIdentity(
