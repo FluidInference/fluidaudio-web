@@ -26,6 +26,9 @@ export class DicoseStemEngine implements SeparationEngine {
   private readonly baseUrl: string;
   private readonly outputMode: DiCoSeOutputMode;
   private client: DiCoSeWorkerClient | null = null;
+  private loadPromise: Promise<void> | null = null;
+  private disposePromise: Promise<void> | null = null;
+  private disposed = false;
   private onClientProgress: ((p: DiCoSeProgress) => void) | null = null;
 
   constructor(opts: DicoseStemEngineOptions = {}) {
@@ -34,8 +37,21 @@ export class DicoseStemEngine implements SeparationEngine {
   }
 
   async load(onProgress?: ProgressCb): Promise<void> {
-    if (this.client) return;
+    if (this.disposed) throw new DOMException("DiCoSe engine has been disposed", "AbortError");
+    if (this.loadPromise !== null) return await this.loadPromise;
+    if (this.client !== null) return;
+    const loadPromise = this.loadInner(onProgress);
+    this.loadPromise = loadPromise;
+    try {
+      await loadPromise;
+    } finally {
+      if (this.loadPromise === loadPromise) this.loadPromise = null;
+    }
+  }
+
+  private async loadInner(onProgress?: ProgressCb): Promise<void> {
     const support = await checkSupport();
+    if (this.disposed) throw new DOMException("DiCoSe engine was disposed while loading", "AbortError");
     if (!support.supported) {
       throw new Error(`DiCoSe needs WebGPU features this browser lacks: ${support.errors.join("; ")}`);
     }
@@ -46,16 +62,25 @@ export class DicoseStemEngine implements SeparationEngine {
       createWorker: () => new Worker(new URL("./worker.ts", import.meta.url), { type: "module", name: "dicose-webgpu" }),
       onProgress: (p) => this.onClientProgress?.(p),
     });
+    this.client = client;
     this.onClientProgress = (p) => onProgress?.(loadProgress(p));
     try {
       await client.initialize();
+      if (this.client !== client) {
+        await this.disposePromise?.catch(() => undefined);
+        throw new DOMException("DiCoSe engine was disposed while loading", "AbortError");
+      }
     } catch (err) {
-      void client.dispose();
+      if (this.client === client) {
+        this.client = null;
+        await client.dispose().catch(() => undefined);
+      } else {
+        await this.disposePromise?.catch(() => undefined);
+      }
       throw err;
     } finally {
       this.onClientProgress = null;
     }
-    this.client = client;
   }
 
   /** Full-band decode via the vendored decoder: stereo preserved, WAV kept at
@@ -91,10 +116,16 @@ export class DicoseStemEngine implements SeparationEngine {
     return stems;
   }
 
-  async dispose(): Promise<void> {
+  dispose(): Promise<void> {
+    if (this.disposePromise !== null) return this.disposePromise;
+    this.disposed = true;
     const client = this.client;
     this.client = null;
-    if (client) await client.dispose();
+    if (client === null) return Promise.resolve();
+    this.disposePromise = client.dispose().finally(() => {
+      this.disposePromise = null;
+    });
+    return this.disposePromise;
   }
 }
 

@@ -45,6 +45,7 @@
     "build": "npm run acestep:build && npm run dicose:build && tsc --noEmit && vite build && node scripts/postbuild-strip-wasm.mjs",
     "preview": "vite preview",
     "test:unit": "node --test test/*.test.mjs",
+    "test:integration": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "gpu:verify": "node scripts/gpu-verify.mjs",
     "gpu:bench": "node scripts/gpu-bench.mjs",
@@ -57,11 +58,12 @@
     "wasm:build": "cd rust/wasm-kernels && RUSTFLAGS='-C target-feature=+simd128' cargo build --release --target wasm32-unknown-unknown && cp target/wasm32-unknown-unknown/release/wasm_kernels.wasm ../../src/gpu/wasm-kernels.wasm",
     "wasm:verify": "node scripts/wasm-verify.mjs",
     "backend:parity": "node scripts/backend-parity.mjs",
-    "format": "prettier --write \"src/**/*.{ts,js}\" \"scripts/**/*.mjs\" \"test/**/*.mjs\" \"*.ts\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js}\" \"scripts/**/*.mjs\" \"test/**/*.mjs\" \"*.ts\"",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"scripts/**/*.mjs\" \"test/**/*.{ts,mjs}\" \"*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js}\" \"scripts/**/*.mjs\" \"test/**/*.{ts,mjs}\" \"*.ts\"",
     "ci:smoke": "node scripts/interface-conformance.mjs && node scripts/ci-smoke-parakeet.mjs && node scripts/ci-smoke-eou.mjs && node scripts/ci-smoke-kokoro.mjs",
     "sdk:build": "node scripts/build-sdk.mjs",
     "sdk:pack": "node scripts/build-sdk.mjs && cd dist-sdk && npm pack --pack-destination ..",
+    "sdk:test": "npm run sdk:build && node scripts/test-sdk.mjs",
     "conformance": "node scripts/interface-conformance.mjs",
     "conformance:numeric": "node scripts/backend-conformance.mjs"
   },
@@ -72,9 +74,11 @@
   },
   "devDependencies": {
     "@kmamal/gpu": "^0.2.1",
-    "onnxruntime-node": "^1.27.0",
+    "onnxruntime-node": "^1.30.0",
     "prettier": "^3.9.6",
     "typescript": "^5.6.3",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^4.1.11",
+    "yaml": "^2.9.1"
   }
 }

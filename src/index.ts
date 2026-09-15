@@ -5,8 +5,8 @@
 // The root exports the shared types, the engine registry (id → lazy factory),
 // and the audio-decoding helper the demo pages use.
 
-export { ENGINES } from "./engines/registry.js";
-export type { EngineEntry, EngineKind, EngineCategory } from "./engines/registry.js";
+export { ENGINES } from "./engines/sdk-registry.js";
+export type { EngineEntry, EngineKind, EngineCategory } from "./engines/sdk-registry.js";
 export type {
   Engine,
   AsrEngine,

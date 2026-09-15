@@ -1,33 +1,80 @@
 # FluidAudio Web
 
-Local speech AI in the browser — ASR, TTS, VAD, speaker diarization, and
-music generation on **hand-written WebGPU (WGSL) + WASM-SIMD kernels**. No onnxruntime-web, no
-transformers.js, no server: model weights stream from Hugging Face on first
-use, cache client-side, and everything runs on the visitor's machine. This is
-the browser sibling of the Swift/CoreML
+Speech recognition, text to speech, music generation, and audio analysis in
+your browser. Inference runs locally using custom WebGPU and WASM kernels;
+audio is not uploaded. Model weights download on first use.
+
+This is the browser sibling of the Swift/CoreML
 [FluidAudio](https://github.com/FluidInference/FluidAudio) framework.
 
-**1 hour of audio transcribed in ~12 seconds — 293× real-time — in a Chrome
-tab** (Parakeet TDT 0.6B v3, multilingual; verified across three runs on the
-1-hour benchmark, Chrome/macOS/WebGPU; ~199× under the node harness).
+## Try it
 
-**Live:** https://fluidinference.github.io/fluidaudio-web/ — one page per
-function: [speech to text](https://fluidinference.github.io/fluidaudio-web/)
-at the root, [text to speech](https://fluidinference.github.io/fluidaudio-web/tts.html),
-[music generation + stem splitting](https://fluidinference.github.io/fluidaudio-web/music.html),
-[other audio models](https://fluidinference.github.io/fluidaudio-web/analyze.html)
-(VAD, diarization, stems), and [live captions](https://fluidinference.github.io/fluidaudio-web/live.html).
-Mirror: https://fluidaudio-web.hanweng9.workers.dev. Both deploy automatically
-from every commit to `main`.
+- [Speech to text](https://fluidinference.github.io/fluidaudio-web/)
+- [Text to speech](https://fluidinference.github.io/fluidaudio-web/tts.html)
+- [Music generation and stem splitting](https://fluidinference.github.io/fluidaudio-web/music.html)
+- [Audio analysis](https://fluidinference.github.io/fluidaudio-web/analyze.html)
+- [Live captions](https://fluidinference.github.io/fluidaudio-web/live.html)
 
-> **Why hand-written kernels?** The first iteration of this repo ran the same
-> models through onnxruntime-web. Rewriting the hot paths as raw WGSL + Rust
-> WASM-SIMD (see [`docs/ORT_REMOVAL.md`](docs/ORT_REMOVAL.md) and
-> [`docs/RAW_WEBGPU.md`](docs/RAW_WEBGPU.md)) took Parakeet from 33× to **100×+
-> real-time in-browser** — batched-window encoding, f16 weight storage _and_
-> f16 compute (2× ALU on Apple GPUs), a 3-stage GPU/CPU pipeline, and parallel
-> RNNT decode on a Web Worker pool. Every optimization is gated on
-> token-identical output.
+[Cloudflare mirror](https://fluidaudio-web.hanweng9.workers.dev).
+
+Use a desktop browser with WebGPU for best performance. Speech engines also
+support WASM-SIMD. Music generation requires WebGPU with `shader-f16`; stem
+splitting additionally requires fixed 32-wide subgroups. These two engines
+have no WASM fallback.
+
+Downloads, cached model loading, and shader compilation all affect startup
+time. Caching depends on browser storage availability and limits; some large
+speech-model files may download again. Performance varies by device, browser,
+model, and input. See [benchmarks](docs/BENCHMARKS.md) for measurements.
+
+## Music generation
+
+Open the music page, enter a prompt, and select **Generate song**. Leave lyrics
+empty for an instrumental. When generation finishes, use the audio player or
+download the stereo 48 kHz WAV. Songs can be 10 seconds to 4 minutes long.
+
+The first generation downloads **5.75 GB** from the FluidInference Hugging Face
+mirror and caches it in browser storage (OPFS). Later generations still need
+to read and prepare model data. Settings shows cache usage and lets you delete
+the downloaded model.
+
+The site uses ACE-Step 1.5 Turbo in direct mode. The optional planner is
+available in the underlying runtime but disabled on the public music page.
+See the [ACE-Step README](packages/acestep/README.md) for implementation and
+validation details.
+
+Choose **Split stems** on a finished song to get drums, bass, other, vocals,
+and a derived instrumental, each with playback and download controls. DiCoSe
+downloads another **623 MB** on first use. The site defaults to its faster
+deterministic mode, which skips refinement. See the
+[DiCoSe README](packages/dicose/README.md) for mode differences and requirements.
+
+## Run locally
+
+Requires Node.js `^20.19.0` or `>=22.12.0` and npm. From the repository root:
+
+```bash
+npm ci
+npm run acestep:build
+npm run dicose:build
+npm run dev
+```
+
+Open `http://localhost:5173/`. Build the workspace libraries before starting
+the site: its imports resolve to their generated `dist/` files.
+
+```bash
+npm run build          # Build libraries, type-check, and bundle the site
+npm run test:unit      # Shared UI progress tests
+npm run acestep:test   # ACE-Step tests
+npm run dicose:test    # DiCoSe tests
+npm run format:check   # Formatting check
+```
+
+Model weights are downloaded at runtime and are excluded from the site build.
+Set `VITE_ACE_MODEL_ORIGIN` to use another ACE model host or a local package
+directory. The default host and package identities are in
+[config.ts](src/engines/musicgen-acestep/config.ts).
 
 ## SDK
 
@@ -40,219 +87,54 @@ import { ParakeetV3Engine } from "@fluidinference/fluidaudio-web/asr-parakeet";
 import { decodeToMono16k } from "@fluidinference/fluidaudio-web";
 
 const asr = new ParakeetV3Engine();
-await asr.load((p) => console.log(p.file, p.fraction));
-asr.setVocabulary(["NVIDIA", "Newrez"]); // optional: fuzzy-correct domain terms
-asr.setItn(true); // optional: "twenty one" → "21"
-const { text } = await asr.transcribe(await decodeToMono16k(fileArrayBuffer), {
-  // optional: transcription progress on long files, emitted at window boundaries
-  onProgress: (p) => console.log(`${(p.fraction * 100).toFixed(0)}% — ${p.processedSeconds.toFixed(0)}s / ${p.totalSeconds.toFixed(0)}s`),
-});
-await asr.dispose();
+try {
+  await asr.load((p) => console.log(p.file, p.fraction));
+  const audio = await decodeToMono16k(fileArrayBuffer);
+  const { text } = await asr.transcribe(audio);
+  console.log(text);
+} finally {
+  await asr.dispose();
+}
 ```
 
-True streaming (EOU / Nemotron) and captions (v0.2.0):
+Engine subpaths: `/asr-parakeet`, `/asr-whisper`, `/asr-nemotron`,
+`/tts-kokoro` (English or Chinese), `/vad-silero`, `/diarization-sortformer`,
+and `/eou-parakeet`. The published package can lag behind this repository;
+check its version before using newer APIs.
 
-```ts
-import { MicCapture, segmentsToSrt } from "@fluidinference/fluidaudio-web";
-import { ParakeetEouEngine } from "@fluidinference/fluidaudio-web/eou-parakeet";
+Use a bundler that supports module workers and `new URL(..., import.meta.url)`
+assets, such as Vite or webpack 5. The source SDK supports streaming, caption
+exports, and optional Parakeet vocabulary correction and inverse text
+normalization. See [streaming](docs/STREAMING.md) and [end-of-utterance detection](docs/EOU.md).
 
-const engine = new ParakeetEouEngine();
-await engine.load();
+To prepare a release, bump the root `package.json` version and run
+`npm run build`, `npm run sdk:test`, and `npm run sdk:pack`. The SDK test validates
+the tarball in a clean consumer. The SDK registry includes only packaged engines;
+VoiceChat, music generation, and DiCoSe remain site-only.
 
-// live: feed mic chunks, get cumulative text; <EOU> events + word segments
-const mic = new MicCapture();
-await mic.start();
-let pos = 0;
-setInterval(async () => {
-  const { samples, total } = mic.since(pos);
-  const text = await engine.push(samples); // conformer caches carried — no re-decode
-  pos = total;
-  console.log(text, engine.streamEvents, engine.streamSegments);
-}, 300);
-// on stop: const final = await engine.finish(); engine.reset();
+## Development references
 
-// batch: word timestamps → SRT captions
-const r = await engine.transcribe({ samples, sampleRate: 16000 });
-const srt = segmentsToSrt(r.segments); // also: segmentsToVtt, groupCues
-```
+- [Engine catalog](src/engines/registry.ts)
+- [Architecture](docs/ARCHITECTURE.md) and [adding a model](docs/PORTING.md)
+- [WebGPU implementation](docs/RAW_WEBGPU.md) and [ONNX Runtime removal](docs/ORT_REMOVAL.md)
+- [ACE-Step development rules](packages/acestep/AGENTS.md) and [optimization ledger](packages/acestep/optimization/LEDGER.md)
+- [DiCoSe correctness audit](packages/dicose/optimization/CORRECTNESS_AUDIT.md)
 
-One tree-shakeable subpath per engine — `/asr-parakeet`, `/asr-whisper`,
-`/asr-nemotron`, `/tts-kokoro` (`{ lang: "en" | "zh" }`), `/vad-silero`,
-`/diarization-sortformer`, `/eou-parakeet` — plus `/registry` (enumerate
-engines, instantiate via `entry.make()`), `/textnorm`, and `/vocab-rescorer`.
-Requires a bundler with `new URL(..., import.meta.url)` asset + module-worker
-support (Vite, webpack 5 work out of the box). The demo site consumes the
-identical source, so every site gate doubles as SDK regression coverage.
+GitHub Pages deploys `main` only after all [CI jobs](.github/workflows/ci.yml)
+pass. Cloudflare Workers uses a separate deployment integration; see the
+[Worker configuration](wrangler.jsonc).
 
-Release flow: bump `version` in the root `package.json` → `npm run sdk:pack` →
-`cd dist-sdk && npm publish --access public`.
+## Credits and licenses
 
-## Engines
+Code is MIT licensed; model weights retain their upstream licenses. See
+[third-party licenses](THIRD-PARTY-LICENSES.md).
 
-Measured in-browser (Chrome/macOS, WebGPU, warm) on a real 284.5s recording via
-the since-removed verify page — not a lab clip. RTFx = audio-seconds per wall-second (for TTS:
-audio _generated_ per wall-second; not comparable to ASR). Each registry entry
-carries a `category` (`stt` / `tts` / `analysis`) that routes it to the matching
-demo page.
+Hamza Qayyum ([Narcotic Software](https://narcotic.sh)) built the ACE-Step
+browser port and DiCoSe WebGPU runtime, vendored under `packages/`. FluidInference
+integrated them and continues their development. His original ACE-Step demo is
+at [acestep.narcotic.sh](https://acestep.narcotic.sh).
 
-| Engine                   | Model                             | RTFx                                                                                                      | Notes                                                                                                                                                                                      |
-| ------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `asr-whisper`            | Whisper (99 langs)                | re-measuring                                                                                              | KV-cached decode, f16 weights; long-form chunking just landed (the prior 114× was measured on the first-30s-only bug and is retracted)                                                     |
-| `asr-parakeet`           | Parakeet TDT 0.6B v3              | **282×** (1hr file)                                                                                       | 2.15% WER LibriSpeech test-clean (core parity-gated vs the reference); worker-pool RNNT decode; opt-in ITN + custom vocabulary                                                             |
-| `vad-silero`             | Silero VAD v5                     | 79×                                                                                                       | WASM-SIMD (tiny sequential model by design)                                                                                                                                                |
-| `diarization-sortformer` | NVIDIA Sortformer 4-spk           | 79×                                                                                                       | windowed with 24-permutation overlap stitching                                                                                                                                             |
-| `tts-kokoro`             | Kokoro 82M (en + zh)              | 4.7× en / 5.6× zh                                                                                         | waveform corr ~0.97 vs reference; en input auto-normalized ("$4.50" is spoken, not dropped)                                                                                                |
-| `asr-nemotron`           | Nemotron 3.5 streaming (40 langs) | realtime+                                                                                                 | cache-aware streaming RNNT                                                                                                                                                                 |
-| `eou-parakeet`           | Parakeet EOU 120M                 | **297×** browser-verified (1hr in 12.1s; worker-overlapped wasm decode + linear-cost stream-batch encode) | transcript + end-of-utterance events; TRUE streaming push()/finish() (bit-exact cache-carrying encode) + wasm-SIMD RNNT decode; whole-clip batch runs through the same linear-cost encoder |
-| `asr-voicechat`          | VoiceChat-11B STT (609M encoder)  | 34.6× (1hr file)                                                                                          | the speech-recognition slice of NVIDIA's full-duplex VoiceChat-11B; fully-causal per-frame streaming, parity byte-identical to the torch reference; weights hosted at [`FluidInference/fluidaudio-web`](https://huggingface.co/FluidInference/fluidaudio-web) like the other engines |
-| `musicgen-acestep`       | ACE-Step 1.5 Turbo (3.5B + VAE)   | ~1.9× (180s song in ~95s, M3, warm)                                                                       | full text-to-music on [`/music`](music.html): 8-step DiT + Oobleck VAE in pure WGSL (`packages/acestep`); ~5.7 GB one-time download; requires `shader-f16`; direct mode (optional planner LLM path exists upstream, still being optimized) |
-| `stem-dicose`            | DiCoSe stem separation (BS-RoFormer + 1-step CD) | ~3× fast mode (30s / 48 kHz song in ~9.8s, M5 Pro); refined ~0.45× | 5 stems — drums/bass/other/vocals + derived instrumental — on [`/analyze.html`](analyze.html) and as **Split stems** on [`/music`](music.html); vendored `packages/dicose` (DiCoSe.wgsl by Hamza Qayyum); 623 MB f16 weight package; requires `shader-f16` + fixed 32-wide subgroups; mix-reconstruction NRMSE 1.5% (4-stem sum) / 9e-5 (vocals + instrumental) |
-| `tts-voicechat`          | VoiceChat-11B TTS “Aria” (595M backbone + 159M MoG + 763M codec) | 23.7 GPU-ms per 80 ms frame + ~16 ms host (timestamp-query, M5 Pro dawn; est. ~1.6× in-browser) — node wall is poll-bound at 0.12× (dawn ~100 ms/sync × 5 syncs/frame); WASM 0.19× | the speech-decoder slice of NVIDIA's full-duplex VoiceChat-11B as a standalone TTS voice; GPU-resident decode loop (backbone/MoG-MLP batched submits, GPU KV caches, 5 readbacks/frame for the host-side f64 PRVQ decisions); audio codes bit-exact vs the torch reference ON BOTH BACKENDS (1550/1550), waveform NRMSE 1.1e-6; codec GPU decode ~24 GPU-ms/s of audio; local-only weights (`scripts/extract-voicechat-tts.py`, ~3.5 GB) — hidden from the picker unless exported |
-
-First (cold) run is several× slower — WebGPU compiles pipelines and weights
-download once. WebGPU is optional: every engine falls back to the same math on
-WASM-SIMD (slower on the big encoders, identical outputs — cross-backend
-parity is CI-gated). History and methodology: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
-
-## Music generation (ACE-Step)
-
-[`/music.html`](music.html) generates full songs — prompt, optional lyrics, up
-to 4 minutes, stereo 48 kHz WAV — entirely client-side. The runtime is
-[`packages/acestep`](packages/acestep/), a vendored npm-workspace import of
-ace-step-1.5.wgsl by Hamza Qayyum (upstream repo not yet public — his live
-demo is at [acestep.narcotic.sh](https://acestep.narcotic.sh); the vendored
-source lives in this repo):
-~100k lines of TypeScript + WGSL implementing the Qwen3 text encoder, ACE
-condition encoder, 24-layer DiT, and Oobleck VAE decoder, with authenticated
-streamed model packaging, bounded GPU memory, and cooperative scheduling. It
-keeps its own rigorous experiment ledger (`packages/acestep/optimization/`) —
-read `packages/acestep/AGENTS.md` before touching kernels there.
-
-The ~5.7 GB of content-addressed model packages currently stream from the
-upstream author's public R2 bucket and cache in OPFS; set
-`VITE_ACE_MODEL_ORIGIN` to point at a mirror or locally staged packages
-(`packages/acestep/model/convert.py --profile production` reproduces the
-exact tuple). The optional 0.6B planner ("thinking") path is excluded from
-the served manifest until its pending optimization experiments
-(OPT-0084/0085/0087) are integrated.
-
-A finished song offers **Split stems**: DiCoSe (also by Hamza Qayyum,
-vendored at [`packages/dicose`](packages/dicose/)) separates the generated
-WAV into drums, bass, other, vocals, and a derived instrumental, right in
-the result panel — playable and downloadable per stem. Fast deterministic
-mode by default (~3× realtime); the 623 MB weight package downloads on
-first use and is released with the result panel.
-
-## Text processing (WASM)
-
-[`text-processing-rs`](https://github.com/FluidInference/text-processing-rs)
-vendored as a 1 MB wasm module (pure Rust, no network):
-
-- **TN** (written → spoken) runs automatically on English Kokoro input:
-  numbers/currency/times aren't in the G2P lexicon and used to be silently
-  dropped from the audio.
-- **ITN** (spoken → written, `"i paid four dollars and fifty cents"` →
-  `"i paid $4.50"`) is **opt-in** (`setItn(true)` / the STT page checkbox) —
-  on everyday speech it also rewrites phrases like "no one" → "no 1".
-
-## Quick start (repo)
-
-```bash
-npm install
-npm run dev        # http://localhost:5173 — speech to text; /tts.html, /analyze.html, /live.html, /music.html
-npm run build      # static site → dist/
-npm run sdk:pack   # publishable SDK tarball (dist-sdk/ + .tgz in repo root)
-
-npm run acestep:check && npm run acestep:test   # ACE-Step runtime (packages/acestep) gates
-npm run dicose:check && npm run dicose:test     # DiCoSe runtime (packages/dicose) gates
-```
-
-## Deploy
-
-`main` auto-deploys to **Cloudflare Workers** (static assets, see
-`wrangler.jsonc`) via the connected Workers Builds integration — merge and it's
-live. Manual: `npm run build && npx wrangler deploy`.
-
-Deliberately **no COOP/COEP**: cross-origin isolation would break the
-cross-origin Hugging Face weight fetches, and nothing here needs
-`SharedArrayBuffer` — parallelism comes from WebGPU and the decode worker pool
-(each worker gets its own weight copy).
-
-## Layout
-
-```
-src/
-  gpu/          the kernel library: WGSL GEMM/conv/attention/LSTM (compute.js),
-                WASM-SIMD twin (wasm-context.js) — one interface, two backends
-  engines/      one folder per model on those kernels; registry.ts is the catalog
-  core/         audio I/O, model cache, text normalization, shared types
-  index.ts      SDK root (engines are subpath exports)
-  pages/        playground.ts — shared pick→load→run core for the demo pages
-  stt.ts / tts.ts / analyze.ts / live.ts / music.ts   demo pages (thin consumers of the registry / music client)
-packages/
-  acestep/      vendored ace-step-1.5.wgsl music-gen runtime (own kernels,
-                scheduler, tests, and optimization ledger — see its AGENTS.md)
-  dicose/       vendored DiCoSe.wgsl stem-separation runtime (own kernels,
-                tests, and optimization ledger)
-scripts/        node gates: token-identity, kernel parity, per-engine smokes
-rust/           parakeet RNNT decoder + kernel lib sources (wasm32+simd128)
-docs/           architecture, benchmarks, PORTING.md (add-a-model checklist), the ORT removal story
-```
-
-## Hard-won lessons (things that cost real debugging)
-
-- **Wall-clock lies under dawn/node; only `timestamp-query` tells the truth.**
-  Every kernel "benchmark" read ~2 ms/op until per-dispatch GPU timestamps
-  showed the real distribution — several optimization verdicts flipped.
-- **WebGPU errors are async and silent.** A missing `shader-f16` feature
-  request turned every f16 GEMM into a no-op: empty transcripts at a
-  fake-fast RTFx. Feature-gate every `enable` directive and log
-  `uncapturederror`.
-- **Synchronous WASM starves microtasks.** A `.then()` holding a GPU readback
-  couldn't fire while a 190 ms decode blocked the thread — the GPU idled after
-  every batch. Staging copies must ride the producing submit.
-- **Measure on the target machine.** The dev box was CPU-bound where user
-  machines were GPU-bound and vice versa; the per-stage split in the metrics
-  (`mel / encode / decode`) exists because RTFx alone misdiagnosed both.
-- **f16 storage ≠ f16 compute.** Halving weight bytes did nothing on a
-  compute-bound GPU; switching the inner loop to f16 fma (f32 accumulate per
-  8-deep K-tile) bought 1.46× with token-identical output.
-- **ITN is not a free win.** English inverse normalization rewrites "no one" →
-  "no 1" and deletes words in other languages — it shipped opt-in only because
-  a review pass ran the wasm on realistic sentences.
-- **Gate on tokens, not maxΔ.** Every perf change here ships with a
-  token-identity / parity gate; two of them caught real kernel breakage that
-  numeric thresholds would have argued about.
-
-## License
-
-MIT (code). Model weights follow their upstream licenses (see the registry and
-Hugging Face model cards).
-
-## Acknowledgements
-
-The encoder GEMM kernel geometry and the GPU TDT decoder design are adapted
-from [parakeet.wgsl](https://github.com/narcotic-sh/parakeet.wgsl) by
-Narcotic Software (MIT) — a fast, focused browser Parakeet implementation
-that served as both inspiration and reference throughout our optimization
-work.
-
-Music generation is built on
-ace-step-1.5.wgsl ([live demo](https://acestep.narcotic.sh); upstream repo
-not yet public — the full source is vendored at `packages/acestep`) by
-**Hamza Qayyum** (Narcotic Software, MIT): he built the complete ACE-Step
-1.5 Turbo browser port — correctness-gated WGSL kernels, model packaging,
-scheduling, and the Stage-2 optimization program — and handed the project
-over for integration here; we took it over, integrated, and are continuing
-the optimization work. The `packages/acestep` runtime and the `/music` page's
-backend seam are his code.
-
-Stem separation is likewise his: DiCoSe.wgsl (vendored at
-`packages/dicose`, MIT) ports DiCoSe — BS-RoFormer plus one-step
-consistency-distilled refinement, [karchkha/DiCoSe](https://huggingface.co/karchkha/DiCoSe)
-checkpoints — to raw WebGPU WGSL with its own correctness-audited kernel
-ledger, and powers both the `stem-dicose` engine and the `/music` page's
-Split stems feature.
-
-See [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md) for the full
-list of adapted code and licenses.
+The Parakeet encoder GEMM layout and GPU decoder design are adapted from
+[parakeet.wgsl](https://github.com/narcotic-sh/parakeet.wgsl). Text normalization
+uses the vendored [text-processing-rs](https://github.com/FluidInference/text-processing-rs)
+WASM module.

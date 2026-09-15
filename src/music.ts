@@ -8,7 +8,6 @@
 import {
   aceSeed,
   checkSupport,
-  deleteAceModelCache,
   inspectAceModelCache,
   isAceFatalGpuErrorCode,
   isAceWorkerMessage,
@@ -26,6 +25,8 @@ import moonIcon from "./engines/musicgen-acestep/assets/moon.png";
 
 import { aceProductionWorkerConfiguration } from "./engines/musicgen-acestep/config.js";
 import { aceInferenceWorkerName } from "./engines/musicgen-acestep/worker-name.js";
+import { CRASH_BREADCRUMB_KEY, writeProgressBreadcrumb } from "./engines/musicgen-acestep/progress-breadcrumb.js";
+import { claimPendingOutput, forgetPendingOutput, reclaimOrphanedOutputs } from "./engines/musicgen-acestep/pending-output-registry.js";
 import {
   formatDecimalBytes,
   formatModelDownloadAmount,
@@ -36,7 +37,8 @@ import {
   updateModelDownloadProgress,
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
-import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import { acquireAceDemoModelCache, deleteAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import { waitForWorkerDisposal, type PendingWorkerDisposal } from "./engines/musicgen-acestep/worker-disposal.js";
 import { pcmToWav } from "./core/audio.js";
 import { localWeightDir } from "./engines/registry.js";
 import type { DicoseStemEngine } from "./engines/stem-dicose/index.js";
@@ -99,6 +101,11 @@ let pendingRequest: AceGenerationRequest | undefined;
 let nextRequestId = 1;
 let nextJobId = 1;
 let busy = false;
+let deletingModel = false;
+let cacheAcquisition: AbortController | undefined;
+let generationPreparation: AbortController | undefined;
+let initializationCancelRequested = false;
+const pageLifecycle = new AbortController();
 let supportDetails: AceSupportReport | undefined;
 let cacheDetails: AceModelCacheInfo | undefined;
 let workerDetails: unknown;
@@ -107,42 +114,32 @@ let diagnosticDetails: readonly unknown[] = [];
 let modelProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
 let coldDownload = true;
 let fatalGpuDiagnostic = false;
-let output: { readonly url: string; readonly storageId: string } | undefined;
+let output: { readonly url: string; readonly storageId: string; readonly releaseOwnership: () => Promise<void> } | undefined;
 /** The generated song's WAV blob, kept for stem separation (DiCoSe decodes it directly). */
 let resultBlob: Blob | undefined;
 let resultSeed: string | number | bigint = "song";
 /** Lazy DiCoSe engine — 623 MB of weights + a ~625 MB GPU buffer, so it only
  * exists between a "Split stems" click and the next panel reset / pagehide. */
 let stemEngine: DicoseStemEngine | undefined;
+let stemDisposal: Promise<void> | undefined;
 let stemUrls: string[] = [];
 let splittingStems = false;
 let tooltipRenderFrame: number | undefined;
 let pendingTooltipPoint: { readonly clientX: number } | undefined;
 /** Releases the shared model-cache lifecycle lock held while a worker is alive. */
-let releaseRuntimeLock: (() => void) | undefined;
-let disposal:
-  | {
-      readonly requestId: number;
-      readonly resolve: () => void;
-      readonly reject: (reason: unknown) => void;
-    }
-  | undefined;
+let releaseRuntimeLock: (() => Promise<void>) | undefined;
+let disposal: PendingWorkerDisposal | undefined;
 
 // Crash breadcrumb: iOS jetsam kills the tab with no error event, so persist
 // the last progress stage; after an unclean end the next visit reports where
 // the previous attempt died (the only telemetry a killed tab can leave).
-const CRASH_BREADCRUMB_KEY = "ace-step-progress-breadcrumb";
 
 function recordBreadcrumb(title: string, detail: string): void {
   // Mirror to the console so a tethered Web Inspector (iPhone debugging)
   // streams the stages — the last line before "Webpage Crashed" is the
   // memory-kill diagnosis.
   console.info(`[ace] ${title}${detail ? ` — ${detail}` : ""}`);
-  try {
-    localStorage.setItem(CRASH_BREADCRUMB_KEY, JSON.stringify({ title, detail, at: Date.now(), open: true }));
-  } catch {
-    // Storage unavailable — breadcrumbs are best-effort.
-  }
+  writeProgressBreadcrumb(title, detail, busy || splittingStems);
 }
 
 function closeBreadcrumb(): void {
@@ -249,16 +246,24 @@ function wireEvents(): void {
   });
 
   window.addEventListener("pagehide", () => {
-    void stemEngine?.dispose();
-    stemEngine = undefined;
+    pageLifecycle.abort();
+    generationPreparation?.abort();
+    void resetStemSplitter().catch(() => undefined);
     if (output !== undefined) {
-      URL.revokeObjectURL(output.url);
+      const currentOutput = output;
+      output = undefined;
+      resultBlob = undefined;
+      URL.revokeObjectURL(currentOutput.url);
       // Best-effort only — the reliable path is the pending-output record
       // reclaimed on the next visit (releaseOrphanedOutputs).
-      void releaseAceAudioOutput(output.storageId).then(() => forgetPendingOutput(output?.storageId));
+      void releaseOwnedOutput(currentOutput).catch(() => undefined);
     }
-    worker?.terminate();
-    releaseRuntimeLock?.();
+    resetWorker();
+    setBusy(false);
+    closeBreadcrumb();
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) location.reload();
   });
 }
 
@@ -303,35 +308,6 @@ function hideProjectTooltip(): void {
   githubProjectTooltip.hidden = true;
 }
 
-const PENDING_OUTPUTS_KEY = "ace-step-pending-output-ids";
-
-function readPendingOutputs(): { id: string; at: number }[] {
-  try {
-    const raw = localStorage.getItem(PENDING_OUTPUTS_KEY);
-    const list = raw === null ? [] : (JSON.parse(raw) as { id: string; at: number }[]);
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
-}
-
-function writePendingOutputs(list: { id: string; at: number }[]): void {
-  try {
-    localStorage.setItem(PENDING_OUTPUTS_KEY, JSON.stringify(list.slice(-20)));
-  } catch {
-    // Storage unavailable — the OPFS entries just wait for a later visit.
-  }
-}
-
-function recordPendingOutput(id: string): void {
-  writePendingOutputs([...readPendingOutputs().filter((p) => p.id !== id), { id, at: Date.now() }]);
-}
-
-function forgetPendingOutput(id: string | undefined): void {
-  if (id === undefined) return;
-  writePendingOutputs(readPendingOutputs().filter((p) => p.id !== id));
-}
-
 /**
  * Committed WAVs are deliberately excluded from the runtime's own cleanup, so
  * a navigation that skipped releaseCurrentOutput() leaves up to ~92 MB per
@@ -340,24 +316,16 @@ function forgetPendingOutput(id: string | undefined): void {
  * them, and are retried on a later visit once stale.
  */
 async function releaseOrphanedOutputs(): Promise<void> {
-  const cutoff = Date.now() - 60 * 60 * 1000;
-  const keep: { id: string; at: number }[] = [];
-  for (const entry of readPendingOutputs()) {
-    if (entry.at > cutoff && entry.id !== output?.storageId) {
-      keep.push(entry);
-      continue;
-    }
-    if (entry.id === output?.storageId) continue;
-    await releaseAceAudioOutput(entry.id).catch(() => undefined);
-  }
-  writePendingOutputs(keep);
+  await reclaimOrphanedOutputs(output?.storageId, releaseAceAudioOutput);
 }
 
 async function initializePage(): Promise<void> {
   void releaseOrphanedOutputs();
   try {
-    await ensureCurrentAceDemoModelCache();
+    const release = await acquireAceDemoModelCache(pageLifecycle.signal);
+    await release();
   } catch (error) {
+    if (pageLifecycle.signal.aborted) return;
     supportWarning.textContent = `Could not prepare model storage: ${errorMessage(error)} Reload to retry.`;
     supportWarning.className = "support-warning is-error";
     supportWarning.hidden = false;
@@ -394,7 +362,7 @@ async function initializePage(): Promise<void> {
 }
 
 async function beginGeneration(): Promise<void> {
-  if (busy || supportDetails?.supported !== true) return;
+  if (pageLifecycle.signal.aborted || busy || deletingModel || splittingStems || supportDetails?.supported !== true) return;
   let request: AceGenerationRequest;
   try {
     request = readGenerationRequest();
@@ -405,11 +373,23 @@ async function beginGeneration(): Promise<void> {
   }
   formError.hidden = true;
   formError.textContent = "";
+  const preparation = new AbortController();
+  generationPreparation = preparation;
+  setBusy(true);
   try {
     await releaseCurrentOutput();
+    if (pageLifecycle.signal.aborted) return;
   } catch (error) {
+    setBusy(false);
     formError.textContent = `Could not release the previous song: ${errorMessage(error)}`;
     formError.hidden = false;
+    return;
+  } finally {
+    generationPreparation = undefined;
+  }
+  if (preparation.signal.aborted) {
+    setBusy(false);
+    setDeterminateProgress(0, "Cancelled", "Song generation cancelled", "");
     return;
   }
   pendingRequest = request;
@@ -435,7 +415,7 @@ async function beginGeneration(): Promise<void> {
     startPendingGeneration();
     return;
   }
-  startWorkerInitialization();
+  void startWorkerInitialization();
 }
 
 function readGenerationRequest(): AceGenerationRequest {
@@ -477,41 +457,39 @@ function readGenerationRequest(): AceGenerationRequest {
   };
 }
 
-function acquireRuntimeLock(): void {
-  if (releaseRuntimeLock !== undefined || typeof navigator.locks?.request !== "function") return;
-  // Shared mode: many tabs may run concurrently; the migration's exclusive
-  // request (a future generation bump in a new tab) waits until every tab's
-  // runtime has shut down instead of deleting the cache out from under one.
-  void navigator.locks.request(
-    ACE_MODEL_CACHE_LIFECYCLE_LOCK,
-    { mode: "shared" },
-    () =>
-      new Promise<void>((resolve) => {
-        releaseRuntimeLock = resolve;
-      }),
-  );
-}
-
-function startWorkerInitialization(): void {
-  acquireRuntimeLock();
-  worker?.terminate();
-  workerReady = false;
-  worker = new Worker(new URL("./engines/musicgen-acestep/worker.ts", import.meta.url), {
-    type: "module",
-    name: aceInferenceWorkerName(),
-  });
-  worker.addEventListener("message", onWorkerMessage);
-  worker.addEventListener("error", onWorkerError);
-  initializationRequestId = nextRequestId++;
-  setIndeterminateProgress("Preparing model", "Checking WebGPU and browser storage");
-  worker.postMessage({
-    type: "initialize",
-    requestId: initializationRequestId,
-    configuration: aceProductionWorkerConfiguration(),
-    modelSource: "cache-or-network",
-    reportProgress: true,
-    reportDiagnostics: true,
-  });
+async function startWorkerInitialization(): Promise<void> {
+  resetWorker();
+  const acquisition = new AbortController();
+  cacheAcquisition = acquisition;
+  setIndeterminateProgress("Preparing model", "Waiting for model storage");
+  try {
+    const release = await acquireAceDemoModelCache(acquisition.signal);
+    if (cacheAcquisition !== acquisition || acquisition.signal.aborted) {
+      await release();
+      return;
+    }
+    cacheAcquisition = undefined;
+    releaseRuntimeLock = release;
+    worker = new Worker(new URL("./engines/musicgen-acestep/worker.ts", import.meta.url), {
+      type: "module",
+      name: aceInferenceWorkerName(),
+    });
+    worker.addEventListener("message", onWorkerMessage);
+    worker.addEventListener("error", onWorkerError);
+    initializationRequestId = nextRequestId++;
+    setIndeterminateProgress("Preparing model", "Checking WebGPU and browser storage");
+    worker.postMessage({
+      type: "initialize",
+      requestId: initializationRequestId,
+      configuration: aceProductionWorkerConfiguration(),
+      modelSource: "cache-or-network",
+      reportProgress: true,
+      reportDiagnostics: true,
+    });
+  } catch (error) {
+    if (acquisition.signal.aborted) return;
+    failOperation(`Could not initialize the model: ${errorMessage(error)}`, true);
+  }
 }
 
 function startPendingGeneration(): void {
@@ -531,9 +509,25 @@ function startPendingGeneration(): void {
 }
 
 function cancelActiveOperation(): void {
-  if (worker === undefined || !busy) return;
+  if (!busy) return;
+  if (generationPreparation !== undefined) {
+    generationPreparation.abort();
+    cancelButton.disabled = true;
+    setIndeterminateProgress("Cancelling", "Releasing the previous song");
+    return;
+  }
+  if (cacheAcquisition !== undefined) {
+    resetWorker();
+    pendingRequest = undefined;
+    setBusy(false);
+    setDeterminateProgress(0, "Cancelled", "Model preparation cancelled", "");
+    return;
+  }
+  if (worker === undefined) return;
   cancelButton.disabled = true;
   if (initializationRequestId !== undefined) {
+    initializationCancelRequested = true;
+    pendingRequest = undefined;
     worker.postMessage({
       type: "cancel-initialization",
       requestId: initializationRequestId,
@@ -568,11 +562,18 @@ function onWorkerMessage(event: MessageEvent<unknown>): void {
       workerDetails = message.diagnostics;
       updateRuntimeDetails();
       void refreshCacheInfo();
+      if (initializationCancelRequested) {
+        initializationCancelRequested = false;
+        setBusy(false);
+        setDeterminateProgress(modelProgress.fraction, "Cancelled", "Song generation cancelled", "");
+        return;
+      }
       startPendingGeneration();
       return;
     case "initialization-cancelled":
       if (message.requestId !== initializationRequestId) return;
       initializationRequestId = undefined;
+      initializationCancelRequested = false;
       pendingRequest = undefined;
       resetWorker();
       setBusy(false);
@@ -633,7 +634,7 @@ function onWorkerMessage(event: MessageEvent<unknown>): void {
         return;
       }
       const fatal = fatalGpuDiagnostic || isAceFatalGpuErrorCode(message.error.code);
-      failOperation(`${message.error.code}: ${message.error.message}`, fatal);
+      failOperation(`${message.error.code}: ${message.error.message}`, fatal || !workerReady);
       return;
     }
   }
@@ -644,13 +645,16 @@ function onWorkerError(event: ErrorEvent): void {
 }
 
 async function publishResult(result: AceGenerationResult): Promise<void> {
+  let releaseOwnership: (() => Promise<void>) | undefined;
   try {
     await releaseCurrentOutput();
+    releaseOwnership = await claimPendingOutput(result.audioStorageId);
+    if (pageLifecycle.signal.aborted) throw new DOMException("Page closed", "AbortError");
     const url = URL.createObjectURL(result.audio);
-    output = { url, storageId: result.audioStorageId };
+    output = { url, storageId: result.audioStorageId, releaseOwnership };
+    releaseOwnership = undefined;
     resultBlob = result.audio;
     resultSeed = result.seed;
-    recordPendingOutput(result.audioStorageId);
     audioPlayer.src = url;
     audioPlayer.load();
     download.href = url;
@@ -678,14 +682,22 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
     await refreshCacheInfo();
   } catch (error) {
     if (output?.storageId !== result.audioStorageId) {
-      await releaseAceAudioOutput(result.audioStorageId).catch(() => undefined);
+      try {
+        await releaseAceAudioOutput(result.audioStorageId);
+        await forgetPendingOutput(result.audioStorageId);
+      } catch {
+        // The pending record remains so a later visit retries cleanup.
+      } finally {
+        await releaseOwnership?.();
+      }
     }
+    if (pageLifecycle.signal.aborted) return;
     failOperation(`Could not publish the WAV: ${errorMessage(error)}`, false);
   }
 }
 
 async function releaseCurrentOutput(): Promise<void> {
-  resetStemSplitter();
+  await resetStemSplitter();
   const current = output;
   if (current === undefined) return;
   output = undefined;
@@ -695,8 +707,16 @@ async function releaseCurrentOutput(): Promise<void> {
   audioPlayer.load();
   download.removeAttribute("href");
   URL.revokeObjectURL(current.url);
-  await releaseAceAudioOutput(current.storageId);
-  forgetPendingOutput(current.storageId);
+  await releaseOwnedOutput(current);
+}
+
+async function releaseOwnedOutput(current: { readonly storageId: string; readonly releaseOwnership: () => Promise<void> }): Promise<void> {
+  try {
+    await releaseAceAudioOutput(current.storageId);
+    await forgetPendingOutput(current.storageId);
+  } finally {
+    await current.releaseOwnership();
+  }
 }
 
 // ── Split stems (DiCoSe, engines/stem-dicose) ────────────────────────────────
@@ -706,7 +726,7 @@ async function releaseCurrentOutput(): Promise<void> {
 
 async function splitStems(): Promise<void> {
   const blob = resultBlob;
-  if (splittingStems || busy || blob === undefined) return;
+  if (splittingStems || busy || deletingModel || blob === undefined) return;
   splittingStems = true;
   updateActionAvailability();
   resetStemsUi();
@@ -746,6 +766,7 @@ async function splitStems(): Promise<void> {
     setDeterminateProgress(progressElement.value, "Stem split failed", errorMessage(error), "");
   } finally {
     splittingStems = false;
+    closeBreadcrumb();
     updateActionAvailability();
   }
 }
@@ -786,12 +807,22 @@ function resetStemsUi(): void {
   stemsPanel.hidden = true;
 }
 
-/** Full reset for a new generation / page teardown: the separator holds a
- * ~625 MB GPU weight buffer, so it never survives the result panel. */
-function resetStemSplitter(): void {
+/** Full reset for a new generation / page teardown. */
+async function resetStemSplitter(): Promise<void> {
   resetStemsUi();
-  void stemEngine?.dispose();
+  const current = stemEngine;
   stemEngine = undefined;
+  if (current === undefined) {
+    await stemDisposal;
+    return;
+  }
+  const pending = current.dispose();
+  stemDisposal = pending;
+  try {
+    await pending;
+  } finally {
+    if (stemDisposal === pending) stemDisposal = undefined;
+  }
 }
 
 function releaseStemUrls(): void {
@@ -802,6 +833,7 @@ function releaseStemUrls(): void {
 function failOperation(message: string, reset: boolean): void {
   closeBreadcrumb();
   initializationRequestId = undefined;
+  initializationCancelRequested = false;
   activeJobId = undefined;
   pendingRequest = undefined;
   if (disposal !== undefined) {
@@ -816,8 +848,8 @@ function failOperation(message: string, reset: boolean): void {
 }
 
 function resetWorker(): void {
-  releaseRuntimeLock?.();
-  releaseRuntimeLock = undefined;
+  cacheAcquisition?.abort();
+  cacheAcquisition = undefined;
   if (disposal !== undefined) {
     disposal.reject(new Error("worker reset while a dispose was pending"));
     disposal = undefined;
@@ -825,7 +857,10 @@ function resetWorker(): void {
   worker?.terminate();
   worker = undefined;
   workerReady = false;
+  initializationCancelRequested = false;
   workerDetails = undefined;
+  void releaseRuntimeLock?.();
+  releaseRuntimeLock = undefined;
 }
 
 async function refreshCacheInfo(): Promise<void> {
@@ -850,18 +885,21 @@ async function refreshCacheInfo(): Promise<void> {
 }
 
 async function deleteDownloadedModel(): Promise<void> {
-  if (busy || !cacheCanBeDeleted()) return;
+  if (busy || splittingStems || deletingModel || !cacheCanBeDeleted()) return;
+  deletingModel = true;
+  updateActionAvailability();
   deleteModelButton.disabled = true;
   cacheStatus.textContent = "Releasing the runtime…";
   try {
     await disposeWorker();
     cacheStatus.textContent = "Deleting downloaded model…";
-    await deleteAceModelCache();
+    await deleteAceDemoModelCache();
     modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
     await refreshCacheInfo();
   } catch (error) {
     cacheStatus.textContent = `Could not delete the model: ${errorMessage(error)}`;
   } finally {
+    deletingModel = false;
     updateActionAvailability();
   }
 }
@@ -874,15 +912,22 @@ async function disposeWorker(): Promise<void> {
     return;
   }
   const requestId = nextRequestId++;
-  await new Promise<void>((resolve, reject) => {
-    disposal = { requestId, resolve, reject };
-    current.postMessage({ type: "dispose", requestId });
-  });
-  current.terminate();
-  if (worker === current) worker = undefined;
-  workerReady = false;
-  releaseRuntimeLock?.();
-  releaseRuntimeLock = undefined;
+  try {
+    await waitForWorkerDisposal(requestId, (pending) => {
+      disposal = pending;
+      current.postMessage({ type: "dispose", requestId });
+    });
+  } finally {
+    if (disposal?.requestId === requestId) disposal = undefined;
+    if (worker === current) {
+      current.terminate();
+      worker = undefined;
+      workerReady = false;
+      const release = releaseRuntimeLock;
+      releaseRuntimeLock = undefined;
+      await release?.();
+    }
+  }
 }
 
 function renderModelProgress(): void {
@@ -899,10 +944,10 @@ function setBusy(value: boolean): void {
 }
 
 function updateActionAvailability(): void {
-  generateButton.disabled = busy || splittingStems || supportDetails?.supported !== true;
+  generateButton.disabled = busy || deletingModel || splittingStems || supportDetails?.supported !== true;
   cancelButton.disabled = !busy;
-  deleteModelButton.disabled = busy || !cacheCanBeDeleted();
-  splitStemsButton.disabled = busy || splittingStems || resultBlob === undefined;
+  deleteModelButton.disabled = busy || deletingModel || splittingStems || !cacheCanBeDeleted();
+  splitStemsButton.disabled = busy || deletingModel || splittingStems || resultBlob === undefined;
 }
 
 function cacheCanBeDeleted(): boolean {
