@@ -47,6 +47,8 @@ import { AceOpt0088DensePortableKernel } from
   "./kernels/dit-dense-fp16-portable.js";
 import { AceOpt0081DenseF16InputKernel } from
   "./kernels/dit-dense-f16-input.js";
+import { AceOpt0091DenseInt8Kernel } from
+  "./kernels/dit-dense-int8-weight-only.js";
 import { AceOpt0037DenseK4ProductionKernel } from
   "./kernels/dit-dense-fp16-k4-production.js";
 import {
@@ -159,6 +161,11 @@ export type AceDitDenseGemmRuntimeConfiguration =
     }>
   /** Portable OPT-0009 port; no subgroup capability exists to declare. */
   | Readonly<{ backend: "opt-0088-dense-portable" }>
+  | Readonly<{
+      backend: "opt-0091-int8-weight-only";
+      capability: AceFixed32SubgroupCapability;
+    }>
+  | Readonly<{ backend: "opt-0091-int8-weight-only-portable" }>
   | Readonly<{
       backend: "opt-0037-k4-fp16-partials";
       capability: AceFixed32SubgroupCapability;
@@ -508,6 +515,15 @@ export function createAceDitDenseGemmKernel(
   }
   if (configuration.backend === "opt-0088-dense-portable") {
     return AceOpt0088DensePortableKernel.create(device);
+  }
+  if (configuration.backend === "opt-0091-int8-weight-only") {
+    return AceOpt0091DenseInt8Kernel.create(device, {
+      portable: false,
+      ...configuration.capability,
+    });
+  }
+  if (configuration.backend === "opt-0091-int8-weight-only-portable") {
+    return AceOpt0091DenseInt8Kernel.create(device, { portable: true });
   }
   if (configuration.backend === "opt-0037-k4-fp16-partials") {
     return AceOpt0037DenseK4ProductionKernel.create(

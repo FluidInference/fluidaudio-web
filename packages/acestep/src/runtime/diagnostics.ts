@@ -40,16 +40,19 @@ export interface AceRuntimeDiagnostics {
   readonly ditDenseManifestId: string;
   readonly ditDenseManifestUrl: string;
   readonly ditDenseManifestSha256: string;
-  readonly ditDenseManifestByteLength: 254_357 | 257_789;
+  readonly ditDenseManifestByteLength: 254_357 | 257_789 | 262_613;
   readonly ditDenseRuntimeProfile:
     | "opt-0009-fp16-fp32-dense-v1"
+    | "opt-0091-int8-weight-only-v1"
     | "opt-0037-k4-fp16-partials-v1"
     | "opt-0056-selective-k4-exact-down-v1";
   readonly ditDenseKernelSetId:
     | "opt-0009-n256-k32-fp16-fp32-v1"
     | "opt-0037-opt-0032-k4-partials-fixed32-v1"
     | "opt-0056-opt0032-k4-plus-exact-down-fixed32-v1"
-    | "opt-0088-dense-fp16-fp32-portable-v1";
+    | "opt-0088-dense-fp16-fp32-portable-v1"
+    | "opt-0091-int8-weight-only-fixed32-v1"
+    | "opt-0091-int8-weight-only-portable-v1";
   /** Present for the explicit diagnostic or exact production quad profile. */
   readonly ditAttentionRuntimeProfile?:
     | "opt-0062-fixed32-quad-query32-full-self-v1"
@@ -58,8 +61,8 @@ export interface AceRuntimeDiagnostics {
     | "opt-0062-query8-plus-quad-query32-full-self-v1"
     | "opt-0070-opt0062-query8-plus-quad-query32-full-self-production-v1"
     | "opt-0088-portable-attention-oracle-v1";
-  readonly ditDenseLayerBytes: 3_020_808_192;
-  readonly ditResidentWeightBytes: 3_150_917_888;
+  readonly ditDenseLayerBytes: 3_020_808_192 | 1_699_602_432;
+  readonly ditResidentWeightBytes: 3_150_917_888 | 1_829_712_128;
   readonly vaeManifestId: string;
   readonly vaeManifestUrl: string;
   readonly vaeManifestSha256: string;

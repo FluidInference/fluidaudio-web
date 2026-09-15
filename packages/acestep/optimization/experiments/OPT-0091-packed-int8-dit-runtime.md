@@ -67,6 +67,17 @@ dynamic activation quantization or DP4A contraction.
 
 ## Current result
 
-Registered before implementation. No compressed package, kernel, browser run,
-quality approval, download reduction, mobile-support, or production claim is
-made yet.
+The deterministic repacker produced manifest `a3233c9f…` twice with identical
+files. The 216 packed dense tensors use 1,497,366,528 bytes; the complete DiT
+layer package is 1,699,602,432 bytes, down 43.7% from 3,020,808,192. The cold
+demo model set is 4.43 GB instead of 5.75 GB.
+
+The manifest passed the 456-tensor runtime contract, the hosted manifest and
+CORS identity were rechecked, and 2,032 ACE tests, 45 web integration tests,
+73 converter tests, typecheck, and the production build passed. The package is
+published in Hugging Face commit `bc43ba20409825c13d7ef25694d39ac47dd8c9a4`.
+
+The connected Chrome/WebGPU surface was unavailable, so the executable GPU,
+waveform, and listening gates remain external. This stays an opt-in
+experimental preview; production remains the default and no quality or mobile
+support claim is made.

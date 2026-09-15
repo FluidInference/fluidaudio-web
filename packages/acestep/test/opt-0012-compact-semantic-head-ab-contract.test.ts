@@ -611,8 +611,9 @@ describe("OPT-0012 compact semantic head browser A/B/C contract", () => {
   it("preserves its frozen source identity and authenticates unchanged surfaces", () => {
     for (const [path, expected] of Object.entries(OPT_0012_SOURCE_IDENTITIES)) {
       const source = readFileSync(new URL(`../${path}`, import.meta.url));
-      if (path === "src/model/package.ts") {
-        // OPT-0090 owns the evolved loader identity. Keep this experiment's
+      if (path === "src/model/package.ts" || path === "src/model/manifest.ts" ||
+        path === "src/webgpu/kernels/gemm.ts") {
+        // OPT-0090/0091 own the evolved package identities. Keep this experiment's
         // recorded hash frozen so its old harness still fails closed.
         expect(createHash("sha256").update(source).digest("hex"), path)
           .not.toBe(expected);

@@ -31,7 +31,9 @@ import {
   formatDecimalBytes,
   formatModelDownloadAmount,
   INITIAL_MODEL_DOWNLOAD_PROGRESS,
+  INT8_MODEL_DOWNLOAD_TOTAL_BYTES,
   MODEL_DOWNLOAD_TOTAL_BYTES,
+  initialModelDownloadProgress,
   updateModelDownloadProgress,
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
@@ -61,10 +63,13 @@ const keyScaleInput = requiredElement<HTMLInputElement>("key-scale");
 const timeSignatureInput = requiredElement<HTMLInputElement>("time-signature");
 const vocalLanguageInput = requiredElement<HTMLInputElement>("vocal-language");
 const modelVariantSelect = requiredElement<HTMLSelectElement>("model-variant");
+const int8ModelOption = requiredElement<HTMLOptionElement>("int8-model-option");
+const int8ModelHint = requiredElement<HTMLElement>("int8-model-hint");
 const formError = requiredElement<HTMLParagraphElement>("form-error");
 const generateButton = requiredElement<HTMLButtonElement>("generate");
 const cancelButton = requiredElement<HTMLButtonElement>("cancel");
 const supportWarning = requiredElement<HTMLParagraphElement>("support-warning");
+const downloadNote = requiredElement<HTMLParagraphElement>("download-note");
 const progressPanel = requiredElement<HTMLElement>("progress-panel");
 const progressTitle = requiredElement<HTMLHeadingElement>("progress-title");
 const progressDetail = requiredElement<HTMLParagraphElement>("progress-detail");
@@ -174,6 +179,7 @@ function reportCrashBreadcrumb(): void {
 }
 
 configureTheme();
+configureExperimentalModels();
 wireEvents();
 reportCrashBreadcrumb();
 void initializePage();
@@ -181,6 +187,14 @@ void initializePage();
 function configureTheme(): void {
   const theme: DemoTheme = document.documentElement.dataset.aceDemoTheme === "dark" ? "dark" : "light";
   applyTheme(theme);
+}
+
+function configureExperimentalModels(): void {
+  if (new URLSearchParams(location.search).get("int8") !== "1") return;
+  int8ModelOption.hidden = false;
+  int8ModelHint.hidden = false;
+  modelVariantSelect.value = "int8-quality-preview";
+  updateSelectedModelSize();
 }
 
 function applyTheme(theme: DemoTheme): void {
@@ -197,6 +211,7 @@ function applyTheme(theme: DemoTheme): void {
 }
 
 function wireEvents(): void {
+  modelVariantSelect.addEventListener("change", updateSelectedModelSize);
   githubProjectButton.addEventListener("click", () => {
     window.open(PROJECT_REPOSITORY_URL, "_blank", "noopener,noreferrer");
   });
@@ -265,6 +280,16 @@ function wireEvents(): void {
   window.addEventListener("pageshow", (event) => {
     if (event.persisted) location.reload();
   });
+}
+
+function selectedModelDownloadBytes(): number {
+  return selectedModelVariant() === "int8-quality-preview" ? INT8_MODEL_DOWNLOAD_TOTAL_BYTES : MODEL_DOWNLOAD_TOTAL_BYTES;
+}
+
+function updateSelectedModelSize(): void {
+  downloadNote.innerHTML = `The first generation downloads <strong>${formatDecimalBytes(
+    selectedModelDownloadBytes(),
+  )}</strong>, then caches the model for later visits.`;
 }
 
 function queueProjectTooltip(event: PointerEvent): void {
@@ -396,7 +421,9 @@ async function beginGeneration(): Promise<void> {
   generationDetails = undefined;
   diagnosticDetails = [];
   fatalGpuDiagnostic = false;
-  modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
+  modelProgress = initialModelDownloadProgress(
+    selectedModelVariant() === "int8-quality-preview" ? INT8_MODEL_DOWNLOAD_TOTAL_BYTES : MODEL_DOWNLOAD_TOTAL_BYTES,
+  );
   coldDownload = false;
   setBusy(true);
   resultPanel.hidden = true;
@@ -699,7 +726,7 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
       modelManifestSha256: result.modelManifestSha256,
       metrics: result.metrics,
     };
-    summaryModel.textContent = workerModelVariant === "int8-quality-preview" ? "INT8 quality preview" : "Production";
+    summaryModel.textContent = workerModelVariant === "int8-quality-preview" ? "Compressed INT8 preview" : "Production";
     modelProgress = updateModelDownloadProgress(modelProgress, {
       stage: "vae-load",
       message: "network: complete 168791552/168791552 bytes",
@@ -899,7 +926,7 @@ async function refreshCacheInfo(): Promise<void> {
     if (!cacheDetails.supported) {
       cacheStatus.textContent = "Model storage is unavailable in this context.";
     } else if (cacheDetails.assetCount === 0 && cacheDetails.partialAssetCount === 0) {
-      cacheStatus.textContent = `Not downloaded · ${formatDecimalBytes(MODEL_DOWNLOAD_TOTAL_BYTES)} on first generation`;
+      cacheStatus.textContent = `Not downloaded · ${formatDecimalBytes(selectedModelDownloadBytes())} on first generation`;
     } else {
       const partial = cacheDetails.partialAssetCount === 0 ? "" : ` · ${cacheDetails.partialAssetCount} incomplete`;
       const persistence = cacheDetails.persisted ? "persistent browser storage" : "browser-managed storage";
@@ -923,7 +950,7 @@ async function deleteDownloadedModel(): Promise<void> {
     await disposeWorker();
     cacheStatus.textContent = "Deleting downloaded model…";
     await deleteAceDemoModelCache();
-    modelProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
+    modelProgress = initialModelDownloadProgress(selectedModelDownloadBytes());
     await refreshCacheInfo();
   } catch (error) {
     cacheStatus.textContent = `Could not delete the model: ${errorMessage(error)}`;

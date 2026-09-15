@@ -219,12 +219,14 @@
                 Model
                 <select id="model-variant" name="model-variant">
                   <option value="production" selected>Production (recommended)</option>
-                  <option value="int8-quality-preview">INT8 quality preview (experimental)</option>
+                  <option id="int8-model-option" value="int8-quality-preview" hidden>
+                    Compressed INT8 preview (experimental)
+                  </option>
                 </select>
-                <small>
-                  The preview tests audible quantization effects but is not compressed.
-                  It is also 5.75 GB; switching from a cached production model adds a
-                  separate 3.02 GB DiT download. Use the same seed to compare.
+                <small id="int8-model-hint" hidden>
+                  The preview uses a 1.70 GB packed INT8 DiT instead of the
+                  3.02 GB production DiT (43.7% smaller). Switching models downloads
+                  a separate DiT package. Use the same seed to compare quality.
                 </small>
               </label>
             </div>

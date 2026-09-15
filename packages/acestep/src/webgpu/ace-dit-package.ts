@@ -4,6 +4,8 @@ import type { AceGpuLogicalTensor } from "../model/gpu-tensors.js";
 import {
   ACE_DIT_DENSE_K4_FP16_LAYOUT,
   ACE_DIT_DENSE_K4_FP16_TRANSFORMATION,
+  ACE_DIT_DENSE_INT8_TILE_LAYOUT,
+  ACE_DIT_DENSE_INT8_TRANSFORMATION,
   ACE_DIT_DENSE_FP16_TILE_LAYOUT,
   ACE_DIT_DENSE_FP16_TRANSFORMATION,
   ACE_DIT_GEMM_FP16_TRANSFORMATION,
@@ -15,6 +17,7 @@ import {
 } from "../model/manifest.js";
 import {
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
   ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   type AceDitDenseRuntimeProfile,
@@ -586,8 +589,10 @@ function requireAceDitRepeatedDenseLogicalTensor(
   const k4 =
     denseRuntimeProfile === ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE ||
     denseRuntimeProfile === ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE;
+  const int8 = denseRuntimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE;
   if (
-    !k4 && denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
+    !k4 && !int8 &&
+    denseRuntimeProfile !== ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE
   ) {
     throw new TypeError(
       `Unknown ACE DiT dense runtime profile ${String(denseRuntimeProfile)}`,
@@ -595,13 +600,22 @@ function requireAceDitRepeatedDenseLogicalTensor(
   }
   const expectedStorageShape = k4
     ? [columns / 128, inner / 4, 4, 32, 4]
-    : expectedShape;
+    : int8
+      ? [columns / 256, inner / 32, 2_176]
+      : expectedShape;
   const expectedLayout = k4
     ? ACE_DIT_DENSE_K4_FP16_LAYOUT
-    : ACE_DIT_DENSE_FP16_TILE_LAYOUT;
+    : int8
+      ? ACE_DIT_DENSE_INT8_TILE_LAYOUT
+      : ACE_DIT_DENSE_FP16_TILE_LAYOUT;
   const expectedTransformation = k4
     ? ACE_DIT_DENSE_K4_FP16_TRANSFORMATION
-    : ACE_DIT_DENSE_FP16_TRANSFORMATION;
+    : int8
+      ? ACE_DIT_DENSE_INT8_TRANSFORMATION
+      : ACE_DIT_DENSE_FP16_TRANSFORMATION;
+  const expectedByteLength = int8
+    ? (columns / 256) * (inner / 32) * 8_704
+    : elements * 2;
   if (
     part.tensorName !== expectedName ||
     tensor.logicalTensor !== expectedName ||
@@ -611,8 +625,8 @@ function requireAceDitRepeatedDenseLogicalTensor(
     tensor.storageShape.some(
       (value, index) => value !== expectedStorageShape[index],
     ) ||
-    tensor.byteLength !== elements * 2 ||
-    tensor.dtype !== "float16" ||
+    tensor.byteLength !== expectedByteLength ||
+    tensor.dtype !== (int8 ? "uint32-int8-fp16-blocks" : "float16") ||
     tensor.layout !== expectedLayout ||
     tensor.transformation !== expectedTransformation ||
     tensor.phase !== "dit" ||

@@ -8,6 +8,9 @@ manifest, verifies the result independently, and atomically installs it. No
 notebook, manually edited weight, or unrecorded shell step is part of the
 package recipe.
 
+`repack_dit_int8.py` is the deterministic OPT-0091 derivative step. It accepts
+only the exact revision-7 DiT package and emits the packed INT8 preview.
+
 The structure deliberately follows `../parakeet.wgsl/model`, pinned at
 Parakeet commit `7ee112738262a6f5a0efd2f150748a4087432fbb`. ACE-Step has a
 larger staged graph, so its source contracts and phase-oriented shard plan are
@@ -55,6 +58,11 @@ uv run --frozen --project model --python 3.13 \
 # the authenticated revision-7 package after complete staging verification.
 uv run --frozen --project model --python 3.13 \
   python3 model/convert.py --profile fp16-dit-dense-experimental --offline
+
+# OPT-0091 packed INT8 preview from the authenticated revision-7 DiT package.
+uv run --frozen --project model --python 3.13 \
+  python3 model/repack_dit_int8.py \
+  model/files-fp16-dit-rev7-oracle model/files-int8-dit-rev9
 ```
 
 `--profile production` downloads and authenticates the pinned upstream files,

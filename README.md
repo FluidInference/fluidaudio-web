@@ -40,8 +40,8 @@ the downloaded model.
 
 The site uses ACE-Step 1.5 Turbo in direct mode. The optional planner is
 available in the underlying runtime but disabled on the public music page.
-Advanced settings includes a full-size, experimental INT8 quality preview for
-listening comparisons; it does not yet provide a smaller download.
+Advanced settings includes an experimental packed INT8 preview. Its DiT is
+1.70 GB instead of 3.02 GB (43.7% smaller) for listening comparisons.
 See the [ACE-Step README](packages/acestep/README.md) for implementation and
 validation details.
 

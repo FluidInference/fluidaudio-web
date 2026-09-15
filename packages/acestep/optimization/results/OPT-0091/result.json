@@ -1,0 +1,31 @@
+{
+  "experiment": "OPT-0091",
+  "status": "pending-external-browser-validation",
+  "artifact": {
+    "manifestSha256": "a3233c9f97bc151b5ffa2a6cd8c9ecaee4e555497ee6fda20b70becaf7d55da1",
+    "manifestBytes": 262613,
+    "denseTensorCount": 216,
+    "packedDenseBytes": 1497366528,
+    "weightBytes": 1699602432,
+    "sourceWeightBytes": 3020808192,
+    "reductionPercent": 43.73683054418835,
+    "coldModelSetBytes": 4426524415,
+    "huggingFaceCommit": "bc43ba20409825c13d7ef25694d39ac47dd8c9a4"
+  },
+  "automatedValidation": {
+    "deterministicReproductions": 2,
+    "identicalGeneratedFiles": 49,
+    "aceTestsPassed": 2032,
+    "webIntegrationTestsPassed": 45,
+    "converterTestsPassed": 73,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "hostedManifestVerified": true,
+    "githubPagesCorsVerified": true
+  },
+  "externalGates": {
+    "chromeWebGpu": "pending",
+    "waveform": "pending",
+    "listening": "pending"
+  }
+}

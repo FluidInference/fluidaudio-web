@@ -10,6 +10,9 @@ export const DEFERRED_VAE_CACHE_PHYSICAL_BYTES = 168_791_552;
 /** Complete physical footprint of a cold production-model cache. */
 export const MODEL_DOWNLOAD_TOTAL_BYTES = 5_747_730_175;
 
+/** Complete physical footprint when the packed INT8 DiT is selected. */
+export const INT8_MODEL_DOWNLOAD_TOTAL_BYTES = 4_426_524_415;
+
 /** Unique content-addressed payloads in the complete production-model cache. */
 export const MODEL_DOWNLOAD_ASSET_COUNT = 113;
 
@@ -28,6 +31,10 @@ export interface ModelDownloadProgress {
 }
 
 export const INITIAL_MODEL_DOWNLOAD_PROGRESS: ModelDownloadProgress = createProgress(0);
+
+export function initialModelDownloadProgress(total = MODEL_DOWNLOAD_TOTAL_BYTES): ModelDownloadProgress {
+  return createProgress(0, total);
+}
 
 /** Show the first-download note until the complete pinned cache is present. */
 export function shouldShowModelDownloadNote(cache: ModelCacheSummary | undefined): boolean {
@@ -50,9 +57,9 @@ export function isModelDownloadComplete(cache: ModelCacheSummary | undefined): b
  * `progress` payload. Unknown, malformed, and regressing events are ignored.
  */
 export function updateModelDownloadProgress(current: ModelDownloadProgress, event: unknown): ModelDownloadProgress {
-  const candidate = physicalCompletedBytes(event);
+  const candidate = physicalCompletedBytes(event, current.total);
   if (candidate === undefined || candidate <= current.completed) return current;
-  return createProgress(candidate);
+  return createProgress(candidate, current.total);
 }
 
 /** Format bytes with decimal units (1 GB = 1,000,000,000 bytes). */
@@ -68,7 +75,7 @@ export function formatModelDownloadAmount(progress: Pick<ModelDownloadProgress, 
   return `${formatDecimalBytes(progress.completed)} / ${formatDecimalBytes(progress.total)}`;
 }
 
-function physicalCompletedBytes(event: unknown): number | undefined {
+function physicalCompletedBytes(event: unknown, totalBytes: number): number | undefined {
   const outer = record(event);
   if (outer === undefined) return undefined;
   const progress = record(outer.progress) ?? outer;
@@ -77,23 +84,27 @@ function physicalCompletedBytes(event: unknown): number | undefined {
     return initializationPhysicalBytes(progress);
   }
   if (progress.stage === "vae-load") {
-    return deferredVaePhysicalBytes(progress.message);
+    return deferredVaePhysicalBytes(progress.message, totalBytes);
   }
   return undefined;
 }
 
 function initializationPhysicalBytes(progress: Readonly<Record<string, unknown>>): number | undefined {
-  if (progress.unit !== "bytes" || progress.totalUnits !== INITIALIZATION_WEIGHTS_LOGICAL_BYTES) {
+  if (
+    progress.unit !== "bytes" ||
+    (progress.totalUnits !== INITIALIZATION_WEIGHTS_LOGICAL_BYTES &&
+      progress.totalUnits !== INT8_MODEL_DOWNLOAD_TOTAL_BYTES - DEFERRED_VAE_CACHE_PHYSICAL_BYTES)
+  ) {
     return undefined;
   }
 
-  const logicalCompleted = clampedByteCount(progress.completedUnits, INITIALIZATION_WEIGHTS_LOGICAL_BYTES);
+  const logicalCompleted = clampedByteCount(progress.completedUnits, progress.totalUnits);
   if (logicalCompleted === undefined) return undefined;
 
-  return Number((BigInt(logicalCompleted) * BigInt(INITIALIZATION_CACHE_PHYSICAL_BYTES)) / BigInt(INITIALIZATION_WEIGHTS_LOGICAL_BYTES));
+  return logicalCompleted;
 }
 
-function deferredVaePhysicalBytes(message: unknown): number | undefined {
+function deferredVaePhysicalBytes(message: unknown, totalBytes: number): number | undefined {
   if (typeof message !== "string") return undefined;
   const match = /(?:^|\s)([0-9]+)\/([0-9]+) bytes$/u.exec(message.trim());
   if (match === null) return undefined;
@@ -103,17 +114,17 @@ function deferredVaePhysicalBytes(message: unknown): number | undefined {
   if (total !== DEFERRED_VAE_CACHE_PHYSICAL_BYTES) return undefined;
   const vaeCompleted = clampedByteCount(completed, DEFERRED_VAE_CACHE_PHYSICAL_BYTES);
   if (vaeCompleted === undefined) return undefined;
-  return INITIALIZATION_CACHE_PHYSICAL_BYTES + vaeCompleted;
+  return totalBytes - DEFERRED_VAE_CACHE_PHYSICAL_BYTES + vaeCompleted;
 }
 
-function createProgress(completed: number): ModelDownloadProgress {
-  const safeCompleted = Math.min(MODEL_DOWNLOAD_TOTAL_BYTES, safeNonnegativeInteger(completed));
-  const fraction = safeCompleted / MODEL_DOWNLOAD_TOTAL_BYTES;
+function createProgress(completed: number, total = MODEL_DOWNLOAD_TOTAL_BYTES): ModelDownloadProgress {
+  const safeCompleted = Math.min(total, safeNonnegativeInteger(completed));
+  const fraction = safeCompleted / total;
   return Object.freeze({
     fraction,
     percentage: fraction * 100,
     completed: safeCompleted,
-    total: MODEL_DOWNLOAD_TOTAL_BYTES,
+    total,
   });
 }
 

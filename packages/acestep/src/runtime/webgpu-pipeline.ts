@@ -168,11 +168,21 @@ import {
   ACE_OPT_0088_DIT_DENSE_PORTABLE_KERNEL_SET_ID,
   ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_BYTES,
   ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256,
+  ACE_OPT_0091_DIT_INT8_CONVERTER_REVISION,
+  ACE_OPT_0091_DIT_INT8_KERNEL_SET_ID,
+  ACE_OPT_0091_DIT_INT8_LAYER_BYTES,
+  ACE_OPT_0091_DIT_INT8_MANIFEST_BYTES,
+  ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256,
+  ACE_OPT_0091_DIT_INT8_PORTABLE_KERNEL_SET_ID,
+  ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES,
+  ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
+  ACE_OPT_0091_DIT_INT8_WEIGHT_FILES,
   createAceReferenceDitSharedManifestView,
   isAceReferenceDitLayerWeightFile,
   requireAceOpt0009DitDensePackageIdentity,
   requireAceOpt0037DitK4PackageIdentity,
   requireAceOpt0089DitFakeQuantPackageIdentity,
+  requireAceOpt0091DitInt8PackageIdentity,
 } from "../webgpu/dit-fp16-package.js";
 import {
   ACE_TURBO_EIGHT_SAMPLER_SCHEDULE_PROFILE,
@@ -3066,7 +3076,9 @@ export function createAceWebGpuPipelineBackend(
       return await loadAcePackageManifest({
         manifestUrl: configuration.manifestUrl,
         expectedManifestSha256: configuration.manifestSha256,
-        expectedProfile: "fp16-dit-dense-experimental",
+        expectedProfile: identity.role === "opt-0091-packed-int8-preview"
+          ? "int8-dit-dense-experimental"
+          : "fp16-dit-dense-experimental",
         ...(identity.role === "opt-0009-rev7-oracle" ||
             identity.role === "opt-0089-rev7-fake-quant-preview"
           ? { authenticatedDitDenseConverterRevision: 7 as const }
@@ -3093,6 +3105,9 @@ export function createAceWebGpuPipelineBackend(
           ? loaded.manifest.provenance.converterRevision ===
               ACE_OPT_0009_DIT_DENSE_CONVERTER_REVISION
             ? createAceOpt0009DitDenseAcquisitionManifest(loaded.manifest)
+            : loaded.manifest.provenance.converterRevision ===
+                ACE_OPT_0091_DIT_INT8_CONVERTER_REVISION
+              ? createAceOpt0091DitInt8AcquisitionManifest(loaded.manifest)
             : createAceOpt0037DitK4AcquisitionManifest(loaded.manifest)
           : createAceOpt0011VaeAcquisitionManifest(loaded.manifest);
       return await acquireAceModelFiles({
@@ -3236,6 +3251,35 @@ export function createAceOpt0009DitDenseAcquisitionManifest(
       ACE_OPT_0009_DIT_MIXED_LAYER_BYTES
   ) {
     throw new Error("OPT-0009 acquisition physical layer inventory changed");
+  }
+  return Object.freeze({ ...manifest, files });
+}
+
+/** @internal Resolve the exact 48 packed INT8 mixed-layer shards. */
+export function createAceOpt0091DitInt8AcquisitionManifest(
+  manifest: AcePackageManifest,
+): AcePackageManifest {
+  if (
+    manifest.profile !== "int8-dit-dense-experimental" ||
+    manifest.provenance.converterRevision !==
+      ACE_OPT_0091_DIT_INT8_CONVERTER_REVISION
+  ) {
+    throw new Error("OPT-0091 acquisition requires the revision-9 INT8 package");
+  }
+  const byName = new Map(manifest.files.map((file) => [file.name, file]));
+  const files = Object.freeze(ACE_OPT_0091_DIT_INT8_WEIGHT_FILES.map((name) => {
+    const file = byName.get(name);
+    if (file === undefined || file.kind !== "weights") {
+      throw new Error(`OPT-0091 authenticated manifest is missing ${name}`);
+    }
+    return file;
+  }));
+  if (
+    files.length !== 48 ||
+    files.reduce((sum, file) => sum + file.byteLength, 0) !==
+      ACE_OPT_0091_DIT_INT8_LAYER_BYTES
+  ) {
+    throw new Error("OPT-0091 acquisition physical layer inventory changed");
   }
   return Object.freeze({ ...manifest, files });
 }
@@ -3391,6 +3435,18 @@ function tokenizeConditioning(
 
 export type AceDitDensePackageRuntimeIdentity =
   | Readonly<{
+      readonly role: "opt-0091-packed-int8-preview";
+      readonly manifestSha256: typeof ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256;
+      readonly manifestByteLength: typeof ACE_OPT_0091_DIT_INT8_MANIFEST_BYTES;
+      readonly runtimeProfile: typeof ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE;
+      readonly kernelSetId:
+        | typeof ACE_OPT_0091_DIT_INT8_KERNEL_SET_ID
+        | typeof ACE_OPT_0091_DIT_INT8_PORTABLE_KERNEL_SET_ID;
+      readonly layerBytes: typeof ACE_OPT_0091_DIT_INT8_LAYER_BYTES;
+      readonly residentWeightBytes:
+        typeof ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES;
+    }>
+  | Readonly<{
       readonly role: "opt-0009-rev7-oracle";
       readonly manifestSha256: typeof ACE_OPT_0009_DIT_DENSE_MANIFEST_SHA256;
       readonly manifestByteLength: typeof ACE_OPT_0009_DIT_DENSE_MANIFEST_BYTES;
@@ -3444,6 +3500,22 @@ export function resolveAceDitDensePackageRuntimeIdentity(
   configuration: AceWorkerDitDensePackageConfiguration,
   kernelBackend: AceKernelBackend = "subgroups",
 ): AceDitDensePackageRuntimeIdentity {
+  if (
+    configuration.manifestSha256 === ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256 &&
+    configuration.runtimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE
+  ) {
+    return Object.freeze({
+      role: "opt-0091-packed-int8-preview",
+      manifestSha256: ACE_OPT_0091_DIT_INT8_MANIFEST_SHA256,
+      manifestByteLength: ACE_OPT_0091_DIT_INT8_MANIFEST_BYTES,
+      runtimeProfile: ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
+      kernelSetId: kernelBackend === "portable"
+        ? ACE_OPT_0091_DIT_INT8_PORTABLE_KERNEL_SET_ID
+        : ACE_OPT_0091_DIT_INT8_KERNEL_SET_ID,
+      layerBytes: ACE_OPT_0091_DIT_INT8_LAYER_BYTES,
+      residentWeightBytes: ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES,
+    });
+  }
   if (
     configuration.manifestSha256 ===
       ACE_OPT_0089_DIT_FAKE_QUANT_MANIFEST_SHA256 &&
@@ -3784,13 +3856,17 @@ function requireLoadedDitDenseManifestIdentity(
     requireAceOpt0009DitDensePackageIdentity(loaded);
   } else if (identity.role === "opt-0089-rev7-fake-quant-preview") {
     requireAceOpt0089DitFakeQuantPackageIdentity(loaded);
+  } else if (identity.role === "opt-0091-packed-int8-preview") {
+    requireAceOpt0091DitInt8PackageIdentity(loaded);
   } else {
     requireAceOpt0037DitK4PackageIdentity(loaded);
   }
   if (
     loaded.manifestSha256 !== configuration.manifestSha256 ||
     loaded.manifestByteLength !== identity.manifestByteLength ||
-    loaded.manifest.profile !== "fp16-dit-dense-experimental"
+    loaded.manifest.profile !== (identity.role === "opt-0091-packed-int8-preview"
+      ? "int8-dit-dense-experimental"
+      : "fp16-dit-dense-experimental")
   ) {
     throw new Error(
       "Loaded mixed DiT manifest differs from its exact initialization trust root",
@@ -3833,7 +3909,9 @@ function requireProductionConfiguration(
         configuration.ditAttentionRuntimeProfile !==
           ACE_OPT_0070_DIT_QUAD_QUERY_ATTENTION_RUNTIME_PROFILE) ||
         configuration.ditDensePackage.runtimeProfile !==
-          ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE)) ||
+            ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE &&
+        configuration.ditDensePackage.runtimeProfile !==
+            ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE)) ||
     vaeIdentity === undefined ||
     vaeWindowIdentity === undefined ||
     ((configuration.ditAttentionRuntimeProfile ===
@@ -3897,9 +3975,12 @@ function requireDitDenseAcquisition(
   identity: AceDitDensePackageRuntimeIdentity,
 ): void {
   const names = [...acquired.files.keys()];
-  const expectedFiles = identity.role === "opt-0009-rev7-oracle"
-    ? ACE_OPT_0009_DIT_DENSE_WEIGHT_FILES
-    : ACE_OPT_0037_DIT_K4_WEIGHT_FILES;
+  const expectedFiles = identity.role === "opt-0091-packed-int8-preview"
+    ? ACE_OPT_0091_DIT_INT8_WEIGHT_FILES
+    : identity.role === "opt-0009-rev7-oracle" ||
+        identity.role === "opt-0089-rev7-fake-quant-preview"
+      ? ACE_OPT_0009_DIT_DENSE_WEIGHT_FILES
+      : ACE_OPT_0037_DIT_K4_WEIGHT_FILES;
   if (
     acquired.files.size !== expectedFiles.length ||
     acquired.plan.files.length !== expectedFiles.length ||
