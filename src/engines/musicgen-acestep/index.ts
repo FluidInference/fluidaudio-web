@@ -18,6 +18,7 @@ import { aceProductionWorkerConfiguration } from "./config.js";
 import { aceInferenceWorkerName } from "./worker-name.js";
 import { acquireAceDemoModelCache, deleteAceDemoModelCache } from "./model-cache-migration.js";
 import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
+import { waitForWorkerDisposal, type PendingWorkerDisposal } from "./worker-disposal.js";
 
 export {
   ACE_MAX_DURATION_SECONDS,
@@ -65,7 +66,7 @@ export class AceStepMusicClient {
   private nextRequestId = 1;
   private nextJobId = 1;
   private active: ActiveOperation | undefined;
-  private disposal: { requestId: number; resolve: () => void; reject: (reason: unknown) => void } | undefined;
+  private disposal: PendingWorkerDisposal | undefined;
   private disposePromise: Promise<void> | undefined;
   private fatalGpuDiagnostic = false;
   /** Releases the shared model-cache lifecycle lock held while the worker is alive. */
@@ -154,11 +155,12 @@ export class AceStepMusicClient {
     }
     const requestId = this.nextRequestId++;
     try {
-      await new Promise<void>((resolve, reject) => {
-        this.disposal = { requestId, resolve, reject };
+      await waitForWorkerDisposal(requestId, (pending) => {
+        this.disposal = pending;
         current.postMessage({ type: "dispose", requestId });
       });
     } finally {
+      if (this.disposal?.requestId === requestId) this.disposal = undefined;
       if (this.worker === current) {
         current.terminate();
         this.worker = undefined;

@@ -1,5 +1,8 @@
+import { acquireCacheLease } from "./cache-lease.js";
+
 const PENDING_OUTPUTS_KEY = "ace-step-pending-output-ids";
 const PENDING_OUTPUTS_LOCK = "ace-step-pending-output-registry";
+const OUTPUT_OWNERSHIP_LOCK_PREFIX = "ace-step-output-ownership:";
 const STALE_AFTER_MS = 60 * 60 * 1000;
 
 interface PendingOutput {
@@ -13,6 +16,19 @@ export interface PendingOutputRegistryOptions {
   readonly storage?: RegistryStorage;
   readonly locks?: LockManager;
   readonly now?: () => number;
+}
+
+/** Record a committed output and hold shared ownership until the caller releases it. */
+export async function claimPendingOutput(id: string, options: PendingOutputRegistryOptions = {}): Promise<() => Promise<void>> {
+  const locks = options.locks ?? globalThis.navigator?.locks;
+  const release = locks === undefined ? async () => {} : await acquireCacheLease(locks, outputOwnershipLock(id));
+  try {
+    await recordPendingOutput(id, options);
+    return release;
+  } catch (error) {
+    await release();
+    throw error;
+  }
 }
 
 export async function recordPendingOutput(id: string, options: PendingOutputRegistryOptions = {}): Promise<void> {
@@ -30,11 +46,12 @@ export async function reclaimOrphanedOutputs(
 ): Promise<void> {
   const cutoff = now(options) - STALE_AFTER_MS;
   const deleted = new Set<string>();
+  const locks = options.locks ?? globalThis.navigator?.locks;
   for (const record of readRecords(storage(options))) {
     if (record.id === currentId || record.at > cutoff) continue;
     try {
-      await release(record.id);
-      deleted.add(record.id);
+      const released = await releaseIfUnowned(record.id, release, locks);
+      if (released) deleted.add(record.id);
     } catch {
       // Keep the record so a later visit retries the deletion.
     }
@@ -42,6 +59,22 @@ export async function reclaimOrphanedOutputs(
   if (deleted.size > 0) {
     await updateRecords((records) => records.filter((record) => !deleted.has(record.id)), options);
   }
+}
+
+async function releaseIfUnowned(id: string, release: (id: string) => Promise<unknown>, locks: LockManager | undefined): Promise<boolean> {
+  if (locks === undefined) {
+    await release(id);
+    return true;
+  }
+  return locks.request(outputOwnershipLock(id), { mode: "exclusive", ifAvailable: true }, async (lock) => {
+    if (lock === null) return false;
+    await release(id);
+    return true;
+  });
+}
+
+function outputOwnershipLock(id: string): string {
+  return `${OUTPUT_OWNERSHIP_LOCK_PREFIX}${id}`;
 }
 
 async function updateRecords(transform: (records: PendingOutput[]) => PendingOutput[], options: PendingOutputRegistryOptions): Promise<void> {

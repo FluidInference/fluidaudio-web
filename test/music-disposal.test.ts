@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it, vi } from "vitest";
 import { AceStepMusicClient, aceSeed } from "../src/engines/musicgen-acestep/index.js";
+import { ACE_WORKER_DISPOSAL_TIMEOUT_MS } from "../src/engines/musicgen-acestep/worker-disposal.js";
 
 const request = {
   generationProfile: "ace-turbo-v1-correctness" as const,
@@ -98,4 +99,19 @@ it("settles all disposal callers when terminated mid-disposal", async () => {
   expect((await settled).map((result) => result.status)).toEqual(["rejected", "rejected"]);
   expect(worker.terminate).toHaveBeenCalledOnce();
   expect(release).toHaveBeenCalledOnce();
+});
+
+it("terminates the worker and releases its lease when disposal gets no response", async () => {
+  vi.useFakeTimers();
+  try {
+    const { client, worker, release } = readyClient();
+    const rejected = expect(client.dispose()).rejects.toThrow("disposal timed out");
+    await vi.advanceTimersByTimeAsync(ACE_WORKER_DISPOSAL_TIMEOUT_MS);
+    await rejected;
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(release).toHaveBeenCalledOnce();
+    expect(client.initialized).toBe(false);
+  } finally {
+    vi.useRealTimers();
+  }
 });

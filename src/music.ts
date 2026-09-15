@@ -26,7 +26,7 @@ import moonIcon from "./engines/musicgen-acestep/assets/moon.png";
 import { aceProductionWorkerConfiguration } from "./engines/musicgen-acestep/config.js";
 import { aceInferenceWorkerName } from "./engines/musicgen-acestep/worker-name.js";
 import { CRASH_BREADCRUMB_KEY, writeProgressBreadcrumb } from "./engines/musicgen-acestep/progress-breadcrumb.js";
-import { forgetPendingOutput, reclaimOrphanedOutputs, recordPendingOutput } from "./engines/musicgen-acestep/pending-output-registry.js";
+import { claimPendingOutput, forgetPendingOutput, reclaimOrphanedOutputs } from "./engines/musicgen-acestep/pending-output-registry.js";
 import {
   formatDecimalBytes,
   formatModelDownloadAmount,
@@ -38,6 +38,7 @@ import {
   type ModelDownloadProgress,
 } from "./engines/musicgen-acestep/model-download-progress.js";
 import { acquireAceDemoModelCache, deleteAceDemoModelCache } from "./engines/musicgen-acestep/model-cache-migration.js";
+import { waitForWorkerDisposal, type PendingWorkerDisposal } from "./engines/musicgen-acestep/worker-disposal.js";
 import { pcmToWav } from "./core/audio.js";
 import { localWeightDir } from "./engines/registry.js";
 import type { DicoseStemEngine } from "./engines/stem-dicose/index.js";
@@ -113,26 +114,21 @@ let diagnosticDetails: readonly unknown[] = [];
 let modelProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
 let coldDownload = true;
 let fatalGpuDiagnostic = false;
-let output: { readonly url: string; readonly storageId: string } | undefined;
+let output: { readonly url: string; readonly storageId: string; readonly releaseOwnership: () => Promise<void> } | undefined;
 /** The generated song's WAV blob, kept for stem separation (DiCoSe decodes it directly). */
 let resultBlob: Blob | undefined;
 let resultSeed: string | number | bigint = "song";
 /** Lazy DiCoSe engine — 623 MB of weights + a ~625 MB GPU buffer, so it only
  * exists between a "Split stems" click and the next panel reset / pagehide. */
 let stemEngine: DicoseStemEngine | undefined;
+let stemDisposal: Promise<void> | undefined;
 let stemUrls: string[] = [];
 let splittingStems = false;
 let tooltipRenderFrame: number | undefined;
 let pendingTooltipPoint: { readonly clientX: number } | undefined;
 /** Releases the shared model-cache lifecycle lock held while a worker is alive. */
 let releaseRuntimeLock: (() => Promise<void>) | undefined;
-let disposal:
-  | {
-      readonly requestId: number;
-      readonly resolve: () => void;
-      readonly reject: (reason: unknown) => void;
-    }
-  | undefined;
+let disposal: PendingWorkerDisposal | undefined;
 
 // Crash breadcrumb: iOS jetsam kills the tab with no error event, so persist
 // the last progress stage; after an unclean end the next visit reports where
@@ -252,16 +248,15 @@ function wireEvents(): void {
   window.addEventListener("pagehide", () => {
     pageLifecycle.abort();
     generationPreparation?.abort();
-    void stemEngine?.dispose();
-    stemEngine = undefined;
+    void resetStemSplitter().catch(() => undefined);
     if (output !== undefined) {
       const currentOutput = output;
+      output = undefined;
+      resultBlob = undefined;
       URL.revokeObjectURL(currentOutput.url);
       // Best-effort only — the reliable path is the pending-output record
       // reclaimed on the next visit (releaseOrphanedOutputs).
-      void releaseAceAudioOutput(currentOutput.storageId)
-        .then(() => forgetPendingOutput(currentOutput.storageId))
-        .catch(() => undefined);
+      void releaseOwnedOutput(currentOutput).catch(() => undefined);
     }
     resetWorker();
     setBusy(false);
@@ -650,13 +645,16 @@ function onWorkerError(event: ErrorEvent): void {
 }
 
 async function publishResult(result: AceGenerationResult): Promise<void> {
+  let releaseOwnership: (() => Promise<void>) | undefined;
   try {
     await releaseCurrentOutput();
+    releaseOwnership = await claimPendingOutput(result.audioStorageId);
+    if (pageLifecycle.signal.aborted) throw new DOMException("Page closed", "AbortError");
     const url = URL.createObjectURL(result.audio);
-    output = { url, storageId: result.audioStorageId };
+    output = { url, storageId: result.audioStorageId, releaseOwnership };
+    releaseOwnership = undefined;
     resultBlob = result.audio;
     resultSeed = result.seed;
-    await recordPendingOutput(result.audioStorageId);
     audioPlayer.src = url;
     audioPlayer.load();
     download.href = url;
@@ -684,14 +682,22 @@ async function publishResult(result: AceGenerationResult): Promise<void> {
     await refreshCacheInfo();
   } catch (error) {
     if (output?.storageId !== result.audioStorageId) {
-      await releaseAceAudioOutput(result.audioStorageId).catch(() => undefined);
+      try {
+        await releaseAceAudioOutput(result.audioStorageId);
+        await forgetPendingOutput(result.audioStorageId);
+      } catch {
+        // The pending record remains so a later visit retries cleanup.
+      } finally {
+        await releaseOwnership?.();
+      }
     }
+    if (pageLifecycle.signal.aborted) return;
     failOperation(`Could not publish the WAV: ${errorMessage(error)}`, false);
   }
 }
 
 async function releaseCurrentOutput(): Promise<void> {
-  resetStemSplitter();
+  await resetStemSplitter();
   const current = output;
   if (current === undefined) return;
   output = undefined;
@@ -701,8 +707,16 @@ async function releaseCurrentOutput(): Promise<void> {
   audioPlayer.load();
   download.removeAttribute("href");
   URL.revokeObjectURL(current.url);
-  await releaseAceAudioOutput(current.storageId);
-  await forgetPendingOutput(current.storageId);
+  await releaseOwnedOutput(current);
+}
+
+async function releaseOwnedOutput(current: { readonly storageId: string; readonly releaseOwnership: () => Promise<void> }): Promise<void> {
+  try {
+    await releaseAceAudioOutput(current.storageId);
+    await forgetPendingOutput(current.storageId);
+  } finally {
+    await current.releaseOwnership();
+  }
 }
 
 // ── Split stems (DiCoSe, engines/stem-dicose) ────────────────────────────────
@@ -793,12 +807,22 @@ function resetStemsUi(): void {
   stemsPanel.hidden = true;
 }
 
-/** Full reset for a new generation / page teardown: the separator holds a
- * ~625 MB GPU weight buffer, so it never survives the result panel. */
-function resetStemSplitter(): void {
+/** Full reset for a new generation / page teardown. */
+async function resetStemSplitter(): Promise<void> {
   resetStemsUi();
-  void stemEngine?.dispose();
+  const current = stemEngine;
   stemEngine = undefined;
+  if (current === undefined) {
+    await stemDisposal;
+    return;
+  }
+  const pending = current.dispose();
+  stemDisposal = pending;
+  try {
+    await pending;
+  } finally {
+    if (stemDisposal === pending) stemDisposal = undefined;
+  }
 }
 
 function releaseStemUrls(): void {
@@ -889,11 +913,12 @@ async function disposeWorker(): Promise<void> {
   }
   const requestId = nextRequestId++;
   try {
-    await new Promise<void>((resolve, reject) => {
-      disposal = { requestId, resolve, reject };
+    await waitForWorkerDisposal(requestId, (pending) => {
+      disposal = pending;
       current.postMessage({ type: "dispose", requestId });
     });
   } finally {
+    if (disposal?.requestId === requestId) disposal = undefined;
     if (worker === current) {
       current.terminate();
       worker = undefined;
