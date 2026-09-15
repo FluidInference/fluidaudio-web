@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 # Rapid successive pushes to one ref cancel in-flight runs (the engines job is
 # the expensive one).
@@ -24,6 +25,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:unit
       - run: npm run build
+      - run: npm run test:integration
+      - run: npm run sdk:test
 
   # Vendored ACE-Step runtime (packages/acestep): typecheck + weight-free
   # vitest suite (artifact-dependent contract tests self-exclude on machines
@@ -129,3 +132,12 @@ jobs:
           key: hf-weights-${{ hashFiles('scripts/ci-weights.lock') }}
       - run: node scripts/textnorm-check.mjs
       - run: node scripts/vocab-rescorer-check.mjs
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [build, acestep, dicose, format, kernels, engines]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml

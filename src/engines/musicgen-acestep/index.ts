@@ -16,7 +16,7 @@ import {
 
 import { aceProductionWorkerConfiguration } from "./config.js";
 import { aceInferenceWorkerName } from "./worker-name.js";
-import { ACE_MODEL_CACHE_LIFECYCLE_LOCK, ensureCurrentAceDemoModelCache } from "./model-cache-migration.js";
+import { acquireAceDemoModelCache, deleteAceDemoModelCache } from "./model-cache-migration.js";
 import { INITIAL_MODEL_DOWNLOAD_PROGRESS, updateModelDownloadProgress, type ModelDownloadProgress } from "./model-download-progress.js";
 
 export {
@@ -24,11 +24,11 @@ export {
   ACE_MIN_DURATION_SECONDS,
   aceSeed,
   checkSupport,
-  deleteAceModelCache,
   inspectAceModelCache,
   releaseAceAudioOutput,
   requestAceModelStoragePersistence,
 } from "ace-step-1.5.wgsl";
+export { deleteAceDemoModelCache as deleteAceModelCache };
 export type { AceGenerationRequest, AceGenerationResult, AceModelCacheInfo, AceSupportReport } from "ace-step-1.5.wgsl";
 export {
   isModelDownloadComplete,
@@ -55,18 +55,21 @@ interface ActiveOperation {
   initializationRequestId: number | undefined;
   jobId: number | undefined;
   request: AceGenerationRequest | undefined;
+  cancelRequested: boolean;
 }
 
 export class AceStepMusicClient {
   private worker: Worker | undefined;
+  private cacheAcquisition: AbortController | undefined;
   private workerReady = false;
   private nextRequestId = 1;
   private nextJobId = 1;
   private active: ActiveOperation | undefined;
   private disposal: { requestId: number; resolve: () => void; reject: (reason: unknown) => void } | undefined;
+  private disposePromise: Promise<void> | undefined;
   private fatalGpuDiagnostic = false;
   /** Releases the shared model-cache lifecycle lock held while the worker is alive. */
-  private releaseRuntimeLock: (() => void) | undefined;
+  private releaseRuntimeLock: (() => Promise<void>) | undefined;
   private downloadProgress: ModelDownloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
   /** Diagnostics reported by the worker's ready message, when initialized. */
   runtimeDiagnostics: AceRuntimeDiagnostics | undefined;
@@ -84,7 +87,7 @@ export class AceStepMusicClient {
    * packages) on first use. Only one generation may be in flight.
    */
   async generate(request: AceGenerationRequest, handlers: AceMusicGenerateHandlers = {}): Promise<AceGenerationResult> {
-    if (this.active !== undefined) {
+    if (this.active !== undefined || this.disposePromise !== undefined) {
       throw new Error("A generation is already in progress");
     }
     this.downloadProgress = INITIAL_MODEL_DOWNLOAD_PROGRESS;
@@ -96,11 +99,12 @@ export class AceStepMusicClient {
         initializationRequestId: undefined,
         jobId: undefined,
         request,
+        cancelRequested: false,
       };
       if (this.workerReady && this.worker !== undefined) {
         this.startGeneration();
       } else {
-        this.startInitialization();
+        void this.startInitialization();
       }
     });
   }
@@ -108,8 +112,14 @@ export class AceStepMusicClient {
   /** Cancel the in-flight initialization or generation, if any. */
   cancel(): void {
     const active = this.active;
-    if (this.worker === undefined || active === undefined) return;
+    if (active === undefined) return;
+    if (this.cacheAcquisition !== undefined) {
+      this.resetWorker(new DOMException("Initialization cancelled", "AbortError"));
+      return;
+    }
+    if (this.worker === undefined) return;
     if (active.initializationRequestId !== undefined) {
+      active.cancelRequested = true;
       this.worker.postMessage({
         type: "cancel-initialization",
         requestId: active.initializationRequestId,
@@ -120,7 +130,17 @@ export class AceStepMusicClient {
   }
 
   /** Release the worker's GPU/runtime resources and terminate it. */
-  async dispose(): Promise<void> {
+  dispose(): Promise<void> {
+    if (this.disposePromise !== undefined) return this.disposePromise;
+    this.disposePromise = this.disposeInner().finally(() => {
+      this.disposePromise = undefined;
+    });
+    return this.disposePromise;
+  }
+
+  private async disposeInner(): Promise<void> {
+    this.cacheAcquisition?.abort();
+    this.cacheAcquisition = undefined;
     const active = this.active;
     if (active !== undefined) {
       this.active = undefined;
@@ -133,16 +153,22 @@ export class AceStepMusicClient {
       return;
     }
     const requestId = this.nextRequestId++;
-    await new Promise<void>((resolve, reject) => {
-      this.disposal = { requestId, resolve, reject };
-      current.postMessage({ type: "dispose", requestId });
-    });
-    current.terminate();
-    if (this.worker === current) this.worker = undefined;
-    this.workerReady = false;
-    this.runtimeDiagnostics = undefined;
-    this.releaseRuntimeLock?.();
-    this.releaseRuntimeLock = undefined;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        this.disposal = { requestId, resolve, reject };
+        current.postMessage({ type: "dispose", requestId });
+      });
+    } finally {
+      if (this.worker === current) {
+        current.terminate();
+        this.worker = undefined;
+        this.workerReady = false;
+        this.runtimeDiagnostics = undefined;
+        const release = this.releaseRuntimeLock;
+        this.releaseRuntimeLock = undefined;
+        await release?.();
+      }
+    }
   }
 
   /** Terminate immediately without an orderly runtime dispose. */
@@ -150,34 +176,27 @@ export class AceStepMusicClient {
     this.resetWorker(new DOMException("Client terminated", "AbortError"));
   }
 
-  private startInitialization(): void {
-    // Stamp/upgrade the OPFS cache generation exactly like the /music page does
-    // — a client that downloads 5.75 GB without the marker would see that cache
-    // wiped the next time the page's migration runs on this origin.
-    ensureCurrentAceDemoModelCache().then(
-      () => this.startInitializationInner(),
-      (error) => this.fail(new Error(`Could not prepare model storage: ${String(error)}`), false),
-    );
-  }
-
-  private acquireRuntimeLock(): void {
-    if (this.releaseRuntimeLock !== undefined || typeof navigator.locks?.request !== "function") return;
-    // Shared with every runtime tab; the migration's exclusive request (a
-    // generation bump) waits until all runtimes shut down before wiping.
-    void navigator.locks.request(
-      ACE_MODEL_CACHE_LIFECYCLE_LOCK,
-      { mode: "shared" },
-      () =>
-        new Promise<void>((resolve) => {
-          this.releaseRuntimeLock = resolve;
-        }),
-    );
-  }
-
-  private startInitializationInner(): void {
+  private async startInitialization(): Promise<void> {
     const active = this.active;
     if (active === undefined) return;
-    this.acquireRuntimeLock();
+    const acquisition = new AbortController();
+    this.cacheAcquisition = acquisition;
+    try {
+      const release = await acquireAceDemoModelCache(acquisition.signal);
+      if (this.active !== active || acquisition.signal.aborted) {
+        await release();
+        return;
+      }
+      this.cacheAcquisition = undefined;
+      this.releaseRuntimeLock = release;
+      this.startInitializationInner(active);
+    } catch (error) {
+      if (this.active !== active || acquisition.signal.aborted) return;
+      this.fail(new Error(`Could not prepare model storage: ${String(error)}`), true);
+    }
+  }
+
+  private startInitializationInner(active: ActiveOperation): void {
     this.worker?.terminate();
     this.workerReady = false;
     this.fatalGpuDiagnostic = false;
@@ -241,6 +260,11 @@ export class AceStepMusicClient {
         active.initializationRequestId = undefined;
         this.workerReady = true;
         this.runtimeDiagnostics = message.diagnostics;
+        if (active.cancelRequested) {
+          this.active = undefined;
+          active.reject(new DOMException("Initialization cancelled", "AbortError"));
+          return;
+        }
         this.startGeneration();
         return;
       case "initialization-cancelled":
@@ -287,7 +311,7 @@ export class AceStepMusicClient {
           return;
         }
         const fatal = this.fatalGpuDiagnostic || isAceFatalGpuErrorCode(message.error.code);
-        this.fail(new Error(`${message.error.code}: ${message.error.message}`), fatal);
+        this.fail(new Error(`${message.error.code}: ${message.error.message}`), fatal || !this.workerReady);
         return;
       }
     }
@@ -301,17 +325,21 @@ export class AceStepMusicClient {
     const active = this.active;
     this.active = undefined;
     if (resetWorker) {
+      this.cacheAcquisition?.abort();
+      this.cacheAcquisition = undefined;
       this.worker?.terminate();
       this.worker = undefined;
       this.workerReady = false;
       this.runtimeDiagnostics = undefined;
-      this.releaseRuntimeLock?.();
+      void this.releaseRuntimeLock?.();
       this.releaseRuntimeLock = undefined;
     }
     active?.reject(reason);
   }
 
   private resetWorker(reason: unknown): void {
+    this.cacheAcquisition?.abort();
+    this.cacheAcquisition = undefined;
     if (this.disposal !== undefined) {
       this.disposal.reject(reason instanceof Error ? reason : new Error(String(reason)));
       this.disposal = undefined;
@@ -322,7 +350,7 @@ export class AceStepMusicClient {
     this.worker = undefined;
     this.workerReady = false;
     this.runtimeDiagnostics = undefined;
-    this.releaseRuntimeLock?.();
+    void this.releaseRuntimeLock?.();
     this.releaseRuntimeLock = undefined;
     if (active !== undefined) active.reject(reason);
   }

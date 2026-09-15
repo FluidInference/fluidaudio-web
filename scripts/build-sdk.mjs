@@ -21,9 +21,8 @@ execSync("npx tsc -p tsconfig.sdk.json", { stdio: "inherit" });
 
 console.log("── copy runtime assets (.js/.d.ts/.wasm/.bin/.json)");
 const KEEP = /\.(js|d\.ts|wasm|bin|json)$/;
-// musicgen-acestep imports the private ace-step-1.5.wgsl workspace package;
-// asr-voicechat weights are local-only — neither ships in the SDK yet.
-const SKIP_DIRS = new Set(["__pycache__", "musicgen-acestep", "asr-voicechat"]);
+// These engines are site-only; the SDK registry contains only packaged engines.
+const SKIP_DIRS = new Set(["__pycache__", "musicgen-acestep", "asr-voicechat", "stem-dicose", "tts-voicechat"]);
 let copied = 0;
 function walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -49,7 +48,7 @@ console.log("── manifest + docs");
 const ENGINE_SUBPATHS = ["asr-parakeet", "asr-whisper", "asr-nemotron", "tts-kokoro", "vad-silero", "diarization-sortformer", "eou-parakeet"];
 const exports_ = {
   ".": { types: "./index.d.ts", default: "./index.js" },
-  "./registry": { types: "./engines/registry.d.ts", default: "./engines/registry.js" },
+  "./registry": { types: "./engines/sdk-registry.d.ts", default: "./engines/sdk-registry.js" },
   "./textnorm": { types: "./core/textnorm.d.ts", default: "./core/textnorm.js" },
   "./vocab-rescorer": { types: "./engines/asr-parakeet/vocab-rescorer.d.ts", default: "./engines/asr-parakeet/vocab-rescorer.js" },
   "./captions": { types: "./core/captions.d.ts", default: "./core/captions.js" },

@@ -1,120 +1,102 @@
 # DiCoSe WebGPU
 
-An interactive and automation-ready browser runtime for the released **[DiCoSe BS-RoFormer + one-step
-consistency-distilled (CD) refinement](https://arxiv.org/abs/2412.06965)**, using the
-[official model weights](https://huggingface.co/karchkha/DiCoSe). The neural graph is raw WGSL/WebGPU:
-f16 storage, f32 reductions, converter-native tile-major subgroup GEMM, fused
-online attention with producer-rotated K, RMSNorm, FiLM, Conv2d STFT
-conditioning, complex masks, and CD affine sampling.
-The CPU boundary is intentionally limited to WAV decoding, deterministic
-resampling, centered Hann STFT/ISTFT, seeded noise generation, and the final
-instrumental complement subtraction.
+A browser stem separator by Hamza Qayyum, using the
+[DiCoSe BS-RoFormer and one-step refinement model](https://arxiv.org/abs/2412.06965)
+with [official weights](https://huggingface.co/karchkha/DiCoSe).
 
-The public API lives in `src/index.ts`. Browser inference runs in a dedicated
-worker and transfers PCM/result buffers instead of blocking the page thread.
+Inference runs in a dedicated WebGPU worker. Input audio and generated stems
+stay in the browser. The runtime returns drums, bass, other, vocals, and a
+derived instrumental, restored to the input's sample rate and exact frame count.
 
-## Inference modes
+## Requirements and modes
 
-`new DiCoSeWorkerClient()` and `separateAudio(source)` keep the released
-full-resolution, one-step refined graph as the default. Fast is an explicit
-quality/performance tradeoff that returns the deterministic separator before
-CD refinement:
+Requires HTTPS or localhost, WebGPU with `shader-f16`, fixed 32-wide subgroups,
+1 GiB GPU buffers/storage bindings, and 25,344 bytes of workgroup storage.
+Use `checkSupport()` to check the device before loading the **623 MB** model.
 
-```ts
-const fast = new DiCoSeWorkerClient();
-const fastResult = await fast.separateAudio(source, {
-  outputMode: "deterministic",
-});
-```
+| Mode | API value       | Behavior                                                                   |
+| ---- | --------------- | -------------------------------------------------------------------------- |
+| Full | `refined`       | Deterministic separation followed by one-step refinement; package default. |
+| Fast | `deterministic` | Skips refinement; default in FluidAudio Web.                               |
 
-Both modes return the four neural estimates under `result.stems` and a derived
-`result.instrumental`. Instrumental is computed as the decoded input mixture
-minus the vocal estimate after both have been restored to the uploaded file's
-sample rate and exact frame count. It adds no model pass and is deliberately
-not computed by summing drums, bass, and other.
+Fast trades refinement quality for speed. For long files, Full uses 50% chunk
+overlap and Fast uses 10%; both process bounded 11-second model items with
+normalized overlap-add. The instrumental is the restored input mixture minus
+vocals, not the sum of the other stems.
 
-On the supplied WAV, deterministic-only had a 5.92-s sustained median. That
-number remains useful as a performance measurement, not quality evidence.
-Fast uses the released deterministic checkpoint but omits learned refinement.
-See `optimization/CORRECTNESS_AUDIT.md` and `optimization/LEDGER.md` for the
-current evidence and dispositions.
-
-## Model package
-
-Large checkpoints, download caches, and the generated weight blob are ignored
-by Git. Run this command manually whenever the local browser package needs to
-be prepared:
-
-```sh
-pnpm model:prepare
-```
-
-It downloads the two pinned official checkpoints, verifies them, converts the
-exact Full/Fast production package into `public/model/`, and verifies the
-canonical generated hashes. The source download is about 4.66 GB and is cached
-under `model/cache/`. The command requires `uv`; Python 3.13 and all converter
-dependencies come from the locked `model/` environment.
+Measurements and quality evidence are in the
+[correctness audit](optimization/CORRECTNESS_AUDIT.md) and
+[optimization ledger](optimization/LEDGER.md). Performance depends on the mode,
+input length, and hardware.
 
 ## Run locally
 
-```sh
-pnpm dev
+From the FluidAudio Web repository root:
+
+```bash
+npm ci
+npm run dicose:check
+npm run dicose:test
+npm run dicose:build
 ```
 
-Open `http://127.0.0.1:5173/`, choose or drop a local WAV, select Full or Fast,
-and run the separation. The page shows stage timings and
-creates the four model stems plus a derived instrumental as five in-memory
-stereo WAVs with playback and download controls.
-The source file and generated outputs stay in the browser tab; they are not
-uploaded. Inputs above 12 seconds are processed as fixed 11-second model items
-with reflected context and normalized overlap-add. Full retains the upstream
-50% overlap policy. Fast overlaps only the existing 10% fade region. For the
-5,608,109-sample model-rate `trust_nobody.wav` input, that changes the plan from
-25 chunks in Full to 13 in Fast. A fresh isolated-Chrome sustained panel measured
-a 79.61-s median (71.57–113.05 s) for that Fast path; this does not meet the
-30-second target, and listening remains the quality gate. Long tracks still
-require serial model calls. File-based runs restore each output to the uploaded
-WAV's sample rate and exact frame count before playback/download.
+For the integrated site, follow the [root quick start](../../README.md#run-locally).
+For the standalone package demo, run these commands from `packages/dicose/`:
 
-For an unattended page invocation, add `?autorun=1`; the result is published
-to `window.__DICOSE_BROWSER__.report` and `#result`. `?mode=benchmark` uses a
-single persistent worker/model package across its warmup and measured runs.
-Neither path opens a save dialog, download, or UI control.
-
-## Checks and isolated browser testing
-
-```sh
-pnpm check
-pnpm test
-pnpm test:reference-quality
-pnpm test:refined-reference-quality
-pnpm test:output-mode-quality
-pnpm test:webgpu
-pnpm test:browser
-pnpm benchmark:browser
+```bash
+npm run model:prepare
+npm run dev
 ```
 
-The release benchmark accepts an explicit output selector:
+Model preparation requires `uv`. It uses the locked Python 3.13 environment,
+downloads and verifies about **4.66 GB** of source checkpoints, and writes the
+browser package to `public/model/`. Source downloads are cached in
+`model/cache/`; these files stay out of Git. See [model preparation](model/README.md).
 
-```sh
-DICOSE_BENCHMARK_OUTPUT_MODE=deterministic pnpm benchmark:browser
+Open `http://127.0.0.1:5173/`, select a local WAV and Full or Fast, then run
+separation. Each stem has playback and WAV download controls.
+
+## API
+
+The public API is exported from [src/index.ts](src/index.ts). Within this workspace:
+
+```ts
+import { DiCoSeWorkerClient } from "dicose-wgsl";
+
+const client = new DiCoSeWorkerClient();
+try {
+  const result = await client.separateAudio(source, {
+    outputMode: "deterministic",
+  });
+  // Four model outputs: result.stems; derived output: result.instrumental.
+} finally {
+  await client.dispose();
+}
 ```
 
-The browser scripts automatically start Vite and a new headless Chrome process
-with a freshly-created temporary `--user-data-dir`, then delete that profile,
-stop Chrome, and stop Vite in `finally`. They use CDP to await the automatic
-result; no user profile, click, permission prompt, or file save is involved.
-`test:browser` additionally enforces the fixture's f16 deterministic-output
-envelope against the upstream f32 reference. `test:reference-quality` checks
-the released deterministic graph and 30 internal tensor seams;
-`test:refined-reference-quality` checks the released one-step CD graph, 17
-internal CD seams, its raw model output, and the final refined stems against a
-fixed-noise execution of the official PyTorch implementation.
+`source` is a `Blob` or `ArrayBuffer`. Set `manifestUrl` in the constructor to
+use another model host. Consumers bundling the prebuilt library may need
+`createWorker` to provide a worker that imports `dicose-wgsl/worker`; see the
+[FluidAudio integration](../../src/engines/stem-dicose/index.ts).
 
-`Mixture_audio_1.wav` is the supplied 22.05 kHz mono fixture. Production decode
-duplicates it to stereo and uses the Hann-windowed sinc geometry and defaults
-from torchaudio 2.0.2 before processing 1,189 centered-STFT frames. The
-deterministic model-arithmetic oracle deliberately replays its older frozen
-linear input tensor so resampler and neural-graph regressions remain separate
-gates. The CD sampler uses a fixed default noise seed, so an otherwise
-identical run is reproducible.
+## Browser checks
+
+From `packages/dicose/`, with model files prepared:
+
+```bash
+npm run test:webgpu
+npm run test:browser
+npm run test:reference-quality
+npm run test:refined-reference-quality
+npm run test:output-mode-quality
+DICOSE_BENCHMARK_OUTPUT_MODE=deterministic npm run benchmark:browser
+```
+
+The scripts start Vite and headless Chrome with a temporary profile, then clean
+them up. Reference checks compare deterministic and refined outputs and
+intermediate tensors against the official implementation. The fixed default
+noise seed makes otherwise identical runs reproducible.
+
+For page automation, `?autorun=1` publishes the report to
+`window.__DICOSE_BROWSER__.report` and `#result`. `?mode=benchmark` reuses one
+worker across warmup and measured runs.

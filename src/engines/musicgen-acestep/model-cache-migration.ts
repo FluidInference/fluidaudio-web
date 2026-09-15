@@ -1,4 +1,5 @@
 import { deleteAceModelCache } from "ace-step-1.5.wgsl";
+import { acquireCacheLease } from "./cache-lease.js";
 
 /**
  * Bump this identity whenever the demo's selected model payload inventory
@@ -17,14 +18,16 @@ const MIGRATION_LOCK_NAME = ACE_MODEL_CACHE_LIFECYCLE_LOCK;
 const METADATA_DIRECTORY = "ace-step-1.5.wgsl-demo-metadata-v1";
 const GENERATION_MARKER_FILE = "model-cache-generation.txt";
 const MAX_GENERATION_MARKER_BYTES = 256;
+const localReleasePromises = new Set<Promise<void>>();
 
 type ModelCacheStorage = Pick<StorageManager, "getDirectory">;
 
 export interface AceDemoExclusiveLockManager {
-  request<Result>(name: string, options: Readonly<{ mode: "exclusive" }>, operation: () => Promise<Result>): Promise<Result>;
+  request<Result>(name: string, options: Readonly<{ mode: "exclusive"; signal?: AbortSignal }>, operation: () => Promise<Result>): Promise<Result>;
 }
 
 export interface AceDemoModelCacheMigrationOptions {
+  readonly signal?: AbortSignal;
   /** @internal Test seam. Production defaults to `navigator.storage`. */
   readonly storage?: ModelCacheStorage | undefined;
   /** @internal Test seam. Production defaults to `navigator.locks`. */
@@ -65,7 +68,7 @@ export async function ensureCurrentAceDemoModelCache(options: AceDemoModelCacheM
   }
   const deleteModelCache = options.deleteModelCache ?? deleteAceModelCache;
 
-  return locks.request(MIGRATION_LOCK_NAME, { mode: "exclusive" }, async () => {
+  return locks.request(MIGRATION_LOCK_NAME, { mode: "exclusive", ...(options.signal === undefined ? {} : { signal: options.signal }) }, async () => {
     // Read inside the exclusive lock. Another current-version tab may have
     // completed the migration while this tab was waiting for ownership.
     const root = await storage.getDirectory();
@@ -91,6 +94,58 @@ export async function ensureCurrentAceDemoModelCache(options: AceDemoModelCacheM
       previousGeneration,
     });
   });
+}
+
+/** Hold the current generation's cache for the entire runtime lifetime. */
+export async function acquireAceDemoModelCache(signal?: AbortSignal): Promise<() => Promise<void>> {
+  const locks = globalThis.navigator?.locks;
+  const storage = browserStorage();
+  if (locks === undefined || storage === undefined) throw new Error("Browser storage and Web Locks are required");
+  for (;;) {
+    signal?.throwIfAborted();
+    const release = await acquireCacheLease(locks, MIGRATION_LOCK_NAME, signal);
+    try {
+      signal?.throwIfAborted();
+      const root = await storage.getDirectory();
+      const metadata = await root.getDirectoryHandle(METADATA_DIRECTORY, { create: true });
+      const generation = await readGenerationMarker(metadata);
+      signal?.throwIfAborted();
+      if (generation === ACE_DEMO_MODEL_CACHE_GENERATION) return trackLocalRelease(release);
+    } catch (error) {
+      await release();
+      throw error;
+    }
+    await release();
+    await ensureCurrentAceDemoModelCache({ signal });
+    // Recheck under the shared lock: another version could migrate in between.
+  }
+}
+
+/** Fail promptly if another tab still owns the cache; never delete underneath it. */
+export async function deleteAceDemoModelCache(): Promise<boolean> {
+  // A release requested in this page settles slightly before Web Locks removes
+  // the held lock. Do not mistake that brief local transition for another tab.
+  await Promise.allSettled([...localReleasePromises]);
+  const locks = globalThis.navigator?.locks;
+  if (locks === undefined) throw new Error("Web Locks are required to delete the model cache safely");
+  return locks.request(MIGRATION_LOCK_NAME, { mode: "exclusive", ifAvailable: true }, async (lock) => {
+    if (lock === null) throw new Error("Model is in use in another tab. Close that tab and retry.");
+    return deleteAceModelCache();
+  });
+}
+
+function trackLocalRelease(release: () => Promise<void>): () => Promise<void> {
+  let pending: Promise<void> | undefined;
+  return () => {
+    if (pending !== undefined) return pending;
+    pending = release();
+    localReleasePromises.add(pending);
+    void pending.then(
+      () => localReleasePromises.delete(pending!),
+      () => localReleasePromises.delete(pending!),
+    );
+    return pending;
+  };
 }
 
 async function readGenerationMarker(metadata: FileSystemDirectoryHandle): Promise<string | null> {

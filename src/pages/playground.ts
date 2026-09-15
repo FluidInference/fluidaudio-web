@@ -11,6 +11,7 @@ import { segmentsToSrt, segmentsToVtt } from "../core/captions.js";
 import { formatLoadProgress } from "../core/loadProgress.js";
 import { webgpuAvailable } from "../core/webgpu.js";
 import { ENGINES, type EngineCategory, type EngineEntry } from "../engines/registry.js";
+import { ResourceSession } from "../core/resource-session.js";
 import { MicCapture } from "../core/mic.js";
 import type { Engine, LoadProgress, SeparationEngine, TranscribeProgress } from "../core/types.js";
 
@@ -86,6 +87,7 @@ export function initPlayground(opts: PlaygroundOptions) {
     }
   }
   const progress = $<HTMLProgressElement>("progress");
+  const loadBtn = $<HTMLButtonElement>("load");
   const runBtn = $<HTMLButtonElement>("run");
   const micBtn = opts.mic ? $<HTMLButtonElement>("mic") : null;
   const player = $<HTMLAudioElement>("player") as HTMLAudioElement | null;
@@ -112,7 +114,20 @@ export function initPlayground(opts: PlaygroundOptions) {
     }),
   );
 
+  const session = new ResourceSession<Engine>();
   let engine: Engine | null = null;
+  let loading = false;
+  let runningFile = false;
+  let startingLive = false;
+  let pageHidden = false;
+  let playbackUrl: string | undefined;
+  function updateActions() {
+    const occupied = loading || runningFile || startingLive || stopping || mic.running || pageHidden;
+    loadBtn.disabled = occupied;
+    engineSel.disabled = occupied;
+    runBtn.disabled = occupied || engine === null;
+    if (micBtn) micBtn.disabled = loading || runningFile || startingLive || stopping || pageHidden || engine === null;
+  }
   function currentEntry(): EngineEntry {
     return ENTRIES[engineSel.value];
   }
@@ -129,89 +144,109 @@ export function initPlayground(opts: PlaygroundOptions) {
     // TTS takes text → text box; ASR/VAD/diarization take audio → file picker.
     $("inputLabel").textContent = kind === "text" ? "Text to synthesize" : "Audio file";
   }
-  engineSel.addEventListener("change", () => {
+  engineSel.addEventListener("change", async () => {
     syncInputs();
-    runBtn.disabled = true;
-    if (micBtn) micBtn.disabled = true;
-    if (mic.running) void stopLive();
+    engine = null;
+    loading = true;
+    updateActions();
+    try {
+      await session.clear();
+    } catch (error) {
+      output.textContent = String(error);
+    } finally {
+      loading = false;
+      updateActions();
+    }
   });
   syncInputs();
 
-  $("load").addEventListener("click", async () => {
+  loadBtn.addEventListener("click", async () => {
+    if (loading || runningFile || startingLive || stopping || mic.running || pageHidden) return;
     const entry = currentEntry();
+    loading = true;
+    engine = null;
+    updateActions();
     output.textContent = "";
     progress.hidden = false;
-    runBtn.disabled = true;
     try {
-      const eng = await entry.make();
-      engine = eng;
       status.textContent = `Loading ${entry.label}…`;
-      await eng.load((p: LoadProgress) => {
-        progress.value = p.fraction || 0;
-        status.textContent = formatLoadProgress(p);
-      });
+      engine = await session.load(entry.make, (eng) =>
+        eng.load((p: LoadProgress) => {
+          progress.value = p.fraction || 0;
+          status.textContent = formatLoadProgress(p);
+        }),
+      );
       status.textContent = `Ready: ${entry.label}`;
-      runBtn.disabled = false;
-      if (micBtn) micBtn.disabled = !(currentEntry().kind === "audio" && typeof (engine as any)?.transcribe === "function");
     } catch (err) {
-      status.textContent = `Load failed`;
+      status.textContent = "Load failed";
       output.textContent = String(err);
     } finally {
+      loading = false;
       progress.hidden = true;
+      updateActions();
     }
   });
 
   runBtn.addEventListener("click", async () => {
-    if (!engine) return;
+    if (!engine || loading || runningFile || startingLive || stopping || mic.running || pageHidden) return;
+    runningFile = true;
+    updateActions();
     const entry = currentEntry();
     output.textContent = "Running…";
     if (player) player.hidden = true;
     try {
-      if (entry.kind === "text") {
-        const text = $<HTMLTextAreaElement>("text").value;
-        const t0 = performance.now();
-        const audio = await (engine as any).synthesize(text);
-        const ms = performance.now() - t0;
-        const dur = audio.samples.length / audio.sampleRate;
-        const blob = pcmToWav(audio.samples, audio.sampleRate);
-        const url = URL.createObjectURL(blob);
-        if (player) {
-          player.src = url;
-          player.hidden = false;
+      await session.run(async (engine) => {
+        if (entry.kind === "text") {
+          const text = $<HTMLTextAreaElement>("text").value;
+          const t0 = performance.now();
+          const audio = await (engine as any).synthesize(text);
+          const ms = performance.now() - t0;
+          const dur = audio.samples.length / audio.sampleRate;
+          const blob = pcmToWav(audio.samples, audio.sampleRate);
+          if (playbackUrl !== undefined) URL.revokeObjectURL(playbackUrl);
+          const url = URL.createObjectURL(blob);
+          playbackUrl = url;
+          if (player) {
+            player.src = url;
+            player.hidden = false;
+          }
+          const wavLink = $("wavLink") as HTMLAnchorElement | null;
+          if (wavLink) {
+            wavLink.href = url;
+            wavLink.download = `${engineSel.value}.wav`;
+            wavLink.hidden = false;
+          }
+          output.textContent =
+            `Synthesized ${dur.toFixed(2)}s @ ${audio.sampleRate}Hz\n` +
+            `⏱ ${ms.toFixed(0)}ms · RTFx ${(dur / (ms / 1000)).toFixed(1)}× · ${(text.length / (ms / 1000)).toFixed(0)} chars/s`;
+        } else {
+          const file = $<HTMLInputElement>("file").files?.[0];
+          if (!file) {
+            output.textContent = "Choose an audio file first.";
+            return;
+          }
+          // Stem splitters take full-band stereo at the clip's native rate and
+          // return one audio per stem — they bypass the 16 kHz mono decode and
+          // the text-result path entirely.
+          if (isSeparation(engine)) {
+            await runSeparationEngine(engine, await file.arrayBuffer(), file.name);
+            return;
+          }
+          const audio = await decodeToMono16k(await file.arrayBuffer());
+          const dur = audio.samples.length / audio.sampleRate;
+          lastFileName = file.name;
+          const t0 = performance.now();
+          const result = await runAudioEngine(engine, audio);
+          const ms = performance.now() - t0;
+          output.textContent = `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
+          renderCaptionLinks();
         }
-        const wavLink = $("wavLink") as HTMLAnchorElement | null;
-        if (wavLink) {
-          wavLink.href = url;
-          wavLink.download = `${engineSel.value}.wav`;
-          wavLink.hidden = false;
-        }
-        output.textContent =
-          `Synthesized ${dur.toFixed(2)}s @ ${audio.sampleRate}Hz\n` +
-          `⏱ ${ms.toFixed(0)}ms · RTFx ${(dur / (ms / 1000)).toFixed(1)}× · ${(text.length / (ms / 1000)).toFixed(0)} chars/s`;
-      } else {
-        const file = $<HTMLInputElement>("file").files?.[0];
-        if (!file) {
-          output.textContent = "Choose an audio file first.";
-          return;
-        }
-        // Stem splitters take full-band stereo at the clip's native rate and
-        // return one audio per stem — they bypass the 16 kHz mono decode and
-        // the text-result path entirely.
-        if (isSeparation(engine)) {
-          await runSeparationEngine(engine, await file.arrayBuffer(), file.name);
-          return;
-        }
-        const audio = await decodeToMono16k(await file.arrayBuffer());
-        const dur = audio.samples.length / audio.sampleRate;
-        lastFileName = file.name;
-        const t0 = performance.now();
-        const result = await runAudioEngine(engine, audio);
-        const ms = performance.now() - t0;
-        output.textContent = `⏱ ${ms.toFixed(0)}ms · audio ${dur.toFixed(1)}s · RTFx ${(dur / (ms / 1000)).toFixed(1)}×\n\n` + result;
-        renderCaptionLinks();
-      }
+      });
     } catch (err) {
       output.textContent = String(err);
+    } finally {
+      runningFile = false;
+      updateActions();
     }
   });
 
@@ -228,22 +263,24 @@ export function initPlayground(opts: PlaygroundOptions) {
   let livePos = 0; // absolute sample index consumed by the streaming path
 
   async function liveTick() {
-    if (!engine || liveBusy || mic.seconds < 1) return;
+    if (!engine || liveBusy || stopping || pageHidden || mic.seconds < 1) return;
     liveBusy = true;
     try {
-      const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
-      if (isStreaming(engine)) {
-        const { samples, total } = mic.since(livePos);
-        const text = await engine.push(samples);
-        livePos = total; // only after push resolves — a failed push must not skip audio
-        mic.dropBefore(livePos); // streaming never re-reads history; keep hours-long sessions bounded
-        const ev = engine.streamEvents ?? [];
-        output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
-      } else {
-        const samples = mic.tail(LIVE_WINDOW_SEC);
-        const r = await (engine as any).transcribe({ samples, sampleRate: 16000 });
-        output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (showing last ${Math.min(mic.seconds, LIVE_WINDOW_SEC).toFixed(0)}s)\n\n${r.text}${r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
-      }
+      await session.run(async (engine) => {
+        const vu = "▁▂▃▄▅▆▇█"[Math.min(7, Math.floor(mic.level * 8))];
+        if (isStreaming(engine)) {
+          const { samples, total } = mic.since(livePos);
+          const text = await engine.push(samples);
+          livePos = total; // only after push resolves — a failed push must not skip audio
+          mic.dropBefore(livePos); // streaming never re-reads history; keep hours-long sessions bounded
+          const ev = engine.streamEvents ?? [];
+          output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+        } else {
+          const samples = mic.tail(LIVE_WINDOW_SEC);
+          const r = await (engine as any).transcribe({ samples, sampleRate: 16000 });
+          output.textContent = `● LIVE ${vu} ${mic.seconds.toFixed(0)}s (showing last ${Math.min(mic.seconds, LIVE_WINDOW_SEC).toFixed(0)}s)\n\n${r.text}${r.events?.length ? `\n\nevents: ${r.events.map((e: any) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+        }
+      });
     } catch (err) {
       output.textContent = `live error: ${String(err)}`;
     } finally {
@@ -252,16 +289,26 @@ export function initPlayground(opts: PlaygroundOptions) {
   }
 
   async function startLive() {
-    if (stopping) return; // a previous session's flush is still settling
+    if (!engine || loading || runningFile || startingLive || stopping || mic.running || pageHidden) return;
+    startingLive = true;
+    updateActions();
     output.textContent = "requesting microphone…";
     try {
       mic.clear();
       livePos = 0;
       if (engine && isStreaming(engine)) engine.reset();
       await mic.start();
+      if (pageHidden) {
+        await mic.stop();
+        return;
+      }
     } catch (err) {
+      await mic.stop();
       output.textContent = `microphone unavailable: ${String(err)}`;
       return;
+    } finally {
+      startingLive = false;
+      updateActions();
     }
     if (micBtn) micBtn.textContent = "⏹ Stop";
     runBtn.disabled = true;
@@ -274,54 +321,87 @@ export function initPlayground(opts: PlaygroundOptions) {
   async function stopLive() {
     if (stopping) return;
     stopping = true;
-    if (liveTimer) clearInterval(liveTimer);
-    liveTimer = null;
-    // An in-flight tick may be mid-push: pushing/finishing/resetting concurrently
-    // would interleave on the same encoder caches. Let it settle first.
-    while (liveBusy) await new Promise((r) => setTimeout(r, 25));
-    await mic.stop();
-    if (micBtn) micBtn.textContent = "🎤 Live";
-    // (Run stays disabled until the flush below completes.)
-    // Capture: the dropdown can reassign the global `engine` while we await —
-    // the flush must finish/reset the engine that owned this stream.
-    const eng = engine;
-    if (eng && isStreaming(eng)) {
-      // Streamed all along — just flush the right-padded tail. No re-decode.
-      try {
-        const { samples, total } = mic.since(livePos);
-        livePos = total;
-        if (samples.length) await eng.push(samples);
-        const text = await eng.finish();
-        const ev = eng.streamEvents ?? [];
-        output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s, true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
-        status.textContent = "Done.";
-      } catch (err) {
-        output.textContent = String(err);
-      } finally {
-        // reset even when the flush failed — a stranded stream blocks every
-        // subsequent Run with the stream-active guard.
+    updateActions();
+    try {
+      if (liveTimer) clearInterval(liveTimer);
+      liveTimer = null;
+      // An in-flight tick may be mid-push: pushing/finishing/resetting concurrently
+      // would interleave on the same encoder caches. Let it settle first.
+      while (liveBusy) await new Promise((r) => setTimeout(r, 25));
+      await mic.stop();
+      if (micBtn) micBtn.textContent = "🎤 Live";
+      // (Run stays disabled until the flush below completes.)
+      // Capture: the dropdown can reassign the global `engine` while we await —
+      // the flush must finish/reset the engine that owned this stream.
+      const eng = engine;
+      if (eng && isStreaming(eng)) {
+        // Streamed all along — just flush the right-padded tail. No re-decode.
         try {
-          eng.reset();
-        } catch {
-          /* disposed mid-flight */
+          const { samples, total } = mic.since(livePos);
+          livePos = total;
+          if (samples.length) await eng.push(samples);
+          const text = await eng.finish();
+          const ev = eng.streamEvents ?? [];
+          output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s, true streaming)\n\n${text}${ev.length ? `\n\nevents: ${ev.map((e) => `${e.type}@${e.time}s`).join(" ")}` : ""}`;
+          status.textContent = "Done.";
+        } catch (err) {
+          output.textContent = String(err);
+        } finally {
+          // reset even when the flush failed — a stranded stream blocks every
+          // subsequent Run with the stream-active guard.
+          try {
+            eng.reset();
+          } catch {
+            /* disposed mid-flight */
+          }
+        }
+      } else if (engine && mic.seconds >= 1) {
+        // Final pass over the WHOLE capture (the rolling view only showed the tail).
+        status.textContent = `transcribing full ${mic.seconds.toFixed(0)}s capture…`;
+        try {
+          const t0 = performance.now();
+          const r = await (engine as any).transcribe({ samples: mic.all(), sampleRate: 16000 });
+          const ms = performance.now() - t0;
+          output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s captured, ${ms.toFixed(0)}ms, RTFx ${(mic.seconds / (ms / 1000)).toFixed(1)}×)\n\n${r.text}`;
+          status.textContent = "Done.";
+        } catch (err) {
+          output.textContent = String(err);
         }
       }
-    } else if (engine && mic.seconds >= 1) {
-      // Final pass over the WHOLE capture (the rolling view only showed the tail).
-      status.textContent = `transcribing full ${mic.seconds.toFixed(0)}s capture…`;
-      try {
-        const t0 = performance.now();
-        const r = await (engine as any).transcribe({ samples: mic.all(), sampleRate: 16000 });
-        const ms = performance.now() - t0;
-        output.textContent = `■ final transcript (${mic.seconds.toFixed(0)}s captured, ${ms.toFixed(0)}ms, RTFx ${(mic.seconds / (ms / 1000)).toFixed(1)}×)\n\n${r.text}`;
-        status.textContent = "Done.";
-      } catch (err) {
-        output.textContent = String(err);
-      }
+    } catch (err) {
+      output.textContent = String(err);
+    } finally {
+      stopping = false;
+      if (micBtn) micBtn.textContent = "🎤 Live";
+      updateActions();
     }
-    runBtn.disabled = false; // only after the flush — Run mid-flush hits the stream-active guard
-    stopping = false;
   }
+
+  window.addEventListener("pagehide", () => {
+    pageHidden = true;
+    if (liveTimer) clearInterval(liveTimer);
+    liveTimer = null;
+    void mic.stop().catch(console.error);
+    // Disposal waits for loading/inference to finish, including late load failures.
+    void (async () => {
+      while (stopping) await new Promise((resolve) => setTimeout(resolve, 25));
+      try {
+        await session.close();
+      } finally {
+        // In-flight work may have published new URLs after pagehide.
+        if (playbackUrl !== undefined) URL.revokeObjectURL(playbackUrl);
+        for (const url of stemUrls) URL.revokeObjectURL(url);
+        lastSegments = null;
+        renderCaptionLinks();
+      }
+    })().catch(console.error);
+    if (playbackUrl !== undefined) URL.revokeObjectURL(playbackUrl);
+    for (const url of stemUrls) URL.revokeObjectURL(url);
+    updateActions();
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) location.reload();
+  });
 
   micBtn?.addEventListener("click", () => {
     if (mic.running) void stopLive();

@@ -1,8 +1,6 @@
 name: Deploy to GitHub Pages
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
 
 # Allow one concurrent deploy; let a new push cancel an in-flight one.
 permissions:
