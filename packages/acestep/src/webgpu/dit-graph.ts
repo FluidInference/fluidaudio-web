@@ -52,6 +52,8 @@ import {
 import {
   ACE_OPT_0009_DIT_DENSE_KERNEL_SET_ID,
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
+  ACE_OPT_0091_DIT_INT8_LAYER_BYTES,
+  ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES,
   ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
   ACE_OPT_0037_DIT_K4_LAYER_BYTES,
   ACE_OPT_0037_DIT_K4_KERNEL_SET_ID,
@@ -554,11 +556,19 @@ export class AceDitResidentModel implements AceDitGraphModel {
         densePhase,
         denseRuntimeProfile,
       );
+      const int8 =
+        denseRuntimeProfile === ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE;
+      const expectedDenseBytes = int8
+        ? ACE_OPT_0091_DIT_INT8_LAYER_BYTES
+        : ACE_OPT_0037_DIT_K4_LAYER_BYTES;
+      const expectedResidentBytes = int8
+        ? ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES
+        : ACE_OPT_0037_DIT_K4_RESIDENT_WEIGHT_BYTES;
       if (
         densePhase !== undefined &&
         (phase.residentBytes !== ACE_REFERENCE_DIT_SHARED_WEIGHT_BYTES ||
-          densePhase.residentBytes !== ACE_OPT_0037_DIT_K4_LAYER_BYTES ||
-          this.residentBytes !== ACE_OPT_0037_DIT_K4_RESIDENT_WEIGHT_BYTES)
+          densePhase.residentBytes !== expectedDenseBytes ||
+          this.residentBytes !== expectedResidentBytes)
       ) {
         throw new Error(
           "ACE mixed DiT physical resident-byte replacement contract changed",
