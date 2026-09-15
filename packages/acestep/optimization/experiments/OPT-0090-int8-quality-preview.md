@@ -3,7 +3,7 @@
 ## Status
 
 - Evidence: `positive` (artifact and integration gates; external listening pending)
-- Disposition: `pending-integration`
+- Disposition: `integrated`
 - Date: 2026-09-15
 - Risk class: `approximate`, opt-in only
 
