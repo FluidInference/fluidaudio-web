@@ -48,6 +48,9 @@ import {
 import {
   ACE_OPT_0009_DIT_DENSE_RUNTIME_PROFILE,
   ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
+  ACE_OPT_0091_DIT_INT8_LAYER_BYTES,
+  ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES,
+  ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
   ACE_OPT_0037_DIT_K4_RUNTIME_PROFILE,
   ACE_OPT_0056_DIT_SELECTIVE_K4_RUNTIME_PROFILE,
   ACE_REFERENCE_DIT_SHARED_WEIGHT_BYTES,
@@ -77,6 +80,8 @@ import {
   ACE_DIT_GEMM_TILE_LAYOUT,
   ACE_DIT_DENSE_FP16_TILE_LAYOUT,
   ACE_DIT_DENSE_FP16_TRANSFORMATION,
+  ACE_DIT_DENSE_INT8_TILE_LAYOUT,
+  ACE_DIT_DENSE_INT8_TRANSFORMATION,
   ACE_DIT_DENSE_K4_FP16_LAYOUT,
   ACE_DIT_DENSE_K4_FP16_TRANSFORMATION,
 } from "../src/model/manifest.js";
@@ -520,6 +525,23 @@ describe("ACE DiT resident phase ownership", () => {
       /exclusively resident dit phase/,
     );
     expect(destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts the packed INT8 resident-byte contract", () => {
+    const phases = fakeMixedDitPhases("opt-0091-int8");
+    const model = AceDitResidentModel.takeMixed(
+      phases.reference.value,
+      phases.mixed.value,
+      "reference-bf16",
+      ACE_OPT_0091_DIT_INT8_RUNTIME_PROFILE,
+    );
+
+    expect(model.residentBytes).toBe(
+      ACE_OPT_0091_DIT_INT8_RESIDENT_WEIGHT_BYTES,
+    );
+    model.destroy();
+    expect(phases.reference.destroy).toHaveBeenCalledOnce();
+    expect(phases.mixed.destroy).toHaveBeenCalledOnce();
   });
 });
 
@@ -1533,7 +1555,8 @@ function overlap(left: readonly Lifetime[], right: readonly Lifetime[]): boolean
 }
 
 function fakeMixedDitPhases(
-  denseProfile: "opt-0009" | "opt-0037-k4" = "opt-0009",
+  denseProfile: "opt-0009" | "opt-0037-k4" | "opt-0091-int8" =
+    "opt-0009",
 ): Readonly<{
   reference: Readonly<{
     value: AceGpuTensorPhase;
@@ -1551,7 +1574,8 @@ function fakeMixedDitPhases(
 
 function fakeDitPhase(
   profile: "reference-shared" | "mixed-layers",
-  denseProfile: "opt-0009" | "opt-0037-k4" = "opt-0009",
+  denseProfile: "opt-0009" | "opt-0037-k4" | "opt-0091-int8" =
+    "opt-0009",
 ): Readonly<{
   value: AceGpuTensorPhase;
   destroy: ReturnType<typeof vi.fn>;
@@ -1567,11 +1591,15 @@ function fakeDitPhase(
     const storageShape = dense
       ? denseProfile === "opt-0037-k4"
         ? [logicalShape[0]! / 128, logicalShape[1]! / 4, 4, 32, 4]
+        : denseProfile === "opt-0091-int8"
+          ? [logicalShape[0]! / 256, logicalShape[1]! / 32, 2_176]
         : [...logicalShape]
       : [Math.ceil(elements / 2)];
     const transformation = dense
       ? denseProfile === "opt-0037-k4"
         ? ACE_DIT_DENSE_K4_FP16_TRANSFORMATION
+        : denseProfile === "opt-0091-int8"
+          ? ACE_DIT_DENSE_INT8_TRANSFORMATION
         : ACE_DIT_DENSE_FP16_TRANSFORMATION
       : tiled
         ? ACE_DIT_GEMM_PACKED_BF16_TRANSFORMATION
@@ -1585,14 +1613,26 @@ function fakeDitPhase(
           logicalTensor: name,
           logicalShape,
           storageShape,
-          byteLength: elements * 2,
+          byteLength:
+            dense && denseProfile === "opt-0091-int8"
+              ? (logicalShape[0]! / 256) *
+                (logicalShape[1]! / 32) *
+                8_704
+              : elements * 2,
           phase: "dit",
           lifetime: "dit",
           source: `ace-turbo-weights:${name.slice("ace.".length)}`,
-          dtype: dense ? "float16" : "uint32-bf16-pairs",
+          dtype:
+            dense && denseProfile === "opt-0091-int8"
+              ? "uint32-int8-fp16-blocks"
+              : dense
+                ? "float16"
+                : "uint32-bf16-pairs",
           layout: dense
             ? denseProfile === "opt-0037-k4"
               ? ACE_DIT_DENSE_K4_FP16_LAYOUT
+              : denseProfile === "opt-0091-int8"
+                ? ACE_DIT_DENSE_INT8_TILE_LAYOUT
               : ACE_DIT_DENSE_FP16_TILE_LAYOUT
             : tiled
               ? ACE_DIT_GEMM_TILE_LAYOUT
@@ -1611,11 +1651,15 @@ function fakeDitPhase(
       phases: Object.freeze(["dit"]),
       residentBytes: profile === "reference-shared"
         ? ACE_REFERENCE_DIT_SHARED_WEIGHT_BYTES
-        : ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
+        : denseProfile === "opt-0091-int8"
+          ? ACE_OPT_0091_DIT_INT8_LAYER_BYTES
+          : ACE_OPT_0009_DIT_MIXED_LAYER_BYTES,
       packageManifest: {
         profile: profile === "reference-shared"
           ? "reference"
-          : "fp16-dit-dense-experimental",
+          : denseProfile === "opt-0091-int8"
+            ? "int8-dit-dense-experimental"
+            : "fp16-dit-dense-experimental",
       },
       logicalTensor,
       binding: (name: string) => logicalTensor(name).parts[0]!.binding,
